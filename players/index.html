@@ -122,6 +122,10 @@
         }
       }
       
+      // Flag to prevent sync loops
+      let isSyncing = false;
+      let lastSyncTime = 0;
+      
       function savePlayers(list) {
         try{
           // keep a backup of previous state to help recovery
@@ -130,14 +134,24 @@
           localStorage.setItem('players', JSON.stringify(list || []));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
           
+          // Mark that we're syncing to prevent incoming updates from overwriting
+          isSyncing = true;
+          lastSyncTime = Date.now();
+          
           // Sync to Firebase automatically
           if (typeof syncToFirebase !== 'undefined') {
             syncToFirebase('players', list || []).then(function() {
-              console.log('✓ Players synced to cloud');
+              console.log('✓ Players synced to cloud:', (list || []).length);
+              setTimeout(function() { isSyncing = false; }, 2000); // Allow incoming updates after 2 sec
+            }).catch(function() {
+              isSyncing = false;
             });
+          } else {
+            isSyncing = false;
           }
         } catch(e) { 
-          console.error('savePlayers error', e); 
+          console.error('savePlayers error', e);
+          isSyncing = false;
         }
       }
       
@@ -150,16 +164,24 @@
         
         try {
           firebase.database().ref('players').on('value', function(snapshot) {
+            // Don't process if we just saved locally (prevents overwriting our own changes)
+            if (isSyncing) {
+              console.log('⏸ Ignoring Firebase update (local save in progress)');
+              return;
+            }
+            
             const data = snapshot.val();
             if (data && Array.isArray(data)) {
-              const currentLocal = localStorage.getItem('players');
-              const currentData = currentLocal ? JSON.parse(currentLocal) : [];
+              const currentLocal = getPlayers();
               
-              // Only update if Firebase has different data
-              if (JSON.stringify(data) !== JSON.stringify(currentData)) {
-                console.log('📥 Received update from cloud:', data.length, 'players');
+              // Only update if Firebase has MORE data than local
+              // This prevents older Firebase data from overwriting newer local data
+              if (data.length > currentLocal.length) {
+                console.log('📥 Received update from cloud:', data.length, 'players (local had', currentLocal.length, ')');
                 localStorage.setItem('players', JSON.stringify(data));
                 loadPlayers(); // Refresh the display
+              } else {
+                console.log('📥 Firebase has', data.length, 'players, local has', currentLocal.length, '- keeping local');
               }
             }
           });
