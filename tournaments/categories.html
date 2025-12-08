@@ -280,7 +280,17 @@
         const tournaments = getTournaments();
         const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
         if (index !== -1) {
-          tournaments[index].categories = categories;
+          // Clean undefined values - Firebase doesn't accept undefined
+          const cleanedCategories = categories.map(cat => {
+            const cleaned = {};
+            for (const key in cat) {
+              if (cat[key] !== undefined) {
+                cleaned[key] = cat[key];
+              }
+            }
+            return cleaned;
+          });
+          tournaments[index].categories = cleanedCategories;
           saveTournaments(tournaments);
         }
       }
