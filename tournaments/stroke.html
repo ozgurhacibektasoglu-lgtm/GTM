@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Create Stroke Play Tournament</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .form-card{max-width:1000px;margin:36px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.06)}
@@ -595,6 +601,13 @@
             arr.push(entry);
           }
           localStorage.setItem('tournaments', JSON.stringify(arr));
+          
+          // Sync to Firebase
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', arr).then(() => {
+              console.log('✓ Tournament synced to Firebase');
+            }).catch(e => console.log('Firebase sync failed:', e));
+          }
         } catch (err) {
           console.error('Failed to save tournament', err);
           document.getElementById('result').textContent = 'Error saving tournament.';

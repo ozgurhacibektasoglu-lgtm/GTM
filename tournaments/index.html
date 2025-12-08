@@ -109,8 +109,26 @@
 
     <script>
 
-      // Use localStorage to persist tournaments so new entries appear in the list
-      // getTournaments() and saveTournaments() are now in firebase-config.js
+      // Local tournament functions with Firebase sync
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments from localStorage', err);
+          return [];
+        }
+      }
+
+      function saveTournaments(tournaments) {
+        localStorage.setItem('tournaments', JSON.stringify(tournaments || []));
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('tournaments', tournaments || []).then(() => {
+            console.log('✓ Tournaments synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
+      }
 
       let selectedTournamentIndex = null;
       let selectedTournamentOrigIndex = null;
