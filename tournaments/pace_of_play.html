@@ -552,6 +552,12 @@
         font-weight: bold;
       }
 
+      /* Prevent page breaks inside groups */
+      .print-schedule-table tbody.group-rows {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
       .print-schedule-table .first-player-row td {
         border-top: 1px solid #333;
       }
@@ -896,47 +902,34 @@
 
     function loadCourseData() {
       var courses = getCourses();
-      console.log('All courses:', courses.map(function(c) { return { id: c.courseId, name: c.fullName || c.name }; }));
-      console.log('Tournament meta:', tournament.meta);
       
       if (tournament.meta && tournament.meta.roundsData) {
         var roundIndex = tournament.meta.roundIds ? tournament.meta.roundIds.indexOf(currentRound) : 0;
         if (roundIndex < 0) roundIndex = 0;
         var roundInfo = tournament.meta.roundsData[roundIndex];
-        console.log('Round info:', roundInfo);
-        console.log('Current round:', currentRound, 'Round index:', roundIndex);
         
         // Check both 'course' (actual field name) and 'courseId' for compatibility
         var courseIdentifier = roundInfo && (roundInfo.course || roundInfo.courseId);
-        console.log('Course identifier from round:', courseIdentifier);
         
         if (courseIdentifier) {
           courseData = courses.find(function(c) { 
-            var match = c.courseId === courseIdentifier || c.fullName === courseIdentifier || c.name === courseIdentifier;
-            if (match) console.log('Found matching course:', c.fullName || c.name);
-            return match;
+            return c.courseId === courseIdentifier || c.fullName === courseIdentifier || c.name === courseIdentifier;
           });
         }
       }
 
       if (!courseData && tournament.courseId) {
-        console.log('Trying tournament.courseId:', tournament.courseId);
         courseData = courses.find(function(c) { return c.courseId === tournament.courseId; });
       }
       
       if (!courseData && tournament.course) {
-        console.log('Trying tournament.course:', tournament.course);
         courseData = courses.find(function(c) { 
           return c.courseId === tournament.course || c.fullName === tournament.course || c.name === tournament.course;
         });
       }
 
       if (!courseData) {
-        console.warn('Could not find course data, using defaults');
         courseData = { pars: [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4] };
-      } else {
-        console.log('Final loaded course:', courseData.fullName || courseData.name);
-        console.log('Course pars:', courseData.pars);
       }
     }
 
@@ -978,7 +971,6 @@
       var tbody = document.getElementById('time-table-body');
       // Always use current courseData.pars for display
       var pars = (courseData && courseData.pars) || [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4];
-      console.log('renderTimeTable using pars:', pars);
       var html = '';
 
       html += '<tr><td class="row-header">Par</td>';
@@ -1261,7 +1253,7 @@
       html += '</tr>';
       html += '</thead>';
 
-      html += '<tbody>';
+      // Each group will have its own tbody for page-break control
 
       // Prepare groups with calculated tee info
       var groupsWithTee = groups.map(function(group, idx) {
@@ -1293,7 +1285,7 @@
 
       var sortedGroups = tee1Groups.concat(tee10Groups);
 
-      sortedGroups.forEach(function(item) {
+      sortedGroups.forEach(function(item, sortedIdx) {
         var group = item.group;
         var idx = item.idx;
         var teeOffMinutes = item.teeOffMinutes;
@@ -1312,9 +1304,12 @@
           holeTimes.push(formatTime(cumulativeMinutes));
         }
 
+        // Start a new tbody for each group to prevent page breaks within a group
+        html += '<tbody class="group-rows">';
+
         // First row: times row (Match spans all rows, times only on this row)
         html += '<tr class="first-player-row times-row">';
-        html += '<td class="match-cell" rowspan="' + totalRows + '">' + (idx + 1) + '</td>';
+        html += '<td class="match-cell" rowspan="' + totalRows + '">' + (sortedIdx + 1) + '</td>';
         html += '<td class="player-cell"></td>'; // Empty for notes
         html += '<td class="club-cell"></td>';
         html += '<td class="tee-cell" rowspan="' + totalRows + '">' + startingTee + '</td>';
@@ -1348,9 +1343,11 @@
           html += '<td class="club-cell"></td>';
           html += '</tr>';
         }
+
+        // Close this group's tbody
+        html += '</tbody>';
       });
 
-      html += '</tbody>';
       table.innerHTML = html;
     }
 
