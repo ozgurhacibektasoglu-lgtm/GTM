@@ -289,16 +289,16 @@
             filename = 'courses.csv';
           }
 
-          let csv = 'City,Course Name,Short Name,';
+          let csv = 'Course ID,City,Course Name,Short Name,';
           // Add hole headers
           for (let i = 1; i <= 18; i++) {
             csv += `Par ${i},SI ${i},`;
           }
-          // Add tee headers
-          csv += 'Tees,Genders,Ratings,Slopes,Lengths\n';
+          // Add tee headers (including 9-hole ratings)
+          csv += 'Tees,Genders,Ratings18,Slopes18,RatingsF9,SlopesF9,RatingsB9,SlopesB9,Lengths,TeeDataJSON\n';
 
           courses.forEach(course => {
-            csv += `"${course.city}","${course.fullName || course.name}","${course.shortName || ''}",`;
+            csv += `"${course.courseId || ''}","${course.city}","${course.fullName || course.name}","${course.shortName || ''}",`;
             
             // Add par and SI data
             if (course.pars) {
@@ -319,11 +319,46 @@
               csv += `"${course.genders.join(';')}",`;
               
               if (course.teeData) {
-                const ratings = course.teeData.map(td => td.rating).join(';');
-                const slopes = course.teeData.map(td => td.slope).join(';');
+                // 18-hole ratings and slopes
+                const ratings18 = course.teeData.map(td => td.rating18 || td.rating || '').join(';');
+                const slopes18 = course.teeData.map(td => td.slope18 || td.slope || '').join(';');
+                
+                // Front 9 ratings and slopes
+                const ratingsF9 = course.teeData.map(td => {
+                  if (td.ratings) {
+                    // Dual gender format
+                    return `M:${td.ratings.men?.ratingF9 || ''}|W:${td.ratings.women?.ratingF9 || ''}`;
+                  }
+                  return td.ratingF9 || '';
+                }).join(';');
+                const slopesF9 = course.teeData.map(td => {
+                  if (td.ratings) {
+                    return `M:${td.ratings.men?.slopeF9 || ''}|W:${td.ratings.women?.slopeF9 || ''}`;
+                  }
+                  return td.slopeF9 || '';
+                }).join(';');
+                
+                // Back 9 ratings and slopes
+                const ratingsB9 = course.teeData.map(td => {
+                  if (td.ratings) {
+                    return `M:${td.ratings.men?.ratingB9 || ''}|W:${td.ratings.women?.ratingB9 || ''}`;
+                  }
+                  return td.ratingB9 || '';
+                }).join(';');
+                const slopesB9 = course.teeData.map(td => {
+                  if (td.ratings) {
+                    return `M:${td.ratings.men?.slopeB9 || ''}|W:${td.ratings.women?.slopeB9 || ''}`;
+                  }
+                  return td.slopeB9 || '';
+                }).join(';');
+                
                 const yardages = course.teeData.map(td => (td.lengths || td.yardages || []).join('-')).join(';');
                 
-                csv += `"${ratings}","${slopes}","${yardages}"`;
+                csv += `"${ratings18}","${slopes18}","${ratingsF9}","${slopesF9}","${ratingsB9}","${slopesB9}","${yardages}",`;
+                
+                // Also export full teeData as JSON for complete backup
+                const teeDataJSON = JSON.stringify(course.teeData).replace(/"/g, '""');
+                csv += `"${teeDataJSON}"`;
               }
             }
             
@@ -371,40 +406,84 @@
 
             const courses = getCourses();
             const importedCourses = [];
+            
+            // Check header to determine format (new format has "Course ID" first)
+            const header = lines[0].toLowerCase();
+            const isNewFormat = header.includes('course id');
 
             for (let i = 1; i < lines.length; i++) {
               const line = lines[i].trim();
               if (!line) continue;
 
               const fields = parseCSVLine(line);
-              if (fields.length < 39) continue; // Minimum required fields
-
-              const course = {
-                city: fields[0],
-                fullName: fields[1],
-                shortName: fields[2],
-                name: fields[1],
-                pars: fields.slice(3, 21).map(p => parseInt(p) || 4),
-                strokeIndexes: fields.slice(21, 39).map(si => parseInt(si) || 1)
-              };
-
-              if (fields[39]) {
-                course.tees = fields[39].split(';');
-                course.genders = fields[40].split(';');
-                course.teeData = [];
+              
+              let course;
+              
+              if (isNewFormat) {
+                // New format with courseId and 9-hole ratings
+                if (fields.length < 40) continue;
                 
-                if (fields[41] && fields[42] && fields[43]) {
-                  const ratings = fields[41].split(';').map(r => parseFloat(r));
-                  const slopes = fields[42].split(';').map(s => parseInt(s));
-                  const yardages = fields[43].split(';').map(y => y.split('-').map(yd => parseInt(yd)));
+                course = {
+                  courseId: fields[0] || generateCourseId(courses, importedCourses),
+                  city: fields[1],
+                  fullName: fields[2],
+                  shortName: fields[3],
+                  name: fields[2],
+                  pars: fields.slice(4, 22).map(p => parseInt(p) || 4),
+                  strokeIndexes: fields.slice(22, 40).map(si => parseInt(si) || 1)
+                };
+
+                if (fields[40]) {
+                  course.tees = fields[40].split(';');
+                  course.genders = fields[41] ? fields[41].split(';') : [];
                   
-                  for (let j = 0; j < course.tees.length; j++) {
-                    course.teeData.push({
-                      rating: ratings[j] || 70,
-                      slope: slopes[j] || 120,
-                      lengths: yardages[j] || Array(18).fill(0),
-                      yardages: yardages[j] || Array(18).fill(0) // Keep backward compatibility
-                    });
+                  // Check if there's a JSON teeData field (most complete)
+                  const teeDataJSONIndex = 48; // After all the individual rating columns
+                  if (fields[teeDataJSONIndex]) {
+                    try {
+                      course.teeData = JSON.parse(fields[teeDataJSONIndex]);
+                    } catch (e) {
+                      console.log('Could not parse teeData JSON, using individual fields');
+                      course.teeData = buildTeeDataFromFields(fields, course.tees.length);
+                    }
+                  } else {
+                    course.teeData = buildTeeDataFromFields(fields, course.tees.length);
+                  }
+                }
+              } else {
+                // Old format without courseId
+                if (fields.length < 39) continue;
+
+                course = {
+                  courseId: generateCourseId(courses, importedCourses),
+                  city: fields[0],
+                  fullName: fields[1],
+                  shortName: fields[2],
+                  name: fields[1],
+                  pars: fields.slice(3, 21).map(p => parseInt(p) || 4),
+                  strokeIndexes: fields.slice(21, 39).map(si => parseInt(si) || 1)
+                };
+
+                if (fields[39]) {
+                  course.tees = fields[39].split(';');
+                  course.genders = fields[40] ? fields[40].split(';') : [];
+                  course.teeData = [];
+                  
+                  if (fields[41] && fields[42] && fields[43]) {
+                    const ratings = fields[41].split(';').map(r => parseFloat(r));
+                    const slopes = fields[42].split(';').map(s => parseInt(s));
+                    const yardages = fields[43].split(';').map(y => y.split('-').map(yd => parseInt(yd)));
+                    
+                    for (let j = 0; j < course.tees.length; j++) {
+                      course.teeData.push({
+                        rating: ratings[j] || 70,
+                        rating18: ratings[j] || 70,
+                        slope: slopes[j] || 120,
+                        slope18: slopes[j] || 120,
+                        lengths: yardages[j] || Array(18).fill(0),
+                        yardages: yardages[j] || Array(18).fill(0)
+                      });
+                    }
                   }
                 }
               }
@@ -422,6 +501,75 @@
           reader.readAsText(file);
         };
         input.click();
+      }
+      
+      function generateCourseId(existingCourses, newCourses) {
+        const allCourses = [...existingCourses, ...newCourses];
+        let maxId = 0;
+        allCourses.forEach(course => {
+          if (course.courseId) {
+            const num = parseInt(course.courseId.substring(1));
+            if (num > maxId) maxId = num;
+          }
+        });
+        return 'C' + String(maxId + 1).padStart(3, '0');
+      }
+      
+      function buildTeeDataFromFields(fields, teeCount) {
+        const teeData = [];
+        const ratings18 = fields[42] ? fields[42].split(';') : [];
+        const slopes18 = fields[43] ? fields[43].split(';') : [];
+        const ratingsF9 = fields[44] ? fields[44].split(';') : [];
+        const slopesF9 = fields[45] ? fields[45].split(';') : [];
+        const ratingsB9 = fields[46] ? fields[46].split(';') : [];
+        const slopesB9 = fields[47] ? fields[47].split(';') : [];
+        const yardages = fields[48] ? fields[48].split(';').map(y => y.split('-').map(yd => parseInt(yd))) : [];
+        
+        for (let j = 0; j < teeCount; j++) {
+          const td = {
+            rating: parseFloat(ratings18[j]) || 70,
+            rating18: parseFloat(ratings18[j]) || 70,
+            slope: parseInt(slopes18[j]) || 120,
+            slope18: parseInt(slopes18[j]) || 120,
+            lengths: yardages[j] || Array(18).fill(0),
+            yardages: yardages[j] || Array(18).fill(0)
+          };
+          
+          // Parse 9-hole ratings (handle dual gender format M:val|W:val)
+          const rf9 = ratingsF9[j] || '';
+          const sf9 = slopesF9[j] || '';
+          const rb9 = ratingsB9[j] || '';
+          const sb9 = slopesB9[j] || '';
+          
+          if (rf9.includes('M:') && rf9.includes('W:')) {
+            // Dual gender format
+            const parseGenderVal = (str) => {
+              const parts = str.split('|');
+              return {
+                men: parseFloat((parts[0] || '').replace('M:', '')) || null,
+                women: parseFloat((parts[1] || '').replace('W:', '')) || null
+              };
+            };
+            const rf9Val = parseGenderVal(rf9);
+            const sf9Val = parseGenderVal(sf9);
+            const rb9Val = parseGenderVal(rb9);
+            const sb9Val = parseGenderVal(sb9);
+            
+            td.ratings = {
+              men: { ratingF9: rf9Val.men, slopeF9: sf9Val.men, ratingB9: rb9Val.men, slopeB9: sb9Val.men },
+              women: { ratingF9: rf9Val.women, slopeF9: sf9Val.women, ratingB9: rb9Val.women, slopeB9: sb9Val.women }
+            };
+          } else {
+            // Single gender format
+            td.ratingF9 = parseFloat(rf9) || null;
+            td.slopeF9 = parseInt(sf9) || null;
+            td.ratingB9 = parseFloat(rb9) || null;
+            td.slopeB9 = parseInt(sb9) || null;
+          }
+          
+          teeData.push(td);
+        }
+        return teeData;
       }
 
       function parseCSVLine(line) {
