@@ -205,6 +205,17 @@
       padding: 12px;
       min-height: 280px;
       transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .group-box:hover {
+      border-color: #999;
+    }
+
+    .group-box.selected-group {
+      border: 2px solid #dc3545;
+      background: #fff5f5;
+      box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
     }
 
     .group-box.drag-over {
@@ -556,6 +567,8 @@
               <h3>Starting Groups</h3>
               <div class="auto-buttons">
                 <button onclick="openAutoGroupModal()">Auto Group</button>
+                <button onclick="addNewGroup()" style="background: #28a745;">+ Add Group</button>
+                <button onclick="removeSelectedGroup()" style="background: #dc3545;">- Remove Group</button>
                 <button onclick="clearGroups()" class="secondary">Clear All</button>
               </div>
             </div>
@@ -1108,6 +1121,12 @@
         box.addEventListener('dragover', handleDragOver);
         box.addEventListener('drop', handleDrop);
         box.addEventListener('dragleave', handleDragLeave);
+        // Add click to select group
+        box.addEventListener('click', (e) => {
+          // Don't select if clicking on a player card or remove button
+          if (e.target.closest('.group-player-card') || e.target.closest('.remove-player')) return;
+          selectGroup(box.getAttribute('data-group-id'));
+        });
       });
       
       // Add drag listeners for players in groups
@@ -1116,6 +1135,13 @@
         card.addEventListener('dragend', handleDragEnd);
       });
       
+      // Highlight selected group
+      if (selectedGroupId) {
+        const selectedBox = container.querySelector(`[data-group-id="${selectedGroupId}"]`);
+        if (selectedBox) {
+          selectedBox.classList.add('selected-group');
+        }
+      }
       renderPlayers();
     }
 
@@ -1220,6 +1246,18 @@
         group.players = group.players.filter(p => p.reg !== reg);
         renderGroups();
       }
+    }
+
+    // Select a group for removal or other actions
+    function selectGroup(groupId) {
+      if (selectedGroupId === groupId) {
+        // Deselect if clicking the same group
+        selectedGroupId = null;
+      } else {
+        selectedGroupId = groupId;
+      }
+      // Re-render to show selection
+      renderGroups();
     }
 
     // Open auto group modal
@@ -1523,11 +1561,12 @@
           });
         } else {
           // Use default distribution (equal group sizes)
+          // Smaller groups go FIRST (they play faster)
           const remainder = sorted.length % groupSize;
           let playerIndex = 0;
           
           if (remainder === 0) {
-            // Perfect division
+            // Perfect division - all groups same size
             const numGroups = sorted.length / groupSize;
             for (let i = 0; i < numGroups; i++) {
               const groupPlayers = sorted.slice(i * groupSize, (i + 1) * groupSize);
@@ -1539,10 +1578,29 @@
               });
             }
           } else {
-            // Has remainder - use default behavior
+            // Has remainder - put smaller groups FIRST (they play faster)
             const numGroups = Math.ceil(sorted.length / groupSize);
-            for (let i = 0; i < numGroups; i++) {
-              const groupPlayers = sorted.slice(i * groupSize, (i + 1) * groupSize);
+            const numSmallerGroups = groupSize - remainder; // Number of groups that will have (groupSize - 1) players
+            const smallerGroupSize = groupSize - 1;
+            
+            // First create the smaller groups
+            for (let i = 0; i < numSmallerGroups; i++) {
+              const groupPlayers = sorted.slice(playerIndex, playerIndex + smallerGroupSize);
+              playerIndex += smallerGroupSize;
+              if (groupPlayers.length > 0) {
+                groups.push({
+                  groupId: `group-${Date.now()}-${groups.length}`,
+                  players: groupPlayers,
+                  time: calculateStartTime(groups.length, protocol, startTime, interval),
+                  tee: calculateTee(groups.length, protocol)
+                });
+              }
+            }
+            
+            // Then create the full-size groups
+            while (playerIndex < sorted.length) {
+              const groupPlayers = sorted.slice(playerIndex, playerIndex + groupSize);
+              playerIndex += groupSize;
               if (groupPlayers.length > 0) {
                 groups.push({
                   groupId: `group-${Date.now()}-${groups.length}`,
@@ -1600,6 +1658,86 @@
       }
       
       return result;
+    }
+
+    // Add a new empty group
+    function addNewGroup() {
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      
+      const newGroup = {
+        groupId: `group-${Date.now()}-${groups.length}`,
+        players: [],
+        time: calculateStartTime(groups.length, protocol, startTime, interval),
+        tee: calculateTee(groups.length, protocol)
+      };
+      
+      groups.push(newGroup);
+      renderGroups();
+    }
+
+    // Track selected group for removal
+    let selectedGroupId = null;
+
+    // Remove selected/last empty group
+    function removeSelectedGroup() {
+      if (groups.length === 0) {
+        alert('No groups to remove.');
+        return;
+      }
+      
+      // If a group is selected, remove it
+      if (selectedGroupId) {
+        const groupIndex = groups.findIndex(g => g.groupId === selectedGroupId);
+        if (groupIndex !== -1) {
+          const group = groups[groupIndex];
+          if (group.players.length > 0) {
+            if (!confirm(`Group has ${group.players.length} player(s). Remove anyway? Players will be moved back to the unassigned list.`)) {
+              return;
+            }
+          }
+          groups.splice(groupIndex, 1);
+          selectedGroupId = null;
+          // Recalculate times for remaining groups
+          recalculateGroupTimes();
+          renderGroups();
+          return;
+        }
+      }
+      
+      // Otherwise, try to remove the last empty group
+      for (let i = groups.length - 1; i >= 0; i--) {
+        if (groups[i].players.length === 0) {
+          groups.splice(i, 1);
+          recalculateGroupTimes();
+          renderGroups();
+          return;
+        }
+      }
+      
+      // If no empty groups, ask to remove the last group
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup.players.length > 0) {
+        if (!confirm(`Last group has ${lastGroup.players.length} player(s). Remove anyway? Players will be moved back to the unassigned list.`)) {
+          return;
+        }
+      }
+      groups.pop();
+      recalculateGroupTimes();
+      renderGroups();
+    }
+
+    // Recalculate start times for all groups after adding/removing
+    function recalculateGroupTimes() {
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      
+      groups.forEach((group, index) => {
+        group.time = calculateStartTime(index, protocol, startTime, interval);
+        group.tee = calculateTee(index, protocol);
+      });
     }
 
     // Clear all groups
