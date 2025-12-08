@@ -901,17 +901,30 @@
         var roundIndex = tournament.meta.roundIds ? tournament.meta.roundIds.indexOf(currentRound) : 0;
         if (roundIndex < 0) roundIndex = 0;
         var roundInfo = tournament.meta.roundsData[roundIndex];
-        if (roundInfo && roundInfo.courseId) {
-          courseData = courses.find(function(c) { return c.courseId === roundInfo.courseId; });
+        // Check both 'course' (actual field name) and 'courseId' for compatibility
+        var courseIdentifier = roundInfo && (roundInfo.course || roundInfo.courseId);
+        if (courseIdentifier) {
+          courseData = courses.find(function(c) { 
+            return c.courseId === courseIdentifier || c.fullName === courseIdentifier || c.name === courseIdentifier;
+          });
         }
       }
 
       if (!courseData && tournament.courseId) {
         courseData = courses.find(function(c) { return c.courseId === tournament.courseId; });
       }
+      
+      if (!courseData && tournament.course) {
+        courseData = courses.find(function(c) { 
+          return c.courseId === tournament.course || c.fullName === tournament.course || c.name === tournament.course;
+        });
+      }
 
       if (!courseData) {
+        console.warn('Could not find course data, using defaults');
         courseData = { pars: [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4] };
+      } else {
+        console.log('Loaded course:', courseData.fullName || courseData.name, 'Pars:', courseData.pars);
       }
     }
 
