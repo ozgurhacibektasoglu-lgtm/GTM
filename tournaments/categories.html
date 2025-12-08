@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Tournament Categories</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .categories-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
@@ -240,6 +246,12 @@
 
       function saveTournaments(list) {
         localStorage.setItem('tournaments', JSON.stringify(list || []));
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('tournaments', list || []).then(() => {
+            console.log('✓ Tournaments (with categories) synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
       }
 
       function getTournament() {
