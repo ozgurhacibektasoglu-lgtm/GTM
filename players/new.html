@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Create Player</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .form-card{max-width:720px;margin:28px auto;padding:18px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
@@ -122,14 +128,20 @@
 
     <script>
       function getPlayers(){ try{ const raw = localStorage.getItem('players'); return raw?JSON.parse(raw):[] }catch(e){return[]} }
+      
       function savePlayers(list){
         try{
           const prev = localStorage.getItem('players');
           if(prev) localStorage.setItem('players_backup', prev);
           localStorage.setItem('players', JSON.stringify(list||[]));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
+          // Sync to Firebase
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('players', list || []);
+          }
         }catch(e){ console.error('savePlayers error', e); }
       }
+      
       function getCurrentUser(){ try{ const raw = localStorage.getItem('currentUser'); return raw?JSON.parse(raw):{id:'main',name:'Main Admin',role:'admin'}}catch(e){return {id:'main',name:'Main Admin',role:'admin'}} }
 
       function padNum(n, width=3){ const s = String(n); return s.padStart(width, '0'); }

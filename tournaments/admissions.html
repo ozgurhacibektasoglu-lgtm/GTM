@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Player Admissions</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .admissions-container{max-width:1400px;margin:24px auto;padding:16px}
@@ -1769,9 +1775,12 @@
           players.push(playerData);
         }
 
-        // Save to localStorage
+        // Save to localStorage and Firebase
         try {
           localStorage.setItem('players', JSON.stringify(players));
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('players', players);
+          }
         } catch(e) {
           alert('Error saving player: ' + e.message);
           return;

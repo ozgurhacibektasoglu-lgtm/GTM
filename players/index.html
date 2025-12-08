@@ -95,18 +95,24 @@
     <script>
       // Players admin: stored in localStorage under 'players'
       // getPlayers() and savePlayers() are now in firebase-config.js
-      // Override savePlayers to keep backup functionality
-      const originalSavePlayers = savePlayers;
-      savePlayers = function(list) {
+      // Keep backup functionality by wrapping the Firebase save
+      function savePlayersWithBackup(list) {
         try{
           // keep a backup of previous state to help recovery
           const prev = localStorage.getItem('players');
           if(prev) localStorage.setItem('players_backup', prev);
           localStorage.setItem('players_backup_ts', new Date().toISOString());
         }catch(e){ console.error('backup error', e); }
-        // Call the Firebase-enabled save
-        originalSavePlayers(list);
+        
+        // Save to localStorage and Firebase
+        localStorage.setItem('players', JSON.stringify(list || []));
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('players', list || []);
+        }
       }
+      
+      // Use the wrapped version
+      const savePlayers = savePlayersWithBackup;
 
       // sample data disabled - use import instead
       function ensureSample() {
