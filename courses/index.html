@@ -111,7 +111,76 @@
     </div>
 
     <script>
-      // getCourses() and saveCourses() are now in firebase-config.js
+      // Local functions for courses
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse courses from localStorage', err);
+          return [];
+        }
+      }
+
+      // Flag to prevent sync loops
+      let isSyncingCourses = false;
+
+      function saveCourses(list) {
+        try {
+          localStorage.setItem('courses', JSON.stringify(list || []));
+          
+          // Mark that we're syncing to prevent incoming updates from overwriting
+          isSyncingCourses = true;
+          
+          // Sync to Firebase automatically
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('courses', list || []).then(function() {
+              console.log('✓ Courses synced to cloud:', (list || []).length);
+              setTimeout(function() { isSyncingCourses = false; }, 2000);
+            }).catch(function() {
+              isSyncingCourses = false;
+            });
+          } else {
+            isSyncingCourses = false;
+          }
+        } catch(e) {
+          console.error('saveCourses error', e);
+          isSyncingCourses = false;
+        }
+      }
+
+      // Real-time listener for Firebase updates
+      function setupCoursesRealtimeSync() {
+        if (typeof firebase === 'undefined' || !firebase.database) {
+          console.log('Firebase not available for courses realtime sync');
+          return;
+        }
+        
+        try {
+          firebase.database().ref('courses').on('value', function(snapshot) {
+            if (isSyncingCourses) {
+              console.log('⏸ Ignoring Firebase courses update (local save in progress)');
+              return;
+            }
+            
+            const data = snapshot.val();
+            if (data && Array.isArray(data)) {
+              const currentLocal = getCourses();
+              
+              if (data.length > currentLocal.length) {
+                console.log('📥 Received courses from cloud:', data.length, '(local had', currentLocal.length, ')');
+                localStorage.setItem('courses', JSON.stringify(data));
+                loadCourses();
+              } else {
+                console.log('📥 Firebase has', data.length, 'courses, local has', currentLocal.length, '- keeping local');
+              }
+            }
+          });
+          console.log('✓ Courses real-time sync enabled');
+        } catch(e) {
+          console.error('Courses realtime sync setup failed:', e);
+        }
+      }
 
       let selectedCourseIndex = null;
       let allCourses = []; // Store all courses for filtering
@@ -575,11 +644,11 @@
         window.location.href = 'new.html?template=true';
       }
 
-      // Initialize: Load from Firebase if available, otherwise use localStorage
+      // Initialize: Load from Firebase and setup real-time sync
       async function initializeCourses() {
-        console.log('Initializing courses, syncEnabled:', syncEnabled);
+        console.log('Initializing courses with real-time sync');
         
-        // Try to load from Firebase
+        // Try to load from Firebase first
         if (typeof loadCoursesFromFirebase !== 'undefined') {
           try {
             const firebaseCourses = await loadCoursesFromFirebase();
@@ -594,6 +663,9 @@
         }
         
         loadCourses();
+        
+        // Setup real-time sync after initial load
+        setupCoursesRealtimeSync();
       }
 
       // Wait a moment for Firebase to initialize, then load

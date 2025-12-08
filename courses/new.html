@@ -192,6 +192,11 @@
       </section>
     </main>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
     <script>
       const params = new URLSearchParams(window.location.search);
       const editIndexParam = params.get('edit');
@@ -210,6 +215,12 @@
 
       function saveCourses(list) {
         localStorage.setItem('courses', JSON.stringify(list || []));
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('courses', list).then(() => {
+            console.log('✓ Courses synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
       }
 
       function getNextCourseId() {
