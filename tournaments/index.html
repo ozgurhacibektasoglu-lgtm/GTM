@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Tournaments</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .tournaments-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
@@ -104,20 +110,7 @@
     <script>
 
       // Use localStorage to persist tournaments so new entries appear in the list
-      function getTournaments() {
-        try {
-          const raw = localStorage.getItem('tournaments');
-          if (!raw) return [];
-          return JSON.parse(raw);
-        } catch (err) {
-          console.error('Failed to parse tournaments from localStorage', err);
-          return [];
-        }
-      }
-
-      function saveTournaments(list) {
-        localStorage.setItem('tournaments', JSON.stringify(list || []));
-      }
+      // getTournaments() and saveTournaments() are now in firebase-config.js
 
       let selectedTournamentIndex = null;
       let selectedTournamentOrigIndex = null;
@@ -303,11 +296,35 @@
         });
       }
 
-      // Load tournaments on page load
-      loadTournaments();
-      setupSorting();
-      renderSortIndicators();
-      restoreLastSelection();
+      // Initialize: Load from Firebase if available
+      async function initializeTournaments() {
+        if (syncEnabled) {
+          const firebaseTournaments = await loadTournamentsFromFirebase();
+          if (firebaseTournaments && firebaseTournaments.length > 0) {
+            console.log('Loaded tournaments from Firebase');
+          }
+        }
+        loadTournaments();
+        setupSorting();
+        renderSortIndicators();
+        restoreLastSelection();
+      }
+
+      // Call initialization
+      if (syncEnabled) {
+        initializeTournaments();
+      } else {
+        setTimeout(() => {
+          if (syncEnabled) {
+            initializeTournaments();
+          } else {
+            loadTournaments();
+            setupSorting();
+            renderSortIndicators();
+            restoreLastSelection();
+          }
+        }, 1000);
+      }
 
       // Button event listeners
       document.getElementById('btn-new-tournament').addEventListener('click', () => {

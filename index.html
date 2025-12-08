@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Golf Tournament Manager</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
     <link rel="stylesheet" href="styles.css">
     <style>
       body {
@@ -148,10 +154,29 @@
         </button>
       </nav>
 
-      <p class="footer">GTM v1.0</p>
+      <p class="footer">
+        GTM v1.0 
+        <span id="sync-status" style="margin-left: 10px; font-size: 11px;">
+          <span style="color: #fbbf24;">⚡ Connecting...</span>
+        </span>
+      </p>
     </main>
 
     <script>
+      // Update sync status indicator
+      function updateSyncStatus() {
+        const statusEl = document.getElementById('sync-status');
+        if (syncEnabled) {
+          statusEl.innerHTML = '<span style="color: #10b981;">✓ Cloud Sync Active</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color: #94a3b8;">○ Local Only</span>';
+        }
+      }
+      
+      // Check sync status periodically
+      setTimeout(updateSyncStatus, 1500);
+      setInterval(updateSyncStatus, 5000);
+
       document.getElementById('btn-tournaments').addEventListener('click', () => {
         window.location.href = 'tournaments/index.html';
       });

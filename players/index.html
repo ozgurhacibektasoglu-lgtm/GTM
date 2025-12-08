@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Players Administration</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .players-container{max-width:1200px;margin:24px auto;padding:16px}
@@ -88,18 +94,18 @@
 
     <script>
       // Players admin: stored in localStorage under 'players'
-      function getPlayers() {
-        try { const raw = localStorage.getItem('players'); return raw ? JSON.parse(raw) : [] } catch(e){console.error(e);return[]}
-      }
-
-      function savePlayers(list){
+      // getPlayers() and savePlayers() are now in firebase-config.js
+      // Override savePlayers to keep backup functionality
+      const originalSavePlayers = savePlayers;
+      savePlayers = function(list) {
         try{
           // keep a backup of previous state to help recovery
           const prev = localStorage.getItem('players');
           if(prev) localStorage.setItem('players_backup', prev);
-          localStorage.setItem('players', JSON.stringify(list||[]));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
-        }catch(e){ console.error('savePlayers error', e); }
+        }catch(e){ console.error('backup error', e); }
+        // Call the Firebase-enabled save
+        originalSavePlayers(list);
       }
 
       // sample data disabled - use import instead
@@ -344,8 +350,32 @@
       renderUserSelector();
       setCurrentUser(getCurrentUser());
       setupSorting();
-      loadPlayers();
-      renderSortIndicators();
+      
+      // Initialize: Load from Firebase if available
+      async function initializePlayers() {
+        if (syncEnabled) {
+          const firebasePlayers = await loadPlayersFromFirebase();
+          if (firebasePlayers && firebasePlayers.length > 0) {
+            console.log('Loaded players from Firebase');
+          }
+        }
+        loadPlayers();
+        renderSortIndicators();
+      }
+
+      // Call initialization
+      if (syncEnabled) {
+        initializePlayers();
+      } else {
+        setTimeout(() => {
+          if (syncEnabled) {
+            initializePlayers();
+          } else {
+            loadPlayers();
+            renderSortIndicators();
+          }
+        }, 1000);
+      }
 
       // Replace history so back button goes to main page instead of previous search page
       history.replaceState(null, '', location.href);

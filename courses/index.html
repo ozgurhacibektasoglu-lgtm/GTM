@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Courses</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .courses-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
@@ -105,20 +111,7 @@
     </div>
 
     <script>
-      function getCourses() {
-        try {
-          const raw = localStorage.getItem('courses');
-          if (!raw) return [];
-          return JSON.parse(raw);
-        } catch (err) {
-          console.error('Failed to parse courses from localStorage', err);
-          return [];
-        }
-      }
-
-      function saveCourses(list) {
-        localStorage.setItem('courses', JSON.stringify(list || []));
-      }
+      // getCourses() and saveCourses() are now in firebase-config.js
 
       let selectedCourseIndex = null;
       let allCourses = []; // Store all courses for filtering
@@ -207,60 +200,87 @@
       }
 
       function exportCoursesToCSV() {
-        const courses = getCourses();
-        if (courses.length === 0) {
-          alert('No courses to export.');
-          return;
-        }
-
-        let csv = 'City,Course Name,Short Name,';
-        // Add hole headers
-        for (let i = 1; i <= 18; i++) {
-          csv += `Par ${i},SI ${i},`;
-        }
-        // Add tee headers
-        csv += 'Tees,Genders,Ratings,Slopes,Lengths\n';
-
-        courses.forEach(course => {
-          csv += `"${course.city}","${course.fullName || course.name}","${course.shortName || ''}",`;
-          
-          // Add par and SI data
-          if (course.pars) {
-            course.pars.forEach(par => csv += `${par},`);
-          } else {
-            csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
+        try {
+          const allCourses = getCourses();
+          if (allCourses.length === 0) {
+            alert('No courses to export.');
+            return;
           }
+
+          // Export selected course if one is selected, otherwise export all
+          let courses;
+          let filename;
           
-          if (course.strokeIndexes) {
-            course.strokeIndexes.forEach(si => csv += `${si},`);
+          if (selectedCourseIndex !== null) {
+            courses = [allCourses[selectedCourseIndex]];
+            const courseName = courses[0].shortName || courses[0].fullName || 'course';
+            filename = `${courseName.replace(/\s+/g, '_')}.csv`;
           } else {
-            csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
+            courses = allCourses;
+            filename = 'courses.csv';
           }
-          
-          // Add tee data
-          if (course.tees) {
-            csv += `"${course.tees.join(';')}",`;
-            csv += `"${course.genders.join(';')}",`;
+
+          let csv = 'City,Course Name,Short Name,';
+          // Add hole headers
+          for (let i = 1; i <= 18; i++) {
+            csv += `Par ${i},SI ${i},`;
+          }
+          // Add tee headers
+          csv += 'Tees,Genders,Ratings,Slopes,Lengths\n';
+
+          courses.forEach(course => {
+            csv += `"${course.city}","${course.fullName || course.name}","${course.shortName || ''}",`;
             
-            if (course.teeData) {
-              const ratings = course.teeData.map(td => td.rating).join(';');
-              const slopes = course.teeData.map(td => td.slope).join(';');
-              const yardages = course.teeData.map(td => (td.lengths || td.yardages || []).join('-')).join(';');
-              
-              csv += `"${ratings}","${slopes}","${yardages}"`;
+            // Add par and SI data
+            if (course.pars) {
+              course.pars.forEach(par => csv += `${par},`);
+            } else {
+              csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
             }
-          }
-          
-          csv += '\n';
-        });
+            
+            if (course.strokeIndexes) {
+              course.strokeIndexes.forEach(si => csv += `${si},`);
+            } else {
+              csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
+            }
+            
+            // Add tee data
+            if (course.tees) {
+              csv += `"${course.tees.join(';')}",`;
+              csv += `"${course.genders.join(';')}",`;
+              
+              if (course.teeData) {
+                const ratings = course.teeData.map(td => td.rating).join(';');
+                const slopes = course.teeData.map(td => td.slope).join(';');
+                const yardages = course.teeData.map(td => (td.lengths || td.yardages || []).join('-')).join(';');
+                
+                csv += `"${ratings}","${slopes}","${yardages}"`;
+              }
+            }
+            
+            csv += '\n';
+          });
 
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'courses.csv';
-        a.click();
-        window.URL.revokeObjectURL(url);
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          
+          alert(`Exported ${courses.length} course${courses.length > 1 ? 's' : ''} successfully.`);
+        } catch (err) {
+          console.error('Export error:', err);
+          alert('Error exporting courses: ' + err.message);
+        }
       }
 
       function importCoursesFromCSV() {
@@ -524,7 +544,61 @@
 
       function hideStatistics() {
         document.getElementById('stats-modal').style.display = 'none';
-      }      loadCourses();
+      }
+
+      function showTemplates() {
+        const templateKeys = Object.keys(courseTemplates);
+        if (templateKeys.length === 0) {
+          alert('No templates available.');
+          return;
+        }
+
+        let message = 'Select a template to import:\n\n';
+        templateKeys.forEach((key, idx) => {
+          message += `${idx + 1}. ${key}\n`;
+        });
+
+        const selection = prompt(message + '\nEnter template number:');
+        if (!selection) return;
+
+        const index = parseInt(selection) - 1;
+        if (index < 0 || index >= templateKeys.length) {
+          alert('Invalid selection.');
+          return;
+        }
+
+        const templateKey = templateKeys[index];
+        const template = { ...courseTemplates[templateKey] };
+        
+        // Store template in localStorage temporarily so the new.html page can access it
+        localStorage.setItem('courseTemplate', JSON.stringify(template));
+        window.location.href = 'new.html?template=true';
+      }
+
+      // Initialize: Load from Firebase if available, otherwise use localStorage
+      async function initializeCourses() {
+        if (syncEnabled) {
+          const firebaseCourses = await loadCoursesFromFirebase();
+          if (firebaseCourses && firebaseCourses.length > 0) {
+            console.log('Loaded courses from Firebase');
+          }
+        }
+        loadCourses();
+      }
+
+      // Call initialization
+      if (syncEnabled) {
+        initializeCourses();
+      } else {
+        // If Firebase not ready yet, wait a bit and try, otherwise just load from localStorage
+        setTimeout(() => {
+          if (syncEnabled) {
+            initializeCourses();
+          } else {
+            loadCourses();
+          }
+        }, 1000);
+      }
 
       // Search and filter functionality
       document.getElementById('search-input').addEventListener('input', loadCourses);
