@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Import TGF Players</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  
   <link rel="stylesheet" href="../styles.css">
   <style>
     body {
@@ -438,6 +444,15 @@
         
         if (!verify || verify.length < json.length * 0.9) {
           throw new Error('Data not saved properly');
+        }
+        
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('players', players).then(function() {
+            console.log('✓ Players synced to Firebase:', players.length);
+          }).catch(function(e) {
+            console.error('Firebase sync failed:', e);
+          });
         }
       } catch(e) {
         console.error('savePlayers error:', e);
