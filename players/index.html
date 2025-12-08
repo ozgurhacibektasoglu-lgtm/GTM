@@ -382,23 +382,13 @@
       setCurrentUser(getCurrentUser());
       setupSorting();
       
-      // Load players from localStorage first, then try Firebase
+      // Load players from localStorage first
       loadPlayers();
       renderSortIndicators();
       
-      // After page loads, try to sync with Firebase
-      setTimeout(function() {
-        if (typeof syncEnabled !== 'undefined' && syncEnabled && typeof loadPlayersFromFirebase !== 'undefined') {
-          loadPlayersFromFirebase().then(function(data) {
-            if (data && data.length > 0) {
-              console.log('Loaded', data.length, 'players from Firebase');
-              loadPlayers(); // Refresh the display
-            }
-          }).catch(function(e) {
-            console.log('Firebase load skipped:', e);
-          });
-        }
-      }, 2000);
+      // NOTE: We NO longer auto-load from Firebase on page load
+      // This prevents Firebase from overwriting newly imported local data
+      // Use "Pull from Cloud" button on home page to manually sync from Firebase
 
       // Replace history so back button goes to main page instead of previous search page
       history.replaceState(null, '', location.href);
