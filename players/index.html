@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Players Administration</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       .players-container{max-width:1200px;margin:24px auto;padding:16px}
@@ -376,9 +382,23 @@
       setCurrentUser(getCurrentUser());
       setupSorting();
       
-      // Load players immediately (Firebase disabled for now)
+      // Load players from localStorage first, then try Firebase
       loadPlayers();
       renderSortIndicators();
+      
+      // After page loads, try to sync with Firebase
+      setTimeout(function() {
+        if (typeof syncEnabled !== 'undefined' && syncEnabled && typeof loadPlayersFromFirebase !== 'undefined') {
+          loadPlayersFromFirebase().then(function(data) {
+            if (data && data.length > 0) {
+              console.log('Loaded', data.length, 'players from Firebase');
+              loadPlayers(); // Refresh the display
+            }
+          }).catch(function(e) {
+            console.log('Firebase load skipped:', e);
+          });
+        }
+      }, 2000);
 
       // Replace history so back button goes to main page instead of previous search page
       history.replaceState(null, '', location.href);
