@@ -94,25 +94,50 @@
 
     <script>
       // Players admin: stored in localStorage under 'players'
-      // getPlayers() and savePlayers() are now in firebase-config.js
-      // Keep backup functionality by wrapping the Firebase save
-      function savePlayersWithBackup(list) {
+      
+      // Auto-recovery: If players array is empty but backup exists, restore it
+      (function autoRecover() {
+        try {
+          const current = localStorage.getItem('players');
+          const backup = localStorage.getItem('players_backup');
+          
+          if ((!current || current === '[]' || current === 'null') && backup && backup !== '[]') {
+            console.log('⚠️ Players data missing, restoring from backup...');
+            localStorage.setItem('players', backup);
+            console.log('✓ Players restored from backup');
+          }
+        } catch(e) {
+          console.error('Auto-recovery failed:', e);
+        }
+      })();
+      
+      // Local functions for players
+      function getPlayers() {
+        try { 
+          const raw = localStorage.getItem('players'); 
+          return raw ? JSON.parse(raw) : [];
+        } catch(e) {
+          console.error(e);
+          return [];
+        }
+      }
+      
+      function savePlayers(list) {
         try{
           // keep a backup of previous state to help recovery
           const prev = localStorage.getItem('players');
           if(prev) localStorage.setItem('players_backup', prev);
+          localStorage.setItem('players', JSON.stringify(list || []));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
-        }catch(e){ console.error('backup error', e); }
-        
-        // Save to localStorage and Firebase
-        localStorage.setItem('players', JSON.stringify(list || []));
-        if (typeof syncToFirebase !== 'undefined') {
-          syncToFirebase('players', list || []);
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+            syncToFirebase('players', list || []);
+          }
+        } catch(e) { 
+          console.error('savePlayers error', e); 
         }
       }
-      
-      // Use the wrapped version
-      const savePlayers = savePlayersWithBackup;
 
       // sample data disabled - use import instead
       function ensureSample() {
