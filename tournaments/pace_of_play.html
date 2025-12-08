@@ -896,25 +896,36 @@
 
     function loadCourseData() {
       var courses = getCourses();
+      console.log('All courses:', courses.map(function(c) { return { id: c.courseId, name: c.fullName || c.name }; }));
+      console.log('Tournament meta:', tournament.meta);
       
       if (tournament.meta && tournament.meta.roundsData) {
         var roundIndex = tournament.meta.roundIds ? tournament.meta.roundIds.indexOf(currentRound) : 0;
         if (roundIndex < 0) roundIndex = 0;
         var roundInfo = tournament.meta.roundsData[roundIndex];
+        console.log('Round info:', roundInfo);
+        console.log('Current round:', currentRound, 'Round index:', roundIndex);
+        
         // Check both 'course' (actual field name) and 'courseId' for compatibility
         var courseIdentifier = roundInfo && (roundInfo.course || roundInfo.courseId);
+        console.log('Course identifier from round:', courseIdentifier);
+        
         if (courseIdentifier) {
           courseData = courses.find(function(c) { 
-            return c.courseId === courseIdentifier || c.fullName === courseIdentifier || c.name === courseIdentifier;
+            var match = c.courseId === courseIdentifier || c.fullName === courseIdentifier || c.name === courseIdentifier;
+            if (match) console.log('Found matching course:', c.fullName || c.name);
+            return match;
           });
         }
       }
 
       if (!courseData && tournament.courseId) {
+        console.log('Trying tournament.courseId:', tournament.courseId);
         courseData = courses.find(function(c) { return c.courseId === tournament.courseId; });
       }
       
       if (!courseData && tournament.course) {
+        console.log('Trying tournament.course:', tournament.course);
         courseData = courses.find(function(c) { 
           return c.courseId === tournament.course || c.fullName === tournament.course || c.name === tournament.course;
         });
@@ -924,7 +935,8 @@
         console.warn('Could not find course data, using defaults');
         courseData = { pars: [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4] };
       } else {
-        console.log('Loaded course:', courseData.fullName || courseData.name, 'Pars:', courseData.pars);
+        console.log('Final loaded course:', courseData.fullName || courseData.name);
+        console.log('Course pars:', courseData.pars);
       }
     }
 
