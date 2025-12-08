@@ -190,7 +190,14 @@
       function loadPlayers() {
         const tbody = document.getElementById('players-body');
         const filter = (document.getElementById('player-search').value || '').toLowerCase();
-        const list = getPlayers();
+        const list = getPlayers() || [];
+
+        // Safety check - ensure list is an array
+        if (!Array.isArray(list)) {
+          console.error('Players data is not an array:', list);
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc3545;">Error loading players. Try refreshing the page.</td></tr>';
+          return;
+        }
 
         // augment with orig index and calculated age
         const augmented = list.map((p, i) => Object.assign({_origIndex:i, age: calculateAge(p.dob)}, p));
