@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draw List - Print</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      background: #f5f5f5;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .options-panel {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .options-panel h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .option-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .option-group input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #0b6efd;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .preview-area {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 400px;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: white;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .options-panel,
+      .button-group {
+        display: none !important;
+      }
+
+      @page {
+        size: A4;
+        margin: 8mm 10mm;
+      }
+
+      .preview-area {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .print-header {
+        page-break-after: avoid;
+        margin-bottom: 3px;
+        padding-bottom: 3px;
+        border-bottom: 1px solid #333;
+      }
+
+      .print-header h1 {
+        font-size: 12px;
+        margin: 0 0 1px 0;
+      }
+
+      .print-header .subtitle {
+        font-size: 8px;
+      }
+
+      tbody.group-wrapper {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      table {
+        page-break-inside: auto;
+        margin-top: 0;
+        border-collapse: collapse;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      .draw-table th {
+        padding: 5px 5px;
+        font-size: 11px;
+        border-bottom: 0.5px solid #999;
+        line-height: 1.3;
+        height: 16px;
+      }
+
+      .draw-table tbody tr {
+        height: 22px !important;
+        line-height: 1.4 !important;
+      }
+
+      .draw-table td {
+        padding: 4px 5px !important;
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+        border-bottom: none !important;
+        height: 22px !important;
+        vertical-align: middle !important;
+      }
+
+      .draw-table td strong {
+        font-weight: 600;
+        line-height: 1.4 !important;
+        display: inline;
+      }
+
+      .group-separator {
+        border-top: 1px solid #666 !important;
+      }
+      
+      .group-separator td {
+        padding-top: 4px !important;
+      }
+      
+      .draw-table td.time-cell,
+      .draw-table td.tee-cell {
+        padding: 4px 5px !important;
+        line-height: 1.4 !important;
+      }
+
+      .draw-table {
+        margin-top: 0;
+      }
+    }
+
+    /* Table styles */
+    .draw-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .draw-table thead {
+      background: #f8f9fa;
+    }
+
+    .draw-table th {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 2px solid #dee2e6;
+      font-weight: 600;
+      font-size: 13px;
+      color: #495057;
+    }
+
+    .draw-table th.center-header,
+    .draw-table th:first-child,
+    .draw-table th:nth-child(2) {
+      text-align: center;
+    }
+
+    .draw-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #dee2e6;
+      font-size: 13px;
+    }
+
+    .draw-table td.time-cell,
+    .draw-table td.tee-cell,
+    .draw-table td.tee-color-cell,
+    .draw-table td.hcp-cell,
+    .draw-table td.phcp-cell,
+    .draw-table td.category-cell,
+    .draw-table td.buggy-cell {
+      vertical-align: middle;
+      text-align: center;
+    }
+    
+    .buggy-cell {
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .buggy-cell:hover {
+      background: #e3f2fd !important;
+    }
+
+    .draw-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .group-header {
+      background: #e9ecef !important;
+      font-weight: 600;
+    }
+
+    .male-row {
+      background: #e0f2fe;
+    }
+
+    .female-row {
+      background: #fce7f3;
+    }
+
+    .group-separator {
+      border-top: 2px solid #333 !important;
+    }
+
+    .group-wrapper {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .print-header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 15px;
+    }
+
+    .print-header h1 {
+      margin: 0 0 5px 0;
+      font-size: 24px;
+    }
+
+    .print-header .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Options Panel -->
+    <div class="options-panel">
+      <h3>Draw List Options</h3>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="round-select" style="font-weight: 600; margin-right: 10px;">Select Round:</label>
+        <select id="round-select" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px;" onchange="generatePreview()">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+      
+      <div class="options-grid">
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-club" checked>
+            Club/Country
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-hcp" checked>
+            Handicap
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-phcp">
+            Playing Handicap
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-tee-color" checked>
+            Tee Color
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-category">
+            Category
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-buggy">
+            Buggy No
+          </label>
+        </div>
+        <div class="option-group">
+          <label>
+            <input type="checkbox" id="opt-group-by-tee">
+            Group by Tee
+          </label>
+        </div>
+      </div>
+      
+      <div id="buggy-settings" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; display: none;">
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+          <div style="flex: 0 0 200px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Starting Buggy Number:</label>
+            <input type="number" id="buggy-start" value="1" min="1" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; width: 100%;">
+          </div>
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Skip Buggy Numbers:</label>
+            <input type="text" id="buggy-skip" placeholder="e.g., 4, 7, 12" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; width: 100%;">
+            <small style="display: block; margin-top: 4px; color: #666;">Enter numbers separated by commas</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn btn-primary" onclick="generatePreview()">Generate Preview</button>
+        <button class="btn btn-success" onclick="window.print()">Print</button>
+        <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+      </div>
+    </div>
+
+    <!-- Preview Area -->
+    <div class="preview-area" id="preview-area">
+      <p style="color: #999; text-align: center;">Click "Generate Preview" to see the draw list</p>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('tournamentId');
+    
+    // Store manual buggy assignments: { 'groupIdx_playerIdx': buggyNumber }
+    let manualBuggyAssignments = {};
+    
+    function loadManualBuggyAssignments() {
+      try {
+        const saved = localStorage.getItem('manualBuggyAssignments_' + tournamentId);
+        if (saved) {
+          manualBuggyAssignments = JSON.parse(saved);
+        }
+      } catch (err) {
+        console.error('Failed to load manual buggy assignments', err);
+      }
+    }
+    
+    function saveManualBuggyAssignments() {
+      try {
+        localStorage.setItem('manualBuggyAssignments_' + tournamentId, JSON.stringify(manualBuggyAssignments));
+      } catch (err) {
+        console.error('Failed to save manual buggy assignments', err);
+      }
+    }
+
+    function getTournaments() {
+      try {
+        const raw = localStorage.getItem('tournaments');
+        return raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        console.error('Failed to parse tournaments', err);
+        return [];
+      }
+    }
+
+    function getDrawData(roundId) {
+      try {
+        // Draw data is stored in a single 'draws' object with roundId as key
+        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        return draws[roundId] || null;
+      } catch (err) {
+        console.error('Failed to parse draw data', err);
+        return null;
+      }
+    }
+
+    function populateRoundSelect() {
+      const tournaments = getTournaments();
+      const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+      
+      if (!tournament) return;
+
+      const roundSelect = document.getElementById('round-select');
+      
+      // Build round options matching draw.html logic
+      if (tournament.meta && tournament.meta.rounds > 1) {
+        roundSelect.innerHTML = '';
+        tournament.meta.roundsData.forEach((round, index) => {
+          const option = document.createElement('option');
+          // Use roundId from roundIds array or round object, or construct it
+          const roundId = tournament.meta.roundIds?.[index] || round.roundId || `${tournament.tournamentId}_R${index + 1}`;
+          option.value = roundId;
+          const date = round.date ? new Date(round.date).toLocaleDateString() : 'TBD';
+          const course = round.course || '';
+          option.textContent = `Round ${index + 1}: ${date}${course ? ' (' + course + ')' : ''}`;
+          roundSelect.appendChild(option);
+        });
+      } else {
+        // Single round tournament
+        roundSelect.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = tournament.tournamentId;
+        const date = tournament.date ? new Date(tournament.date).toLocaleDateString() : 'TBD';
+        option.textContent = `Single Round: ${date}`;
+        roundSelect.appendChild(option);
+      }
+    }
+
+    function getAllPlayers() {
+      try {
+        const raw = localStorage.getItem('players');
+        return raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function getAdmittedPlayers(roundId) {
+      try {
+        const raw = localStorage.getItem('admittedPlayers');
+        const allAdmitted = raw ? JSON.parse(raw) : {};
+        return allAdmitted[roundId] || [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function getCourses() {
+      try {
+        const raw = localStorage.getItem('courses');
+        return raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function getTeeName(teeValue) {
+      if (!teeValue) return '';
+      
+      // Handle format: courseId||teeIndex
+      if (teeValue.includes('||')) {
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = getCourses();
+        const course = courses.find(c => (c.courseId === courseId) || (c.fullName === courseId));
+        
+        if (course && Array.isArray(course.tees) && course.tees[teeIndex]) {
+          return course.tees[teeIndex];
+        }
+      }
+      
+      // Handle format: C001-01 (tee ID from categories)
+      const courses = getCourses();
+      for (const course of courses) {
+        if (!course.teeIds || !course.tees) continue;
+        
+        const idx = course.teeIds.findIndex(id => {
+          if (typeof id === 'object') {
+            return id.men === teeValue || id.women === teeValue;
+          }
+          return id === teeValue;
+        });
+        
+        if (idx !== -1 && idx < course.tees.length) {
+          return course.tees[idx];
+        }
+      }
+      
+      return teeValue;
+    }
+
+    function getTeeData(player, roundId) {
+      const tournaments = getTournaments();
+      const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+      if (!tournament || !tournament.meta) return null;
+      
+      const roundIds = tournament.meta.roundIds || [];
+      const roundIndex = roundIds.indexOf(roundId);
+      const roundData = tournament.meta.roundsData?.[roundIndex >= 0 ? roundIndex : 0];
+      if (!roundData) return null;
+      
+      const playerGender = (player.gender || '').toLowerCase();
+      let teeValue = '';
+      
+      // Check if player has an assigned tee (from categories)
+      if (player.tee) {
+        // Convert tee ID to courseId||teeIndex format by looking up in course.teeIds
+        const courses = getCourses();
+        const courseId = roundData.course;
+        const course = courses.find(c => c.courseId === courseId);
+        
+        if (course && course.teeIds) {
+          const idx = course.teeIds.findIndex(id => {
+            if (typeof id === 'object') {
+              return id.men === player.tee || id.women === player.tee;
+            }
+            return id === player.tee;
+          });
+          
+          if (idx !== -1) {
+            teeValue = `${courseId}||${idx}`;
+          }
+        }
+        
+        // If player.tee is already in courseId||index format, use it directly
+        if (!teeValue && player.tee.includes('||')) {
+          teeValue = player.tee;
+        }
+      }
+      
+      // If no assigned tee found, use default from tournament settings
+      if (!teeValue) {
+        if (playerGender === 'male' || playerGender === 'm') {
+          teeValue = roundData.teeMen || '';
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          teeValue = roundData.teeWomen || '';
+        }
+      }
+      
+      if (!teeValue || !teeValue.includes('||')) return null;
+      
+      const [courseId, teeIndexStr] = teeValue.split('||');
+      const teeIndex = parseInt(teeIndexStr, 10);
+      
+      const courses = getCourses();
+      const course = courses.find(c => c.courseId === courseId);
+      
+      if (!course) return null;
+      
+      let par = 0;
+      if (course.pars && Array.isArray(course.pars)) {
+        par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+      }
+      
+      const teeData = course.teeData?.[teeIndex];
+      if (!teeData) return null;
+      
+      let slope, rating;
+      const teeGender = course.genders?.[teeIndex];
+      if (teeGender === 'B' && teeData.ratings) {
+        if (playerGender === 'male' || playerGender === 'm') {
+          slope = teeData.ratings.men?.slope18;
+          rating = teeData.ratings.men?.rating18;
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          slope = teeData.ratings.women?.slope18;
+          rating = teeData.ratings.women?.rating18;
+        }
+      } else {
+        slope = teeData.slope18 || teeData.slope;
+        rating = teeData.rating18 || teeData.rating;
+      }
+      
+      return { slope, rating, par, tournament };
+    }
+
+    function calculatePlayingHcp(player, roundId) {
+      const playerHcp = parseFloat(player.hcp);
+      if (isNaN(playerHcp)) return '-';
+      
+      const teeData = getTeeData(player, roundId);
+      if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+        return playerHcp;
+      }
+      
+      const hcpAllowance = parseFloat(teeData.tournament?.meta?.hcpAllow || 100) / 100;
+      const slope = parseFloat(teeData.slope);
+      const rating = parseFloat(teeData.rating);
+      const par = parseFloat(teeData.par);
+      
+      if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+        return playerHcp;
+      }
+      
+      const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+      const rounded = Math.round(playingHcp);
+      
+      return rounded < 0 ? '+' + Math.abs(rounded) : rounded;
+    }
+
+    function calculateAge(dob) {
+      if (!dob) return '-';
+      const birthDate = new Date(dob);
+      const referenceDate = new Date();
+      let age = referenceDate.getFullYear() - birthDate.getFullYear();
+      return age;
+    }
+
+    function saveOptions() {
+      const options = {
+        club: document.getElementById('opt-club').checked,
+        hcp: document.getElementById('opt-hcp').checked,
+        phcp: document.getElementById('opt-phcp').checked,
+        teeColor: document.getElementById('opt-tee-color').checked,
+        category: document.getElementById('opt-category').checked,
+        buggy: document.getElementById('opt-buggy').checked,
+        groupByTee: document.getElementById('opt-group-by-tee').checked,
+        buggyStart: document.getElementById('buggy-start').value,
+        buggySkip: document.getElementById('buggy-skip').value
+      };
+      localStorage.setItem('drawListOptions', JSON.stringify(options));
+    }
+
+    function loadOptions() {
+      try {
+        const saved = localStorage.getItem('drawListOptions');
+        if (saved) {
+          const options = JSON.parse(saved);
+          document.getElementById('opt-club').checked = options.club !== undefined ? options.club : true;
+          document.getElementById('opt-hcp').checked = options.hcp !== undefined ? options.hcp : true;
+          document.getElementById('opt-phcp').checked = options.phcp !== undefined ? options.phcp : false;
+          document.getElementById('opt-tee-color').checked = options.teeColor !== undefined ? options.teeColor : true;
+          document.getElementById('opt-category').checked = options.category !== undefined ? options.category : false;
+          document.getElementById('opt-buggy').checked = options.buggy !== undefined ? options.buggy : false;
+          document.getElementById('opt-group-by-tee').checked = options.groupByTee !== undefined ? options.groupByTee : false;
+          document.getElementById('buggy-start').value = options.buggyStart !== undefined ? options.buggyStart : 1;
+          document.getElementById('buggy-skip').value = options.buggySkip !== undefined ? options.buggySkip : '';
+          
+          // Show/hide buggy settings based on checkbox
+          document.getElementById('buggy-settings').style.display = options.buggy ? 'block' : 'none';
+        }
+      } catch (err) {
+        console.error('Failed to load options', err);
+      }
+    }
+
+    function generatePreview() {
+      const tournaments = getTournaments();
+      const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+      
+      if (!tournament) {
+        alert('Tournament not found');
+        return;
+      }
+
+      const roundId = document.getElementById('round-select').value;
+      const drawData = getDrawData(roundId);
+      
+      if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+        document.getElementById('preview-area').innerHTML = `
+          <div style="text-align: center; padding: 50px; color: #999;">
+            <p style="font-size: 18px; margin-bottom: 10px;">No draw data found for this round</p>
+            <p>Please create groups in the Draw page first.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const allPlayers = getAllPlayers();
+      const admittedPlayers = getAdmittedPlayers(roundId);
+      let groups = drawData.groups || [];
+
+      // Merge fresh admitted player data into groups
+      // This ensures tee/category changes are reflected
+      const admittedByReg = {};
+      admittedPlayers.forEach(p => { if (p.reg) admittedByReg[p.reg] = p; });
+      groups = groups.map(group => {
+        const updatedPlayers = group.players.map(player => {
+          const freshPlayer = admittedByReg[player.reg];
+          if (freshPlayer) {
+            return { ...player, ...freshPlayer };
+          }
+          return player;
+        });
+        return { ...group, players: updatedPlayers };
+      });
+
+      // Get options
+      const showClub = document.getElementById('opt-club').checked;
+      const showHcp = document.getElementById('opt-hcp').checked;
+      const showPhcp = document.getElementById('opt-phcp').checked;
+      const showTeeColor = document.getElementById('opt-tee-color').checked;
+      const showCategory = document.getElementById('opt-category').checked;
+      const showBuggy = document.getElementById('opt-buggy').checked;
+      const groupByTee = document.getElementById('opt-group-by-tee').checked;
+      const buggyStart = parseInt(document.getElementById('buggy-start').value) || 1;
+      
+      // Group by tee if option is selected
+      if (groupByTee) {
+        const firstTeeGroups = groups.filter(g => g.tee && (g.tee.toLowerCase().includes('1st') || g.tee === '1'));
+        const alternateTeeGroups = groups.filter(g => g.tee && !firstTeeGroups.includes(g));
+        groups = [...firstTeeGroups, ...alternateTeeGroups];
+      }
+      
+      // Parse skip numbers
+      const buggySkipInput = document.getElementById('buggy-skip').value;
+      const skipNumbers = new Set();
+      if (buggySkipInput.trim()) {
+        buggySkipInput.split(',').forEach(num => {
+          const n = parseInt(num.trim());
+          if (!isNaN(n)) skipNumbers.add(n);
+        });
+      }
+      
+      // Helper function to get next available buggy number
+      function getNextBuggyNumber(current) {
+        while (skipNumbers.has(current)) {
+          current++;
+        }
+        return current;
+      }
+      
+      // Calculate buggy numbers for all groups
+      let currentBuggyNo = getNextBuggyNumber(buggyStart);
+      const buggyAssignments = [];
+      const usedBuggies = new Set();
+      
+      // First pass: collect all manually assigned buggies
+      Object.values(manualBuggyAssignments).forEach(num => usedBuggies.add(num));
+      
+      groups.forEach((group, groupIdx) => {
+        if (group.players && group.players.length > 0) {
+          const groupBuggies = [];
+          for (let i = 0; i < group.players.length; i++) {
+            const key = `${groupIdx}_${i}`;
+            
+            // Check if this player has a manual assignment
+            if (manualBuggyAssignments[key]) {
+              groupBuggies.push(manualBuggyAssignments[key]);
+            } else if (i % 2 === 0) {
+              // Every 2 players get a new buggy number
+              // Skip already used buggies
+              while (usedBuggies.has(currentBuggyNo)) {
+                currentBuggyNo = getNextBuggyNumber(currentBuggyNo + 1);
+              }
+              groupBuggies.push(currentBuggyNo);
+              usedBuggies.add(currentBuggyNo);
+              if (i < group.players.length - 1 || group.players.length % 2 === 0) {
+                currentBuggyNo = getNextBuggyNumber(currentBuggyNo + 1);
+              } else {
+                currentBuggyNo = getNextBuggyNumber(currentBuggyNo + 1);
+              }
+            } else {
+              // Second player shares the buggy with the first (unless manually assigned)
+              groupBuggies.push(groupBuggies[i - 1]);
+            }
+          }
+          buggyAssignments.push(groupBuggies);
+        }
+      });
+
+      // Build header
+      let html = `
+        <div class="print-header">
+          <h1>${tournament.name}</h1>
+          <div class="subtitle">Draw List - ${new Date().toLocaleDateString()}</div>
+        </div>
+        <table class="draw-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Tee</th>
+              ${showTeeColor ? '<th class="center-header">Tee Color</th>' : ''}
+              <th>Name</th>
+              ${showClub ? '<th>Club/Country</th>' : ''}
+              ${showHcp ? '<th class="center-header">HCP</th>' : ''}
+              ${showPhcp ? '<th class="center-header">PHCP</th>' : ''}
+              ${showCategory ? '<th class="center-header">Category</th>' : ''}
+              ${showBuggy ? '<th class="center-header">Buggy No</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Track current tee for section headers
+      let lastTee = null;
+
+      // Add groups - wrap each group in tbody for page break control
+      groups.forEach((group, idx) => {
+        if (group.players && group.players.length > 0) {
+          const groupSize = group.players.length;
+          const groupBuggies = buggyAssignments[idx] || [];
+          
+          if (idx > 0) {
+            html += `</tbody><tbody class="group-wrapper">`;
+          }
+          
+          group.players.forEach((player, pIdx) => {
+            html += `
+              <tr class="${pIdx === 0 ? 'group-separator' : ''}">
+                ${pIdx === 0 ? `<td class="time-cell" rowspan="${groupSize}">${group.time || '-'}</td>` : ''}
+                ${pIdx === 0 ? `<td class="tee-cell" rowspan="${groupSize}">${group.tee || '-'}</td>` : ''}
+                ${showTeeColor ? `<td class="tee-color-cell">${getTeeName(player.tee) || '-'}</td>` : ''}
+                <td><strong>${player.firstName} ${player.lastName}</strong></td>
+                ${showClub ? `<td>${player.club || player.homeClub || '-'}</td>` : ''}
+                ${showHcp ? `<td class="hcp-cell">${player.hcp || '-'}</td>` : ''}
+                ${showPhcp ? `<td class="phcp-cell">${calculatePlayingHcp(player, roundId)}</td>` : ''}
+                ${showCategory ? `<td class="category-cell">${(player.categories && player.categories[0]) || '-'}</td>` : ''}
+                ${showBuggy ? `<td class="buggy-cell" data-group="${idx}" data-player="${pIdx}">${groupBuggies[pIdx] || '-'}</td>` : ''}
+              </tr>
+            `;
+          });
+        }
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('preview-area').innerHTML = html;
+      
+      // Add click handlers to buggy cells
+      if (showBuggy) {
+        document.querySelectorAll('.buggy-cell').forEach(cell => {
+          cell.addEventListener('click', () => {
+            const groupIdx = cell.getAttribute('data-group');
+            const playerIdx = cell.getAttribute('data-player');
+            const currentBuggy = cell.textContent;
+            
+            const newBuggy = prompt(`Assign buggy number for this player:\nCurrent: ${currentBuggy}`, currentBuggy);
+            if (newBuggy !== null && newBuggy.trim() !== '') {
+              const buggyNum = parseInt(newBuggy.trim());
+              if (!isNaN(buggyNum) && buggyNum > 0) {
+                // Get current skip numbers
+                const buggySkipInput = document.getElementById('buggy-skip').value;
+                const skipNumbers = new Set();
+                if (buggySkipInput.trim()) {
+                  buggySkipInput.split(',').forEach(num => {
+                    const n = parseInt(num.trim());
+                    if (!isNaN(n)) skipNumbers.add(n);
+                  });
+                }
+                
+                // Check if the buggy number is in the excluded list
+                if (skipNumbers.has(buggyNum)) {
+                  alert(`Buggy #${buggyNum} is excluded.\n\nThis buggy is in the excluded list. If you want to assign this buggy, please remove it from the "Skip Buggy Numbers" field first.`);
+                  return;
+                }
+                
+                const key = `${groupIdx}_${playerIdx}`;
+                
+                // Check if this buggy is already assigned to someone else
+                for (const [otherKey, otherBuggy] of Object.entries(manualBuggyAssignments)) {
+                  if (otherBuggy === buggyNum && otherKey !== key) {
+                    // Remove the conflict - that player will get auto-assigned
+                    delete manualBuggyAssignments[otherKey];
+                  }
+                }
+                
+                manualBuggyAssignments[key] = buggyNum;
+                saveManualBuggyAssignments();
+                generatePreview();
+              } else {
+                alert('Please enter a valid positive number');
+              }
+            }
+          });
+        });
+      }
+    }
+
+    // Auto-generate on load
+    window.addEventListener('load', () => {
+      loadManualBuggyAssignments();
+      loadOptions();
+      populateRoundSelect();
+      generatePreview();
+      
+      // Add event listeners to save options when changed
+      document.querySelectorAll('.options-grid input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          saveOptions();
+          generatePreview();
+        });
+      });
+      
+      // Show/hide buggy settings when buggy checkbox changes
+      document.getElementById('opt-buggy').addEventListener('change', (e) => {
+        document.getElementById('buggy-settings').style.display = e.target.checked ? 'block' : 'none';
+      });
+      
+      // Regenerate preview when buggy start number changes
+      document.getElementById('buggy-start').addEventListener('input', () => {
+        saveOptions();
+        generatePreview();
+      });
+      
+      // Regenerate preview when buggy skip numbers change
+      document.getElementById('buggy-skip').addEventListener('input', () => {
+        saveOptions();
+        generatePreview();
+      });
+    });
+  </script>
+</body>
+</html>

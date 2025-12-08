@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Export to File</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; }
+    button { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; margin: 10px 5px; }
+    .success { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Export GTM Data to File</h1>
+  <p>This will download your data as a JSON file that you can then import to localhost.</p>
+  <button onclick="exportToFile()">Download Data File</button>
+  <div id="result"></div>
+  
+  <script>
+    function exportToFile() {
+      const data = {
+        tournaments: localStorage.getItem('tournaments'),
+        players: localStorage.getItem('players'),
+        courses: localStorage.getItem('courses'),
+        admittedPlayers: localStorage.getItem('admittedPlayers'),
+        scores: localStorage.getItem('scores'),
+        categories: localStorage.getItem('categories'),
+        draws: localStorage.getItem('draws')
+      };
+      
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gtm-data-export.json';
+      a.click();
+      
+      document.getElementById('result').innerHTML = '<div class="success">✅ File downloaded! Now go to localhost and upload it.</div>';
+    }
+  </script>
+</body>
+</html>

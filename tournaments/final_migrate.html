@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Direct Migration</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; background: #f8fafc; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px 0; }
+    h1 { color: #1e293b; margin-top: 0; }
+    h2 { color: #0b6efd; font-size: 18px; margin-top: 0; }
+    button { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; }
+    button:hover { background: #0a58d1; }
+    .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 8px; margin: 15px 0; font-weight: 600; }
+    .error { background: #fee2e2; color: #991b1b; padding: 20px; border-radius: 8px; margin: 15px 0; font-weight: 600; }
+    .code { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; }
+    .info { background: #dbeafe; color: #1e3a8a; padding: 15px; border-radius: 8px; margin: 15px 0; }
+    ol { line-height: 1.8; }
+    strong { color: #0f172a; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 Final Migration Method</h1>
+    
+    <h2>Simple Copy-Paste Method</h2>
+    <div class="info">
+      <strong>Follow these exact steps:</strong>
+    </div>
+    
+    <ol>
+      <li><strong>Open your working tournaments page</strong> (the one showing Ozgur Invitational)</li>
+      <li><strong>Right-click on the page</strong> and select <strong>"Inspect"</strong> (or press Option+Cmd+I)</li>
+      <li>Click the <strong>"Console"</strong> tab at the top</li>
+      <li><strong>Copy and paste</strong> this ENTIRE code block below (click the button to copy):</li>
+    </ol>
+
+    <div class="code" id="migration-code">// Direct migration code
+Object.keys(localStorage).forEach(key => {
+  const value = localStorage.getItem(key);
+  fetch('http://localhost:8080/tournaments/save_data.html?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value))
+    .then(() => console.log('Saved: ' + key))
+    .catch(e => console.error('Error saving ' + key, e));
+});
+console.log('Migration started! Check localhost:8080 in a moment.');
+    </div>
+
+    <button onclick="copyMigrationCode()">📋 Copy Migration Code</button>
+
+    <div class="info" style="margin-top: 20px;">
+      <strong>After running the code:</strong><br>
+      Wait 3 seconds, then click the button below to check if it worked.
+    </div>
+
+    <button onclick="checkAndOpen()" style="background: #16a34a; margin-top: 10px;">✅ Check & Open Tournaments</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function copyMigrationCode() {
+      const code = document.getElementById('migration-code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('✅ Code copied!\n\nNow:\n1. Go to your working tournaments page\n2. Right-click → Inspect → Console\n3. Paste (Cmd+V) and press Enter\n4. Wait 3 seconds\n5. Come back here and click "Check & Open Tournaments"');
+      });
+    }
+
+    function checkAndOpen() {
+      const tournaments = localStorage.getItem('tournaments');
+      const result = document.getElementById('result');
+      
+      if (tournaments && tournaments !== 'null') {
+        result.innerHTML = '<div class="success">✅ Success! Found tournament data in localhost.<br>Opening tournaments page...</div>';
+        setTimeout(() => {
+          window.location.href = 'http://localhost:8080/tournaments/index.html';
+        }, 1500);
+      } else {
+        result.innerHTML = '<div class="error">❌ No data found yet. Make sure you ran the code in the console of your WORKING tournaments page.</div>';
+      }
+    }
+  </script>
+</body>
+</html>

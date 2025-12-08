@@ -1,0 +1,27 @@
+FOUND THE BUG - Line 374-379 in admissions.html has duplicate getTeeForPlayer() calls:
+
+Current (BROKEN):
+              <td>${player.club || player.homeClub || ''}</td>
+                            <td>${getTeeForPlayer(player)}</td>
+              <td>${formatHcp(player.hcp)}</td>
+              <td>${calculatePlayingHcp(player)}</td>
+                            <td>${getTeeForPlayer(player)}</td>
+              <td>${player.gender || ''}</td>
+
+Should be (FIXED):
+              <td>${player.club || player.homeClub || ''}</td>
+              <td>${getTeeForPlayer(player)}</td>
+              <td>${formatHcp(player.hcp)}</td>
+              <td>${calculatePlayingHcp(player)}</td>
+              <td>${player.gender || ''}</td>
+
+The duplicate Tee column is breaking the table rendering and causing players to disappear.
+
+MANUAL FIX NEEDED:
+1. Open /Users/ozgur/Desktop/GTM/tournaments/admissions.html
+2. Go to line 374-379
+3. Remove the duplicate line: <td>${getTeeForPlayer(player)}</td>
+4. Keep only ONE getTeeForPlayer() call after Home Club column
+5. Save and reload
+
+Also check the admitted players table around line 390-400 for the same issue.

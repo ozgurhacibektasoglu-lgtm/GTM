@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Clear Tournament Data</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .container { max-width: 600px; margin: 60px auto; padding: 20px; }
+    .big-btn { background: #ef4444; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; margin: 10px; }
+    .cancel-btn { background: #6b7280; }
+    .status { padding: 12px; border-radius: 8px; margin: 20px 0; }
+    .status.success { background: #d1fae5; color: #065f46; }
+    .info { background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Clear Tournament Data</h1>
+    <div class="info">
+      <p><strong>This will clear:</strong></p>
+      <ul>
+        <li>Admitted players (admittedPlayers)</li>
+        <li>Draws data (draws)</li>
+        <li>Scores data (scores)</li>
+      </ul>
+      <p><strong>This will NOT clear:</strong></p>
+      <ul>
+        <li>Players database</li>
+        <li>Tournaments</li>
+        <li>Courses</li>
+        <li>Categories</li>
+      </ul>
+    </div>
+    
+    <div id="current-data" style="font-size: 14px; margin: 20px 0;"></div>
+    
+    <button class="big-btn" onclick="clearTournamentData()">Clear Tournament Data</button>
+    <button class="big-btn cancel-btn" onclick="window.location.href='../index.html'">Cancel</button>
+    
+    <div id="status"></div>
+  </main>
+
+  <script>
+    function displayData() {
+      const ap = localStorage.getItem('admittedPlayers');
+      const draws = localStorage.getItem('draws');
+      const scores = localStorage.getItem('scores');
+      
+      document.getElementById('current-data').innerHTML = `
+        <strong>Current data:</strong><br>
+        admittedPlayers: ${ap ? 'exists' : 'empty'}<br>
+        draws: ${draws ? 'exists' : 'empty'}<br>
+        scores: ${scores ? 'exists' : 'empty'}
+      `;
+    }
+
+    function clearTournamentData() {
+      if (!confirm('Are you sure you want to clear all tournament data (admissions, draws, scores)? This cannot be undone.')) {
+        return;
+      }
+
+      localStorage.removeItem('admittedPlayers');
+      localStorage.removeItem('draws');
+      localStorage.removeItem('scores');
+      
+      document.getElementById('status').className = 'status success';
+      document.getElementById('status').innerHTML = '✅ Tournament data cleared!<br><br>You can now start fresh with admissions.';
+      displayData();
+    }
+
+    displayData();
+  </script>
+</body>
+</html>

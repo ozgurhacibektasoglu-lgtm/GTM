@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simple Data Migration</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 900px; margin: 0 auto; }
+    h1 { color: #1e293b; }
+    .step { background: #f8fafc; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #0b6efd; }
+    .step h2 { margin-top: 0; color: #0b6efd; font-size: 18px; }
+    button { background: #0b6efd; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 5px; }
+    button.success { background: #16a34a; }
+    button.danger { background: #dc2626; }
+    .code { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; overflow-x: auto; margin: 10px 0; }
+    .success-box { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 6px; margin: 10px 0; display: none; }
+    .error-box { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 6px; margin: 10px 0; display: none; }
+  </style>
+</head>
+<body>
+  <h1>🔄 GTM Data Migration Tool</h1>
+  
+  <div class="step">
+    <h2>Step 1: Check Current Data (localhost)</h2>
+    <button onclick="checkLocalhost()">Check Localhost Data</button>
+    <div id="localhost-result"></div>
+  </div>
+
+  <div class="step">
+    <h2>Step 2: Export from Working Page</h2>
+    <p>Go to your working tournaments page, open browser console (Right-click → Inspect → Console tab), paste this code and press Enter:</p>
+    <div class="code" id="export-code">
+prompt('COPY ALL THIS TEXT (Cmd+A then Cmd+C):', JSON.stringify({
+  tournaments: localStorage.tournaments,
+  players: localStorage.players,
+  courses: localStorage.courses,
+  admittedPlayers: localStorage.admittedPlayers,
+  scores: localStorage.scores,
+  categories: localStorage.categories,
+  draws: localStorage.draws
+}));
+    </div>
+    <button onclick="copyCode()">Copy Code to Clipboard</button>
+    <p style="margin-top: 15px; color: #64748b; font-size: 14px;"><strong>Tip:</strong> After running the code, a popup will appear. Press Cmd+A to select all, then Cmd+C to copy the entire text.</p>
+  </div>
+
+  <div class="step">
+    <h2>Step 3: Paste Data Here</h2>
+    <textarea id="import-data" placeholder="Paste the data from Step 2 here..." style="width: 100%; height: 150px; padding: 10px; font-family: monospace; font-size: 12px; border: 2px solid #cbd5e1; border-radius: 6px;"></textarea>
+    <br>
+    <button class="success" onclick="importToLocalhost()">Import to Localhost</button>
+    <button class="danger" onclick="clearLocalhost()">Clear Localhost Data</button>
+    <div id="import-success" class="success-box"></div>
+    <div id="import-error" class="error-box"></div>
+  </div>
+
+  <div class="step">
+    <h2>Step 4: Verify</h2>
+    <button onclick="window.location.href='http://localhost:8080/tournaments/index.html'">Open Tournaments Page</button>
+  </div>
+
+  <script>
+    function checkLocalhost() {
+      const result = document.getElementById('localhost-result');
+      const tournaments = localStorage.getItem('tournaments');
+      
+      if (!tournaments || tournaments === 'null') {
+        result.innerHTML = '<div class="error-box" style="display:block;">❌ No tournament data in localhost</div>';
+      } else {
+        try {
+          const parsed = JSON.parse(tournaments);
+          result.innerHTML = '<div class="success-box" style="display:block;">✅ Found ' + parsed.length + ' tournament(s) in localhost:<br><pre>' + JSON.stringify(parsed, null, 2).substring(0, 500) + '...</pre></div>';
+        } catch (e) {
+          result.innerHTML = '<div class="error-box" style="display:block;">❌ Error parsing data: ' + e.message + '</div>';
+        }
+      }
+    }
+
+    function copyCode() {
+      const code = document.getElementById('export-code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('✅ Code copied! Now:\n1. Go to your working tournaments page\n2. Press Option+Cmd+C\n3. Paste the code and press Enter\n4. Copy the data shown\n5. Come back here and paste in Step 3');
+      });
+    }
+
+    function importToLocalhost() {
+      const input = document.getElementById('import-data').value.trim();
+      const successBox = document.getElementById('import-success');
+      const errorBox = document.getElementById('import-error');
+      
+      successBox.style.display = 'none';
+      errorBox.style.display = 'none';
+      
+      if (!input) {
+        errorBox.textContent = '❌ Please paste data first';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        // Try to parse - the input should be valid JSON
+        let data;
+        try {
+          data = JSON.parse(input);
+        } catch (parseError) {
+          // If it fails, try to fix escaped quotes
+          const fixed = input.replace(/\\"/g, '"').replace(/\\'/g, "'");
+          data = JSON.parse(fixed);
+        }
+        
+        let imported = 0;
+        
+        Object.keys(data).forEach(key => {
+          const value = data[key];
+          if (value && value !== 'null' && value !== null) {
+            // Value is already a JSON string, set it directly
+            localStorage.setItem(key, value);
+            imported++;
+            console.log('Imported:', key, '=', value.substring(0, 100) + '...');
+          }
+        });
+
+        successBox.textContent = '✅ Successfully imported ' + imported + ' keys to localhost!\n\nClick "Open Tournaments Page" to verify.';
+        successBox.style.display = 'block';
+        
+      } catch (e) {
+        errorBox.textContent = '❌ Error: ' + e.message + '\n\nThe data format might be incorrect. Try copying again from the console.';
+        errorBox.style.display = 'block';
+        console.error('Import error:', e);
+      }
+    }
+
+    function clearLocalhost() {
+      if (confirm('Clear all data from localhost?')) {
+        localStorage.clear();
+        alert('✅ Localhost data cleared!');
+        checkLocalhost();
+      }
+    }
+
+    // Auto-check on load
+    checkLocalhost();
+  </script>
+</body>
+</html>

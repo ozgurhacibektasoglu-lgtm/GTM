@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Score Entry</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .scores-container { max-width: 1600px; margin: 24px auto; padding: 16px; }
+      .round-selector { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
+      .round-selector label { display: block; font-weight: 600; margin-bottom: 8px; }
+      .round-selector select { padding: 10px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 15px; min-width: 200px; }
+      .scores-grid { display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+      .scorecard-panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
+      .players-panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
+      .player-info { background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+      .player-info h3 { margin: 0 0 8px 0; color: #1e293b; font-size: 18px; }
+      .player-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px; }
+      .info-item { display: flex; flex-direction: column; }
+      .info-label { color: #64748b; font-weight: 600; margin-bottom: 2px; }
+      .info-value { color: #1e293b; font-weight: 500; }
+      .search-box { margin-bottom: 12px; }
+      .search-box input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 14px; }
+      .table-wrapper { overflow: auto; max-height: calc(100vh - 240px); border-radius: 8px; }
+      .scorecard-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .scorecard-table th { background: #1e293b; color: white; padding: 8px 4px; text-align: center; font-size: 12px; font-weight: 600; min-width: 45px; }
+      .scorecard-table td { padding: 6px 4px; text-align: center; border: 1px solid #e5e7eb; font-size: 13px; }
+      .scorecard-table td:first-child { text-align: left; font-weight: 600; background: #f8fafc; min-width: 70px; }
+      .scorecard-table .subtotal-cell { background: #f1f5f9; font-weight: 600; }
+      .scorecard-table .total-cell { background: #dbeafe; font-weight: 700; }
+      .score-input { width: 40px; padding: 4px; border-radius: 4px; border: 1px solid #e6e9ef; text-align: center; font-size: 13px; }
+      .score-input:focus { outline: none; border-color: #3b82f6; background: #eff6ff; }
+      .score-input.has-value { background: #dcfce7; border-color: #86efac; }
+      .score-input:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.6; }
+      /* Score type styling */
+      .score-input.score-par { background: white; color: black; border-color: #94a3b8; }
+      .score-input.score-birdie { background: #dc2626; color: white; border-color: #991b1b; font-weight: 600; }
+      .score-input.score-eagle { background: #fbbf24; color: black; border-color: #d97706; font-weight: 600; }
+      .score-input.score-bogey { background: black; color: white; border-color: #1e293b; font-weight: 600; }
+      .score-input.score-double-bogey { background: #2563eb; color: white; border-color: #1e40af; font-weight: 600; }
+      .score-input.score-zero { background: #9ca3af; color: black; border-color: #6b7280; font-weight: 600; }
+      .status-select { padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; background: white; cursor: pointer; }
+      .status-select:focus { outline: none; border-color: #3b82f6; }
+      .status-warning { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; text-align: center; font-weight: 500; }
+      .status-warning { background: #fef3c7; border-color: #fbbf24; color: #92400e; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 13px; text-align: center; font-weight: 500; }
+      .scorecard-table input[type="number"]::-webkit-outer-spin-button,
+      .scorecard-table input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+      .scorecard-table input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+      .players-table { width: 100%; border-collapse: collapse; }
+      .players-table th { position: sticky; top: 0; background: #f8fafc; padding: 10px 8px; border-bottom: 2px solid #e6e9ef; font-weight: 600; text-align: left; font-size: 13px; }
+      .players-table td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+      .players-table tr { cursor: pointer; }
+      .players-table tr:hover { background: #f0f9ff; }
+      .players-table tr.selected { background: #dbeafe; font-weight: 600; }
+      .players-table tr.completed { background: #d1fae5; }
+      .players-table tr.completed:hover { background: #a7f3d0; }
+      .players-table tr.completed.selected { background: #86efac; }
+      .player-total-score { color: #059669; font-weight: 600; margin-left: 8px; font-size: 12px; }
+      .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
+      .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+      .btn-back { background: white; border: 1px solid #e6e9ef; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #333; text-decoration: none; display: inline-block; }
+      .btn-save-scores { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; border: 0; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(40,167,69,0.3); transition: all 0.2s; z-index: 100; }
+      .btn-save-scores:hover { background: #218838; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(40,167,69,0.4); }
+      .status-text { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+      .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+      .modal-overlay.active { display: flex; }
+      .modal-box { background: white; border-radius: 12px; padding: 32px; min-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+      .modal-box h3 { margin: 0 0 20px 0; font-size: 20px; color: #1e293b; text-align: center; }
+      .modal-box p { margin: 0 0 24px 0; color: #64748b; text-align: center; font-size: 15px; }
+      .modal-buttons { display: flex; gap: 12px; }
+      .modal-buttons button { flex: 1; padding: 12px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+      .modal-btn-primary { background: #3b82f6; color: white; border: 0; }
+      .modal-btn-primary:hover { background: #2563eb; }
+      .modal-btn-secondary { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; }
+      .modal-btn-secondary:hover { background: #e2e8f0; }
+      .modal-input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; text-align: center; margin-bottom: 20px; }
+      .modal-input:focus { outline: none; border-color: #3b82f6; }
+    </style>
+  </head>
+  <body>
+    <main class="scores-container">
+      <header style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div>
+          <h1>Score Entry</h1>
+          <p class="lead" id="tournament-name">Enter scores for the tournament round.</p>
+        </div>
+        <a href="index.html" class="btn-back">Back to Tournaments</a>
+      </header>
+
+      <section class="round-selector">
+        <label for="round-select">Select Round:</label>
+        <select id="round-select">
+          <!-- Populated dynamically -->
+        </select>
+      </section>
+
+      <section class="scores-grid">
+        <!-- Left Panel: Scorecard -->
+        <div class="scorecard-panel">
+          <div id="player-info" class="player-info" style="display: none;">
+            <h3 id="player-name">-</h3>
+            <div class="player-info-grid">
+              <div class="info-item">
+                <span class="info-label">Reg No</span>
+                <span class="info-value" id="player-reg">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Handicap</span>
+                <span class="info-value" id="player-hcp">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Playing HCP</span>
+                <span class="info-value" id="player-phcp">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status</span>
+                <select id="player-status" class="status-select">
+                  <option value="">Playing</option>
+                  <option value="DQ">Disqualified (DQ)</option>
+                  <option value="NS">No Show (NS)</option>
+                  <option value="NR">No Return (NR)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="scorecard-content">
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>Select a player from the right panel to enter scores</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Player List -->
+        <div class="players-panel">
+          <h2 style="margin-top: 0; font-size: 18px; color: #1e293b; margin-bottom: 12px;">Players</h2>
+          <div class="search-box">
+            <input id="player-search" type="text" placeholder="Search by name or reg... (Press Enter to select)" />
+          </div>
+          <div id="status-text" class="status-text"></div>
+          <div class="table-wrapper">
+            <table class="players-table">
+              <thead>
+                <tr>
+                  <th data-sort="name" style="cursor: pointer;">Name <span id="sort-name">▲</span></th>
+                  <th data-sort="phcp" style="text-align: center; cursor: pointer;">PHCP <span id="sort-phcp"></span></th>
+                </tr>
+              </thead>
+              <tbody id="players-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <button class="btn-save-scores" onclick="saveScores()">Save Scores</button>
+    </main>
+
+    <!-- Modal for score input -->
+    <div id="score-modal" class="modal-overlay">
+      <div class="modal-box">
+        <h3 id="modal-title">Score Entry</h3>
+        <p id="modal-message">Is this a Hole-in-One?</p>
+        <div id="modal-input-container" style="display: none;">
+          <input type="number" id="modal-input" class="modal-input" placeholder="Enter score" min="1" step="1">
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn-secondary" id="modal-cancel">Cancel</button>
+          <button class="modal-btn-primary" id="modal-confirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Get tournament from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentIdParam = urlParams.get('tournamentId');
+      
+      let currentTournament = null;
+      let currentRoundId = null;
+      let currentRoundIndex = 0;
+      let admittedPlayers = [];
+      let selectedPlayer = null;
+      let courseData = null;
+      let scores = {}; // { playerId: { holes: [hole1, hole2, ...], points: [p1, p2, ...] } }
+      let filteredPlayers = [];
+      let highlightedIndex = -1;
+      let sortColumn = 'name';
+      let sortDirection = 'asc';
+
+      // Add keyboard shortcut for F12 to save scores
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'F12') {
+          e.preventDefault();
+          saveScores();
+          // Focus search bar for next player
+          const searchInput = document.getElementById('player-search');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
+        }
+      });
+
+      // LocalStorage helpers
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentIdParam);
+      }
+
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse courses', err);
+          return [];
+        }
+      }
+
+      function getTeeData(player) {
+        if (!currentTournament || currentRoundIndex === undefined || currentRoundIndex < 0) return null;
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        if (!roundData) return null;
+        
+        const playerGender = (player.gender || '').toLowerCase();
+        let teeValue = '';
+        
+        // Check if player has an assigned tee (from categories)
+        if (player.tee) {
+          // Convert tee ID to courseId||teeIndex format
+          const courses = getCourses();
+          const courseId = roundData.course;
+          const course = courses.find(c => c.courseId === courseId);
+          
+          if (course && course.teeIds) {
+            const idx = course.teeIds.findIndex(id => {
+              if (typeof id === 'object') {
+                return id.men === player.tee || id.women === player.tee;
+              }
+              return id === player.tee;
+            });
+            
+            if (idx !== -1) {
+              teeValue = `${courseId}||${idx}`;
+            }
+          }
+        }
+        
+        // If no assigned tee, use default from tournament settings
+        if (!teeValue) {
+          if (playerGender === 'male' || playerGender === 'm') {
+            teeValue = roundData.teeMen || '';
+          } else if (playerGender === 'female' || playerGender === 'f') {
+            teeValue = roundData.teeWomen || '';
+          }
+        }
+        
+        if (!teeValue || !teeValue.includes('||')) return null;
+        
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = getCourses();
+        const course = courses.find(c => (c.courseId === courseId) || (c.fullName === courseId));
+        
+        if (!course) return null;
+        
+        // Calculate total par from pars array (sum of all 18 holes)
+        let par = 0;
+        if (course.pars && Array.isArray(course.pars)) {
+          par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+        }
+        
+        // Get tee-specific data from teeData array
+        const teeData = course.teeData?.[teeIndex];
+        if (!teeData) return null;
+        
+        let slope, rating;
+        
+        // Check if this tee is for both genders (has nested ratings structure)
+        const teeGender = course.genders?.[teeIndex];
+        if (teeGender === 'B' && teeData.ratings) {
+          // Both genders - use appropriate gender's ratings
+          if (playerGender === 'male' || playerGender === 'm') {
+            slope = teeData.ratings.men?.slope18;
+            rating = teeData.ratings.men?.rating18;
+          } else if (playerGender === 'female' || playerGender === 'f') {
+            slope = teeData.ratings.women?.slope18;
+            rating = teeData.ratings.women?.rating18;
+          }
+        } else {
+          // Single gender tee
+          slope = teeData.slope18 || teeData.slope;
+          rating = teeData.rating18 || teeData.rating;
+        }
+        
+        return { slope, rating, par, course };
+      }
+
+      function calculatePlayingHcp(player) {
+        const playerHcp = parseFloat(player.hcp);
+        if (isNaN(playerHcp)) {
+          return '';
+        }
+        
+        const teeData = getTeeData(player);
+        if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+          return playerHcp; // Fallback to WHS HCP if data missing
+        }
+        
+        const slope = parseFloat(teeData.slope);
+        const rating = parseFloat(teeData.rating);
+        const par = parseFloat(teeData.par);
+        const hcpAllowance = parseFloat(currentTournament.meta?.hcpAllow || 100) / 100;
+        
+        if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+          return playerHcp;
+        }
+        
+        // Formula: (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
+        const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+        
+        // Round to nearest whole number (.5 rounds up)
+        const rounded = Math.round(playingHcp);
+        
+        return rounded;
+      }
+
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          return data[currentRoundId] || [];
+        } catch (err) {
+          console.error('Failed to parse admitted players', err);
+          return [];
+        }
+      }
+
+      function getScoresData() {
+        try {
+          const raw = localStorage.getItem('scores');
+          return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+          console.error('Failed to parse scores', err);
+          return {};
+        }
+      }
+
+      function saveScoresData(scoresData) {
+        localStorage.setItem('scores', JSON.stringify(scoresData));
+      }
+
+      // Initialize
+      function init() {
+        currentTournament = getTournament();
+        
+        if (!currentTournament) {
+          alert('Tournament not found.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = `Enter scores for ${currentTournament.name}`;
+
+        // Populate round selector
+        const roundSelect = document.getElementById('round-select');
+        const roundIds = currentTournament.meta?.roundIds || [currentTournament.tournamentId + '-1'];
+        const roundsData = currentTournament.meta?.roundsData || [];
+
+        roundIds.forEach((rid, idx) => {
+          const option = document.createElement('option');
+          option.value = rid;
+          
+          if (roundsData[idx]) {
+            const roundDate = roundsData[idx].date || '';
+            option.textContent = `Round ${idx + 1}${roundDate ? ' - ' + roundDate : ''}`;
+          } else {
+            option.textContent = `Round ${idx + 1}`;
+          }
+          
+          roundSelect.appendChild(option);
+        });
+
+        currentRoundId = roundIds[0];
+        currentRoundIndex = 0;
+        roundSelect.value = currentRoundId;
+
+        roundSelect.addEventListener('change', (e) => {
+          currentRoundId = e.target.value;
+          currentRoundIndex = roundIds.indexOf(currentRoundId);
+          loadScores();
+        });
+
+        loadScores();
+      }
+
+      function loadScores() {
+        admittedPlayers = getAdmittedPlayers();
+        selectedPlayer = null;
+        
+        if (admittedPlayers.length === 0) {
+          document.getElementById('status-text').textContent = 'No admitted players for this round.';
+          document.getElementById('players-tbody').innerHTML = '<tr><td colspan="2" style="text-align: center; color: #6b7280; padding: 20px;">No players admitted yet.</td></tr>';
+          return;
+        }
+
+        // Get course info
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        if (roundData && roundData.course) {
+          const courses = getCourses();
+          courseData = courses.find(c => c.courseId === roundData.course);
+        }
+
+        // Load existing scores
+        const scoresData = getScoresData();
+        const roundScores = scoresData[currentRoundId] || {};
+        scores = {};
+        
+        admittedPlayers.forEach(player => {
+          const playerKey = player.reg;
+          const numHoles = courseData?.pars?.length || 18;
+          scores[playerKey] = roundScores[playerKey] || {
+            holes: Array(numHoles).fill(''),
+            points: Array(numHoles).fill(''),
+            stablefordPoints: Array(numHoles).fill(''),
+            incompleteHoles: [], // Track holes where player did not complete (0 entered)
+            status: ''
+          };
+        });
+
+        renderPlayersList();
+        updateStatus();
+      }
+
+      function renderPlayersList() {
+        const tbody = document.getElementById('players-tbody');
+        const searchTerm = document.getElementById('player-search').value.toLowerCase();
+        
+        let playersToShow;
+        if (searchTerm) {
+          playersToShow = admittedPlayers.filter(p => {
+            const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+            const reg = (p.reg || '').toString().toLowerCase();
+            return fullName.includes(searchTerm) || reg.includes(searchTerm);
+          });
+        } else {
+          playersToShow = [...admittedPlayers];
+        }
+        
+        // Sort: incomplete players first, completed players middle, status players at bottom
+        playersToShow.sort((a, b) => {
+          const aScores = scores[a.reg]?.holes || [];
+          const bScores = scores[b.reg]?.holes || [];
+          const aStatus = scores[a.reg]?.status || '';
+          const bStatus = scores[b.reg]?.status || '';
+          const aComplete = aScores.filter(s => s !== '' && s !== null && s !== undefined).length === 18;
+          const bComplete = bScores.filter(s => s !== '' && s !== null && s !== undefined).length === 18;
+          
+          // Players with status (DQ, NS, NR) always go to the very bottom
+          if (aStatus && !bStatus) return 1;
+          if (!aStatus && bStatus) return -1;
+          if (aStatus && bStatus) {
+            // Both have status, sort alphabetically
+            const aName = `${a.firstName} ${a.lastName}`.toLowerCase();
+            const bName = `${b.firstName} ${b.lastName}`.toLowerCase();
+            return aName.localeCompare(bName);
+          }
+          
+          // Among players without status: incomplete first, complete second
+          if (aComplete && !bComplete) return 1;
+          if (!aComplete && bComplete) return -1;
+          
+          // Within each group, apply the appropriate sort
+          let comparison = 0;
+          
+          // For incomplete players, use selected sort column
+          if (!aComplete && !bComplete) {
+            if (sortColumn === 'name') {
+              const aName = `${a.firstName} ${a.lastName}`.toLowerCase();
+              const bName = `${b.firstName} ${b.lastName}`.toLowerCase();
+              comparison = aName.localeCompare(bName);
+            } else if (sortColumn === 'phcp') {
+              const aPhcp = typeof a.phcp === 'string' ? (a.phcp.startsWith('+') ? -parseInt(a.phcp.substring(1)) : parseInt(a.phcp)) : (a.phcp || 0);
+              const bPhcp = typeof b.phcp === 'string' ? (b.phcp.startsWith('+') ? -parseInt(b.phcp.substring(1)) : parseInt(b.phcp)) : (b.phcp || 0);
+              comparison = aPhcp - bPhcp;
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+          }
+          
+          // For complete players, always sort by score (lowest first)
+          if (aComplete && bComplete) {
+            const aTotal = aScores.reduce((sum, score) => sum + (parseInt(score) || 0), 0);
+            const bTotal = bScores.reduce((sum, score) => sum + (parseInt(score) || 0), 0);
+            return aTotal - bTotal;
+          }
+          
+          return 0;
+        });
+        
+        filteredPlayers = playersToShow;
+
+        tbody.innerHTML = '';
+        filteredPlayers.forEach((player, idx) => {
+          const row = tbody.insertRow();
+          row.dataset.playerReg = player.reg;
+          
+          // Check if player has completed all 18 holes
+          const playerScores = scores[player.reg]?.holes || [];
+          const completedHoles = playerScores.filter(s => s !== '' && s !== null && s !== undefined).length;
+          const isComplete = completedHoles === 18;
+          
+          if (isComplete) {
+            row.classList.add('completed');
+          }
+          
+          if (selectedPlayer && selectedPlayer.reg === player.reg) {
+            row.classList.add('selected');
+          }
+          
+          // Highlight row if it matches highlightedIndex
+          if (idx === highlightedIndex) {
+            row.style.background = '#dbeafe';
+          }
+
+          const nameCell = row.insertCell();
+          const playerName = `${player.firstName} ${player.lastName}`;
+          const playerStatus = scores[player.reg]?.status || '';
+          
+          // Show status if player has one (DQ, NS, NR)
+          if (playerStatus) {
+            nameCell.innerHTML = `${playerName} <span class="player-total-score" style="color: #dc2626;">(${playerStatus})</span>`;
+            row.style.background = '#fee2e2'; // Light red background for status players
+          } else if (isComplete) {
+            // Add total score if complete and no status
+            const totalScore = playerScores.reduce((sum, score) => {
+              const numScore = parseInt(score);
+              return sum + (isNaN(numScore) ? 0 : numScore);
+            }, 0);
+            nameCell.innerHTML = `${playerName} <span class="player-total-score">(${totalScore})</span>`;
+          } else {
+            nameCell.textContent = playerName;
+          }
+          
+          const phcpCell = row.insertCell();
+          let phcpDisplay = '-';
+          if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
+            phcpDisplay = player.phcp < 0 ? '+' + Math.abs(player.phcp) : player.phcp;
+          }
+          phcpCell.textContent = phcpDisplay;
+          phcpCell.style.textAlign = 'center';
+
+          row.addEventListener('click', () => {
+            selectPlayer(player);
+            highlightedIndex = -1;
+          });
+        });
+
+        updateStatus();
+      }
+
+      function selectPlayer(player) {
+        selectedPlayer = player;
+        
+        console.log('Selected player:', player);
+        console.log('Player PHCP value:', player.phcp, 'Type:', typeof player.phcp);
+        
+        // Update selection in players list
+        document.querySelectorAll('.players-table tr').forEach(tr => tr.classList.remove('selected'));
+        const selectedRow = document.querySelector(`[data-player-reg="${player.reg}"]`);
+        if (selectedRow) {
+          selectedRow.classList.add('selected');
+        }
+
+        // Show player info
+        document.getElementById('player-info').style.display = 'block';
+        document.getElementById('player-name').textContent = `${player.firstName} ${player.lastName}`;
+        document.getElementById('player-reg').textContent = player.reg;
+        
+        // Format HCP: negative values display with +, positive as-is
+        let hcpDisplay = '-';
+        if (player.hcp !== undefined && player.hcp !== null && player.hcp !== '') {
+          const hcp = parseFloat(player.hcp);
+          hcpDisplay = hcp < 0 ? '+' + Math.abs(hcp).toFixed(1) : hcp.toFixed(1);
+        }
+        document.getElementById('player-hcp').textContent = hcpDisplay;
+        
+        // Use stored playing HCP from admissions (already calculated and rounded)
+        // Format: negative numbers get + prefix, positive numbers as-is
+        let phcpDisplay = '-';
+        if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
+          phcpDisplay = player.phcp < 0 ? '+' + Math.abs(player.phcp) : player.phcp;
+        }
+        document.getElementById('player-phcp').textContent = phcpDisplay;
+
+        // Load player status
+        const playerScores = scores[player.reg];
+        const statusSelect = document.getElementById('player-status');
+        statusSelect.value = playerScores.status || '';
+        
+        // Add status change listener
+        statusSelect.onchange = (e) => {
+          scores[player.reg].status = e.target.value;
+          saveScores();
+          renderPlayersList(); // Refresh the player list to move player to correct position
+          renderScorecard(player);
+        };
+
+        // Render scorecard
+        renderScorecard(player);
+        
+        // Focus on first hole input after a short delay (to ensure DOM is ready)
+        setTimeout(() => {
+          const firstInput = document.querySelector('.score-input[data-hole="0"]');
+          if (firstInput && !firstInput.disabled) {
+            firstInput.focus();
+            firstInput.select();
+          }
+        }, 100);
+      }
+
+      function renderScorecard(player) {
+        const content = document.getElementById('scorecard-content');
+        
+        if (!courseData || !courseData.pars) {
+          content.innerHTML = '<div class="empty-state"><p>Course data not available</p></div>';
+          return;
+        }
+
+        const playerKey = player.reg;
+        const playerScores = scores[playerKey];
+        const playerStatus = playerScores.status || '';
+        const pars = courseData.pars;
+        const strokeIndexes = courseData.strokeIndexes || Array(pars.length).fill('-');
+        
+        // Show warning if player has special status
+        let statusWarning = '';
+        if (playerStatus === 'DQ') {
+          statusWarning = '<div class="status-warning">⚠️ Player is DISQUALIFIED - scores will not count in results</div>';
+        } else if (playerStatus === 'NS') {
+          statusWarning = '<div class="status-warning">⚠️ Player is NO SHOW - did not start the round</div>';
+        } else if (playerStatus === 'NR') {
+          statusWarning = '<div class="status-warning">⚠️ Player is NO RETURN - did not complete the round</div>';
+        }
+
+        let html = statusWarning;
+        html += '<table class="scorecard-table">';
+        
+        // Build header row (Hole numbers)
+        html += '<thead><tr><th>Hole</th>';
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          html += `<th>${i + 1}</th>`;
+        }
+        html += '<th class="subtotal-cell">OUT</th>';
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          html += `<th>${i + 1}</th>`;
+        }
+        html += '<th class="total-cell">IN</th>';
+        html += '<th class="total-cell">TOT</th>';
+        html += '</tr></thead><tbody>';
+
+        // Par row with stroke dots
+        html += '<tr><td><strong>Par</strong></td>';
+        let front9Par = 0, back9Par = 0;
+        const phcp = player.phcp || 0;
+        
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          const si = strokeIndexes[i];
+          const strokes = getStrokesForHole(phcp, si);
+          const absStrokes = Math.abs(strokes);
+          let strokeMarker = '';
+          if (strokes > 0) {
+            // Receives strokes - blue dots
+            strokeMarker = '<span style="color: #3b82f6; font-weight: bold;">' + '•'.repeat(absStrokes) + '</span>';
+          } else if (strokes < 0) {
+            // Gives strokes - red minus signs
+            strokeMarker = '<span style="color: #ef4444; font-weight: bold;">' + '−'.repeat(absStrokes) + '</span>';
+          }
+          html += `<td>${pars[i]}${strokeMarker}</td>`;
+          front9Par += pars[i];
+        }
+        html += `<td class="subtotal-cell">${front9Par}</td>`;
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          const si = strokeIndexes[i];
+          const strokes = getStrokesForHole(phcp, si);
+          const absStrokes = Math.abs(strokes);
+          let strokeMarker = '';
+          if (strokes > 0) {
+            // Receives strokes - blue dots
+            strokeMarker = '<span style="color: #3b82f6; font-weight: bold;">' + '•'.repeat(absStrokes) + '</span>';
+          } else if (strokes < 0) {
+            // Gives strokes - red minus signs
+            strokeMarker = '<span style="color: #ef4444; font-weight: bold;">' + '−'.repeat(absStrokes) + '</span>';
+          }
+          html += `<td>${pars[i]}${strokeMarker}</td>`;
+          back9Par += pars[i];
+        }
+        html += `<td class="subtotal-cell">${back9Par}</td>`;
+        html += `<td class="total-cell">${front9Par + back9Par}</td>`;
+        html += '</tr>';
+
+        // SI row
+        html += '<tr><td><strong>SI</strong></td>';
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          html += `<td>${strokeIndexes[i]}</td>`;
+        }
+        html += '<td class="subtotal-cell">-</td>';
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          html += `<td>${strokeIndexes[i]}</td>`;
+        }
+        html += '<td class="subtotal-cell">-</td>';
+        html += '<td class="total-cell">-</td>';
+        html += '</tr>';
+
+        // Score row
+        html += '<tr><td><strong>Score</strong></td>';
+        let front9Score = 0, back9Score = 0;
+        const disableInputs = playerStatus === 'NS' ? 'disabled' : '';
+        
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          const score = playerScores.holes[i];
+          if (score) front9Score += parseInt(score);
+          html += `<td><input type="number" class="score-input" value="${score || ''}" 
+                    data-hole="${i}" min="1" max="15" step="1" ${score ? 'class="score-input has-value"' : ''} ${disableInputs}></td>`;
+        }
+        html += `<td class="subtotal-cell" id="front9-score">${front9Score || '-'}</td>`;
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          const score = playerScores.holes[i];
+          if (score) back9Score += parseInt(score);
+          html += `<td><input type="number" class="score-input" value="${score || ''}" 
+                    data-hole="${i}" min="1" max="15" step="1" ${score ? 'class="score-input has-value"' : ''} ${disableInputs}></td>`;
+        }
+        html += `<td class="subtotal-cell" id="back9-score">${back9Score || '-'}</td>`;
+        html += `<td class="total-cell" id="total-score">${(front9Score + back9Score) || '-'}</td>`;
+        html += '</tr>';
+
+        // Medal Net row
+        html += '<tr><td><strong>Medal Net</strong></td>';
+        let front9Net = 0, back9Net = 0;
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          const net = playerScores.points[i];
+          if (net !== '' && net !== undefined && net !== null) front9Net += parseInt(net);
+          html += `<td id="points-${i}">${net !== '' && net !== undefined && net !== null ? net : '-'}</td>`;
+        }
+        html += `<td class="subtotal-cell" id="front9-points">${front9Net || '-'}</td>`;
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          const net = playerScores.points[i];
+          if (net !== '' && net !== undefined && net !== null) back9Net += parseInt(net);
+          html += `<td id="points-${i}">${net !== '' && net !== undefined && net !== null ? net : '-'}</td>`;
+        }
+        html += `<td class="subtotal-cell" id="back9-points">${back9Net || '-'}</td>`;
+        html += `<td class="total-cell" id="total-points">${(front9Net + back9Net) || '-'}</td>`;
+        html += '</tr>';
+
+        // Stableford Net row
+        html += '<tr><td><strong>Stableford Net</strong></td>';
+        let front9Stableford = 0, back9Stableford = 0;
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          const stableford = playerScores.stablefordPoints[i];
+          if (stableford !== '' && stableford !== undefined && stableford !== null) front9Stableford += parseInt(stableford);
+          html += `<td id="stableford-${i}">${stableford !== '' && stableford !== undefined && stableford !== null ? stableford : '-'}</td>`;
+        }
+        html += `<td class="subtotal-cell" id="front9-stableford">${front9Stableford || '-'}</td>`;
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          const stableford = playerScores.stablefordPoints[i];
+          if (stableford !== '' && stableford !== undefined && stableford !== null) back9Stableford += parseInt(stableford);
+          html += `<td id="stableford-${i}">${stableford !== '' && stableford !== undefined && stableford !== null ? stableford : '-'}</td>`;
+        }
+        html += `<td class="subtotal-cell" id="back9-stableford">${back9Stableford || '-'}</td>`;
+        html += `<td class="total-cell" id="total-stableford">${(front9Stableford + back9Stableford) || '-'}</td>`;
+        html += '</tr>';
+
+        html += '</tbody></table>';
+        content.innerHTML = html;
+
+        // Add event listeners to score inputs
+        content.querySelectorAll('.score-input').forEach(input => {
+          input.addEventListener('input', (e) => {
+            handleScoreInput(e, playerKey);
+          });
+
+          input.addEventListener('focus', (e) => {
+            // Select all text when clicking on an input with existing value
+            if (e.target.value) {
+              e.target.select();
+            }
+          });
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const allInputs = Array.from(content.querySelectorAll('.score-input'));
+              const currentIdx = allInputs.indexOf(e.target);
+              if (currentIdx < allInputs.length - 1) {
+                allInputs[currentIdx + 1].focus();
+                allInputs[currentIdx + 1].select();
+              }
+            }
+          });
+        });
+      }
+
+      function handleScoreInput(e, playerKey) {
+        const holeIndex = parseInt(e.target.dataset.hole);
+        let score = e.target.value ? parseInt(e.target.value) : '';
+        
+        // Handle score of 1 - ask if hole-in-one or double digit
+        if (score === 1 && e.target.value.length === 1) {
+          showScoreModal(e.target, playerKey, holeIndex);
+          return;
+        }
+        
+        // Process score (including empty/deleted scores)
+        processScore(e.target, playerKey, holeIndex, score);
+      }
+
+      function showScoreModal(inputElement, playerKey, holeIndex) {
+        const modal = document.getElementById('score-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalInputContainer = document.getElementById('modal-input-container');
+        const modalInput = document.getElementById('modal-input');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+        
+        let stage = 1; // Stage 1: Ask if hole-in-one, Stage 2: Enter double digit
+        
+        // Stage 1: Is this a hole-in-one?
+        modalTitle.textContent = 'Score Entry';
+        modalMessage.textContent = 'Is this a Hole-in-One?';
+        modalInputContainer.style.display = 'none';
+        modalConfirm.textContent = 'Yes, Hole-in-One';
+        modalCancel.textContent = 'No, Double Digit';
+        modal.classList.add('active');
+        
+        const handleConfirm = () => {
+          if (stage === 1) {
+            // Hole-in-one confirmed
+            cleanup();
+            inputElement.value = 1;
+            processScore(inputElement, playerKey, holeIndex, 1);
+          } else {
+            // Stage 2: Validate and save double digit
+            const doubleDigit = parseInt(modalInput.value);
+            if (doubleDigit && doubleDigit >= 10) {
+              cleanup();
+              inputElement.value = doubleDigit;
+              processScore(inputElement, playerKey, holeIndex, doubleDigit);
+            } else {
+              modalInput.focus();
+            }
+          }
+        };
+        
+        const handleCancel = () => {
+          if (stage === 1) {
+            // Move to stage 2: Enter double digit
+            stage = 2;
+            modalTitle.textContent = 'Enter Double-Digit Score';
+            modalMessage.textContent = 'Enter the score (10 or higher):';
+            modalInputContainer.style.display = 'block';
+            modalInput.value = '10';
+            modalInput.focus();
+            modalInput.select();
+            modalConfirm.textContent = 'Confirm';
+            modalCancel.textContent = 'Cancel';
+          } else {
+            // Cancel double digit entry
+            cleanup();
+            inputElement.value = '';
+          }
+        };
+        
+        const cleanup = () => {
+          modal.classList.remove('active');
+          modalConfirm.removeEventListener('click', handleConfirm);
+          modalCancel.removeEventListener('click', handleCancel);
+          modalInput.removeEventListener('keydown', handleEnter);
+        };
+        
+        const handleEnter = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleConfirm();
+          }
+        };
+        
+        modalConfirm.addEventListener('click', handleConfirm);
+        modalCancel.addEventListener('click', handleCancel);
+        modalInput.addEventListener('keydown', handleEnter);
+      }
+
+      function playerHasStablefordCategory(player) {
+        // Check if player has any Stableford category assigned
+        console.log('Checking Stableford for player:', player.firstName, player.lastName);
+        console.log('Player categories:', player.categories);
+        
+        if (!player.categories || !Array.isArray(player.categories)) {
+          console.log('No categories array found');
+          return false;
+        }
+        
+        const categories = getCategories();
+        console.log('All tournament categories:', categories);
+        
+        for (const catCode of player.categories) {
+          const category = categories.find(c => c.code === catCode);
+          console.log(`Category ${catCode}:`, category);
+          if (category && category.tournamentType) {
+            console.log('Tournament type:', category.tournamentType);
+            if (category.tournamentType.toLowerCase().includes('stableford')) {
+              console.log('✓ Player HAS Stableford category!');
+              return true;
+            }
+          }
+        }
+        
+        console.log('✗ Player does NOT have Stableford category');
+        return false;
+      }
+      
+      function getCategories() {
+        try {
+          // Categories are stored in tournament.categories
+          return currentTournament?.categories || [];
+        } catch (err) {
+          console.error('Error loading categories:', err);
+          return [];
+        }
+      }
+
+      function getMaxScoreForHole(holeIndex, player) {
+        const maxScoreSetting = currentTournament?.meta?.maxScore;
+        if (!maxScoreSetting || maxScoreSetting === 'na' || !courseData || !courseData.pars) {
+          return null;
+        }
+        
+        const par = courseData.pars[holeIndex];
+        const si = courseData.strokeIndexes?.[holeIndex] || 999;
+        const phcp = player.phcp || 0;
+        
+        switch(maxScoreSetting) {
+          case 'net_double_bogey':
+            // Net double bogey = par + 2 + strokes received
+            const strokesReceived = getStrokesForHole(phcp, si);
+            return par + 2 + strokesReceived;
+          case 'par_plus_4':
+            return par + 4;
+          case 'double_par':
+            return par * 2;
+          case '10':
+            return 10;
+          default:
+            return null;
+        }
+      }
+
+      function processScore(inputElement, playerKey, holeIndex, score) {
+        // Handle empty/deleted score
+        if (score === '' || score === null || score === undefined) {
+          scores[playerKey].holes[holeIndex] = '';
+          scores[playerKey].points[holeIndex] = '';
+          scores[playerKey].stablefordPoints[holeIndex] = '';
+          
+          // Remove from incomplete holes
+          if (scores[playerKey].incompleteHoles) {
+            scores[playerKey].incompleteHoles = scores[playerKey].incompleteHoles.filter(h => h !== holeIndex);
+          }
+          
+          // Clear max score flag
+          if (scores[playerKey].isMaxScoreApplied) {
+            scores[playerKey].isMaxScoreApplied[holeIndex] = false;
+          }
+          
+          // Clear styling
+          inputElement.classList.remove('has-value', 'score-par', 'score-birdie', 'score-eagle', 'score-bogey', 'score-double-bogey');
+          
+          // Update displays
+          const pointsCell = document.getElementById(`points-${holeIndex}`);
+          if (pointsCell) pointsCell.textContent = '-';
+          
+          const stablefordCell = document.getElementById(`stableford-${holeIndex}`);
+          if (stablefordCell) stablefordCell.textContent = '-';
+          
+          // Update totals
+          updateTotals();
+          return;
+        }
+        
+        let isMaxScoreApplied = false;
+        let isIncompleteHole = false;
+        
+        // Track if 0 was originally entered (player did not complete hole)
+        if (score === 0) {
+          isIncompleteHole = true;
+          
+          // Check if max score option is NOT activated
+          const maxScore = getMaxScoreForHole(holeIndex, selectedPlayer);
+          if (maxScore === null) {
+            // No max score option - check if player has Stableford category
+            const hasStableford = playerHasStablefordCategory(selectedPlayer);
+            
+            if (!hasStableford) {
+              // Player doesn't have Stableford category - show warning
+              const playerName = `${selectedPlayer.firstName} ${selectedPlayer.lastName}`;
+              const confirmed = confirm(
+                `Player ${playerName} is not assigned to a category which allows no score for a hole.\n\n` +
+                `Player will be disqualified.\n\n` +
+                `Click OK to mark as DQ, or Cancel to enter a proper score.`
+              );
+              
+              if (confirmed) {
+                // Mark player as DQ
+                scores[playerKey].status = 'DQ';
+                
+                // Update status dropdown
+                const statusSelect = document.getElementById('player-status');
+                if (statusSelect) {
+                  statusSelect.value = 'DQ';
+                }
+                
+                // Auto-save the DQ status
+                saveScores();
+                
+                inputElement.value = '';
+                renderScorecard(selectedPlayer);
+                return;
+              } else {
+                // Cancel - clear the input and don't process
+                inputElement.value = '';
+                return;
+              }
+            }
+          }
+          
+          // Track incomplete hole
+          if (!scores[playerKey].incompleteHoles) {
+            scores[playerKey].incompleteHoles = [];
+          }
+          if (!scores[playerKey].incompleteHoles.includes(holeIndex)) {
+            scores[playerKey].incompleteHoles.push(holeIndex);
+          }
+        } else {
+          // Remove from incomplete holes if a real score is entered
+          if (scores[playerKey].incompleteHoles) {
+            scores[playerKey].incompleteHoles = scores[playerKey].incompleteHoles.filter(h => h !== holeIndex);
+          }
+        }
+        
+        // Check if max score is activated and should be applied
+        const maxScore = getMaxScoreForHole(holeIndex, selectedPlayer);
+        if (maxScore !== null) {
+          // Apply max score if score is 0 or exceeds max score
+          if (score === 0 || score > maxScore) {
+            score = maxScore;
+            inputElement.value = maxScore;
+            isMaxScoreApplied = true;
+          }
+        }
+        
+        scores[playerKey].holes[holeIndex] = score;
+        scores[playerKey].isMaxScoreApplied = scores[playerKey].isMaxScoreApplied || {};
+        scores[playerKey].isMaxScoreApplied[holeIndex] = isMaxScoreApplied;
+        
+        // Apply score type styling based on par
+        inputElement.classList.remove('has-value', 'score-par', 'score-birdie', 'score-eagle', 'score-bogey', 'score-double-bogey', 'score-zero');
+        
+        if (score === 0) {
+          // Special styling for zero score (incomplete hole)
+          inputElement.classList.add('score-zero');
+        } else if (score && courseData && courseData.pars) {
+          const par = courseData.pars[holeIndex];
+          const diff = score - par;
+          
+          if (diff === 0) {
+            inputElement.classList.add('score-par');
+          } else if (diff === -1) {
+            inputElement.classList.add('score-birdie');
+          } else if (diff <= -2) {
+            inputElement.classList.add('score-eagle');
+          } else if (diff === 1) {
+            inputElement.classList.add('score-bogey');
+          } else if (diff >= 2) {
+            inputElement.classList.add('score-double-bogey');
+          }
+        }
+
+        // Calculate Medal Net
+        const points = calculatePoints(holeIndex, score, selectedPlayer);
+        scores[playerKey].points[holeIndex] = points;
+        
+        // Update Medal Net display
+        const pointsCell = document.getElementById(`points-${holeIndex}`);
+        if (pointsCell) {
+          pointsCell.textContent = points || '-';
+        }
+
+        // Calculate Stableford Net
+        const stablefordPoints = calculateStablefordPoints(holeIndex, score, selectedPlayer);
+        scores[playerKey].stablefordPoints[holeIndex] = stablefordPoints;
+        
+        // Update Stableford Net display
+        const stablefordCell = document.getElementById(`stableford-${holeIndex}`);
+        if (stablefordCell) {
+          stablefordCell.textContent = stablefordPoints !== '' ? stablefordPoints : '-';
+        }
+
+        // Update totals
+        updateTotals(playerKey);
+
+        // Auto-advance to next hole (advance for any number including 0)
+        if (score !== '' && score !== null && score !== undefined) {
+          const allInputs = Array.from(document.querySelectorAll('.score-input'));
+          const currentIdx = allInputs.indexOf(inputElement);
+          if (currentIdx < allInputs.length - 1) {
+            allInputs[currentIdx + 1].focus();
+            allInputs[currentIdx + 1].select();
+          }
+        }
+      }
+
+      function getStrokesForHole(phcp, strokeIndex) {
+        // Calculate how many strokes a player receives/gives on this hole
+        const si = parseInt(strokeIndex);
+        if (isNaN(si) || si > 18 || si < 1) return 0;
+        
+        // Convert phcp to number, handling both old string format ("+2") and new numeric format (-2)
+        let numPhcp;
+        if (typeof phcp === 'string') {
+          if (phcp.startsWith('+')) {
+            // Plus handicap: "+2" becomes -2
+            numPhcp = -parseInt(phcp.substring(1));
+          } else {
+            numPhcp = parseInt(phcp) || 0;
+          }
+        } else {
+          numPhcp = phcp || 0;
+        }
+        
+        const absPhcp = Math.abs(numPhcp);
+        const fullStrokes = Math.floor(absPhcp / 18);
+        const remainingStrokes = absPhcp % 18;
+        
+        if (numPhcp >= 0) {
+          // Positive handicap - receives strokes on easiest holes (lowest SI)
+          // SI 1, 2, 3... up to remainingStrokes
+          return fullStrokes + (si <= remainingStrokes ? 1 : 0);
+        } else {
+          // Plus handicap - gives strokes on hardest holes (highest SI)
+          // For PHCP -2: gives on SI 17 and 18 (the 2 hardest)
+          // For PHCP -5: gives on SI 14, 15, 16, 17, 18 (the 5 hardest)
+          // SI must be >= (19 - remainingStrokes) to give a stroke
+          const givesStroke = si >= (19 - remainingStrokes) ? 1 : 0;
+          return -(fullStrokes + givesStroke);
+        }
+      }
+
+      function calculatePoints(holeIndex, score, player) {
+        if (!score || !courseData || !courseData.pars) return '';
+        
+        const playerKey = player.reg;
+        const isMaxScoreApplied = scores[playerKey]?.isMaxScoreApplied?.[holeIndex];
+        
+        // If max score was applied (0 entered or score exceeded max), don't subtract strokes
+        if (isMaxScoreApplied) {
+          return score; // Medal Net = Gross (no handicap adjustment)
+        }
+        
+        const si = courseData.strokeIndexes?.[holeIndex] || 999;
+        const phcp = player.phcp || 0;
+        
+        // Calculate strokes received/given on this hole
+        const strokesReceived = getStrokesForHole(phcp, si);
+        
+        // Medal Net score = Gross score - strokes received
+        // For plus handicaps, strokesReceived is negative, so subtracting adds to the score
+        // Example: score=4, strokes=-1 (gives 1), net = 4 - (-1) = 5
+        const netScore = score - strokesReceived;
+        
+        return netScore;
+      }
+
+      function calculateStablefordPoints(holeIndex, score, player) {
+        if (score === '' || score === null || score === undefined || !courseData || !courseData.pars) return '';
+        
+        // If score is 0, return 0 Stableford points
+        if (score === 0) return 0;
+        
+        const par = courseData.pars[holeIndex];
+        const si = courseData.strokeIndexes?.[holeIndex] || 999;
+        const phcp = player.phcp || 0;
+        
+        // Calculate strokes received/given on this hole
+        const strokesReceived = getStrokesForHole(phcp, si);
+        
+        // Net score for this hole
+        const netScore = score - strokesReceived;
+        
+        // Stableford points calculation
+        // Par or better: 2 + (par - netScore)
+        // Over par: max(0, 2 - (netScore - par))
+        const scoreDiff = netScore - par;
+        
+        if (scoreDiff <= 0) {
+          // Par or better: Birdie = 3, Eagle = 4, etc.
+          return 2 - scoreDiff;
+        } else {
+          // Over par: Bogey = 1, Double+ = 0
+          return Math.max(0, 2 - scoreDiff);
+        }
+      }
+
+      function updateTotals(playerKey) {
+        const playerScores = scores[playerKey];
+        
+        let front9Score = 0, front9Points = 0, front9Stableford = 0;
+        let back9Score = 0, back9Points = 0, back9Stableford = 0;
+
+        for (let i = 0; i < 9; i++) {
+          if (playerScores.holes[i]) front9Score += parseInt(playerScores.holes[i]);
+          if (playerScores.points[i]) front9Points += parseInt(playerScores.points[i]);
+          if (playerScores.stablefordPoints[i] !== '' && playerScores.stablefordPoints[i] !== undefined) {
+            front9Stableford += parseInt(playerScores.stablefordPoints[i]);
+          }
+        }
+
+        for (let i = 9; i < 18; i++) {
+          if (playerScores.holes[i]) back9Score += parseInt(playerScores.holes[i]);
+          if (playerScores.points[i]) back9Points += parseInt(playerScores.points[i]);
+          if (playerScores.stablefordPoints[i] !== '' && playerScores.stablefordPoints[i] !== undefined) {
+            back9Stableford += parseInt(playerScores.stablefordPoints[i]);
+          }
+        }
+
+        const front9El = document.getElementById('front9-score');
+        const back9El = document.getElementById('back9-score');
+        const totalEl = document.getElementById('total-score');
+        const front9PtsEl = document.getElementById('front9-points');
+        const back9PtsEl = document.getElementById('back9-points');
+        const totalPtsEl = document.getElementById('total-points');
+        const front9StablefordEl = document.getElementById('front9-stableford');
+        const back9StablefordEl = document.getElementById('back9-stableford');
+        const totalStablefordEl = document.getElementById('total-stableford');
+        
+        if (front9El) front9El.textContent = front9Score || '-';
+        if (back9El) back9El.textContent = back9Score || '-';
+        if (totalEl) totalEl.textContent = (front9Score + back9Score) || '-';
+        if (front9PtsEl) front9PtsEl.textContent = front9Points || '-';
+        if (back9PtsEl) back9PtsEl.textContent = back9Points || '-';
+        if (totalPtsEl) totalPtsEl.textContent = (front9Points + back9Points) || '-';
+        if (front9StablefordEl) front9StablefordEl.textContent = front9Stableford || '-';
+        if (back9StablefordEl) back9StablefordEl.textContent = back9Stableford || '-';
+        if (totalStablefordEl) totalStablefordEl.textContent = (front9Stableford + back9Stableford) || '-';
+      }
+
+      function updateStatus() {
+        const playersWithScores = Object.values(scores).filter(data => 
+          data.holes && data.holes.some(s => s !== '')
+        ).length;
+        
+        document.getElementById('status-text').textContent = 
+          `${admittedPlayers.length} players | ${playersWithScores} with scores entered`;
+      }
+
+      function saveScores() {
+        const scoresData = getScoresData();
+        scoresData[currentRoundId] = scores;
+        saveScoresData(scoresData);
+        
+        // Refresh player list to update positions
+        renderPlayersList();
+        
+        // Focus search bar for next player
+        const searchInput = document.getElementById('player-search');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+
+      // Search functionality
+      const searchInput = document.getElementById('player-search');
+      
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        highlightedIndex = query ? 0 : -1;
+        renderPlayersList();
+      });
+      
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedIndex >= 0 && filteredPlayers[highlightedIndex]) {
+            selectPlayer(filteredPlayers[highlightedIndex]);
+            searchInput.value = '';
+            highlightedIndex = -1;
+            renderPlayersList();
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (filteredPlayers.length > 0) {
+            highlightedIndex = Math.min(highlightedIndex + 1, filteredPlayers.length - 1);
+            renderPlayersList();
+            // Scroll highlighted row into view
+            const rows = document.querySelectorAll('.players-table tbody tr');
+            if (rows[highlightedIndex]) {
+              rows[highlightedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (filteredPlayers.length > 0) {
+            highlightedIndex = Math.max(highlightedIndex - 1, 0);
+            renderPlayersList();
+            // Scroll highlighted row into view
+            const rows = document.querySelectorAll('.players-table tbody tr');
+            if (rows[highlightedIndex]) {
+              rows[highlightedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        }
+      });
+
+      // Setup table header sorting
+      function setupTableSorting() {
+        document.querySelectorAll('.players-table th[data-sort]').forEach(header => {
+          header.addEventListener('click', () => {
+            const column = header.getAttribute('data-sort');
+            
+            // Toggle direction if same column, otherwise default to asc
+            if (sortColumn === column) {
+              sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortColumn = column;
+              sortDirection = 'asc';
+            }
+            
+            // Update sort indicators
+            document.querySelectorAll('.players-table th span').forEach(span => {
+              span.textContent = '';
+            });
+            
+            const indicator = sortDirection === 'asc' ? '▲' : '▼';
+            document.getElementById(`sort-${column}`).textContent = indicator;
+            
+            renderPlayersList();
+          });
+        });
+      }
+
+      // Initialize on load
+      init();
+      setupTableSorting();
+    </script>
+  </body>
+</html>

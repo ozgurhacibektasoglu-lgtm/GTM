@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Golf Tournament Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      }
+
+      .home-container {
+        text-align: center;
+        padding: 40px;
+      }
+
+      /* Logo */
+      .logo {
+        width: 280px;
+        max-width: 70%;
+        height: auto;
+        margin: 0 auto 50px;
+        display: block;
+      }
+
+      .title {
+        font-size: 42px;
+        font-weight: 300;
+        color: #ffffff;
+        margin: 0 0 8px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      }
+
+      .subtitle {
+        font-size: 16px;
+        color: rgba(255,255,255,0.7);
+        margin: 0 0 50px;
+        font-weight: 400;
+        letter-spacing: 1px;
+      }
+
+      .nav-cards {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .nav-card {
+        background: rgba(255,255,255,0.95);
+        border: none;
+        border-radius: 16px;
+        padding: 32px 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        min-width: 160px;
+      }
+
+      .nav-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      }
+
+      .nav-card:active {
+        transform: translateY(-4px);
+      }
+
+      .nav-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      .nav-label {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a472a;
+        display: block;
+      }
+
+      .nav-desc {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 6px;
+        display: block;
+      }
+
+      /* Card Colors */
+      .nav-card.tournaments { border-bottom: 4px solid #059669; }
+      .nav-card.tournaments .nav-icon { color: #059669; }
+      
+      .nav-card.players { border-bottom: 4px solid #0b6efd; }
+      .nav-card.players .nav-icon { color: #0b6efd; }
+      
+      .nav-card.courses { border-bottom: 4px solid #d97706; }
+      .nav-card.courses .nav-icon { color: #d97706; }
+
+      .footer {
+        margin-top: 60px;
+        color: rgba(255,255,255,0.5);
+        font-size: 13px;
+      }
+
+      @media (max-width: 640px) {
+        .nav-cards {
+          flex-direction: column;
+          align-items: center;
+        }
+        .nav-card {
+          width: 100%;
+          max-width: 280px;
+        }
+        .title {
+          font-size: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="home-container">
+      <!-- GTM Logo -->
+      <img src="logo.png?v=3" alt="GTM Logo" class="logo" onerror="this.style.display='none'">
+
+      <nav class="nav-cards" role="navigation" aria-label="Main navigation">
+        <button class="nav-card tournaments" id="btn-tournaments">
+          <span class="nav-icon">🏆</span>
+          <span class="nav-label">Tournaments</span>
+          <span class="nav-desc">Manage events & scores</span>
+        </button>
+        <button class="nav-card players" id="btn-players">
+          <span class="nav-icon">🏌️</span>
+          <span class="nav-label">Players</span>
+          <span class="nav-desc">Player database</span>
+        </button>
+        <button class="nav-card courses" id="btn-courses">
+          <span class="nav-icon">⛳</span>
+          <span class="nav-label">Courses</span>
+          <span class="nav-desc">Course information</span>
+        </button>
+      </nav>
+
+      <p class="footer">GTM v1.0</p>
+    </main>
+
+    <script>
+      document.getElementById('btn-tournaments').addEventListener('click', () => {
+        window.location.href = 'tournaments/index.html';
+      });
+
+      document.getElementById('btn-players').addEventListener('click', () => {
+        window.location.href = 'players/index.html';
+      });
+
+      document.getElementById('btn-courses').addEventListener('click', () => {
+        window.location.href = 'courses/index.html';
+      });
+    </script>
+  </body>
+</html>

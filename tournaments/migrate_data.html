@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Export Data</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; border-radius: 8px; max-height: 400px; }
+    button { padding: 10px 20px; margin: 10px 5px 10px 0; cursor: pointer; background: #0b6efd; color: white; border: none; border-radius: 6px; }
+    .success { background: #16a34a; padding: 15px; border-radius: 8px; margin: 10px 0; display: none; }
+  </style>
+</head>
+<body>
+  <h1>Export GTM Data</h1>
+  
+  <p><strong>Instructions:</strong></p>
+  <ol>
+    <li>This page should be opened directly from Finder (file:// protocol)</li>
+    <li>Click "Export Data" to copy all your GTM data</li>
+    <li>The data will be copied to your clipboard</li>
+    <li>Then open: <a href="http://localhost:8080/tournaments/import_data.html" target="_blank">http://localhost:8080/tournaments/import_data.html</a></li>
+    <li>Paste and import the data there</li>
+  </ol>
+
+  <button onclick="exportData()">Export Data to Clipboard</button>
+  
+  <div id="success-message" class="success">
+    ✅ Data exported to clipboard! Now open the import page in localhost:8080
+  </div>
+
+  <h2>Current Data Preview</h2>
+  <pre id="data-preview"></pre>
+
+  <script>
+    function showData() {
+      const allData = {};
+      const keys = ['tournaments', 'players', 'courses', 'admittedPlayers', 'scores', 'categories', 'draws'];
+      
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          try {
+            allData[key] = JSON.parse(value);
+          } catch (e) {
+            allData[key] = value;
+          }
+        }
+      });
+
+      document.getElementById('data-preview').textContent = JSON.stringify(allData, null, 2);
+      return allData;
+    }
+
+    function exportData() {
+      const data = showData();
+      const dataStr = JSON.stringify(data, null, 2);
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(dataStr).then(() => {
+        document.getElementById('success-message').style.display = 'block';
+        alert('✅ Data copied to clipboard!\n\nNow open:\nhttp://localhost:8080/tournaments/import_data.html\n\nAnd paste the data there.');
+      }).catch(err => {
+        alert('Failed to copy to clipboard. Error: ' + err);
+      });
+    }
+
+    // Show data on load
+    showData();
+  </script>
+</body>
+</html>

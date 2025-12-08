@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tournament Results</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .results-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
+      .card { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); padding: 24px; margin-bottom: 20px; }
+      .card h2 { margin-top: 0; font-size: 18px; margin-bottom: 16px; }
+      .category-item { 
+        padding: 16px; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px; 
+        margin-bottom: 12px; 
+        background: #f9fafb;
+      }
+      .category-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 12px;
+      }
+      .category-name { 
+        font-weight: 600; 
+        font-size: 16px; 
+        color: #1e293b;
+      }
+      .options-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+        gap: 12px; 
+        margin-top: 12px;
+      }
+      .option-group { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 4px;
+      }
+      .option-group label { 
+        font-size: 13px; 
+        font-weight: 600; 
+        color: #475569;
+      }
+      .option-group select,
+      .option-group input[type="checkbox"] { 
+        margin-top: 4px;
+      }
+      .option-group select {
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        font-size: 14px;
+      }
+      .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .checkbox-wrapper span {
+        font-size: 14px;
+        color: #1e293b;
+      }
+      .btn { 
+        background: linear-gradient(180deg, var(--accent), #0a58d1); 
+        color: white; 
+        border: 0; 
+        padding: 10px 20px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-size: 14px; 
+        font-weight: 600;
+        transition: transform 0.08s; 
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-back { 
+        background: white; 
+        color: #0b6efd; 
+        border: 1px solid #e6e9ef; 
+      }
+      .btn-show { 
+        background: linear-gradient(180deg, #10b981, #059669);
+        margin-top: 12px;
+      }
+      .action-buttons { 
+        display: flex; 
+        gap: 10px; 
+        margin-top: 24px;
+      }
+      .empty-state { 
+        text-align: center; 
+        color: #6b7280; 
+        padding: 40px; 
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="results-container">
+      <header>
+        <h1>Tournament Results</h1>
+        <p class="lead" id="tournament-name">Configure result displays</p>
+      </header>
+
+      <div class="card">
+        <h2>Category Results Configuration</h2>
+        <div style="margin-bottom: 20px;">
+          <button class="btn" style="background: linear-gradient(180deg, #f59e0b, #d97706);" onclick="openWinnersList()">🏆 Winners List</button>
+        </div>
+        <div id="categories-list">
+          <div class="empty-state">Loading categories...</div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <a href="index.html" class="btn btn-back">Back to Tournaments</a>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+
+      if (!tournamentId) {
+        alert('No tournament selected. Redirecting to tournaments page.');
+        window.location.href = 'index.html';
+      }
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentId);
+      }
+
+      function getCategories() {
+        const tournament = getTournament();
+        return tournament?.categories || [];
+      }
+
+      function getCategoryPreferences(categoryCode) {
+        const tournament = getTournament();
+        if (!tournament.resultPreferences) return null;
+        return tournament.resultPreferences[categoryCode];
+      }
+
+      function saveCategoryPreferences(categoryCode, prefs) {
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        if (index !== -1) {
+          if (!tournaments[index].resultPreferences) {
+            tournaments[index].resultPreferences = {};
+          }
+          tournaments[index].resultPreferences[categoryCode] = prefs;
+          localStorage.setItem('tournaments', JSON.stringify(tournaments));
+        }
+      }
+
+      function loadCategories() {
+        const tournament = getTournament();
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = tournament.name || 'Tournament Results';
+        }
+
+        const categories = getCategories();
+        const container = document.getElementById('categories-list');
+
+        if (categories.length === 0) {
+          container.innerHTML = '<div class="empty-state">No categories defined yet. Please create categories first.</div>';
+          return;
+        }
+
+        let html = '';
+        categories.forEach((cat, index) => {
+          // Get saved preferences or use defaults
+          const savedPrefs = getCategoryPreferences(cat.code);
+          const displayType = savedPrefs?.display || 'club';
+          const showHcp = savedPrefs?.hcp !== undefined ? savedPrefs.hcp : true;
+          const showPhcp = savedPrefs?.phcp !== undefined ? savedPrefs.phcp : true;
+          const showToPar = savedPrefs?.topar !== undefined ? savedPrefs.topar : false;
+          
+          html += `
+            <div class="category-item">
+              <div class="category-header">
+                <div class="category-name">${cat.name}</div>
+              </div>
+              
+              <div class="options-grid">
+                <div class="option-group">
+                  <label>Display Club or Nationality</label>
+                  <select id="display-${index}" data-category-index="${index}" onchange="savePreferences(${index})">
+                    <option value="club" ${displayType === 'club' ? 'selected' : ''}>Club</option>
+                    <option value="country" ${displayType === 'country' ? 'selected' : ''}>Country</option>
+                    <option value="none" ${displayType === 'none' ? 'selected' : ''}>None</option>
+                  </select>
+                </div>
+
+                <div class="option-group">
+                  <label>HCP (WHS Handicap)</label>
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="hcp-${index}" data-category-index="${index}" ${showHcp ? 'checked' : ''} onchange="savePreferences(${index})">
+                    <span>Show HCP</span>
+                  </div>
+                </div>
+
+                <div class="option-group">
+                  <label>PHCP (Playing Handicap)</label>
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="phcp-${index}" data-category-index="${index}" ${showPhcp ? 'checked' : ''} onchange="savePreferences(${index})">
+                    <span>Show PHCP</span>
+                  </div>
+                </div>
+
+                <div class="option-group">
+                  <label>To Par</label>
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="topar-${index}" data-category-index="${index}" ${showToPar ? 'checked' : ''} onchange="savePreferences(${index})">
+                    <span>Show To Par</span>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-show" onclick="showResults(${index})">Show Results</button>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function savePreferences(categoryIndex) {
+        const categories = getCategories();
+        const category = categories[categoryIndex];
+        
+        if (!category) return;
+        
+        const prefs = {
+          display: document.getElementById(`display-${categoryIndex}`).value,
+          hcp: document.getElementById(`hcp-${categoryIndex}`).checked,
+          phcp: document.getElementById(`phcp-${categoryIndex}`).checked,
+          topar: document.getElementById(`topar-${categoryIndex}`).checked
+        };
+        
+        saveCategoryPreferences(category.code, prefs);
+      }
+
+      function showResults(categoryIndex) {
+        const categories = getCategories();
+        const category = categories[categoryIndex];
+        
+        if (!category) {
+          alert('Category not found');
+          return;
+        }
+
+        // Get selected options
+        const displayType = document.getElementById(`display-${categoryIndex}`).value;
+        const showHcp = document.getElementById(`hcp-${categoryIndex}`).checked;
+        const showPhcp = document.getElementById(`phcp-${categoryIndex}`).checked;
+        const showToPar = document.getElementById(`topar-${categoryIndex}`).checked;
+
+        // Store configuration in URL parameters
+        const params = new URLSearchParams({
+          tournamentId: tournamentId,
+          categoryCode: category.code,
+          categoryName: category.name,
+          display: displayType,
+          hcp: showHcp ? 'yes' : 'no',
+          phcp: showPhcp ? 'yes' : 'no',
+          topar: showToPar ? 'yes' : 'no'
+        });
+
+        // Open results display page (will be created next)
+        window.open(`results_display.html?${params.toString()}`, '_blank');
+      }
+
+      function checkAllScoresComplete() {
+        const tournament = getTournament();
+        const roundIds = tournament?.meta?.roundIds || [];
+        const categories = getCategories();
+        
+        let incompleteCount = 0;
+        const incompleteDetails = [];
+        
+        categories.forEach(category => {
+          const players = getAdmittedPlayers().filter(player => {
+            if (player.categories && Array.isArray(player.categories)) {
+              return player.categories.includes(category.code);
+            }
+            return player.category === category.code;
+          });
+          
+          players.forEach(player => {
+            roundIds.forEach(roundId => {
+              const scores = JSON.parse(localStorage.getItem('scores') || '{}');
+              const playerScores = scores[roundId]?.[player.reg];
+              
+              if (!playerScores) {
+                incompleteCount++;
+                incompleteDetails.push(`${player.firstName} ${player.lastName} (${category.name})`);
+                return;
+              }
+              
+              if (playerScores.status && playerScores.status !== 'OK') {
+                return; // Has status, considered complete
+              }
+              
+              if (playerScores.holes && Array.isArray(playerScores.holes)) {
+                const completedHoles = playerScores.holes.filter(s => s !== '' && s !== null && s !== undefined).length;
+                if (completedHoles !== 18) {
+                  incompleteCount++;
+                  incompleteDetails.push(`${player.firstName} ${player.lastName} (${category.name}) - Round ${roundIds.indexOf(roundId) + 1}`);
+                }
+              } else {
+                incompleteCount++;
+                incompleteDetails.push(`${player.firstName} ${player.lastName} (${category.name})`);
+              }
+            });
+          });
+        });
+        
+        return { complete: incompleteCount === 0, incompleteCount, incompleteDetails };
+      }
+
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          const tournament = getTournament();
+          if (!tournament || !tournament.meta || !tournament.meta.roundIds) return [];
+          
+          const allPlayers = [];
+          tournament.meta.roundIds.forEach(roundId => {
+            if (data[roundId]) {
+              data[roundId].forEach(player => {
+                if (!allPlayers.find(p => p.reg === player.reg)) {
+                  allPlayers.push(player);
+                }
+              });
+            }
+          });
+          
+          return allPlayers;
+        } catch (err) {
+          console.error('Error loading admitted players:', err);
+          return [];
+        }
+      }
+
+      function openWinnersList() {
+        const tournament = getTournament();
+        if (!tournament) {
+          alert('Tournament not found');
+          return;
+        }
+
+        const categories = getCategories();
+        if (categories.length === 0) {
+          alert('No categories defined. Please create categories first.');
+          return;
+        }
+
+        // Check if all scores are complete
+        const completionStatus = checkAllScoresComplete();
+        if (!completionStatus.complete) {
+          const proceed = confirm(`Warning: ${completionStatus.incompleteCount} incomplete scorecard(s) found.\n\nThe winners list should only be generated when all tournament rounds are complete.\n\nDo you want to continue anyway?`);
+          if (!proceed) {
+            return;
+          }
+        }
+
+        // Create custom modal for input
+        const modalHTML = `
+          <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;" id="winners-modal">
+            <div style="background: white; border-radius: 12px; padding: 32px; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+              <h2 style="margin: 0 0 24px 0; font-size: 20px; color: #1e293b;">Winners List Settings</h2>
+              
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #475569; font-size: 14px;">Number of winners per category</label>
+                <input type="number" id="num-winners-input" value="3" min="1" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+              </div>
+              
+              <div style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #475569; font-size: 14px;">Display Order</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="order" value="ascending" checked style="margin-right: 8px; width: 18px; height: 18px;">
+                    <span style="font-size: 14px;">Ascending (1st → 3rd)</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="order" value="descending" style="margin-right: 8px; width: 18px; height: 18px;">
+                    <span style="font-size: 14px;">Descending (3rd → 1st)</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeWinnersModal()" style="background: white; color: #64748b; border: 1px solid #e5e7eb; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Cancel</button>
+                <button onclick="generateWinners()" style="background: linear-gradient(180deg, #f59e0b, #d97706); color: white; border: 0; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Generate</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+      }
+
+      function closeWinnersModal() {
+        const modal = document.getElementById('winners-modal');
+        if (modal) modal.remove();
+      }
+
+      function generateWinners() {
+        const numWinners = document.getElementById('num-winners-input').value;
+        const order = document.querySelector('input[name="order"]:checked').value;
+        
+        if (!numWinners || isNaN(numWinners) || parseInt(numWinners) < 1) {
+          alert('Please enter a valid number of winners');
+          return;
+        }
+
+        closeWinnersModal();
+
+        // Open winners list page
+        const params = new URLSearchParams({
+          tournamentId: tournamentId,
+          numWinners: numWinners,
+          order: order
+        });
+
+        window.open(`winners_list.html?${params.toString()}`, '_blank');
+      }
+
+      // Load categories on page load
+      loadCategories();
+    </script>
+  </body>
+</html>

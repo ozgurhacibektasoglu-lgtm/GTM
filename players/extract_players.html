@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Extract Players from Draws</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; }
+    button { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; }
+    .success { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Extract Players from Tournament Data</h1>
+  <p>This will extract all players from your draws data and create the players list.</p>
+  <button onclick="extractPlayers()">Extract Players</button>
+  <div id="result"></div>
+  
+  <script>
+    function extractPlayers() {
+      const result = document.getElementById('result');
+      
+      // Use players_backup if available
+      const playersBackup = localStorage.getItem('players_backup');
+      if (playersBackup) {
+        try {
+          const players = JSON.parse(playersBackup);
+          localStorage.setItem('players', JSON.stringify(players));
+          result.innerHTML = `<div class="success">✅ Successfully restored ${players.length} players from backup!<br><br><a href="http://localhost:8080/players/index.html">Open Players Page</a></div>`;
+          return;
+        } catch (e) {
+          result.innerHTML = '<div class="error">❌ Error restoring from backup: ' + e.message + '</div>';
+          return;
+        }
+      }
+      
+      result.innerHTML = '<div class="error">❌ No players_backup found. The draws/scores data appears to be truncated during migration.</div>';
+    }
+  </script>
+</body>
+</html>

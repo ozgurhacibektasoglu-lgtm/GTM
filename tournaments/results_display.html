@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Results Display</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .results-display-container { max-width: 1400px; margin: 36px auto; padding: 24px; }
+      .results-header { text-align: center; margin-bottom: 32px; }
+      .results-header h1 { margin: 0; font-size: 28px; color: #1e293b; }
+      .results-header .category-name { font-size: 20px; color: #64748b; margin-top: 8px; }
+      .results-table-wrapper { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); overflow-x: auto; padding: 24px; }
+      .results-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .results-table thead th { 
+        background: #f8fafc; 
+        padding: 12px 16px; 
+        text-align: left; 
+        font-weight: 600; 
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+      }
+      .results-table thead th.text-center { text-align: center; }
+      .results-table thead th.text-right { text-align: right; }
+      .results-table tbody td { 
+        padding: 10px 16px; 
+        border-bottom: 1px solid #f1f5f9;
+        color: #1e293b;
+      }
+      .results-table tbody td.text-center { text-align: center; }
+      .results-table tbody td.text-right { text-align: right; }
+      .results-table tbody tr:hover { background: #f8fafc; }
+      .results-table tbody tr.status-row { background: #fef2f2; }
+      .results-table tbody tr.status-row:hover { background: #fee2e2; }
+      .rank-cell { font-weight: 600; color: #0f172a; font-size: 15px; }
+      .player-cell { font-weight: 500; color: #0f172a; }
+      .total-cell { font-weight: 700; color: #0f172a; font-size: 15px; background: #f1f5f9; }
+      .warning-message { 
+        background: #fef3c7; 
+        border: 2px solid #f59e0b; 
+        border-radius: 8px; 
+        padding: 16px; 
+        margin-bottom: 24px;
+        text-align: center;
+        color: #92400e;
+        font-weight: 600;
+      }
+      .action-buttons { 
+        display: flex; 
+        gap: 10px; 
+        margin-top: 24px;
+        justify-content: center;
+      }
+      .btn { 
+        background: linear-gradient(180deg, var(--accent), #0a58d1); 
+        color: white; 
+        border: 0; 
+        padding: 10px 20px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-size: 14px; 
+        font-weight: 600;
+        transition: transform 0.08s; 
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-print { background: linear-gradient(180deg, #10b981, #059669); }
+      .btn-back { 
+        background: white; 
+        color: #0b6efd; 
+        border: 1px solid #e6e9ef; 
+      }
+      @media print {
+        .action-buttons, .btn { display: none; }
+        .results-display-container { margin: 0; padding: 20px; }
+        .warning-message { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="results-display-container">
+      <div class="results-header">
+        <h1 id="tournament-name">Tournament Results</h1>
+        <div class="category-name" id="category-name"></div>
+      </div>
+
+      <div id="warning-container"></div>
+
+      <div class="results-table-wrapper">
+        <table class="results-table" id="results-table">
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-print" onclick="window.print()">Print Results</button>
+        <button class="btn btn-back" onclick="window.close()">Close</button>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      const categoryCode = urlParams.get('categoryCode');
+      const categoryName = urlParams.get('categoryName');
+      const displayType = urlParams.get('display');
+      const showHcp = urlParams.get('hcp') === 'yes';
+      const showPhcp = urlParams.get('phcp') === 'yes';
+      const showToPar = urlParams.get('topar') === 'yes';
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentId);
+      }
+
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          const tournament = getTournament();
+          if (!tournament || !tournament.meta || !tournament.meta.roundIds) return [];
+          
+          // Get players from all rounds
+          const allPlayers = [];
+          tournament.meta.roundIds.forEach(roundId => {
+            if (data[roundId]) {
+              data[roundId].forEach(player => {
+                if (!allPlayers.find(p => p.reg === player.reg)) {
+                  allPlayers.push(player);
+                }
+              });
+            }
+          });
+          
+          return allPlayers;
+        } catch (err) {
+          console.error('Error loading admitted players:', err);
+          return [];
+        }
+      }
+
+      function getScores() {
+        try {
+          const raw = localStorage.getItem('scores');
+          return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+          console.error('Error loading scores:', err);
+          return {};
+        }
+      }
+
+      function getCategoryPlayers() {
+        const allPlayers = getAdmittedPlayers();
+        // Filter players who belong to this category
+        return allPlayers.filter(player => {
+          if (player.categories && Array.isArray(player.categories)) {
+            return player.categories.includes(categoryCode);
+          }
+          return player.category === categoryCode;
+        });
+      }
+
+      function calculateNetScore(grossScore, hcp) {
+        if (typeof grossScore !== 'number' || isNaN(grossScore)) return null;
+        if (typeof hcp !== 'number' || isNaN(hcp)) return grossScore;
+        return grossScore - hcp;
+      }
+
+      function calculateStablefordTotal(player, roundId) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        if (!playerScores || !playerScores.stablefordPoints) return null;
+        
+        // Check if array is empty or all values are empty/null
+        const hasAnyScore = playerScores.stablefordPoints.some(p => p !== null && p !== undefined && p !== '');
+        if (!hasAnyScore) return null;
+        
+        return playerScores.stablefordPoints.reduce((sum, points) => {
+          const p = parseInt(points);
+          return sum + (isNaN(p) ? 0 : p);
+        }, 0);
+      }
+
+      function calculateGrossTotal(player, roundId) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        if (!playerScores || !playerScores.holes) return null;
+        
+        // Check if array is empty or all values are empty/null
+        const hasAnyScore = playerScores.holes.some(h => h !== null && h !== undefined && h !== '');
+        if (!hasAnyScore) return null;
+        
+        return playerScores.holes.reduce((sum, strokes) => {
+          const s = parseInt(strokes);
+          return sum + (isNaN(s) ? 0 : s);
+        }, 0);
+      }
+
+      function getPlayerRoundScore(player, roundId, tournamentType) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        
+        // If no score record exists at all, return null
+        if (!playerScores) return null;
+        
+        // Check for status first
+        if (playerScores.status && playerScores.status !== 'OK') {
+          return playerScores.status; // DQ, NS, NR
+        }
+        
+        // If status is explicitly 'OK' or undefined, check for actual scores
+        const typeUpper = (tournamentType || '').toUpperCase();
+        let result = null;
+        
+        if (typeUpper.includes('STABLEFORD')) {
+          result = calculateStablefordTotal(player, roundId);
+        } else if (typeUpper.includes('MEDAL NET')) {
+          const gross = calculateGrossTotal(player, roundId);
+          if (gross === null) {
+            result = null;
+          } else {
+            const phcp = typeof player.phcp === 'number' ? player.phcp : (parseFloat(player.hcp) || 0);
+            result = calculateNetScore(gross, phcp);
+          }
+        } else {
+          // Stroke Play (gross)
+          result = calculateGrossTotal(player, roundId);
+        }
+        
+        // If we have a score record but no actual scores, treat as incomplete
+        // This catches the case where scorecard was opened but not filled
+        if (result === null && playerScores && !playerScores.status) {
+          // Scorecard exists but is empty and has no status - this is incomplete
+          return null;
+        }
+        
+        return result;
+      }
+
+      function isPlayerRoundComplete(player, roundId) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        
+        // No score record at all - incomplete
+        if (!playerScores) return false;
+        
+        // Has a status (DQ, NS, NR) - considered complete
+        if (playerScores.status && playerScores.status !== 'OK') return true;
+        
+        // Check if all 18 holes have scores
+        if (playerScores.holes && Array.isArray(playerScores.holes)) {
+          const completedHoles = playerScores.holes.filter(s => s !== '' && s !== null && s !== undefined).length;
+          return completedHoles === 18;
+        }
+        
+        // No holes array or empty - incomplete
+        return false;
+      }
+
+      function checkIncompleteScores(players, roundIds, tournamentType) {
+        const incomplete = [];
+        const tournament = getTournament();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        console.log('=== Checking Incomplete Scores ===');
+        console.log('Total players in category:', players.length);
+        console.log('All round IDs:', roundIds);
+        console.log('Today:', today.toISOString().split('T')[0]);
+        
+        // Determine which rounds should be completed based on today's date
+        const roundsToCheck = [];
+        
+        if (tournament?.meta?.roundsData) {
+          roundIds.forEach((roundId, index) => {
+            const roundData = tournament.meta.roundsData[index];
+            console.log(`Round ${index + 1} (${roundId}):`, roundData?.date);
+            
+            if (roundData && roundData.date) {
+              const roundDate = new Date(roundData.date);
+              roundDate.setHours(0, 0, 0, 0);
+              
+              console.log(`  Round date: ${roundDate.toISOString().split('T')[0]}, Should check: ${roundDate <= today}`);
+              
+              // Only check rounds that have already happened (date <= today)
+              if (roundDate <= today) {
+                roundsToCheck.push(roundId);
+              }
+            } else {
+              // If no date info, check all rounds (backward compatibility)
+              console.log('  No date info, checking this round');
+              roundsToCheck.push(roundId);
+            }
+          });
+        } else {
+          // No date information, check all rounds
+          console.log('No round data found, checking all rounds');
+          roundsToCheck.push(...roundIds);
+        }
+        
+        console.log('Rounds to check:', roundsToCheck);
+        
+        // Check only the rounds that should be completed
+        players.forEach(player => {
+          roundsToCheck.forEach(roundId => {
+            const isComplete = isPlayerRoundComplete(player, roundId);
+            console.log(`${player.firstName} ${player.lastName} - ${roundId}: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
+            
+            if (!isComplete) {
+              const roundIndex = roundIds.indexOf(roundId);
+              incomplete.push(`${player.firstName} ${player.lastName} - Round ${roundIndex + 1}`);
+            }
+          });
+        });
+        
+        console.log('Total incomplete scorecards:', incomplete.length);
+        console.log('Incomplete list:', incomplete);
+        
+        return incomplete;
+      }
+
+      function getCourseParForRound(roundId) {
+        const tournament = getTournament();
+        if (!tournament?.meta?.roundIds) return 72;
+        
+        const roundIndex = tournament.meta.roundIds.indexOf(roundId);
+        if (roundIndex === -1) return 72;
+        
+        const roundData = tournament.meta.roundsData?.[roundIndex];
+        if (!roundData) return 72;
+        
+        // Get course data
+        try {
+          const raw = localStorage.getItem('courses');
+          const courses = raw ? JSON.parse(raw) : [];
+          const course = courses.find(c => c.courseId === roundData.course);
+          
+          if (course && course.pars) {
+            return course.pars.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+          }
+        } catch (err) {
+          console.error('Error loading course data:', err);
+        }
+        
+        return 72;
+      }
+
+      function calculateToParForPlayer(player, roundIds) {
+        // To Par is ALWAYS based on gross scores, regardless of tournament format
+        // Only includes rounds that have been completed (based on date)
+        const tournament = getTournament();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let totalToPar = 0;
+        let hasAnyScore = false;
+        
+        roundIds.forEach((roundId, index) => {
+          // Check if this round should be included (date has passed)
+          const roundData = tournament?.meta?.roundsData?.[index];
+          if (roundData && roundData.date) {
+            const roundDate = new Date(roundData.date);
+            roundDate.setHours(0, 0, 0, 0);
+            
+            // Only include if round date has passed
+            if (roundDate > today) {
+              return; // Skip future rounds
+            }
+          }
+          
+          // Get gross score for this round
+          const grossScore = calculateGrossTotal(player, roundId);
+          
+          if (grossScore !== null && typeof grossScore === 'number') {
+            const par = getCourseParForRound(roundId);
+            totalToPar += (grossScore - par);
+            hasAnyScore = true;
+          }
+        });
+        
+        return hasAnyScore ? totalToPar : null;
+      }
+
+      function generateResults() {
+        const tournament = getTournament();
+        if (!tournament) {
+          alert('Tournament not found');
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = tournament.name;
+        document.getElementById('category-name').textContent = categoryName;
+
+        const category = tournament.categories?.find(c => c.code === categoryCode);
+        if (!category) {
+          alert('Category not found');
+          return;
+        }
+
+        const players = getCategoryPlayers();
+        const roundIds = tournament.meta?.roundIds || [];
+        const tournamentType = category.tournamentType || 'Stroke Play';
+
+        // Check for incomplete scores
+        const incompleteScores = checkIncompleteScores(players, roundIds, tournamentType);
+        if (incompleteScores.length > 0) {
+          const proceed = confirm(`Warning: There are ${incompleteScores.length} incomplete scorecard(s) for this category:\n\n${incompleteScores.slice(0, 5).join('\n')}${incompleteScores.length > 5 ? `\n... and ${incompleteScores.length - 5} more` : ''}\n\nAre you sure you want to continue?`);
+          if (!proceed) {
+            window.close();
+            return;
+          }
+          
+          // Show warning on page
+          const warningDiv = document.getElementById('warning-container');
+          warningDiv.innerHTML = `<div class="warning-message">⚠️ Warning: ${incompleteScores.length} incomplete scorecard(s) detected</div>`;
+        }
+
+        // Build table header
+        let headerHTML = '<tr>';
+        headerHTML += '<th class="text-center">Rank</th>';
+        headerHTML += '<th>Player</th>';
+        if (displayType === 'club') headerHTML += '<th>Club</th>';
+        if (displayType === 'country') headerHTML += '<th>Country</th>';
+        if (showHcp) headerHTML += '<th class="text-center">HCP</th>';
+        if (showPhcp) headerHTML += '<th class="text-center">PHCP</th>';
+        if (showToPar) headerHTML += '<th class="text-center">To Par</th>';
+        
+        // Add round columns
+        if (roundIds.length === 1) {
+          headerHTML += '<th class="text-center">Score</th>';
+        } else {
+          roundIds.forEach((_, index) => {
+            headerHTML += `<th class="text-center">D${index + 1}</th>`;
+          });
+          headerHTML += '<th class="text-center total-cell">Total</th>';
+        }
+        
+        headerHTML += '</tr>';
+        document.getElementById('table-head').innerHTML = headerHTML;
+
+        // Calculate scores for all players
+        const playerResults = players.map(player => {
+          const roundScores = roundIds.map(roundId => getPlayerRoundScore(player, roundId, tournamentType));
+          
+          // Check if player has status
+          const hasStatus = roundScores.some(score => typeof score === 'string' && ['DQ', 'NS', 'NR'].includes(score));
+          const statusValue = hasStatus ? roundScores.find(score => typeof score === 'string') : null;
+          
+          let total = null;
+          if (!hasStatus) {
+            total = roundScores.reduce((sum, score) => {
+              if (typeof score === 'number') return sum + score;
+              return sum;
+            }, 0);
+          }
+          
+          return {
+            player,
+            roundScores,
+            total,
+            status: statusValue,
+            hasStatus
+          };
+        });
+
+        // Sort players
+        const typeUpper = (tournamentType || '').toUpperCase();
+        const isStableford = typeUpper.includes('STABLEFORD');
+        
+        // Separate normal players and status players
+        const normalPlayers = playerResults.filter(pr => !pr.hasStatus);
+        const statusPlayers = playerResults.filter(pr => pr.hasStatus);
+        
+        // Sort normal players by total
+        normalPlayers.sort((a, b) => {
+          if (a.total === null && b.total === null) return 0;
+          if (a.total === null) return 1;
+          if (b.total === null) return -1;
+          
+          if (isStableford) {
+            return b.total - a.total; // Higher is better
+          } else {
+            return a.total - b.total; // Lower is better
+          }
+        });
+
+        // Assign ranks
+        let currentRank = 1;
+        let previousTotal = null;
+        let playersWithSameRank = 0;
+        
+        normalPlayers.forEach((pr, index) => {
+          if (pr.total === null) {
+            pr.rank = '-';
+          } else if (pr.total === previousTotal) {
+            pr.rank = currentRank;
+            playersWithSameRank++;
+          } else {
+            currentRank = index + 1;
+            pr.rank = currentRank;
+            playersWithSameRank = 0;
+            previousTotal = pr.total;
+          }
+        });
+
+        // Build table body
+        const allResults = [...normalPlayers, ...statusPlayers];
+        let bodyHTML = '';
+        
+        allResults.forEach(pr => {
+          const isStatusRow = pr.hasStatus;
+          bodyHTML += `<tr${isStatusRow ? ' class="status-row"' : ''}>`;
+          
+          // Rank
+          bodyHTML += `<td class="text-center rank-cell">${pr.rank || '-'}</td>`;
+          
+          // Player
+          bodyHTML += `<td class="player-cell">${pr.player.firstName} ${pr.player.lastName}</td>`;
+          
+          // Club/Country
+          if (displayType === 'club') {
+            bodyHTML += `<td>${pr.player.club || pr.player.homeClub || '-'}</td>`;
+          }
+          if (displayType === 'country') {
+            bodyHTML += `<td>${pr.player.nationality || pr.player.country || '-'}</td>`;
+          }
+          
+          // HCP
+          if (showHcp) {
+            const hcp = pr.player.hcp || '-';
+            bodyHTML += `<td class="text-center">${hcp}</td>`;
+          }
+          
+          // PHCP
+          if (showPhcp) {
+            const phcp = pr.player.phcp !== undefined && pr.player.phcp !== null ? pr.player.phcp : '-';
+            bodyHTML += `<td class="text-center">${phcp}</td>`;
+          }
+          
+          // To Par
+          if (showToPar) {
+            if (pr.hasStatus) {
+              bodyHTML += `<td class="text-center">-</td>`;
+            } else {
+              const toPar = calculateToParForPlayer(pr.player, roundIds);
+              if (toPar !== null) {
+                const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar.toString());
+                bodyHTML += `<td class="text-center">${toParStr}</td>`;
+              } else {
+                bodyHTML += `<td class="text-center">-</td>`;
+              }
+            }
+          }
+          
+          // Round scores
+          pr.roundScores.forEach(score => {
+            if (typeof score === 'string') {
+              bodyHTML += `<td class="text-center">${score}</td>`;
+            } else if (score !== null) {
+              bodyHTML += `<td class="text-center">${score}</td>`;
+            } else {
+              bodyHTML += `<td class="text-center">-</td>`;
+            }
+          });
+          
+          // Total (only for multi-round)
+          if (roundIds.length > 1) {
+            if (pr.hasStatus) {
+              bodyHTML += `<td class="text-center total-cell">${pr.status}</td>`;
+            } else if (pr.total !== null) {
+              bodyHTML += `<td class="text-center total-cell">${pr.total}</td>`;
+            } else {
+              bodyHTML += `<td class="text-center total-cell">-</td>`;
+            }
+          }
+          
+          bodyHTML += '</tr>';
+        });
+
+        document.getElementById('table-body').innerHTML = bodyHTML;
+      }
+
+      // Generate results on page load
+      if (!tournamentId || !categoryCode) {
+        alert('Missing parameters');
+        window.close();
+      } else {
+        generateResults();
+      }
+    </script>
+  </body>
+</html>

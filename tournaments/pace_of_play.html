@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pace of Play</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      background: #f5f5f5;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #1e293b;
+    }
+
+    .page-header .subtitle {
+      color: #64748b;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #0b6efd;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0a5ed7;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .config-panel {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .config-panel h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #1e293b;
+      font-size: 16px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .config-item label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .config-item input,
+    .config-item select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .config-item small {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .time-table-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .time-table-section h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #1e293b;
+      font-size: 16px;
+    }
+
+    .time-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .time-table thead {
+      background: #f8f9fa;
+    }
+
+    .time-table th {
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #495057;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .time-table th.hole-header {
+      min-width: 50px;
+    }
+
+    .time-table td {
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 13px;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .time-table td.row-header {
+      text-align: left;
+      font-weight: 600;
+      background: #f8f9fa;
+      min-width: 100px;
+    }
+
+    .time-table td input {
+      width: 45px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .time-table td.total-cell {
+      font-weight: 700;
+      background: #e3f2fd;
+    }
+
+    .time-table tr.cumulative-row td {
+      background: #f0f9ff;
+      font-weight: 500;
+      color: #0369a1;
+    }
+
+    .group-times-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .group-times-section h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #1e293b;
+      font-size: 16px;
+    }
+
+    .group-times-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .group-times-table thead {
+      background: #f8f9fa;
+    }
+
+    .group-times-table th {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      color: #495057;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .group-times-table th.center {
+      text-align: center;
+    }
+
+    .group-times-table td {
+      padding: 10px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .group-times-table td.center {
+      text-align: center;
+    }
+
+    .group-times-table td.time-cell {
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .group-times-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .group-times-table tr.tee-10 {
+      background: #fef9e7;
+    }
+
+    .group-times-table tr.tee-10:hover {
+      background: #fef3c7;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .summary-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .summary-card .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .summary-card.highlight {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a5ed7 100%);
+    }
+
+    .summary-card.highlight .value,
+    .summary-card.highlight .label {
+      color: white;
+    }
+
+    .print-header {
+      display: none;
+    }
+
+    .alert-info {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      color: #0c4a6e;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      color: #1e293b;
+      background: #f8f9fa;
+    }
+
+    .tab.active {
+      color: #0b6efd;
+      border-bottom-color: #0b6efd;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .presets-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 8px 16px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #475569;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    .preset-btn.active {
+      background: #0b6efd;
+      color: white;
+      border-color: #0b6efd;
+    }
+
+    .print-schedule {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: white;
+        margin: 0;
+        padding: 0;
+        font-size: 10px;
+      }
+
+      .container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page-header,
+      .config-panel,
+      .button-group,
+      .no-print,
+      .tabs {
+        display: none !important;
+      }
+
+      @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
+
+      .time-table-section,
+      .group-times-section,
+      .summary-cards,
+      .tab-content {
+        display: none !important;
+      }
+
+      .print-schedule {
+        display: block !important;
+      }
+
+      .print-header {
+        display: block !important;
+        margin-bottom: 15px;
+      }
+
+      .print-header h1 {
+        font-size: 18px;
+        margin: 0 0 10px 0;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .print-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .print-info-left, .print-info-right {
+        font-size: 11px;
+      }
+
+      .print-info-left p, .print-info-right p {
+        margin: 2px 0;
+      }
+
+      .print-schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9px;
+      }
+
+      .print-schedule-table th {
+        padding: 4px 2px;
+        font-size: 9px;
+        font-weight: 600;
+        border-bottom: 1px solid #333;
+        text-align: center;
+        vertical-align: bottom;
+      }
+
+      .print-schedule-table th.col-match {
+        width: 40px;
+        text-align: center;
+      }
+
+      .print-schedule-table th.col-player {
+        width: auto;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .print-schedule-table th.col-club {
+        width: 60px;
+        max-width: 60px;
+        text-align: left;
+      }
+
+      .print-schedule-table th.col-tee {
+        width: 30px;
+      }
+
+      .print-schedule-table th.col-time {
+        width: 40px;
+      }
+
+      .print-schedule-table th.col-hole {
+        width: 38px;
+      }
+
+      .print-schedule-table td {
+        padding: 2px 3px;
+        font-size: 9px;
+        vertical-align: top;
+      }
+
+      .print-schedule-table td.match-cell {
+        text-align: center;
+        font-weight: 600;
+        border-top: 1px solid #333;
+        vertical-align: top;
+        padding-top: 4px;
+      }
+
+      .print-schedule-table td.player-cell {
+        text-align: left;
+        padding-left: 5px;
+        white-space: nowrap;
+      }
+
+      .print-schedule-table td.club-cell {
+        text-align: left;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: clip;
+        white-space: nowrap;
+      }
+
+      .print-schedule-table td.tee-cell {
+        text-align: center;
+        border-top: 1px solid #333;
+        vertical-align: top;
+        padding-top: 4px;
+      }
+
+      .print-schedule-table td.start-cell {
+        text-align: center;
+        border-top: 1px solid #333;
+        vertical-align: top;
+        padding-top: 4px;
+      }
+
+      .print-schedule-table td.hole-cell {
+        text-align: center;
+        border-top: 1px solid #333;
+        vertical-align: top;
+        padding-top: 4px;
+      }
+
+      .print-schedule-table td.hole-cell.turn {
+        font-weight: bold;
+      }
+
+      .print-schedule-table .first-player-row td {
+        border-top: 1px solid #333;
+      }
+
+      .print-schedule-table .first-player-row td.player-cell,
+      .print-schedule-table .first-player-row td.club-cell {
+        padding-top: 4px;
+      }
+
+      .print-schedule-table tbody tr:not(.first-player-row) td.player-cell,
+      .print-schedule-table tbody tr:not(.first-player-row) td.club-cell {
+        padding-top: 1px;
+        padding-bottom: 1px;
+      }
+
+      .pace-header-row th {
+        font-size: 8px;
+        font-weight: normal;
+        padding: 2px;
+        border-bottom: none;
+        color: #666;
+      }
+
+      .print-header h1 {
+        border-bottom: 2px solid #333;
+        padding-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header no-print">
+      <div>
+        <h1>⏱️ Pace of Play</h1>
+        <div class="subtitle" id="tournament-name">Configure pace of play times</div>
+      </div>
+      <div class="button-group">
+        <button class="btn btn-success" onclick="savePaceOfPlay()">💾 Save</button>
+        <button class="btn btn-primary" onclick="printSchedule()">🖨️ Print</button>
+        <button class="btn btn-secondary" onclick="goBack()">Back</button>
+      </div>
+    </div>
+
+    <div class="config-panel no-print">
+      <div class="config-item" style="max-width: 400px;">
+        <label for="round-select">Select Round</label>
+        <select id="round-select" onchange="loadRoundData()"></select>
+      </div>
+    </div>
+
+    <div class="config-panel no-print" id="config-section" style="display: none;">
+      <h3>⚙️ Pace Configuration</h3>
+      
+      <div class="presets-row">
+        <span style="font-weight: 600; margin-right: 10px; line-height: 36px;">Presets:</span>
+        <button class="preset-btn" onclick="applyPreset('standard')">Standard (4:30)</button>
+        <button class="preset-btn" onclick="applyPreset('fast')">Fast Play (4:00)</button>
+        <button class="preset-btn" onclick="applyPreset('relaxed')">Relaxed (5:00)</button>
+        <button class="preset-btn" onclick="applyPreset('tournament')">Tournament (4:15)</button>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-item">
+          <label for="round-time">Total Round Time</label>
+          <input type="number" id="round-time" value="270" min="180" max="360" onchange="updateFromRoundTime()">
+          <small id="round-time-display">04:30 (270 min)</small>
+        </div>
+        <div class="config-item">
+          <label for="first-group-buffer">First Group Buffer (minutes)</label>
+          <input type="number" id="first-group-buffer" value="0" min="0" max="30" onchange="calculateGroupTimes()">
+          <small>Extra time for first group</small>
+        </div>
+        <div class="config-item">
+          <label for="checkpoint-tolerance">Checkpoint Tolerance (minutes)</label>
+          <input type="number" id="checkpoint-tolerance" value="5" min="0" max="15">
+          <small>Allowed delay before flagged</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs no-print" id="tabs-section" style="display: none;">
+      <button class="tab active" data-tab="times-tab" onclick="switchTab('times-tab')">Hole Times</button>
+      <button class="tab" data-tab="groups-tab" onclick="switchTab('groups-tab')">Group Schedule</button>
+      <button class="tab" data-tab="checkpoints-tab" onclick="switchTab('checkpoints-tab')">Checkpoints</button>
+    </div>
+
+    <div class="tab-content active" id="times-tab">
+      <div class="time-table-section" id="time-table-section" style="display: none;">
+        <h3>⏱️ Time Per Hole (Minutes)</h3>
+        <div style="overflow-x: auto;">
+          <table class="time-table" id="time-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="hole-header">1</th><th class="hole-header">2</th><th class="hole-header">3</th>
+                <th class="hole-header">4</th><th class="hole-header">5</th><th class="hole-header">6</th>
+                <th class="hole-header">7</th><th class="hole-header">8</th><th class="hole-header">9</th>
+                <th style="background: #e9ecef;">OUT</th>
+                <th class="hole-header">10</th><th class="hole-header">11</th><th class="hole-header">12</th>
+                <th class="hole-header">13</th><th class="hole-header">14</th><th class="hole-header">15</th>
+                <th class="hole-header">16</th><th class="hole-header">17</th><th class="hole-header">18</th>
+                <th style="background: #e9ecef;">IN</th>
+                <th style="background: #dbeafe;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="time-table-body"></tbody>
+          </table>
+        </div>
+        <div class="alert-info" style="margin-top: 15px;">
+          💡 <strong>Tip:</strong> Times are calculated based on par. Par 3 = 13 min, Par 4 = 15 min, Par 5 = 17 min (for 4-player groups). Adjust individual times if needed.
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="groups-tab">
+      <div class="summary-cards" id="summary-cards" style="display: none;">
+        <div class="summary-card">
+          <div class="value" id="total-groups">0</div>
+          <div class="label">Total Groups</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="first-tee-off">--:--</div>
+          <div class="label">First Tee Off</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="last-tee-off">--:--</div>
+          <div class="label">Last Tee Off</div>
+        </div>
+        <div class="summary-card highlight">
+          <div class="value" id="expected-finish">--:--</div>
+          <div class="label">Expected Last Finish</div>
+        </div>
+      </div>
+
+      <div class="group-times-section" id="group-times-section" style="display: none;">
+        <h3>📋 Group Tee Times & Expected Finish</h3>
+        <table class="group-times-table" id="group-times-table">
+          <thead>
+            <tr>
+              <th class="center" style="width: 60px;">Group</th>
+              <th class="center" style="width: 60px;">Tee</th>
+              <th class="center" style="width: 80px;">Tee Time</th>
+              <th>Players</th>
+              <th class="center" style="width: 100px;">Hole 9 Time</th>
+              <th class="center" style="width: 100px;">Finish Time</th>
+              <th class="center" style="width: 100px;">Round Time</th>
+            </tr>
+          </thead>
+          <tbody id="group-times-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="checkpoints-tab">
+      <div class="time-table-section" id="checkpoints-section" style="display: none;">
+        <h3>🚩 Checkpoint Times by Group</h3>
+        <p style="color: #64748b; margin-bottom: 15px;">Expected time each group should reach key holes</p>
+        <div style="overflow-x: auto;">
+          <table class="group-times-table" id="checkpoints-table">
+            <thead>
+              <tr>
+                <th class="center">Group</th>
+                <th class="center">Tee Time</th>
+                <th class="center">Hole 3</th>
+                <th class="center">Hole 6</th>
+                <th class="center">Turn (9)</th>
+                <th class="center">Hole 12</th>
+                <th class="center">Hole 15</th>
+                <th class="center">Finish (18)</th>
+              </tr>
+            </thead>
+            <tbody id="checkpoints-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-data" id="no-data-message">
+      <p style="font-size: 48px;">📋</p>
+      <p style="font-size: 18px; font-weight: 600;">No Draw Data Available</p>
+      <p>Please create a draw for this round first to generate pace of play times.</p>
+      <button class="btn btn-primary" onclick="goToDraw()" style="margin-top: 15px;">Go to Draw</button>
+    </div>
+
+    <div class="print-schedule" id="print-schedule">
+      <div class="print-header">
+        <h1>Pace of Play</h1>
+        <div class="print-info">
+          <div class="print-info-left">
+            <p><strong>Tournament:</strong> <span id="print-tournament-name"></span></p>
+            <p><strong>Modal.:</strong> <span id="print-modality"></span></p>
+          </div>
+          <div class="print-info-right">
+            <p><strong>Date:</strong> <span id="print-date"></span></p>
+            <p><strong>No. Players:</strong> <span id="print-player-count"></span></p>
+          </div>
+        </div>
+      </div>
+      <table class="print-schedule-table" id="print-schedule-table"></table>
+    </div>
+  </div>
+
+  <script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var tournamentId = urlParams.get('tournamentId');
+    
+    var tournament = null;
+    var currentRound = null;
+    var drawData = null;
+    var paceData = {
+      holeTimes: [],
+      totalRoundTime: 270,
+      firstGroupBuffer: 0,
+      checkpointTolerance: 5
+    };
+    var courseData = null;
+
+    var defaultTimeByPar = { 3: 13, 4: 15, 5: 17 };
+
+    function getTournaments() {
+      try {
+        return JSON.parse(localStorage.getItem('tournaments') || '[]');
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function getCourses() {
+      try {
+        return JSON.parse(localStorage.getItem('courses') || '[]');
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function getDrawData(roundId) {
+      try {
+        var draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        return draws[roundId] || null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function getPaceOfPlayData(roundId) {
+      try {
+        var paceOfPlay = JSON.parse(localStorage.getItem('paceOfPlay') || '{}');
+        return paceOfPlay[roundId] || null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function savePaceOfPlayData(roundId, data) {
+      try {
+        var paceOfPlay = JSON.parse(localStorage.getItem('paceOfPlay') || '{}');
+        paceOfPlay[roundId] = data;
+        localStorage.setItem('paceOfPlay', JSON.stringify(paceOfPlay));
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function init() {
+      var tournaments = getTournaments();
+      tournament = tournaments.find(function(t) { return t.tournamentId === tournamentId; });
+
+      if (!tournament) {
+        alert('Tournament not found.');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      document.getElementById('tournament-name').textContent = 'Pace of Play - ' + tournament.name;
+
+      populateRoundSelect();
+    }
+
+    function populateRoundSelect() {
+      var roundSelect = document.getElementById('round-select');
+      roundSelect.innerHTML = '<option value="">-- Select Round --</option>';
+
+      if (tournament.meta && tournament.meta.rounds > 1 && tournament.meta.roundsData) {
+        tournament.meta.roundsData.forEach(function(round, index) {
+          var option = document.createElement('option');
+          var roundId = (tournament.meta.roundIds && tournament.meta.roundIds[index]) || round.roundId || (tournament.tournamentId + '_R' + (index + 1));
+          option.value = roundId;
+          var date = round.date ? formatDateDDMMYYYY(round.date) : 'TBD';
+          option.textContent = 'Round ' + (index + 1) + ': ' + date;
+          roundSelect.appendChild(option);
+        });
+      } else {
+        var option = document.createElement('option');
+        option.value = tournament.tournamentId;
+        var date = tournament.date ? formatDateDDMMYYYY(tournament.date) : 'TBD';
+        option.textContent = 'Single Round: ' + date;
+        roundSelect.appendChild(option);
+      }
+
+      if (roundSelect.options.length > 1) {
+        roundSelect.selectedIndex = 1;
+        loadRoundData();
+      }
+    }
+
+    function loadRoundData() {
+      var roundSelect = document.getElementById('round-select');
+      currentRound = roundSelect.value;
+
+      if (!currentRound) {
+        hideAllSections();
+        return;
+      }
+
+      drawData = getDrawData(currentRound);
+      
+      if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+        hideAllSections();
+        document.getElementById('no-data-message').style.display = 'block';
+        return;
+      }
+
+      loadCourseData();
+
+      var savedPace = getPaceOfPlayData(currentRound);
+      if (savedPace) {
+        paceData = savedPace;
+        document.getElementById('round-time').value = paceData.totalRoundTime || 270;
+        document.getElementById('first-group-buffer').value = paceData.firstGroupBuffer || 0;
+        document.getElementById('checkpoint-tolerance').value = paceData.checkpointTolerance || 5;
+      } else {
+        initializeDefaultTimes();
+      }
+
+      showAllSections();
+      updateRoundTimeDisplay();
+      renderTimeTable();
+      calculateGroupTimes();
+    }
+
+    function loadCourseData() {
+      var courses = getCourses();
+      
+      if (tournament.meta && tournament.meta.roundsData) {
+        var roundIndex = tournament.meta.roundIds ? tournament.meta.roundIds.indexOf(currentRound) : 0;
+        if (roundIndex < 0) roundIndex = 0;
+        var roundInfo = tournament.meta.roundsData[roundIndex];
+        if (roundInfo && roundInfo.courseId) {
+          courseData = courses.find(function(c) { return c.courseId === roundInfo.courseId; });
+        }
+      }
+
+      if (!courseData && tournament.courseId) {
+        courseData = courses.find(function(c) { return c.courseId === tournament.courseId; });
+      }
+
+      if (!courseData) {
+        courseData = { pars: [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4] };
+      }
+    }
+
+    function initializeDefaultTimes() {
+      paceData.holeTimes = [];
+      var pars = (courseData && courseData.pars) || [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+      
+      for (var i = 0; i < 18; i++) {
+        var par = pars[i] || 4;
+        paceData.holeTimes[i] = defaultTimeByPar[par] || 15;
+      }
+
+      paceData.totalRoundTime = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      document.getElementById('round-time').value = paceData.totalRoundTime;
+      updateRoundTimeDisplay();
+    }
+
+    function hideAllSections() {
+      document.getElementById('config-section').style.display = 'none';
+      document.getElementById('tabs-section').style.display = 'none';
+      document.getElementById('time-table-section').style.display = 'none';
+      document.getElementById('summary-cards').style.display = 'none';
+      document.getElementById('group-times-section').style.display = 'none';
+      document.getElementById('checkpoints-section').style.display = 'none';
+      document.getElementById('no-data-message').style.display = 'none';
+    }
+
+    function showAllSections() {
+      document.getElementById('config-section').style.display = 'block';
+      document.getElementById('tabs-section').style.display = 'flex';
+      document.getElementById('time-table-section').style.display = 'block';
+      document.getElementById('summary-cards').style.display = 'grid';
+      document.getElementById('group-times-section').style.display = 'block';
+      document.getElementById('checkpoints-section').style.display = 'block';
+      document.getElementById('no-data-message').style.display = 'none';
+    }
+
+    function renderTimeTable() {
+      var tbody = document.getElementById('time-table-body');
+      var pars = (courseData && courseData.pars) || [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+      var html = '';
+
+      html += '<tr><td class="row-header">Par</td>';
+      var parOut = 0, parIn = 0;
+      for (var i = 0; i < 18; i++) {
+        var par = pars[i] || 4;
+        if (i < 9) parOut += par; else parIn += par;
+        html += '<td>' + par + '</td>';
+        if (i === 8) html += '<td style="background: #e9ecef; font-weight: 600;">' + parOut + '</td>';
+      }
+      html += '<td style="background: #e9ecef; font-weight: 600;">' + parIn + '</td>';
+      html += '<td class="total-cell">' + (parOut + parIn) + '</td></tr>';
+
+      html += '<tr><td class="row-header">Time (min)</td>';
+      var timeOut = 0, timeIn = 0;
+      for (var i = 0; i < 18; i++) {
+        var time = paceData.holeTimes[i] || 15;
+        if (i < 9) timeOut += time; else timeIn += time;
+        html += '<td><input type="number" value="' + time + '" min="10" max="25" onchange="updateHoleTime(' + i + ', this.value)"></td>';
+        if (i === 8) html += '<td style="background: #e9ecef; font-weight: 600;">' + timeOut + '</td>';
+      }
+      html += '<td style="background: #e9ecef; font-weight: 600;">' + timeIn + '</td>';
+      html += '<td class="total-cell">' + (timeOut + timeIn) + '</td></tr>';
+
+      html += '<tr class="cumulative-row"><td class="row-header">Cumulative</td>';
+      var cumulative = 0;
+      for (var i = 0; i < 18; i++) {
+        cumulative += paceData.holeTimes[i] || 15;
+        html += '<td>' + formatMinutes(cumulative) + '</td>';
+        if (i === 8) html += '<td style="background: #e9ecef;">' + formatMinutes(cumulative) + '</td>';
+      }
+      html += '<td style="background: #e9ecef;">' + formatMinutes(cumulative) + '</td>';
+      html += '<td class="total-cell">' + formatMinutes(cumulative) + '</td></tr>';
+
+      tbody.innerHTML = html;
+    }
+
+    function updateHoleTime(holeIndex, value) {
+      paceData.holeTimes[holeIndex] = parseInt(value) || 15;
+      paceData.totalRoundTime = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      document.getElementById('round-time').value = paceData.totalRoundTime;
+      updateRoundTimeDisplay();
+      renderTimeTable();
+      calculateGroupTimes();
+    }
+
+    function updateFromRoundTime() {
+      var totalTime = parseInt(document.getElementById('round-time').value) || 270;
+      var currentTotal = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      var ratio = totalTime / currentTotal;
+
+      for (var i = 0; i < 18; i++) {
+        paceData.holeTimes[i] = Math.round(paceData.holeTimes[i] * ratio);
+      }
+
+      var newTotal = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      var diff = totalTime - newTotal;
+      if (diff !== 0) paceData.holeTimes[17] += diff;
+
+      paceData.totalRoundTime = totalTime;
+      updateRoundTimeDisplay();
+      renderTimeTable();
+      calculateGroupTimes();
+    }
+
+    function updateRoundTimeDisplay() {
+      var minutes = paceData.totalRoundTime;
+      var hours = Math.floor(minutes / 60);
+      var mins = minutes % 60;
+      document.getElementById('round-time-display').textContent = padZero(hours) + ':' + padZero(mins) + ' (' + minutes + ' min)';
+    }
+
+    function padZero(num) {
+      return num < 10 ? '0' + num : '' + num;
+    }
+
+    function applyPreset(preset) {
+      var pars = (courseData && courseData.pars) || [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+      var multiplier = 1;
+
+      document.querySelectorAll('.preset-btn').forEach(function(btn) { btn.classList.remove('active'); });
+      event.target.classList.add('active');
+
+      if (preset === 'fast') multiplier = 0.89;
+      else if (preset === 'standard') multiplier = 1.0;
+      else if (preset === 'relaxed') multiplier = 1.11;
+      else if (preset === 'tournament') multiplier = 0.94;
+
+      for (var i = 0; i < 18; i++) {
+        var par = pars[i] || 4;
+        paceData.holeTimes[i] = Math.round((defaultTimeByPar[par] || 15) * multiplier);
+      }
+
+      paceData.totalRoundTime = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      document.getElementById('round-time').value = paceData.totalRoundTime;
+      updateRoundTimeDisplay();
+      renderTimeTable();
+      calculateGroupTimes();
+    }
+
+    function calculateGroupTimes() {
+      if (!drawData || !drawData.groups) return;
+
+      var groups = drawData.groups;
+      var startTime = drawData.startTime || '08:00';
+      var interval = drawData.interval || 10;
+      var protocol = drawData.protocol || 'single';
+      var buffer = parseInt(document.getElementById('first-group-buffer').value) || 0;
+
+      var totalRoundTime = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      var frontNineTime = paceData.holeTimes.slice(0, 9).reduce(function(a, b) { return a + b; }, 0);
+      var backNineTime = paceData.holeTimes.slice(9, 18).reduce(function(a, b) { return a + b; }, 0);
+
+      document.getElementById('total-groups').textContent = groups.length;
+      document.getElementById('first-tee-off').textContent = startTime;
+
+      var timeParts = startTime.split(':');
+      var startMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+
+      var lastGroupIndex = groups.length - 1;
+      var lastTeeOffMinutes;
+      
+      if (protocol === 'twotee') lastTeeOffMinutes = startMinutes + Math.floor(lastGroupIndex / 2) * interval;
+      else if (protocol === 'shotgun') lastTeeOffMinutes = startMinutes;
+      else lastTeeOffMinutes = startMinutes + lastGroupIndex * interval;
+
+      document.getElementById('last-tee-off').textContent = formatTime(lastTeeOffMinutes);
+      document.getElementById('expected-finish').textContent = formatTime(lastTeeOffMinutes + totalRoundTime);
+
+      var groupTimesBody = document.getElementById('group-times-body');
+      var groupHtml = '';
+
+      groups.forEach(function(group, idx) {
+        var teeOffMinutes, startingTee = group.tee || 1;
+
+        if (protocol === 'twotee') {
+          teeOffMinutes = startMinutes + Math.floor(idx / 2) * interval;
+          startingTee = idx % 2 === 0 ? 1 : 10;
+        } else if (protocol === 'shotgun') {
+          teeOffMinutes = startMinutes;
+          startingTee = group.tee || (idx + 1);
+        } else {
+          teeOffMinutes = startMinutes + idx * interval;
+        }
+
+        var hole9Minutes = teeOffMinutes + (startingTee === 1 || startingTee === '1' ? frontNineTime : backNineTime) + (idx === 0 ? buffer : 0);
+        var finishMinutes = teeOffMinutes + totalRoundTime + (idx === 0 ? buffer : 0);
+        var playerNames = group.players.map(function(p) { return p.firstName + ' ' + p.lastName; }).join(', ');
+        var isTee10 = startingTee !== 1 && startingTee !== '1';
+
+        groupHtml += '<tr class="' + (isTee10 ? 'tee-10' : '') + '">';
+        groupHtml += '<td class="center"><strong>' + (idx + 1) + '</strong></td>';
+        groupHtml += '<td class="center">' + startingTee + '</td>';
+        groupHtml += '<td class="time-cell">' + formatTime(teeOffMinutes) + '</td>';
+        groupHtml += '<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (playerNames || '<em>No players</em>') + '</td>';
+        groupHtml += '<td class="time-cell">' + formatTime(hole9Minutes) + '</td>';
+        groupHtml += '<td class="time-cell" style="color: #0369a1; font-weight: 700;">' + formatTime(finishMinutes) + '</td>';
+        groupHtml += '<td class="center">' + formatMinutes(totalRoundTime + (idx === 0 ? buffer : 0)) + '</td>';
+        groupHtml += '</tr>';
+      });
+
+      groupTimesBody.innerHTML = groupHtml;
+      renderCheckpoints(groups, startMinutes, interval, protocol, buffer);
+    }
+
+    function renderCheckpoints(groups, startMinutes, interval, protocol, buffer) {
+      var checkpointsBody = document.getElementById('checkpoints-body');
+      var html = '';
+      var checkpoints = [3, 6, 9, 12, 15, 18];
+      var checkpointTimes = checkpoints.map(function(hole) {
+        return paceData.holeTimes.slice(0, hole).reduce(function(a, b) { return a + b; }, 0);
+      });
+
+      groups.forEach(function(group, idx) {
+        var teeOffMinutes, startingTee = group.tee || 1;
+
+        if (protocol === 'twotee') {
+          teeOffMinutes = startMinutes + Math.floor(idx / 2) * interval;
+          startingTee = idx % 2 === 0 ? 1 : 10;
+        } else if (protocol === 'shotgun') {
+          teeOffMinutes = startMinutes;
+        } else {
+          teeOffMinutes = startMinutes + idx * interval;
+        }
+
+        html += '<tr><td class="center"><strong>' + (idx + 1) + '</strong></td>';
+        html += '<td class="center">' + formatTime(teeOffMinutes) + '</td>';
+
+        checkpoints.forEach(function(hole, cpIdx) {
+          html += '<td class="center">' + formatTime(teeOffMinutes + checkpointTimes[cpIdx] + (idx === 0 ? buffer : 0)) + '</td>';
+        });
+        html += '</tr>';
+      });
+
+      checkpointsBody.innerHTML = html;
+    }
+
+    function formatDateDDMMYYYY(dateStr) {
+      var d = new Date(dateStr);
+      var day = padZero(d.getDate());
+      var month = padZero(d.getMonth() + 1);
+      var year = d.getFullYear();
+      return day + '.' + month + '.' + year;
+    }
+
+    function formatTime(totalMinutes) {
+      return padZero(Math.floor(totalMinutes / 60)) + ':' + padZero(totalMinutes % 60);
+    }
+
+    function formatMinutes(minutes) {
+      var h = Math.floor(minutes / 60);
+      return h > 0 ? h + 'h ' + (minutes % 60) + 'm' : (minutes % 60) + 'm';
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.toggle('active', content.id === tabId);
+      });
+    }
+
+    function generatePrintSchedule() {
+      if (!drawData || !drawData.groups || drawData.groups.length === 0) return;
+
+      var groups = drawData.groups;
+      var startTime = drawData.startTime || '08:00';
+      var interval = drawData.interval || 10;
+      var protocol = drawData.protocol || 'single';
+      var buffer = parseInt(document.getElementById('first-group-buffer').value) || 0;
+
+      var timeParts = startTime.split(':');
+      var startMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+
+      // Update print header info
+      document.getElementById('print-tournament-name').textContent = tournament.name || '';
+      document.getElementById('print-modality').textContent = tournament.format || 'Stroke Play';
+      
+      // Get date and format as dd.mm.yyyy
+      var dateStr = '';
+      if (tournament.meta && tournament.meta.roundsData) {
+        var roundIndex = tournament.meta.roundIds ? tournament.meta.roundIds.indexOf(currentRound) : 0;
+        if (roundIndex >= 0 && tournament.meta.roundsData[roundIndex] && tournament.meta.roundsData[roundIndex].date) {
+          dateStr = tournament.meta.roundsData[roundIndex].date;
+        }
+      }
+      if (!dateStr && tournament.date) dateStr = tournament.date;
+      document.getElementById('print-date').textContent = dateStr ? formatDateDDMMYYYY(dateStr) : '';
+      
+      // Count total players
+      var totalPlayers = 0;
+      groups.forEach(function(g) { totalPlayers += g.players.length; });
+      document.getElementById('print-player-count').textContent = totalPlayers;
+
+      var table = document.getElementById('print-schedule-table');
+      var html = '';
+
+      // Build pace times header row (showing time allowed per hole)
+      html += '<thead>';
+      html += '<tr class="pace-header-row">';
+      html += '<th></th><th></th><th></th><th></th><th></th>';
+      for (var i = 0; i < 18; i++) {
+        var mins = paceData.holeTimes[i] || 15;
+        var m = mins % 60;
+        html += '<th>0:' + padZero(m) + '</th>';
+      }
+      html += '</tr>';
+
+      // Column headers
+      html += '<tr>';
+      html += '<th class="col-match">Match</th>';
+      html += '<th class="col-player">Player</th>';
+      html += '<th class="col-club">Club</th>';
+      html += '<th class="col-tee">Tee</th>';
+      html += '<th class="col-time">Time</th>';
+      for (var i = 1; i <= 18; i++) {
+        html += '<th class="col-hole">' + i + '</th>';
+      }
+      html += '</tr>';
+      html += '</thead>';
+
+      html += '<tbody>';
+
+      // Prepare groups with calculated tee info
+      var groupsWithTee = groups.map(function(group, idx) {
+        var teeOffMinutes, startingTee = group.tee || 1;
+
+        if (protocol === 'twotee') {
+          teeOffMinutes = startMinutes + Math.floor(idx / 2) * interval;
+          startingTee = idx % 2 === 0 ? 1 : 10;
+        } else if (protocol === 'shotgun') {
+          teeOffMinutes = startMinutes;
+        } else {
+          teeOffMinutes = startMinutes + idx * interval;
+        }
+
+        return {
+          group: group,
+          idx: idx,
+          teeOffMinutes: teeOffMinutes,
+          startingTee: startingTee
+        };
+      });
+
+      // Sort: Tee 1 groups first (sorted by time), then Tee 10 groups (sorted by time)
+      var tee1Groups = groupsWithTee.filter(function(g) { return g.startingTee === 1 || g.startingTee === '1'; });
+      var tee10Groups = groupsWithTee.filter(function(g) { return g.startingTee !== 1 && g.startingTee !== '1'; });
+      
+      tee1Groups.sort(function(a, b) { return a.teeOffMinutes - b.teeOffMinutes; });
+      tee10Groups.sort(function(a, b) { return a.teeOffMinutes - b.teeOffMinutes; });
+
+      var sortedGroups = tee1Groups.concat(tee10Groups);
+
+      sortedGroups.forEach(function(item) {
+        var group = item.group;
+        var idx = item.idx;
+        var teeOffMinutes = item.teeOffMinutes;
+        var startingTee = item.startingTee;
+
+        var groupBuffer = idx === 0 ? buffer : 0;
+        var players = group.players || [];
+        var numPlayers = players.length;
+        var totalRows = numPlayers + 1; // +1 for the times row
+
+        // Calculate hole finish times
+        var holeTimes = [];
+        var cumulativeMinutes = teeOffMinutes + groupBuffer;
+        for (var hole = 0; hole < 18; hole++) {
+          cumulativeMinutes += paceData.holeTimes[hole];
+          holeTimes.push(formatTime(cumulativeMinutes));
+        }
+
+        // First row: times row (Match spans all rows, times only on this row)
+        html += '<tr class="first-player-row times-row">';
+        html += '<td class="match-cell" rowspan="' + totalRows + '">' + (idx + 1) + '</td>';
+        html += '<td class="player-cell"></td>'; // Empty for notes
+        html += '<td class="club-cell"></td>';
+        html += '<td class="tee-cell" rowspan="' + totalRows + '">' + startingTee + '</td>';
+        html += '<td class="start-cell" rowspan="' + totalRows + '">' + formatTime(teeOffMinutes) + '</td>';
+        for (var h = 0; h < 18; h++) {
+          var isTurn = (h === 8); // Hole 9 is the turn
+          html += '<td class="hole-cell' + (isTurn ? ' turn' : '') + '" rowspan="' + totalRows + '">' + holeTimes[h] + '</td>';
+        }
+        html += '</tr>';
+
+        // Player rows
+        for (var p = 0; p < numPlayers; p++) {
+          var player = players[p] || {};
+          html += '<tr class="player-row">';
+          
+          // Player name
+          var playerName = (player.firstName || '') + ' ' + (player.lastName || '');
+          html += '<td class="player-cell">' + playerName.trim() + '</td>';
+
+          // Club
+          var club = player.club || player.country || '';
+          html += '<td class="club-cell">' + club + '</td>';
+
+          html += '</tr>';
+        }
+
+        // If no players, still show at least one empty player row
+        if (numPlayers === 0) {
+          html += '<tr class="player-row">';
+          html += '<td class="player-cell"><em>No players</em></td>';
+          html += '<td class="club-cell"></td>';
+          html += '</tr>';
+        }
+      });
+
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function printSchedule() {
+      generatePrintSchedule();
+      window.print();
+    }
+
+    function savePaceOfPlay() {
+      if (!currentRound) { alert('Please select a round first.'); return; }
+
+      paceData.totalRoundTime = paceData.holeTimes.reduce(function(a, b) { return a + b; }, 0);
+      paceData.firstGroupBuffer = parseInt(document.getElementById('first-group-buffer').value) || 0;
+      paceData.checkpointTolerance = parseInt(document.getElementById('checkpoint-tolerance').value) || 5;
+
+      if (savePaceOfPlayData(currentRound, paceData)) alert('Pace of Play saved successfully!');
+      else alert('Failed to save Pace of Play data.');
+    }
+
+    function goBack() {
+      window.location.href = 'documents.html?tournamentId=' + encodeURIComponent(tournamentId);
+    }
+
+    function goToDraw() {
+      window.location.href = 'draw.html?tournamentId=' + encodeURIComponent(tournamentId);
+    }
+
+    init();
+  </script>
+</body>
+</html>

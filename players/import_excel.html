@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Import Players from Excel</title>
+  <link rel="stylesheet" href="../styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .import-container { max-width: 900px; margin: 40px auto; padding: 20px; }
+    .upload-area { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px; text-align: center; margin: 20px 0; }
+    .upload-area.dragover { background: #dbeafe; border-color: #3b82f6; }
+    input[type="file"] { display: none; }
+    .upload-btn { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; }
+    .preview { background: #fff; border-radius: 8px; padding: 16px; margin: 20px 0; max-height: 400px; overflow: auto; }
+    .preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .preview th { background: #f1f5f9; padding: 8px; text-align: left; position: sticky; top: 0; }
+    .preview td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
+    .status { padding: 12px; border-radius: 8px; margin: 10px 0; }
+    .status.success { background: #d1fae5; color: #065f46; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .status.warning { background: #fef3c7; color: #92400e; }
+    .actions { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <main class="import-container">
+    <h1>Import Players from Excel</h1>
+    <p class="lead">Upload an Excel file with player data. The file should have columns: Feder.No., İsim, Kulüp, HCP, Cinsiyet, Doğum Tarihi</p>
+    
+    <div class="upload-area" id="uploadArea">
+      <p style="font-size: 18px; margin-bottom: 12px;">📁 Drop Excel file here or click to browse</p>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    </div>
+    
+    <div id="status"></div>
+    
+    <div id="preview" style="display:none;">
+      <h3>Preview (first 10 rows)</h3>
+      <div class="preview">
+        <table id="previewTable"></table>
+      </div>
+      <div class="actions">
+        <button class="upload-btn" onclick="importPlayers()">Import Players</button>
+        <button class="upload-btn" style="background:#6b7280" onclick="location.reload()">Cancel</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let workbook = null;
+    let parsedData = [];
+
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) processFile(file);
+    });
+
+    function processFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, { type: 'array' });
+          parseExcel();
+        } catch (err) {
+          showStatus('error', 'Error reading file: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseExcel() {
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      
+      if (rows.length < 2) {
+        showStatus('error', 'File appears to be empty');
+        return;
+      }
+
+      // Find header row (look for "Feder.No." or similar)
+      let headerRowIndex = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        if (rows[i].some(cell => String(cell).includes('Feder') || String(cell).includes('İsim'))) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      const headers = rows[headerRowIndex];
+      parsedData = [];
+
+      // Map column indices
+      const colMap = {
+        federNo: headers.findIndex(h => String(h).includes('Feder')),
+        name: headers.findIndex(h => String(h).includes('İsim')),
+        club: headers.findIndex(h => String(h).includes('Kulüp')),
+        hcp: headers.findIndex(h => String(h).includes('HCP') && !String(h).includes('Türü')),
+        gender: headers.findIndex(h => String(h).includes('Cinsiyet')),
+        dob: headers.findIndex(h => String(h).includes('Doğum') || String(h).toUpperCase().includes('DOB'))
+      };
+
+      // Parse data rows
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
+
+        const fullName = String(row[colMap.name] || '').trim();
+        if (!fullName) continue;
+
+        // Split name into first and last
+        const nameParts = fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Parse gender
+        let gender = String(row[colMap.gender] || 'M').trim().toUpperCase();
+        gender = gender === 'M' ? 'male' : gender === 'F' ? 'female' : 'male';
+
+        // Parse HCP
+        let hcp = row[colMap.hcp];
+        if (typeof hcp === 'string') {
+          hcp = parseFloat(hcp.replace(',', '.')) || 0;
+        }
+        hcp = Number(hcp) || 0;
+
+        // Parse DOB
+        let dob = '';
+        const dobRaw = row[colMap.dob];
+        if (dobRaw) {
+          if (typeof dobRaw === 'number') {
+            // Excel date serial number
+            const date = XLSX.SSF.parse_date_code(dobRaw);
+            dob = `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+          } else if (typeof dobRaw === 'string') {
+            // Try to parse string date - handle formats like "4.8.1978" or "04.08.1978"
+            const parts = dobRaw.split(/[-/.]/);
+            if (parts.length === 3) {
+              // Format is D.M.YYYY
+              const day = String(parts[0]).padStart(2, '0');
+              const month = String(parts[1]).padStart(2, '0');
+              const year = parts[2];
+              dob = `${year}-${month}-${day}`;
+            }
+          }
+        }
+
+        parsedData.push({
+          federNo: String(row[colMap.federNo] || '').trim(),
+          firstName,
+          lastName,
+          club: String(row[colMap.club] || '').trim(),
+          hcp,
+          gender,
+          dob
+        });
+      }
+
+      if (parsedData.length === 0) {
+        showStatus('error', 'No valid player data found in file');
+        return;
+      }
+
+      showStatus('success', `Found ${parsedData.length} players in file`);
+      showPreview();
+    }
+
+    function showPreview() {
+      const preview = document.getElementById('preview');
+      const table = document.getElementById('previewTable');
+      
+      let html = '<thead><tr><th>Feder.No</th><th>First Name</th><th>Last Name</th><th>Club</th><th>HCP</th><th>Gender</th><th>DOB</th></tr></thead><tbody>';
+      
+      const displayRows = parsedData.slice(0, 10);
+      displayRows.forEach(p => {
+        html += `<tr>
+          <td>${p.federNo}</td>
+          <td>${p.firstName}</td>
+          <td>${p.lastName}</td>
+          <td>${p.club}</td>
+          <td>${p.hcp}</td>
+          <td>${p.gender}</td>
+          <td>${p.dob}</td>
+        </tr>`;
+      });
+      
+      html += '</tbody>';
+      table.innerHTML = html;
+      preview.style.display = 'block';
+    }
+
+    function importPlayers() {
+      try {
+        // Get existing players
+        const existingRaw = localStorage.getItem('players');
+        const existing = existingRaw ? JSON.parse(existingRaw) : [];
+        
+        // Find next reg number
+        let maxReg = 0;
+        existing.forEach(p => {
+          const reg = (p.reg || '').replace(/^P/i, '').replace(/^0+/, '');
+          const num = parseInt(reg) || 0;
+          if (num > maxReg) maxReg = num;
+        });
+
+        // Create new players
+        const newPlayers = [];
+        parsedData.forEach((p, index) => {
+          const regNum = maxReg + index + 1;
+          newPlayers.push({
+            reg: 'P' + String(regNum).padStart(4, '0'),
+            firstName: p.firstName,
+            lastName: p.lastName,
+            gender: p.gender,
+            dob: p.dob,
+            hcp: p.hcp,
+            club: p.club,
+            owner: 'main',
+            mobile: '',
+            email: '',
+            federNo: p.federNo
+          });
+        });
+
+        // Merge with existing
+        const allPlayers = [...existing, ...newPlayers];
+        
+        // Save
+        localStorage.setItem('players', JSON.stringify(allPlayers));
+        
+        showStatus('success', `✅ Successfully imported ${newPlayers.length} players! <br><br><a href="index.html">Go to Players List</a>`);
+        
+        // Hide preview
+        document.getElementById('preview').style.display = 'none';
+        
+      } catch (err) {
+        showStatus('error', 'Error importing players: ' + err.message);
+      }
+    }
+
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status ' + type;
+      statusDiv.innerHTML = message;
+    }
+  </script>
+</body>
+</html>

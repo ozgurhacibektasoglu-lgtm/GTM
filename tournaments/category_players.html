@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Players by Category</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .container { max-width: 1400px; margin: 24px auto; padding: 24px; }
+      .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+      .category-card { background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); padding: 16px; }
+      .category-card h3 { margin: 0 0 12px 0; font-size: 16px; color: #1e293b; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
+      .category-info { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+      .player-list { list-style: none; padding: 0; margin: 0; }
+      .player-list li { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+      .player-list li:last-child { border-bottom: none; }
+      .player-name { font-weight: 600; color: #1e293b; display: block; margin-bottom: 2px; }
+      .player-hcp { color: #64748b; font-size: 12px; }
+      .no-players { text-align: center; color: #94a3b8; padding: 20px; font-size: 13px; }
+      .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+      .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
+      .btn-print { background: linear-gradient(180deg, #10b981, #059669); }
+      .btn-back { background: white; color: #0b6efd; border: 1px solid #e6e9ef; }
+      @media print {
+        .action-buttons { display: none; }
+        .container { margin: 0; padding: 16px; }
+        .categories-grid { gap: 12px; }
+        .category-card { box-shadow: none; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header style="margin-bottom: 20px;">
+        <h1>Players by Category</h1>
+        <p class="lead" id="tournament-name">Loading...</p>
+      </header>
+
+      <div class="action-buttons">
+        <button class="btn btn-print" onclick="window.print()">Print</button>
+        <button class="btn btn-back" onclick="window.close()">Close</button>
+      </div>
+
+      <div id="categories-container" class="categories-grid">
+        <div style="text-align: center; color: #94a3b8; padding: 40px;">Loading categories...</div>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+
+      if (!tournamentId) {
+        alert('No tournament selected.');
+        window.close();
+      }
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentId);
+      }
+
+      function getCategories() {
+        const tournament = getTournament();
+        return tournament?.categories || [];
+      }
+
+      function getAdmittedPlayers() {
+        const tournament = getTournament();
+        if (!tournament) return [];
+        
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const admittedData = raw ? JSON.parse(raw) : {};
+          
+          const allAdmittedPlayers = [];
+          const roundIds = tournament.meta?.roundIds || [];
+          
+          roundIds.forEach(roundId => {
+            if (admittedData[roundId]) {
+              admittedData[roundId].forEach(player => {
+                if (!allAdmittedPlayers.find(p => p.reg === player.reg)) {
+                  allAdmittedPlayers.push(player);
+                }
+              });
+            }
+          });
+          
+          return allAdmittedPlayers;
+        } catch (err) {
+          console.error('Failed to get admitted players', err);
+          return [];
+        }
+      }
+
+      function playerMatchesCategory(player, category) {
+        const playerGender = (player.gender || '').toLowerCase();
+        const catGender = (category.gender || '').toLowerCase();
+        
+        // Check gender match
+        let genderMatch = false;
+        if (!catGender || catGender === 'any' || catGender === '') {
+          genderMatch = true;
+        } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male')) {
+          genderMatch = true;
+        } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female')) {
+          genderMatch = true;
+        }
+        
+        if (!genderMatch) return false;
+        
+        // Check handicap
+        if (category.handicapMin !== undefined && category.handicapMin !== null && category.handicapMin !== '') {
+          if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) < parseFloat(category.handicapMin)) return false;
+        }
+        if (category.handicapMax !== undefined && category.handicapMax !== null && category.handicapMax !== '') {
+          if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) > parseFloat(category.handicapMax)) return false;
+        }
+        
+        // Check age
+        if (category.ageMin !== undefined && category.ageMin !== null && category.ageMin !== '') {
+          if (player.age === undefined || player.age === null || parseInt(player.age) < parseInt(category.ageMin)) return false;
+        }
+        if (category.ageMax !== undefined && category.ageMax !== null && category.ageMax !== '') {
+          if (player.age === undefined || player.age === null || parseInt(player.age) > parseInt(category.ageMax)) return false;
+        }
+        
+        return true;
+      }
+
+      function formatHcp(hcp) {
+        if (!hcp && hcp !== 0) return '-';
+        const num = parseFloat(hcp);
+        if (isNaN(num)) return hcp;
+        if (num < 0) return '+' + Math.abs(num).toFixed(1);
+        return num.toFixed(1);
+      }
+
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to get courses', err);
+          return [];
+        }
+      }
+
+      function getTeeData(player) {
+        const tournament = getTournament();
+        if (!tournament || !tournament.meta) return null;
+        
+        const roundData = tournament.meta.roundsData?.[0]; // Use first round
+        if (!roundData) return null;
+        
+        const playerGender = (player.gender || '').toLowerCase();
+        let teeValue = player.tee || '';
+        
+        // If tee is in courseId||index format, use directly
+        // If tee is in C001-01 format, convert it
+        if (teeValue && !teeValue.includes('||')) {
+          const courses = getCourses();
+          const courseId = roundData.course;
+          const course = courses.find(c => c.courseId === courseId);
+          
+          if (course && course.teeIds) {
+            const idx = course.teeIds.findIndex(id => {
+              if (typeof id === 'object') {
+                return id.men === teeValue || id.women === teeValue;
+              }
+              return id === teeValue;
+            });
+            
+            if (idx !== -1) {
+              teeValue = `${courseId}||${idx}`;
+            }
+          }
+        }
+        
+        // If no assigned tee, use default from tournament settings
+        if (!teeValue || !teeValue.includes('||')) {
+          if (playerGender === 'male' || playerGender === 'm') {
+            teeValue = roundData.teeMen || '';
+          } else if (playerGender === 'female' || playerGender === 'f') {
+            teeValue = roundData.teeWomen || '';
+          }
+        }
+        
+        if (!teeValue || !teeValue.includes('||')) return null;
+        
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = getCourses();
+        const course = courses.find(c => (c.courseId === courseId) || (c.fullName === courseId));
+        
+        if (!course) return null;
+        
+        // Calculate total par from pars array
+        let par = 0;
+        if (course.pars && Array.isArray(course.pars)) {
+          par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+        }
+        
+        // Get tee-specific data from teeData array
+        const teeData = course.teeData?.[teeIndex];
+        if (!teeData) return null;
+        
+        let slope, rating;
+        
+        // Check if this tee is for both genders
+        const teeGender = course.genders?.[teeIndex];
+        if (teeGender === 'B' && teeData.ratings) {
+          if (playerGender === 'male' || playerGender === 'm') {
+            slope = teeData.ratings.men?.slope18;
+            rating = teeData.ratings.men?.rating18;
+          } else if (playerGender === 'female' || playerGender === 'f') {
+            slope = teeData.ratings.women?.slope18;
+            rating = teeData.ratings.women?.rating18;
+          }
+        } else {
+          slope = teeData.slope18 || teeData.slope;
+          rating = teeData.rating18 || teeData.rating;
+        }
+        
+        return { slope, rating, par };
+      }
+
+      function calculatePlayingHcp(player) {
+        const playerHcp = parseFloat(player.hcp);
+        if (isNaN(playerHcp)) {
+          return formatHcp(player.hcp);
+        }
+        
+        const teeData = getTeeData(player);
+        if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+          return formatHcp(player.hcp);
+        }
+        
+        const tournament = getTournament();
+        const hcpAllowance = parseFloat(tournament?.meta?.hcpAllow || 100) / 100;
+        
+        const slope = parseFloat(teeData.slope);
+        const rating = parseFloat(teeData.rating);
+        const par = parseFloat(teeData.par);
+        
+        if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+          return formatHcp(player.hcp);
+        }
+        
+        // Formula: (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
+        const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+        const rounded = Math.round(playingHcp);
+        
+        if (rounded < 0) {
+          return '+' + Math.abs(rounded);
+        }
+        return rounded.toString();
+      }
+
+      function renderCategories() {
+        const tournament = getTournament();
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = tournament.name;
+        }
+
+        const categories = getCategories();
+        const admittedPlayers = getAdmittedPlayers();
+        const container = document.getElementById('categories-container');
+
+        if (categories.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px;">No categories defined.</div>';
+          return;
+        }
+
+        let html = '';
+
+        categories.forEach(category => {
+          const playersInCategory = admittedPlayers.filter(p => playerMatchesCategory(p, category));
+          
+          // Sort by handicap
+          playersInCategory.sort((a, b) => {
+            const hcpA = parseFloat(a.hcp) || 999;
+            const hcpB = parseFloat(b.hcp) || 999;
+            return hcpA - hcpB;
+          });
+
+          const categoryInfo = [];
+          if (category.gender) categoryInfo.push(category.gender);
+          if (category.handicapMin !== undefined || category.handicapMax !== undefined) {
+            let hcpRange = '';
+            if (category.handicapMin !== undefined && category.handicapMax !== undefined) {
+              hcpRange = `HCP: ${formatHcp(category.handicapMin)} to ${formatHcp(category.handicapMax)}`;
+            } else if (category.handicapMin !== undefined) {
+              hcpRange = `HCP: ${formatHcp(category.handicapMin)}+`;
+            } else if (category.handicapMax !== undefined) {
+              hcpRange = `HCP: Up to ${formatHcp(category.handicapMax)}`;
+            }
+            categoryInfo.push(hcpRange);
+          }
+
+          html += `
+            <div class="category-card">
+              <h3>${category.name} <span style="font-weight: 400; color: #64748b; font-size: 14px;">(${playersInCategory.length} player${playersInCategory.length !== 1 ? 's' : ''})</span></h3>
+              ${categoryInfo.length > 0 ? `<div class="category-info" style="padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; margin-bottom: 12px;">${categoryInfo.join(' • ')}</div>` : ''}
+              ${playersInCategory.length > 0 ? `
+                <ul class="player-list">
+                  ${playersInCategory.map(player => `
+                    <li>
+                      <span class="player-name">${player.firstName} ${player.lastName}</span>
+                      <span class="player-hcp">HCP: ${formatHcp(player.hcp)} • Playing: ${calculatePlayingHcp(player)}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              ` : '<div class="no-players">No players in this category</div>'}
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      renderCategories();
+    </script>
+  </body>
+</html>

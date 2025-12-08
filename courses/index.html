@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Courses</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .courses-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
+      .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; }
+      td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+      tr { cursor: pointer; }
+      tr.selected { background: #dbeafe; }
+      tbody tr:hover { background: #f0f9ff; }
+      .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+      .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; }
+      .btn:active { transform: translateY(1px); }
+      .btn-back { background: white; color: #0b6efd; border: 1px solid #e6e9ef; }
+      .btn-delete { background: linear-gradient(180deg, #dc3545, #c82333); }
+    </style>
+
+    <style>
+      @media (max-width: 768px) {
+        .courses-container { padding: 16px; }
+        .search-filter { flex-direction: column; gap: 12px; }
+        .search-filter > div { width: 100%; }
+        .action-buttons { flex-wrap: wrap; gap: 8px; }
+        .action-buttons .btn { flex: 1 1 calc(50% - 8px); min-width: 120px; }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { min-width: 600px; }
+        th, td { padding: 8px 6px; font-size: 14px; }
+      }
+
+      @media (max-width: 480px) {
+        .courses-container { padding: 12px; }
+        .action-buttons .btn { flex: 1 1 100%; }
+        th, td { padding: 6px 4px; font-size: 13px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="courses-container">
+      <header>
+        <h1>Courses</h1>
+        <p class="lead">Manage golf course information</p>
+      </header>
+
+      <div class="search-filter" style="margin-bottom: 24px; display: flex; gap: 16px; align-items: center;">
+        <div style="flex: 1;">
+          <input type="text" id="search-input" placeholder="Search courses by name or city..." style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+        <div>
+          <select id="filter-tees" style="padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+            <option value="">All Tees</option>
+            <option value="M">Men's Tees</option>
+            <option value="F">Women's Tees</option>
+            <option value="B">Both Genders</option>
+          </select>
+        </div>
+        <div>
+          <button class="btn" id="btn-clear-filters" style="background: #6b7280;">Clear Filters</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="courses-table">
+          <thead>
+              <tr>
+                <th>Course ID</th>
+                <th>City</th>
+                <th>Course Name</th>
+                <th>Tees</th>
+                <th>Par</th>
+              </tr>
+          </thead>
+          <tbody id="courses-body">
+            <!-- Rows will be inserted here by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="action-buttons" style="margin-bottom: 24px;">
+        <button class="btn" id="btn-new-course">New Course</button>
+        <button class="btn" id="btn-modify-course">Modify Course</button>
+        <button class="btn btn-delete" id="btn-delete-course">Delete Course</button>
+        <button class="btn" id="btn-statistics" style="background: linear-gradient(180deg, #fd7e14, #e8680d);">Statistics</button>
+        <button class="btn" id="btn-templates" style="background: linear-gradient(180deg, #6f42c1, #5a32a3);">Templates</button>
+        <button class="btn" id="btn-import-courses" style="background: linear-gradient(180deg, #17a2b8, #138496);">Import CSV</button>
+        <button class="btn" id="btn-export-courses" style="background: linear-gradient(180deg, #28a745, #1e7e34);">Export CSV</button>
+        <button class="btn" id="btn-backup-restore" style="background: linear-gradient(180deg, #ffc107, #e0a800);">Backup/Restore</button>
+        <a href="../index.html" class="btn btn-back">Back</a>
+      </div>
+    </main>
+
+    <div id="stats-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; padding: 20px; box-sizing: border-box;">
+      <div style="background: white; border-radius: 12px; padding: 24px; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">Course Statistics</h2>
+          <button id="close-stats" style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">×</button>
+        </div>
+        <div id="stats-content"></div>
+      </div>
+    </div>
+
+    <script>
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          if (!raw) return [];
+          return JSON.parse(raw);
+        } catch (err) {
+          console.error('Failed to parse courses from localStorage', err);
+          return [];
+        }
+      }
+
+      function saveCourses(list) {
+        localStorage.setItem('courses', JSON.stringify(list || []));
+      }
+
+      let selectedCourseIndex = null;
+      let allCourses = []; // Store all courses for filtering
+
+      function loadCourses() {
+        const tbody = document.getElementById('courses-body');
+        tbody.innerHTML = '';
+
+        const courses = getCourses();
+        allCourses = courses; // Store for filtering
+
+        const filteredCourses = applyFilters(courses);
+
+        if (filteredCourses.length === 0) {
+          const row = tbody.insertRow();
+          row.innerHTML = '<td colspan="5" style="text-align: center; color: #6b7280;">No courses match your search criteria.</td>';
+          return;
+        }
+
+        filteredCourses.forEach((course, index) => {
+          const row = tbody.insertRow();
+          const totalPar = course.pars ? course.pars.reduce((sum, par) => sum + par, 0) : '-';
+          const courseId = course.courseId || '-';
+          
+          // Format tees with their IDs
+          let teesList = '-';
+          if (course.tees && course.tees.length > 0) {
+            const teeItems = course.tees.map((teeName, idx) => {
+              const gender = course.genders ? course.genders[idx] : 'M';
+              const genderLabel = gender === 'M' ? 'Men' : gender === 'F' ? 'Women' : 'Both';
+              const teeId = course.teeIds ? course.teeIds[idx] : null;
+              
+              if (gender === 'B' && teeId && typeof teeId === 'object') {
+                // Both genders - show two entries
+                return `${teeName} Men ${teeId.men}<br>${teeName} Women ${teeId.women}`;
+              } else {
+                const idStr = teeId ? ` ${teeId}` : '';
+                return `${teeName} ${genderLabel}${idStr}`;
+              }
+            });
+            teesList = teeItems.join('<br>');
+          }
+          
+          row.innerHTML = `<td>${escapeHtml(courseId)}</td><td>${escapeHtml(course.city)}</td><td>${escapeHtml(course.fullName || course.name)}</td><td>${teesList}</td><td>${totalPar}</td>`;
+          row.dataset.index = index;
+          row.dataset.originalIndex = courses.indexOf(course); // Store original index
+          row.addEventListener('click', () => selectCourse(index, row));
+        });
+      }
+
+      function applyFilters(courses) {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const teeFilter = document.getElementById('filter-tees').value;
+
+        return courses.filter(course => {
+          // Search filter
+          const matchesSearch = !searchTerm || 
+            course.city.toLowerCase().includes(searchTerm) ||
+            (course.fullName || course.name).toLowerCase().includes(searchTerm) ||
+            (course.shortName || '').toLowerCase().includes(searchTerm);
+
+          // Tee filter
+          const matchesTee = !teeFilter || 
+            (course.genders && course.genders.includes(teeFilter));
+
+          return matchesSearch && matchesTee;
+        });
+      }
+
+      function selectCourse(index, row) {
+        // Remove previous selection
+        document.querySelectorAll('#courses-body tr').forEach(tr => {
+          tr.classList.remove('selected');
+        });
+        
+        // Set new selection
+        row.classList.add('selected');
+        selectedCourseIndex = parseInt(row.dataset.originalIndex);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&"'<>]/g, function (s) {
+          return ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[s];
+        });
+      }
+
+      function exportCoursesToCSV() {
+        const courses = getCourses();
+        if (courses.length === 0) {
+          alert('No courses to export.');
+          return;
+        }
+
+        let csv = 'City,Course Name,Short Name,';
+        // Add hole headers
+        for (let i = 1; i <= 18; i++) {
+          csv += `Par ${i},SI ${i},`;
+        }
+        // Add tee headers
+        csv += 'Tees,Genders,Ratings,Slopes,Lengths\n';
+
+        courses.forEach(course => {
+          csv += `"${course.city}","${course.fullName || course.name}","${course.shortName || ''}",`;
+          
+          // Add par and SI data
+          if (course.pars) {
+            course.pars.forEach(par => csv += `${par},`);
+          } else {
+            csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
+          }
+          
+          if (course.strokeIndexes) {
+            course.strokeIndexes.forEach(si => csv += `${si},`);
+          } else {
+            csv += ',,,,,,,,,,,,,,,,,'; // 18 empty fields
+          }
+          
+          // Add tee data
+          if (course.tees) {
+            csv += `"${course.tees.join(';')}",`;
+            csv += `"${course.genders.join(';')}",`;
+            
+            if (course.teeData) {
+              const ratings = course.teeData.map(td => td.rating).join(';');
+              const slopes = course.teeData.map(td => td.slope).join(';');
+              const yardages = course.teeData.map(td => (td.lengths || td.yardages || []).join('-')).join(';');
+              
+              csv += `"${ratings}","${slopes}","${yardages}"`;
+            }
+          }
+          
+          csv += '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'courses.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      function importCoursesFromCSV() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            if (lines.length < 2) {
+              alert('Invalid CSV file.');
+              return;
+            }
+
+            const courses = getCourses();
+            const importedCourses = [];
+
+            for (let i = 1; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+
+              const fields = parseCSVLine(line);
+              if (fields.length < 39) continue; // Minimum required fields
+
+              const course = {
+                city: fields[0],
+                fullName: fields[1],
+                shortName: fields[2],
+                name: fields[1],
+                pars: fields.slice(3, 21).map(p => parseInt(p) || 4),
+                strokeIndexes: fields.slice(21, 39).map(si => parseInt(si) || 1)
+              };
+
+              if (fields[39]) {
+                course.tees = fields[39].split(';');
+                course.genders = fields[40].split(';');
+                course.teeData = [];
+                
+                if (fields[41] && fields[42] && fields[43]) {
+                  const ratings = fields[41].split(';').map(r => parseFloat(r));
+                  const slopes = fields[42].split(';').map(s => parseInt(s));
+                  const yardages = fields[43].split(';').map(y => y.split('-').map(yd => parseInt(yd)));
+                  
+                  for (let j = 0; j < course.tees.length; j++) {
+                    course.teeData.push({
+                      rating: ratings[j] || 70,
+                      slope: slopes[j] || 120,
+                      lengths: yardages[j] || Array(18).fill(0),
+                      yardages: yardages[j] || Array(18).fill(0) // Keep backward compatibility
+                    });
+                  }
+                }
+              }
+
+              importedCourses.push(course);
+            }
+
+            if (importedCourses.length > 0) {
+              const allCourses = [...courses, ...importedCourses];
+              saveCourses(allCourses);
+              loadCourses();
+              alert(`Imported ${importedCourses.length} courses successfully.`);
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+
+      function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      }
+
+      function backupCourses() {
+        const courses = getCourses();
+        const data = {
+          courses: courses,
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `courses_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      function restoreCourses() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const data = JSON.parse(e.target.result);
+              if (data.courses && Array.isArray(data.courses)) {
+                if (confirm(`Restore ${data.courses.length} courses from backup? This will replace all current courses.`)) {
+                  saveCourses(data.courses);
+                  loadCourses();
+                  alert('Courses restored successfully.');
+                }
+              } else {
+                alert('Invalid backup file format.');
+              }
+            } catch (err) {
+              alert('Error reading backup file: ' + err.message);
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+
+      const courseTemplates = {
+        'Championship Course': {
+          city: 'Template City',
+          fullName: 'Championship Course Template',
+          shortName: 'Championship',
+          pars: [4,4,3,4,5,4,3,4,4,4,4,3,4,5,4,3,4,4],
+          strokeIndexes: [1,3,17,5,7,9,15,11,13,2,4,18,6,8,10,16,12,14],
+          tees: ['Blue', 'White', 'Red'],
+          genders: ['M', 'M', 'F'],
+          teeData: [
+            { rating18: 72.5, slope18: 130, ratingF9: 36.2, slopeF9: 130, ratingB9: 36.3, slopeB9: 130, rating: 72.5, slope: 130, lengths: [384,347,137,411,475,374,164,393,402,374,384,128,402,484,365,155,411,393] },
+            { rating18: 70.2, slope18: 125, ratingF9: 35.0, slopeF9: 125, ratingB9: 35.2, slopeB9: 125, rating: 70.2, slope: 125, lengths: [365,329,119,393,457,356,146,374,384,356,365,110,384,466,347,137,393,374] },
+            { rating18: 68.1, slope18: 118, ratingF9: 34.0, slopeF9: 118, ratingB9: 34.1, slopeB9: 118, rating: 68.1, slope: 118, lengths: [320,292,101,347,411,311,110,329,337,311,320,91,337,420,301,110,347,329] }
+          ]
+        },
+        'Executive Course': {
+          city: 'Template City',
+          fullName: 'Executive Course Template',
+          shortName: 'Executive',
+          pars: [4,3,4,4,3,4,4,3,4,4,3,4,4,3,4,4,3,4],
+          strokeIndexes: [1,17,3,5,15,7,9,13,11,2,18,4,6,16,8,10,14,12],
+          tees: ['Blue', 'White'],
+          genders: ['M', 'M'],
+          teeData: [
+            { rating18: 65.8, slope18: 110, ratingF9: 32.9, slopeF9: 110, ratingB9: 32.9, slopeB9: 110, rating: 65.8, slope: 110, lengths: [347,110,384,374,128,347,356,119,365,337,101,374,365,110,347,337,119,356] },
+            { rating18: 64.1, slope18: 105, ratingF9: 32.0, slopeF9: 105, ratingB9: 32.1, slopeB9: 105, rating: 64.1, slope: 105, lengths: [329,91,365,356,110,329,337,101,347,320,82,356,347,91,329,320,101,337] }
+          ]
+        },
+        'Links Style Course': {
+          city: 'Template City',
+          fullName: 'Links Style Course Template',
+          shortName: 'Links',
+          pars: [4,4,3,5,4,4,3,4,5,4,4,3,4,4,3,5,4,4],
+          strokeIndexes: [7,3,17,1,11,5,15,9,13,8,4,18,2,12,16,6,14,10],
+          tees: ['Blue', 'White', 'Red', 'Gold'],
+          genders: ['M', 'M', 'F', 'B'],
+          teeData: [
+            { rating18: 71.2, slope18: 128, ratingF9: 35.6, slopeF9: 128, ratingB9: 35.6, slopeB9: 128, rating: 71.2, slope: 128, lengths: [374,356,146,494,384,347,128,374,475,365,337,119,384,347,137,484,374,356] },
+            { rating18: 69.5, slope18: 123, ratingF9: 34.7, slopeF9: 123, ratingB9: 34.8, slopeB9: 123, rating: 69.5, slope: 123, lengths: [356,337,128,475,365,329,110,356,457,347,320,101,365,329,119,466,356,337] },
+            { rating18: 67.8, slope18: 115, ratingF9: 33.9, slopeF9: 115, ratingB9: 33.9, slopeB9: 115, rating: 67.8, slope: 115, lengths: [311,301,101,429,329,292,91,320,420,311,283,82,329,292,101,429,320,301] },
+            { 
+              ratings: {
+                men: { rating18: 66.2, slope18: 112, ratingF9: 33.1, slopeF9: 112, ratingB9: 33.1, slopeB9: 112 },
+                women: { rating18: 72.8, slope18: 125, ratingF9: 36.4, slopeF9: 125, ratingB9: 36.4, slopeB9: 125 }
+              },
+              lengths: [292,283,82,411,311,274,73,301,402,292,265,64,311,274,82,411,301,283]
+            }
+          ]
+        }
+      };
+
+      function showStatistics() {
+        const courses = getCourses();
+        if (courses.length === 0) {
+          alert('No courses to analyze.');
+          return;
+        }
+
+        let stats = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">';
+
+        // Overall statistics
+        const totalCourses = courses.length;
+        const cities = [...new Set(courses.map(c => c.city))].length;
+        const avgPar = courses.reduce((sum, c) => sum + (c.pars ? c.pars.reduce((s, p) => s + p, 0) : 70), 0) / totalCourses;
+
+        stats += `
+          <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #1e293b;">Overall Statistics</h3>
+            <p><strong>Total Courses:</strong> ${totalCourses}</p>
+            <p><strong>Unique Cities:</strong> ${cities}</p>
+            <p><strong>Average Par:</strong> ${avgPar.toFixed(1)}</p>
+          </div>
+        `;
+
+        // Par distribution
+        const parCounts = {};
+        courses.forEach(course => {
+          if (course.pars) {
+            const totalPar = course.pars.reduce((sum, par) => sum + par, 0);
+            parCounts[totalPar] = (parCounts[totalPar] || 0) + 1;
+          }
+        });
+
+        stats += `
+          <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #1e293b;">Par Distribution</h3>
+            ${Object.entries(parCounts).sort(([a], [b]) => a - b).map(([par, count]) => 
+              `<p><strong>Par ${par}:</strong> ${count} course${count > 1 ? 's' : ''}</p>`
+            ).join('')}
+          </div>
+        `;
+
+        // Tee statistics
+        const teeStats = {};
+        courses.forEach(course => {
+          if (course.tees && course.genders) {
+            course.tees.forEach((tee, idx) => {
+              const gender = course.genders[idx] || 'M';
+              const genderLabel = gender === 'M' ? 'Men' : gender === 'F' ? 'Women' : 'Both';
+              const key = `${tee} (${genderLabel})`;
+              teeStats[key] = (teeStats[key] || 0) + 1;
+            });
+          }
+        });
+
+        stats += `
+          <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #1e293b;">Tee Popularity</h3>
+            ${Object.entries(teeStats).sort(([,a], [,b]) => b - a).slice(0, 10).map(([tee, count]) => 
+              `<p><strong>${tee}:</strong> ${count} course${count > 1 ? 's' : ''}</p>`
+            ).join('')}
+          </div>
+        `;
+
+        stats += '</div>';
+
+        document.getElementById('stats-content').innerHTML = stats;
+        document.getElementById('stats-modal').style.display = 'block';
+      }
+
+      function hideStatistics() {
+        document.getElementById('stats-modal').style.display = 'none';
+      }      loadCourses();
+
+      // Search and filter functionality
+      document.getElementById('search-input').addEventListener('input', loadCourses);
+      document.getElementById('filter-tees').addEventListener('change', loadCourses);
+      document.getElementById('btn-clear-filters').addEventListener('click', () => {
+        document.getElementById('search-input').value = '';
+        document.getElementById('filter-tees').value = '';
+        loadCourses();
+      });
+
+      document.getElementById('btn-new-course').addEventListener('click', () => {
+        window.location.href = 'new.html';
+      });
+
+      document.getElementById('btn-modify-course').addEventListener('click', () => {
+        if (selectedCourseIndex === null) {
+          alert('Please select a course from the table above.');
+          return;
+        }
+        window.location.href = `new.html?edit=${selectedCourseIndex}`;
+      });
+
+      document.getElementById('btn-delete-course').addEventListener('click', () => {
+        if (selectedCourseIndex === null) {
+          alert('Please select a course from the table above.');
+          return;
+        }
+        if (confirm('Are you sure you want to delete this course?')) {
+          const courses = getCourses();
+          courses.splice(selectedCourseIndex, 1);
+          saveCourses(courses);
+          selectedCourseIndex = null;
+          loadCourses();
+        }
+      });
+
+      document.getElementById('btn-statistics').addEventListener('click', showStatistics);
+      document.getElementById('btn-templates').addEventListener('click', showTemplates);
+      document.getElementById('btn-import-courses').addEventListener('click', importCoursesFromCSV);
+      document.getElementById('btn-export-courses').addEventListener('click', exportCoursesToCSV);
+      document.getElementById('btn-backup-restore').addEventListener('click', () => {
+        const action = confirm('Click OK to BACKUP courses, Cancel to RESTORE from backup.');
+        if (action) {
+          backupCourses();
+        } else {
+          restoreCourses();
+        }
+      });
+
+      document.getElementById('close-stats').addEventListener('click', hideStatistics);
+      
+      // Close modal when clicking outside
+      document.getElementById('stats-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'stats-modal') {
+          hideStatistics();
+        }
+      });
+    </script>
+  </body>
+</html>

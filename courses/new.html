@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>New Course</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .form-card { max-width: 1400px; margin: 36px auto; padding: 24px; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); }
+      .field { margin-bottom: 16px; }
+      label { display: block; margin-bottom: 6px; font-weight: 600; color: #1e293b; }
+      input[type="text"], input[type="number"], select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+      .actions { display: flex; gap: 12px; margin-top: 24px; }
+      .btn-primary { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 10px; cursor: pointer; flex: 1; }
+      .btn-secondary { background: white; border: 1px solid #e6e9ef; padding: 10px 14px; border-radius: 10px; cursor: pointer; flex: 1; }
+      .tee-row { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+      .tee-row input { flex: 2; }
+      .tee-row select { flex: 1; }
+      .btn-remove { background: #dc3545; color: white; border: 0; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+      .btn-add { background: #28a745; color: white; border: 0; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+      
+      .section-divider { margin: 32px 0; border-top: 2px solid #e5e7eb; padding-top: 24px; }
+      .hole-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+      .hole-table th { background: #f3f4f6; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #cbd5e1; }
+      .hole-table td { padding: 4px; text-align: center; border: 1px solid #cbd5e1; }
+      .hole-table input { width: 100%; padding: 6px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; }
+      .hole-table td input { border: none; }
+      .rating-table { width: 300px; border-collapse: collapse; margin-top: 8px; }
+      .rating-table th { background: #f3f4f6; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #cbd5e1; min-width: 80px; }
+      .rating-table td { padding: 4px; text-align: center; border: 1px solid #cbd5e1; }
+      .rating-table input { width: 100%; padding: 6px; text-align: center; border: none; }
+      .tee-section { margin-bottom: 32px; padding: 16px; background: #f9fafb; border-radius: 8px; position: relative; padding-left: 20px; }
+      .tee-section::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 8px 0 0 8px; }
+      .tee-section.mens::before { background: #3b82f6; }
+      .tee-section.womens::before { background: #ec4899; }
+      .tee-section.both::before { background: linear-gradient(to bottom, #3b82f6 0%, #3b82f6 50%, #ec4899 50%, #ec4899 100%); }
+      .tee-section h3 { margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+      .tee-section h3::after { content: ''; width: 12px; height: 12px; border-radius: 50%; }
+      .tee-section.mens h3::after { background: #3b82f6; }
+      .tee-section.womens h3::after { background: #ec4899; }
+      .tee-section.both h3::after { background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 50%, #ec4899 50%, #ec4899 100%); }
+      .rating-slope { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+      
+      /* Hide number input spinner arrows */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+
+      @media (max-width: 1200px) {
+        .form-card { max-width: 100%; margin: 16px; padding: 16px; }
+        .hole-table { font-size: 12px; }
+        .hole-table th, .hole-table td { padding: 4px 2px; }
+      }
+
+      @media (max-width: 768px) {
+        .form-card { margin: 8px; padding: 12px; }
+        .section-divider { margin: 24px 0; }
+        .hole-table { font-size: 11px; }
+        .hole-table th, .hole-table td { padding: 2px; }
+        .rating-slope { grid-template-columns: 1fr; gap: 8px; }
+        .tee-section { padding: 12px; }
+        .actions { flex-direction: column; gap: 8px; }
+        .actions button { width: 100%; }
+      }
+
+      @media (max-width: 480px) {
+        .form-card { margin: 4px; padding: 8px; }
+        .hole-table { font-size: 10px; }
+        .hole-table th, .hole-table td { padding: 1px; }
+        .field { margin-bottom: 12px; }
+        label { font-size: 14px; }
+        input, select { font-size: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="form-card">
+      <header>
+        <h1 id="page-title">New Course</h1>
+        <p class="lead">Enter course details</p>
+      </header>
+
+      <section>
+        <form id="course-form">
+          <div class="field">
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" required />
+          </div>
+
+          <div class="field">
+            <label for="fullName">Full Name:</label>
+            <input type="text" id="fullName" name="fullName" required />
+          </div>
+
+          <div class="field">
+            <label for="shortName">Short Name (Optional):</label>
+            <input type="text" id="shortName" name="shortName" />
+          </div>
+
+          <div class="field">
+            <label>Tees and Genders:</label>
+            <div id="tees-container"></div>
+            <button type="button" class="btn-add" onclick="addTeeRow()">+ Add Tee</button>
+          </div>
+
+          <div class="section-divider">
+            <h2>Hole Information</h2>
+            <p style="color: #64748b; margin-bottom: 16px;">Enter par and stroke index for each hole</p>
+            
+            <table class="hole-table">
+              <thead>
+                <tr>
+                  <th>Hole</th>
+                  <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+                  <th>7</th><th>8</th><th>9</th><th>Out</th>
+                  <th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th>15</th>
+                  <th>16</th><th>17</th><th>18</th><th>In</th><th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Par</strong></td>
+                  <td><input type="number" id="par-1" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-2" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-3" min="3" max="5" value="3" required /></td>
+                  <td><input type="number" id="par-4" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-5" min="3" max="5" value="5" required /></td>
+                  <td><input type="number" id="par-6" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-7" min="3" max="5" value="3" required /></td>
+                  <td><input type="number" id="par-8" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-9" min="3" max="5" value="4" required /></td>
+                  <td id="par-out" style="background: #f3f4f6; font-weight: 600;">35</td>
+                  <td><input type="number" id="par-10" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-11" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-12" min="3" max="5" value="3" required /></td>
+                  <td><input type="number" id="par-13" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-14" min="3" max="5" value="5" required /></td>
+                  <td><input type="number" id="par-15" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-16" min="3" max="5" value="3" required /></td>
+                  <td><input type="number" id="par-17" min="3" max="5" value="4" required /></td>
+                  <td><input type="number" id="par-18" min="3" max="5" value="4" required /></td>
+                  <td id="par-in" style="background: #f3f4f6; font-weight: 600;">35</td>
+                  <td id="par-total" style="background: #dbeafe; font-weight: 700;">70</td>
+                </tr>
+                <tr>
+                  <td><strong>SI</strong></td>
+                  <td><input type="number" id="si-1" min="1" max="18" value="1" required /></td>
+                  <td><input type="number" id="si-2" min="1" max="18" value="2" required /></td>
+                  <td><input type="number" id="si-3" min="1" max="18" value="3" required /></td>
+                  <td><input type="number" id="si-4" min="1" max="18" value="4" required /></td>
+                  <td><input type="number" id="si-5" min="1" max="18" value="5" required /></td>
+                  <td><input type="number" id="si-6" min="1" max="18" value="6" required /></td>
+                  <td><input type="number" id="si-7" min="1" max="18" value="7" required /></td>
+                  <td><input type="number" id="si-8" min="1" max="18" value="8" required /></td>
+                  <td><input type="number" id="si-9" min="1" max="18" value="9" required /></td>
+                  <td></td>
+                  <td><input type="number" id="si-10" min="1" max="18" value="10" required /></td>
+                  <td><input type="number" id="si-11" min="1" max="18" value="11" required /></td>
+                  <td><input type="number" id="si-12" min="1" max="18" value="12" required /></td>
+                  <td><input type="number" id="si-13" min="1" max="18" value="13" required /></td>
+                  <td><input type="number" id="si-14" min="1" max="18" value="14" required /></td>
+                  <td><input type="number" id="si-15" min="1" max="18" value="15" required /></td>
+                  <td><input type="number" id="si-16" min="1" max="18" value="16" required /></td>
+                  <td><input type="number" id="si-17" min="1" max="18" value="17" required /></td>
+                  <td><input type="number" id="si-18" min="1" max="18" value="18" required /></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section-divider" id="tee-details-section">
+            <h2>Tee Details (Course Rating & Slope)</h2>
+            <div id="tee-details-container"></div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn-primary">Save Course</button>
+            <a href="index.html" class="btn-secondary" style="text-align: center; line-height: 38px; text-decoration: none;">Back</a>
+          </div>
+        </form>
+
+        <div id="result" style="margin-top:18px;color:#0b6efd;font-weight:600"></div>
+      </section>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const editIndexParam = params.get('edit');
+      const isEdit = editIndexParam !== null;
+      let teeCounter = 0;
+
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch(e) {
+          console.error('Error loading courses:', e);
+          return [];
+        }
+      }
+
+      function saveCourses(list) {
+        localStorage.setItem('courses', JSON.stringify(list || []));
+      }
+
+      function getNextCourseId() {
+        const courses = getCourses();
+        if (courses.length === 0) {
+          return 'C001';
+        }
+        
+        // Find the highest existing course ID
+        let maxId = 0;
+        courses.forEach(course => {
+          if (course.courseId) {
+            const num = parseInt(course.courseId.substring(1));
+            if (num > maxId) maxId = num;
+          }
+        });
+        
+        return 'C' + String(maxId + 1).padStart(3, '0');
+      }
+
+      function generateTeeIds(courseId, tees, genders) {
+        const teeIds = [];
+        let teeCounter = 1;
+        
+        tees.forEach((teeName, idx) => {
+          const gender = genders[idx];
+          if (gender === 'B') {
+            // Both genders - create two IDs
+            teeIds.push({
+              men: courseId + '-' + String(teeCounter).padStart(2, '0'),
+              women: courseId + '-' + String(teeCounter + 1).padStart(2, '0')
+            });
+            teeCounter += 2;
+          } else {
+            // Single gender
+            teeIds.push(courseId + '-' + String(teeCounter).padStart(2, '0'));
+            teeCounter++;
+          }
+        });
+        
+        return teeIds;
+      }
+
+      function addTeeRow(teeName = '', gender = 'M') {
+        const container = document.getElementById('tees-container');
+        const row = document.createElement('div');
+        row.className = 'tee-row';
+        const currentTeeId = teeCounter;
+        row.dataset.id = currentTeeId;
+        row.dataset.teeName = teeName;
+
+        row.innerHTML = `
+          <input type="text" placeholder="Tee name (e.g., Blue, White, Red)" value="${teeName}" required class="tee-name-input" />
+          <select required class="tee-gender-select">
+            <option value="M" ${gender === 'M' ? 'selected' : ''}>Men</option>
+            <option value="F" ${gender === 'F' ? 'selected' : ''}>Women</option>
+            <option value="B" ${gender === 'B' ? 'selected' : ''}>Both</option>
+          </select>
+          <button type="button" class="btn-remove" onclick="removeTeeRow(this)">Remove</button>
+        `;
+
+        container.appendChild(row);
+        
+        // Add event listeners for updating tee details when gender or name changes
+        const genderSelect = row.querySelector('.tee-gender-select');
+        const nameInput = row.querySelector('.tee-name-input');
+        
+        genderSelect.addEventListener('change', function() {
+          updateTeeDetailsSection(currentTeeId, nameInput.value, this.value);
+        });
+        
+        nameInput.addEventListener('input', function() {
+          const section = document.getElementById(`tee-details-${currentTeeId}`);
+          if (section) {
+            const h3 = section.querySelector('h3');
+            if (h3) {
+              const genderLabel = genderSelect.value === 'M' ? 'Men' : genderSelect.value === 'F' ? 'Women' : 'Both';
+              
+              // Get display course ID
+              let displayCourseId = 'C###';
+              if (isEdit) {
+                const courses = getCourses();
+                const editIndex = parseInt(editIndexParam, 10);
+                if (courses[editIndex] && courses[editIndex].courseId) {
+                  displayCourseId = courses[editIndex].courseId;
+                }
+              }
+              
+              const teeIdDisplay = getTeeIdDisplay(currentTeeId, this.value, genderSelect.value, displayCourseId);
+              let teeIdLabel = '';
+              if (genderSelect.value === 'B' && typeof teeIdDisplay === 'object') {
+                teeIdLabel = ` <span style=\"color: #64748b; font-size: 14px; font-weight: normal;\">(${teeIdDisplay.men} / ${teeIdDisplay.women})</span>`;
+              } else {
+                teeIdLabel = ` <span style=\"color: #64748b; font-size: 14px; font-weight: normal;\">(${teeIdDisplay})</span>`;
+              }
+              
+              h3.innerHTML = `${this.value || 'New Tee'} - ${genderLabel}${teeIdLabel}`;
+              // Re-add the visual indicator
+              const genderClass = genderSelect.value === 'M' ? 'mens' : genderSelect.value === 'F' ? 'womens' : 'both';
+              section.className = `tee-section ${genderClass}`;
+            }
+          }
+        });
+        
+        // Add tee details section
+        addTeeDetailsSection(currentTeeId, teeName, gender);
+        teeCounter++;
+      }
+
+      function updateTeeDetailsSection(teeId, teeName, gender) {
+        // Remove old section
+        const oldSection = document.getElementById(`tee-details-${teeId}`);
+        if (oldSection) {
+          oldSection.remove();
+        }
+        
+        // Add new section with updated gender
+        addTeeDetailsSection(teeId, teeName, gender);
+      }
+
+      function removeTeeRow(btn) {
+        const row = btn.closest('.tee-row');
+        const teeId = row.dataset.id;
+        row.remove();
+        
+        // Remove corresponding tee details section
+        const detailsSection = document.getElementById(`tee-details-${teeId}`);
+        if (detailsSection) {
+          detailsSection.remove();
+        }
+      }
+
+      function getTeeIdDisplay(teeId, teeName, gender, tempCourseId) {
+        // Generate temporary IDs for display before saving
+        const courseId = tempCourseId || 'C###';
+        const teeRows = document.querySelectorAll('#tees-container .tee-row');
+        let teeCounter = 1;
+        let currentTeeIdx = -1;
+        
+        // Find which tee number this is
+        teeRows.forEach((row, idx) => {
+          if (row.dataset.id == teeId) {
+            currentTeeIdx = idx;
+          }
+        });
+        
+        // Count up to this tee considering "Both" takes two numbers
+        for (let i = 0; i < currentTeeIdx; i++) {
+          const row = teeRows[i];
+          const rowGender = row.querySelector('select').value;
+          if (rowGender === 'B') {
+            teeCounter += 2;
+          } else {
+            teeCounter++;
+          }
+        }
+        
+        if (gender === 'B') {
+          const menId = courseId + '-' + String(teeCounter).padStart(2, '0');
+          const womenId = courseId + '-' + String(teeCounter + 1).padStart(2, '0');
+          return { men: menId, women: womenId };
+        } else {
+          return courseId + '-' + String(teeCounter).padStart(2, '0');
+        }
+      }
+
+      function addTeeDetailsSection(teeId, teeName, gender) {
+        const container = document.getElementById('tee-details-container');
+        const section = document.createElement('div');
+        const genderClass = gender === 'M' ? 'mens' : gender === 'F' ? 'womens' : 'both';
+        section.className = `tee-section ${genderClass}`;
+        section.id = `tee-details-${teeId}`;
+        
+        const genderLabel = gender === 'M' ? 'Men' : gender === 'F' ? 'Women' : 'Both';
+        
+        // Get or generate course ID for display
+        let displayCourseId = 'C###';
+        if (isEdit) {
+          const courses = getCourses();
+          const editIndex = parseInt(editIndexParam, 10);
+          if (courses[editIndex] && courses[editIndex].courseId) {
+            displayCourseId = courses[editIndex].courseId;
+          }
+        }
+        
+        const teeIdDisplay = getTeeIdDisplay(teeId, teeName, gender, displayCourseId);
+        
+        let teeIdLabel = '';
+        if (gender === 'B' && typeof teeIdDisplay === 'object') {
+          teeIdLabel = `<span style=\"color: #64748b; font-size: 14px; font-weight: normal;\"> (${teeIdDisplay.men} / ${teeIdDisplay.women})</span>`;
+        } else {
+          teeIdLabel = `<span style=\"color: #64748b; font-size: 14px; font-weight: normal;\"> (${teeIdDisplay})</span>`;
+        }
+        
+        let ratingSlopeHTML = '';
+        if (gender === 'B') {
+          // Show two separate tables for "Both"
+          ratingSlopeHTML = `
+            <div style="display: flex; gap: 32px; margin-bottom: 16px;">
+              <div>
+                <h4 style="margin-bottom: 12px; color: #3b82f6;">Men's Rating</h4>
+                <table class="rating-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>C.R.</th>
+                      <th>Slope</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>18 Holes</strong></td>
+                      <td><input type="text" id="rating-${teeId}-m-18" class="rating-input" placeholder="72.5" required /></td>
+                      <td><input type="number" id="slope-${teeId}-m-18" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                    <tr>
+                      <td><strong>First 9</strong></td>
+                      <td><input type="text" id="rating-${teeId}-m-f9" class="rating-input" placeholder="36.0" required /></td>
+                      <td><input type="number" id="slope-${teeId}-m-f9" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Back 9</strong></td>
+                      <td><input type="text" id="rating-${teeId}-m-b9" class="rating-input" placeholder="36.5" required /></td>
+                      <td><input type="number" id="slope-${teeId}-m-b9" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <div>
+                <h4 style="margin-bottom: 12px; color: #ec4899;">Women's Rating</h4>
+                <table class="rating-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>C.R.</th>
+                      <th>Slope</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>18 Holes</strong></td>
+                      <td><input type="text" id="rating-${teeId}-f-18" class="rating-input" placeholder="72.5" required /></td>
+                      <td><input type="number" id="slope-${teeId}-f-18" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                    <tr>
+                      <td><strong>First 9</strong></td>
+                      <td><input type="text" id="rating-${teeId}-f-f9" class="rating-input" placeholder="36.0" required /></td>
+                      <td><input type="number" id="slope-${teeId}-f-f9" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Back 9</strong></td>
+                      <td><input type="text" id="rating-${teeId}-f-b9" class="rating-input" placeholder="36.5" required /></td>
+                      <td><input type="number" id="slope-${teeId}-f-b9" min="55" max="155" placeholder="130" required /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        } else {
+          // Show single table for Men or Women
+          ratingSlopeHTML = `
+            <table class="rating-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>C.R.</th>
+                  <th>Slope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>18 Holes</strong></td>
+                  <td><input type="text" id="rating-${teeId}-18" class="rating-input" placeholder="72.5" required /></td>
+                  <td><input type="number" id="slope-${teeId}-18" min="55" max="155" placeholder="130" required /></td>
+                </tr>
+                <tr>
+                  <td><strong>First 9</strong></td>
+                  <td><input type="text" id="rating-${teeId}-f9" class="rating-input" placeholder="36.0" required /></td>
+                  <td><input type="number" id="slope-${teeId}-f9" min="55" max="155" placeholder="130" required /></td>
+                </tr>
+                <tr>
+                  <td><strong>Back 9</strong></td>
+                  <td><input type="text" id="rating-${teeId}-b9" class="rating-input" placeholder="36.5" required /></td>
+                  <td><input type="number" id="slope-${teeId}-b9" min="55" max="155" placeholder="130" required /></td>
+                </tr>
+              </tbody>
+            </table>
+          `;
+        }
+        
+        section.innerHTML = `
+          <h3>${teeName || 'New Tee'} - ${genderLabel}${teeIdLabel}</h3>
+          
+          ${ratingSlopeHTML}
+          
+          <div class="field">
+            <label>Length of Each Hole (Meters):</label>
+            <table class="hole-table">
+              <thead>
+                <tr>
+                  <th>Hole</th>
+                  <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+                  <th>7</th><th>8</th><th>9</th><th>Out</th>
+                  <th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th>15</th>
+                  <th>16</th><th>17</th><th>18</th><th>In</th><th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Meters</strong></td>
+                  ${Array.from({length: 9}, (_, i) => `<td><input type="text" id="yards-${teeId}-${i+1}" class="length-input" data-tee-id="${teeId}" data-hole="${i+1}" value="0" required /></td>`).join('')}
+                  <td id="yards-${teeId}-out" style="background: #f3f4f6; font-weight: 600;">0</td>
+                  ${Array.from({length: 9}, (_, i) => `<td><input type="text" id="yards-${teeId}-${i+10}" class="length-input" data-tee-id="${teeId}" data-hole="${i+10}" value="0" required /></td>`).join('')}
+                  <td id="yards-${teeId}-in" style="background: #f3f4f6; font-weight: 600;">0</td>
+                  <td id="yards-${teeId}-total" style="background: #dbeafe; font-weight: 700;">0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+        container.appendChild(section);
+        
+        // Add event listeners for course rating inputs (comma to dot conversion)
+        const ratingInputs = section.querySelectorAll('.rating-input');
+        ratingInputs.forEach(input => {
+          input.addEventListener('input', function(e) {
+            // Replace all commas with dots
+            let value = this.value.replace(/,/g, '.');
+            
+            // Remove any characters that aren't numbers, dots, or minus sign
+            value = value.replace(/[^\d.-]/g, '');
+            
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+              value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Ensure minus sign only at the beginning
+            if (value.indexOf('-') > 0) {
+              value = value.replace(/-/g, '');
+            }
+            
+            const cursorPos = this.selectionStart;
+            this.value = value;
+            this.setSelectionRange(cursorPos, cursorPos);
+          });
+          
+          input.addEventListener('paste', function(e) {
+            // Handle paste events - replace commas with dots
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanedText = pastedText.replace(/,/g, '.');
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            const value = this.value;
+            this.value = value.substring(0, start) + cleanedText + value.substring(end);
+            this.setSelectionRange(start + cleanedText.length, start + cleanedText.length);
+            // Trigger input event to clean the pasted value
+            this.dispatchEvent(new Event('input'));
+          });
+        });
+        
+        // Add event listeners for yardage calculation
+        for (let i = 1; i <= 18; i++) {
+          const input = document.getElementById(`yards-${teeId}-${i}`);
+          
+          // Focus event - select all text
+          input.addEventListener('focus', function() {
+            this.select();
+          });
+          
+          // Input event - validate numbers only, auto-advance after 3 digits
+          input.addEventListener('input', function(e) {
+            // Remove non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Update totals
+            updateYardageTotals(teeId);
+            
+            // Auto-advance after 3 digits
+            if (this.value.length >= 3) {
+              if (i < 18) {
+                document.getElementById(`yards-${teeId}-${i + 1}`).focus();
+              }
+            }
+          });
+          
+          // Keydown event - prevent non-numeric keys
+          input.addEventListener('keydown', function(e) {
+            // Allow: backspace, delete, tab, escape, enter
+            if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true) ||
+                // Allow: home, end, left, right
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+              return;
+            }
+            // Ensure that it is a number and stop the keypress
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+              e.preventDefault();
+            }
+          });
+        }
+      }
+
+      function updateYardageTotals(teeId) {
+        let outTotal = 0;
+        let inTotal = 0;
+        
+        for (let i = 1; i <= 9; i++) {
+          outTotal += parseInt(document.getElementById(`yards-${teeId}-${i}`).value) || 0;
+        }
+        for (let i = 10; i <= 18; i++) {
+          inTotal += parseInt(document.getElementById(`yards-${teeId}-${i}`).value) || 0;
+        }
+        
+        document.getElementById(`yards-${teeId}-out`).textContent = outTotal;
+        document.getElementById(`yards-${teeId}-in`).textContent = inTotal;
+        document.getElementById(`yards-${teeId}-total`).textContent = outTotal + inTotal;
+      }
+
+      function updateParTotals() {
+        let outTotal = 0;
+        let inTotal = 0;
+        
+        for (let i = 1; i <= 9; i++) {
+          outTotal += parseInt(document.getElementById(`par-${i}`).value) || 0;
+        }
+        for (let i = 10; i <= 18; i++) {
+          inTotal += parseInt(document.getElementById(`par-${i}`).value) || 0;
+        }
+        
+        document.getElementById('par-out').textContent = outTotal;
+        document.getElementById('par-in').textContent = inTotal;
+        document.getElementById('par-total').textContent = outTotal + inTotal;
+      }
+
+      function validateStrokeIndexes() {
+        const strokeIndexes = [];
+        let isValid = true;
+        
+        for (let i = 1; i <= 18; i++) {
+          const si = parseInt(document.getElementById(`si-${i}`).value);
+          if (strokeIndexes.includes(si)) {
+            alert(`Stroke Index ${si} is used more than once. Each hole must have a unique stroke index from 1-18.`);
+            isValid = false;
+            break;
+          }
+          strokeIndexes.push(si);
+        }
+        
+        return isValid;
+      }
+
+      function validateTeeData() {
+        const teeRows = document.querySelectorAll('#tees-container .tee-row');
+        let isValid = true;
+        
+        teeRows.forEach((row, idx) => {
+          const teeId = row.dataset.id;
+          const gender = row.querySelector('select').value;
+          const teeName = row.querySelector('input').value;
+          
+          if (gender === 'B') {
+            // Validate both men's and women's ratings
+            const ratingM18 = parseFloat(document.getElementById(`rating-${teeId}-m-18`)?.value);
+            const slopeM18 = parseInt(document.getElementById(`slope-${teeId}-m-18`)?.value);
+            const ratingF18 = parseFloat(document.getElementById(`rating-${teeId}-f-18`)?.value);
+            const slopeF18 = parseInt(document.getElementById(`slope-${teeId}-f-18`)?.value);
+            
+            if ((ratingM18 && (ratingM18 < 60 || ratingM18 > 80)) || (ratingF18 && (ratingF18 < 60 || ratingF18 > 80))) {
+              alert(`Course rating for ${teeName} tee should be between 60 and 80.`);
+              isValid = false;
+            }
+            
+            if ((slopeM18 && (slopeM18 < 55 || slopeM18 > 155)) || (slopeF18 && (slopeF18 < 55 || slopeF18 > 155))) {
+              alert(`Slope rating for ${teeName} tee should be between 55 and 155.`);
+              isValid = false;
+            }
+          } else {
+            // Validate single gender ratings
+            const rating18 = parseFloat(document.getElementById(`rating-${teeId}-18`)?.value);
+            const slope18 = parseInt(document.getElementById(`slope-${teeId}-18`)?.value);
+            
+            if (rating18 && (rating18 < 60 || rating18 > 80)) {
+              alert(`Course rating for ${teeName} tee should be between 60 and 80.`);
+              isValid = false;
+            }
+            
+            if (slope18 && (slope18 < 55 || slope18 > 155)) {
+              alert(`Slope rating for ${teeName} tee should be between 55 and 155.`);
+              isValid = false;
+            }
+          }
+        });
+        
+        return isValid;
+      }
+
+      // Initialize form
+      if (isEdit) {
+        document.getElementById('page-title').textContent = 'Modify Course';
+        const courses = getCourses();
+        const editIndex = parseInt(editIndexParam, 10);
+        const course = courses[editIndex];
+
+        if (course) {
+          document.getElementById('city').value = course.city || '';
+          document.getElementById('fullName').value = course.fullName || course.name || '';
+          document.getElementById('shortName').value = course.shortName || '';
+
+          // Load par values
+          if (course.pars) {
+            course.pars.forEach((par, idx) => {
+              document.getElementById(`par-${idx + 1}`).value = par;
+            });
+            updateParTotals();
+          }
+
+          // Load stroke indexes
+          if (course.strokeIndexes) {
+            course.strokeIndexes.forEach((si, idx) => {
+              document.getElementById(`si-${idx + 1}`).value = si;
+            });
+          }
+
+          if (course.tees && course.genders) {
+            course.tees.forEach((tee, idx) => {
+              addTeeRow(tee, course.genders[idx] || 'M');
+              
+              // Load tee-specific data
+              if (course.teeData && course.teeData[idx]) {
+                const teeData = course.teeData[idx];
+                const gender = course.genders[idx];
+                
+                setTimeout(() => {
+                  if (gender === 'B' && teeData.ratings) {
+                    // Load both men's and women's ratings
+                    document.getElementById(`rating-${idx}-m-18`).value = teeData.ratings.men.rating18 || '';
+                    document.getElementById(`slope-${idx}-m-18`).value = teeData.ratings.men.slope18 || '';
+                    document.getElementById(`rating-${idx}-m-f9`).value = teeData.ratings.men.ratingF9 || '';
+                    document.getElementById(`slope-${idx}-m-f9`).value = teeData.ratings.men.slopeF9 || '';
+                    document.getElementById(`rating-${idx}-m-b9`).value = teeData.ratings.men.ratingB9 || '';
+                    document.getElementById(`slope-${idx}-m-b9`).value = teeData.ratings.men.slopeB9 || '';
+                    
+                    document.getElementById(`rating-${idx}-f-18`).value = teeData.ratings.women.rating18 || '';
+                    document.getElementById(`slope-${idx}-f-18`).value = teeData.ratings.women.slope18 || '';
+                    document.getElementById(`rating-${idx}-f-f9`).value = teeData.ratings.women.ratingF9 || '';
+                    document.getElementById(`slope-${idx}-f-f9`).value = teeData.ratings.women.slopeF9 || '';
+                    document.getElementById(`rating-${idx}-f-b9`).value = teeData.ratings.women.ratingB9 || '';
+                    document.getElementById(`slope-${idx}-f-b9`).value = teeData.ratings.women.slopeB9 || '';
+                  } else {
+                    // Load single gender ratings
+                    document.getElementById(`rating-${idx}-18`).value = teeData.rating18 || teeData.rating || '';
+                    document.getElementById(`slope-${idx}-18`).value = teeData.slope18 || teeData.slope || '';
+                    document.getElementById(`rating-${idx}-f9`).value = teeData.ratingF9 || '';
+                    document.getElementById(`slope-${idx}-f9`).value = teeData.slopeF9 || '';
+                    document.getElementById(`rating-${idx}-b9`).value = teeData.ratingB9 || '';
+                    document.getElementById(`slope-${idx}-b9`).value = teeData.slopeB9 || '';
+                  }
+                  
+                  if (teeData.yardages) {
+                    teeData.yardages.forEach((yards, holeIdx) => {
+                      document.getElementById(`yards-${idx}-${holeIdx + 1}`).value = yards;
+                    });
+                    updateYardageTotals(idx);
+                  } else if (teeData.lengths) {
+                    teeData.lengths.forEach((length, holeIdx) => {
+                      document.getElementById(`yards-${idx}-${holeIdx + 1}`).value = length;
+                    });
+                    updateYardageTotals(idx);
+                  }
+                }, 0);
+              }
+            });
+          }
+        }
+      } else {
+        // Add default tee rows for new course
+        addTeeRow('Blue', 'M');
+        addTeeRow('White', 'M');
+        addTeeRow('Red', 'F');
+      }
+
+      // Initialize par totals
+      updateParTotals();
+
+      // Add event listeners for par calculation and auto-advance
+      for (let i = 1; i <= 18; i++) {
+        const parInput = document.getElementById(`par-${i}`);
+        
+        parInput.addEventListener('focus', function() {
+          this.select();
+        });
+        
+        parInput.addEventListener('input', function(e) {
+          const value = parseInt(this.value);
+          
+          // Only allow 3, 4, 5, or 6
+          if (value === 1 || value === 2 || value === 7 || value === 8 || value === 9 || value === 0) {
+            this.value = '';
+            return;
+          }
+          
+          if (value === 6) {
+            if (!confirm('Are you sure you want to enter Par 6?')) {
+              this.value = '';
+              return;
+            }
+          }
+          
+          // Auto-advance to next field if valid par entered
+          if (value >= 3 && value <= 6) {
+            updateParTotals();
+            
+            // Move to next par input or first SI input
+            if (i < 18) {
+              document.getElementById(`par-${i + 1}`).focus();
+            } else {
+              document.getElementById('si-1').focus();
+            }
+          }
+        });
+      }
+
+      document.getElementById('course-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Validate stroke indexes
+        if (!validateStrokeIndexes()) {
+          return;
+        }
+
+        // Validate tee data
+        if (!validateTeeData()) {
+          return;
+        }
+
+        const city = document.getElementById('city').value.trim();
+        const fullName = document.getElementById('fullName').value.trim();
+        const shortName = document.getElementById('shortName').value.trim();
+
+        // Get par values
+        const pars = [];
+        for (let i = 1; i <= 18; i++) {
+          pars.push(parseInt(document.getElementById(`par-${i}`).value));
+        }
+
+        // Get stroke indexes
+        const strokeIndexes = [];
+        for (let i = 1; i <= 18; i++) {
+          strokeIndexes.push(parseInt(document.getElementById(`si-${i}`).value));
+        }
+
+        const teeRows = document.querySelectorAll('#tees-container .tee-row');
+        const tees = [];
+        const genders = [];
+        const teeData = [];
+
+        teeRows.forEach(row => {
+          const input = row.querySelector('input');
+          const select = row.querySelector('select');
+          const teeId = row.dataset.id;
+          
+          tees.push(input.value.trim());
+          genders.push(select.value);
+          
+          // Get tee-specific data
+          const yardages = [];
+          for (let i = 1; i <= 18; i++) {
+            yardages.push(parseInt(document.getElementById(`yards-${teeId}-${i}`).value) || 0);
+          }
+          
+          const gender = select.value;
+          let teeDataObj = { lengths: yardages };
+          
+          if (gender === 'B') {
+            // Both genders - store separate ratings
+            teeDataObj.ratings = {
+              men: {
+                rating18: parseFloat(document.getElementById(`rating-${teeId}-m-18`).value),
+                slope18: parseInt(document.getElementById(`slope-${teeId}-m-18`).value),
+                ratingF9: parseFloat(document.getElementById(`rating-${teeId}-m-f9`).value),
+                slopeF9: parseInt(document.getElementById(`slope-${teeId}-m-f9`).value),
+                ratingB9: parseFloat(document.getElementById(`rating-${teeId}-m-b9`).value),
+                slopeB9: parseInt(document.getElementById(`slope-${teeId}-m-b9`).value)
+              },
+              women: {
+                rating18: parseFloat(document.getElementById(`rating-${teeId}-f-18`).value),
+                slope18: parseInt(document.getElementById(`slope-${teeId}-f-18`).value),
+                ratingF9: parseFloat(document.getElementById(`rating-${teeId}-f-f9`).value),
+                slopeF9: parseInt(document.getElementById(`slope-${teeId}-f-f9`).value),
+                ratingB9: parseFloat(document.getElementById(`rating-${teeId}-f-b9`).value),
+                slopeB9: parseInt(document.getElementById(`slope-${teeId}-f-b9`).value)
+              }
+            };
+          } else {
+            // Single gender
+            teeDataObj.rating18 = parseFloat(document.getElementById(`rating-${teeId}-18`).value);
+            teeDataObj.slope18 = parseInt(document.getElementById(`slope-${teeId}-18`).value);
+            teeDataObj.ratingF9 = parseFloat(document.getElementById(`rating-${teeId}-f9`).value);
+            teeDataObj.slopeF9 = parseInt(document.getElementById(`slope-${teeId}-f9`).value);
+            teeDataObj.ratingB9 = parseFloat(document.getElementById(`rating-${teeId}-b9`).value);
+            teeDataObj.slopeB9 = parseInt(document.getElementById(`slope-${teeId}-b9`).value);
+            
+            // Backward compatibility
+            teeDataObj.rating = teeDataObj.rating18;
+            teeDataObj.slope = teeDataObj.slope18;
+          }
+          
+          teeData.push(teeDataObj);
+        });
+
+        const courses = getCourses();
+        let courseId;
+        let teeIds;
+
+        if (isEdit) {
+          const editIndex = parseInt(editIndexParam, 10);
+          const existingCourse = courses[editIndex];
+          // Preserve existing course ID
+          courseId = existingCourse.courseId || getNextCourseId();
+          // Regenerate tee IDs in case tees were added/removed/reordered
+          teeIds = generateTeeIds(courseId, tees, genders);
+        } else {
+          // New course - generate new ID
+          courseId = getNextCourseId();
+          teeIds = generateTeeIds(courseId, tees, genders);
+        }
+
+        const courseData = {
+          courseId,
+          city,
+          fullName,
+          shortName,
+          name: fullName,
+          tees,
+          genders,
+          teeIds,
+          pars,
+          strokeIndexes,
+          teeData
+        };
+
+        if (isEdit) {
+          const editIndex = parseInt(editIndexParam, 10);
+          courses[editIndex] = courseData;
+        } else {
+          courses.push(courseData);
+        }
+
+        saveCourses(courses);
+
+        document.getElementById('result').textContent = isEdit ? 'Course updated successfully!' : 'Course saved successfully!';
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

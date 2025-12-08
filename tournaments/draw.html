@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Draw</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .container {
+      max-width: 100%;
+      padding: 20px;
+    }
+
+    .draw-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .right-panel {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .config-section {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .config-section h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .players-list {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-height: calc(100vh - 380px);
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .players-list h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .player-card {
+      background: #f8f9fa;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      cursor: move;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      border-left: 4px solid #94a3b8;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .player-card.male {
+      background: #e0f2fe;
+      border-left: 4px solid #0284c7;
+    }
+
+    .player-card.female {
+      background: #fce7f3;
+      border-left: 4px solid #ec4899;
+    }
+
+    .player-card:hover {
+      border-color: #007bff;
+      background: #e7f3ff;
+      border-left-color: #007bff;
+    }
+
+    .player-card.male:hover {
+      background: #bae6fd;
+      border-left-color: #0369a1;
+    }
+
+    .player-card.female:hover {
+      background: #fbcfe8;
+      border-left-color: #db2777;
+    }
+
+    .player-card.dragging {
+      opacity: 0.5;
+    }
+
+    .player-name {
+      font-weight: 600;
+      font-size: clamp(11px, 2.5vw, 13px);
+      margin-bottom: 4px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .player-info {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .groups-area {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      height: fit-content;
+    }
+
+    .groups-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .groups-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .auto-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .auto-buttons button {
+      padding: 8px 15px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #28a745;
+      color: white;
+      transition: background 0.2s;
+    }
+
+    .auto-buttons button:hover {
+      background: #218838;
+    }
+
+    .auto-buttons button.secondary {
+      background: #6c757d;
+    }
+
+    .auto-buttons button.secondary:hover {
+      background: #5a6268;
+    }
+
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    .group-box {
+      background: #f8f9fa;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 280px;
+      transition: all 0.2s;
+    }
+
+    .group-box.drag-over {
+      border-color: #007bff;
+      background: #e7f3ff;
+    }
+
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .group-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .group-time {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .group-players {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .group-player-card {
+      background: white;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: move;
+      border: 1px solid #ddd;
+      border-left: 4px solid #94a3b8;
+      position: relative;
+      min-height: 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .group-player-card.male {
+      background: #e0f2fe;
+      border-left: 4px solid #0284c7;
+    }
+
+    .group-player-card.female {
+      background: #fce7f3;
+      border-left: 4px solid #ec4899;
+    }
+
+    .group-player-card:hover {
+      border-color: #007bff;
+      border-left-color: #007bff;
+    }
+
+    .group-player-card.male:hover {
+      background: #bae6fd;
+      border-left-color: #0369a1;
+    }
+
+    .group-player-card.female:hover {
+      background: #fbcfe8;
+      border-left-color: #db2777;
+    }
+
+    .remove-player {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .group-player-card:hover .remove-player {
+      display: block;
+    }
+
+    .btn-save {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: background 0.2s;
+    }
+
+    .btn-save:hover {
+      background: #0056b3;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 30px;
+      font-size: 14px;
+    }
+
+    .time-config {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 20px;
+      color: #1e293b;
+    }
+
+    .modal-form-group {
+      margin-bottom: 20px;
+    }
+
+    .modal-form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .modal-form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .modal-buttons button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .modal-btn-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: #0056b3;
+    }
+
+    .modal-btn-secondary {
+      background: white;
+      border: 1px solid #ddd;
+      color: #333;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #f8f9fa;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .group-distribution-info {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #0c4a6e;
+    }
+
+    .group-distribution-options {
+      margin-top: 10px;
+    }
+
+    .distribution-option {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 6px;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .distribution-option:hover {
+      border-color: #007bff;
+      background: #f8fafc;
+    }
+
+    .distribution-option input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    .distribution-option label {
+      cursor: pointer;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Auto Group Modal -->
+  <div id="auto-group-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Auto Group Settings</h2>
+      
+      <div class="modal-form-group">
+        <label>Number of Players in Group</label>
+        <select id="modal-group-size" onchange="calculateGroupDistribution()">
+          <option value="2">2 Players</option>
+          <option value="3">3 Players</option>
+          <option value="4" selected>4 Players</option>
+        </select>
+      </div>
+
+      <div id="group-distribution-section" style="display: none;">
+        <div class="modal-form-group">
+          <label>Group Distribution</label>
+          <div id="group-distribution-info" class="group-distribution-info"></div>
+          <div id="group-distribution-options" class="group-distribution-options"></div>
+        </div>
+      </div>
+
+      <div class="modal-form-group">
+        <label>Grouping Order</label>
+        <select id="grouping-order">
+          <option value="random">Random</option>
+          <option value="hcp-asc">HCP (Ascending)</option>
+          <option value="hcp-desc">HCP (Descending)</option>
+          <option value="phcp-asc">PHCP (Ascending)</option>
+          <option value="phcp-desc">PHCP (Descending)</option>
+          <option value="hcp-distribution">HCP Distribution</option>
+          <option value="club-distribution">Club/Country Distribution</option>
+        </select>
+      </div>
+
+      <div class="modal-form-group">
+        <label>Separate By</label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="separate-gender" onchange="calculateGroupDistribution()">
+            Gender
+          </label>
+          <label>
+            <input type="checkbox" id="separate-categories" onchange="calculateGroupDistribution()">
+            Categories
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="modal-btn-secondary" onclick="closeAutoGroupModal()">Cancel</button>
+        <button class="modal-btn-primary" onclick="confirmAutoGroup()">Generate Groups</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>Tournament Draw</h1>
+    
+    <div style="margin-bottom: 20px;">
+      <label for="round-select" style="margin-right: 10px; font-weight: 600;">Select Round:</label>
+      <select id="round-select" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+        <option value="">-- Select Round --</option>
+      </select>
+      <button onclick="window.location.href='index.html'" style="margin-left: 20px; padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Back to Tournament</button>
+    </div>
+
+    <div id="draw-content" style="display: none;">
+      <div class="draw-container">
+        <!-- Left Panel: Groups -->
+        <div class="left-panel">
+          <div class="groups-area">
+            <div class="groups-header">
+              <h3>Starting Groups</h3>
+              <div class="auto-buttons">
+                <button onclick="openAutoGroupModal()">Auto Group</button>
+                <button onclick="clearGroups()" class="secondary">Clear All</button>
+              </div>
+            </div>
+            <div id="groups-container" class="groups-grid"></div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Configuration and Players -->
+        <div class="right-panel">
+          <div class="config-section">
+            <h3>Starting Protocol</h3>
+            <div class="form-group">
+              <label>Protocol Type</label>
+              <select id="protocol-type">
+                <option value="single">1st Tee Start</option>
+                <option value="twotee">Two Tee Start (1st & 10th)</option>
+                <option value="shotgun">Shotgun</option>
+              </select>
+            </div>
+            <div class="form-group" id="alternate-tee-group" style="display: none;">
+              <label>Alternate Tee (e.g., 10, 11)</label>
+              <input type="number" id="alternate-tee" value="10" min="1" max="18">
+            </div>
+            <div class="form-group time-config">
+              <div>
+                <label>Start Time</label>
+                <input type="time" id="start-time" value="08:00">
+              </div>
+              <div>
+                <label>Interval (min)</label>
+                <input type="number" id="interval" value="10" min="1">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Group Size</label>
+              <select id="group-size">
+                <option value="2">2 Players</option>
+                <option value="3">3 Players</option>
+                <option value="4" selected>4 Players</option>
+              </select>
+            </div>
+            <button onclick="applyConfiguration()" style="width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Apply Configuration</button>
+          </div>
+
+          <div class="players-list">
+            <h3>Available Players (<span id="player-count">0</span>)</h3>
+            <div id="players-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="saveDraw()">Save Draw</button>
+    </div>
+
+    <div id="no-round" style="display: none; text-align: center; padding: 50px; color: #999;">
+      <p style="font-size: 18px;">Please select a round to create the draw.</p>
+    </div>
+  </div>
+
+  <script>
+    let currentTournament = null;
+    let currentRound = null;
+    let admittedPlayers = [];
+    let groups = [];
+    let draggedPlayer = null;
+    let draggedFromGroupId = null;
+
+    // Load tournament and rounds
+    function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      
+      if (!tournamentId) {
+        alert('No tournament selected');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+      currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+      
+      if (!currentTournament) {
+        alert('Tournament not found');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Populate round selector
+      const roundSelect = document.getElementById('round-select');
+      console.log('Tournament:', currentTournament);
+      console.log('Meta:', currentTournament.meta);
+      
+      if (currentTournament.meta && currentTournament.meta.rounds > 1) {
+        console.log('Rounds data:', currentTournament.meta.roundsData);
+        console.log('Round IDs:', currentTournament.meta.roundIds);
+        
+        currentTournament.meta.roundsData.forEach((round, index) => {
+          const option = document.createElement('option');
+          // Use roundId from roundIds array or round object
+          const roundId = currentTournament.meta.roundIds?.[index] || round.roundId || `${currentTournament.tournamentId}_R${index + 1}`;
+          option.value = roundId;
+          option.textContent = `Round ${index + 1}: ${round.date || 'TBD'}`;
+          console.log(`Created option: value="${roundId}", text="${option.textContent}"`);
+          roundSelect.appendChild(option);
+        });
+      } else {
+        const option = document.createElement('option');
+        option.value = currentTournament.tournamentId;
+        option.textContent = `Single Round: ${currentTournament.date || 'TBD'}`;
+        console.log(`Created single round option: value="${currentTournament.tournamentId}"`);
+        roundSelect.appendChild(option);
+      }
+
+      roundSelect.addEventListener('change', loadRound);
+      
+      // Auto-select round based on current date or first available round
+      if (roundSelect.options.length > 1) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let selectedIndex = 1; // Default to first round
+        
+        if (currentTournament.meta && currentTournament.meta.rounds > 1) {
+          // Multi-round tournament: find appropriate round based on date
+          for (let i = 0; i < currentTournament.meta.roundsData.length; i++) {
+            const roundDate = new Date(currentTournament.meta.roundsData[i].date);
+            roundDate.setHours(0, 0, 0, 0);
+            
+            if (today >= roundDate) {
+              selectedIndex = i + 1; // +1 because index 0 is placeholder
+            } else {
+              break; // Stop at first future round
+            }
+          }
+        }
+        
+        roundSelect.selectedIndex = selectedIndex;
+        loadRound();
+      }
+
+      // Setup protocol type change listener
+      document.getElementById('protocol-type').addEventListener('change', (e) => {
+        const alternateTeeGroup = document.getElementById('alternate-tee-group');
+        
+        if (e.target.value === 'twotee') {
+          alternateTeeGroup.style.display = 'block';
+        } else {
+          alternateTeeGroup.style.display = 'none';
+        }
+        
+        applyConfiguration();
+      });
+
+      // Setup alternate tee change listener
+      document.getElementById('alternate-tee').addEventListener('change', applyConfiguration);
+    }
+
+    // Load round data
+    function loadRound() {
+      const roundSelect = document.getElementById('round-select');
+      const roundId = roundSelect.value;
+      
+      console.log('Round select value:', roundId);
+      console.log('All admittedPlayers keys:', Object.keys(JSON.parse(localStorage.getItem('admittedPlayers') || '{}')));
+      
+      if (!roundId || roundId === '') {
+        document.getElementById('draw-content').style.display = 'none';
+        document.getElementById('no-round').style.display = 'block';
+        return;
+      }
+
+      currentRound = roundId;
+      
+      // Load admitted players for this round
+      const allAdmittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+      const roundPlayers = allAdmittedPlayers[roundId] || [];
+      
+      // Check if roundPlayers contains full player objects or just reg numbers
+      console.log('Round ID:', roundId);
+      console.log('Round Players from storage:', roundPlayers);
+      console.log('Type of first element:', roundPlayers.length > 0 ? typeof roundPlayers[0] : 'none');
+      console.log('First element:', roundPlayers.length > 0 ? roundPlayers[0] : 'none');
+      
+      if (roundPlayers.length > 0 && typeof roundPlayers[0] === 'object' && roundPlayers[0] !== null) {
+        // Already full player objects
+        admittedPlayers = roundPlayers;
+        console.log('Using player objects directly');
+      } else {
+        // Just reg numbers, need to fetch full player objects
+        console.log('Fetching players from players list');
+        const allPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+        admittedPlayers = roundPlayers.map(reg => 
+          allPlayers.find(p => p.reg === reg)
+        ).filter(p => p);
+      }
+      
+      console.log('Admitted players loaded:', admittedPlayers.length, admittedPlayers);
+
+      // Load existing draw if available
+      const savedDraws = JSON.parse(localStorage.getItem('draws') || '{}');
+      const savedDraw = savedDraws[roundId];
+      
+      if (savedDraw) {
+        groups = savedDraw.groups || [];
+        
+        // Merge fresh admitted player data into saved groups
+        // This ensures tee/category changes are reflected
+        const admittedByReg = {};
+        admittedPlayers.forEach(p => { if (p.reg) admittedByReg[p.reg] = p; });
+        groups.forEach(group => {
+          group.players = group.players.map(drawPlayer => {
+            const freshPlayer = admittedByReg[drawPlayer.reg];
+            if (freshPlayer) {
+              // Merge: keep draw-specific data, update player data from admissions
+              return {...drawPlayer, ...freshPlayer};
+            }
+            return drawPlayer;
+          });
+        });
+        
+        document.getElementById('protocol-type').value = savedDraw.protocol || 'single';
+        document.getElementById('start-time').value = savedDraw.startTime || '08:00';
+        document.getElementById('interval').value = savedDraw.interval || 10;
+        document.getElementById('group-size').value = savedDraw.groupSize || 4;
+      } else {
+        // Create default 20 groups
+        groups = [];
+        const protocol = 'single';
+        const startTime = '08:00';
+        const interval = 10;
+        
+        for (let i = 0; i < 20; i++) {
+          groups.push({
+            groupId: `group-${Date.now()}-${i}`,
+            players: [],
+            time: calculateStartTime(i, protocol, startTime, interval),
+            tee: calculateTee(i, protocol)
+          });
+        }
+      }
+
+      document.getElementById('draw-content').style.display = 'block';
+      document.getElementById('no-round').style.display = 'none';
+      
+      renderPlayers();
+      renderGroups();
+    }
+
+    // Calculate age
+    function calculateAge(dob) {
+      if (!dob) return '-';
+      const birthDate = new Date(dob);
+      const referenceDate = new Date(new Date().getFullYear(), 0, 1);
+      let age = referenceDate.getFullYear() - birthDate.getFullYear();
+      return age;
+    }
+
+    // Get tee data for pHCP calculation
+    function getTeeData(player) {
+      if (!currentTournament || !currentTournament.meta) return null;
+      
+      const roundIds = currentTournament.meta.roundIds || [];
+      const roundIndex = roundIds.indexOf(currentRound);
+      const roundData = currentTournament.meta.roundsData?.[roundIndex >= 0 ? roundIndex : 0];
+      if (!roundData) return null;
+      
+      const playerGender = (player.gender || '').toLowerCase();
+      let teeValue = '';
+      
+      console.log(`getTeeData for ${player.firstName}: player.tee = "${player.tee}", roundData.course = "${roundData.course}"`);
+      
+      // Check if player has an assigned tee (from categories)
+      if (player.tee) {
+        // Convert tee ID to courseId||teeIndex format by looking up in course.teeIds
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const courseId = roundData.course;
+        const course = courses.find(c => c.courseId === courseId);
+        
+        console.log(`  course found: ${!!course}, teeIds: ${JSON.stringify(course?.teeIds)}`);
+        
+        if (course && course.teeIds) {
+          const idx = course.teeIds.findIndex(id => {
+            if (typeof id === 'object') {
+              return id.men === player.tee || id.women === player.tee;
+            }
+            return id === player.tee;
+          });
+          
+          console.log(`  teeIds lookup result: idx = ${idx}`);
+          
+          if (idx !== -1) {
+            teeValue = `${courseId}||${idx}`;
+          }
+        }
+        
+        // If player.tee is already in courseId||index format, use it directly
+        if (!teeValue && player.tee.includes('||')) {
+          teeValue = player.tee;
+        }
+      }
+      
+      // If no assigned tee found, use default from tournament settings
+      if (!teeValue) {
+        console.log(`  No tee found, using default. teeMen=${roundData.teeMen}, teeWomen=${roundData.teeWomen}`);
+        if (playerGender === 'male' || playerGender === 'm') {
+          teeValue = roundData.teeMen || '';
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          teeValue = roundData.teeWomen || '';
+        }
+      }
+      
+      console.log(`  Final teeValue: "${teeValue}"`);
+      
+      if (!teeValue || !teeValue.includes('||')) return null;
+      
+      const [courseId, teeIndexStr] = teeValue.split('||');
+      const teeIndex = parseInt(teeIndexStr, 10);
+      
+      const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+      const course = courses.find(c => c.courseId === courseId);
+      
+      if (!course) return null;
+      
+      let par = 0;
+      if (course.pars && Array.isArray(course.pars)) {
+        par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+      }
+      
+      const teeData = course.teeData?.[teeIndex];
+      if (!teeData) return null;
+      
+      let slope, rating;
+      const teeGender = course.genders?.[teeIndex];
+      if (teeGender === 'B' && teeData.ratings) {
+        if (playerGender === 'male' || playerGender === 'm') {
+          slope = teeData.ratings.men?.slope18;
+          rating = teeData.ratings.men?.rating18;
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          slope = teeData.ratings.women?.slope18;
+          rating = teeData.ratings.women?.rating18;
+        }
+      } else {
+        slope = teeData.slope18 || teeData.slope;
+        rating = teeData.rating18 || teeData.rating;
+      }
+      
+      return { slope, rating, par };
+    }
+
+    // Calculate playing HCP dynamically
+    function getPlayingHcp(player) {
+      const playerHcp = parseFloat(player.hcp);
+      if (isNaN(playerHcp)) return '-';
+      
+      const teeData = getTeeData(player);
+      if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+        return playerHcp;
+      }
+      
+      const hcpAllowance = parseFloat(currentTournament?.meta?.hcpAllow || 100) / 100;
+      const slope = parseFloat(teeData.slope);
+      const rating = parseFloat(teeData.rating);
+      const par = parseFloat(teeData.par);
+      
+      if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+        return playerHcp;
+      }
+      
+      const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+      const rounded = Math.round(playingHcp);
+      
+      return rounded < 0 ? '+' + Math.abs(rounded) : rounded;
+    }
+
+    // Render available players
+    function renderPlayers() {
+      const container = document.getElementById('players-container');
+      const assignedRegs = new Set(groups.flatMap(g => g.players.map(p => p.reg)));
+      const availablePlayers = admittedPlayers.filter(p => !assignedRegs.has(p.reg));
+      
+      document.getElementById('player-count').textContent = availablePlayers.length;
+      
+      if (availablePlayers.length === 0) {
+        container.innerHTML = '<div class="empty-state">All players assigned</div>';
+        return;
+      }
+      
+      container.innerHTML = availablePlayers.map(player => {
+        const gender = (player.gender || '').toLowerCase();
+        const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
+        return `
+        <div class="player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
+          <div class="player-name" style="margin: 0;">${player.firstName} ${player.lastName}</div>
+          <div style="font-weight: 400; font-size: 11px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
+        </div>
+      `;}).join('');
+      
+      // Add drag event listeners
+      container.querySelectorAll('.player-card').forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+      });
+    }
+
+    // Apply configuration and generate groups
+    function applyConfiguration() {
+      const groupSize = parseInt(document.getElementById('group-size').value);
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      
+      // Keep the same number of groups (20 by default) and update their times/tees
+      for (let i = 0; i < groups.length; i++) {
+        groups[i].time = calculateStartTime(i, protocol, startTime, interval);
+        groups[i].tee = calculateTee(i, protocol);
+      }
+      
+      renderGroups();
+    }
+
+    // Calculate start time for group
+    function calculateStartTime(index, protocol, startTime, interval) {
+      if (protocol === 'shotgun') {
+        return startTime;
+      }
+      
+      const [hours, minutes] = startTime.split(':').map(Number);
+      let intervalMultiplier = index;
+      
+      // For two-tee start, groups alternate between tees, so time progresses by pairs
+      if (protocol === 'twotee') {
+        intervalMultiplier = Math.floor(index / 2);
+      }
+      
+      const totalMinutes = hours * 60 + minutes + (intervalMultiplier * interval);
+      const newHours = Math.floor(totalMinutes / 60);
+      const newMinutes = totalMinutes % 60;
+      
+      return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+    }
+
+    // Calculate tee for group
+    function calculateTee(index, protocol) {
+      if (protocol === 'single') return '1st Tee';
+      if (protocol === 'twotee') {
+        const alternateTee = parseInt(document.getElementById('alternate-tee').value) || 10;
+        return index % 2 === 0 ? '1st Tee' : `${alternateTee}th Tee`;
+      }
+      if (protocol === 'shotgun') return `Hole ${(index % 18) + 1}`;
+      return '1st Tee';
+    }
+
+    // Render groups
+    function renderGroups() {
+      const container = document.getElementById('groups-container');
+      const protocol = document.getElementById('protocol-type').value;
+      
+      if (groups.length === 0) {
+        container.innerHTML = '<div class="empty-state">No groups created. Click "Apply Configuration" to generate groups.</div>';
+        return;
+      }
+      
+      let displayGroups = groups;
+      let isTwoTee = false;
+      
+      // For two-tee layout, reorder to show: 1st tee groups first (0,2,4...), then alternate tee groups (1,3,5...)
+      if (protocol === 'twotee') {
+        isTwoTee = true;
+        displayGroups = [];
+        // Add all odd-indexed groups (1st tee)
+        for (let i = 0; i < groups.length; i += 2) {
+          displayGroups.push({ ...groups[i], teeType: '1st' });
+        }
+        // Add all even-indexed groups (alternate tee)
+        for (let i = 1; i < groups.length; i += 2) {
+          displayGroups.push({ ...groups[i], teeType: 'alt' });
+        }
+      }
+      
+      // For two-tee, split HTML into two sections
+      if (isTwoTee) {
+        const firstTeeGroups = displayGroups.filter(g => g.teeType === '1st');
+        const altTeeGroups = displayGroups.filter(g => g.teeType === 'alt');
+        
+        const groupsHTML = (groups) => groups.map((group, idx) => `
+          <div class="group-box" data-group-id="${group.groupId}">
+            <div class="group-header">
+              <div class="group-title">Group ${idx + 1}</div>
+              <div class="group-time">${group.time} - ${group.tee}</div>
+            </div>
+            <div class="group-players">
+              ${group.players.length === 0 ? '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop players here</div>' : ''}
+              ${group.players.map(player => {
+                const gender = (player.gender || '').toLowerCase();
+                const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
+                return `
+                <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
+                  <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
+                  <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
+                  <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        `).join('');
+        
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #28a745; padding-bottom: 10px;">1st Tee (${firstTeeGroups.length} groups)</h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                ${groupsHTML(firstTeeGroups)}
+              </div>
+            </div>
+            <div>
+              <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #0b6efd; padding-bottom: 10px;">Alternative Tee (${altTeeGroups.length} groups)</h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                ${groupsHTML(altTeeGroups)}
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // Standard layout
+        container.innerHTML = displayGroups.map((group, displayIndex) => `
+          <div class="group-box" data-group-id="${group.groupId}">
+            <div class="group-header">
+              <div class="group-title">Group ${displayIndex + 1}</div>
+              <div class="group-time">${group.time} - ${group.tee}</div>
+            </div>
+            <div class="group-players">
+              ${group.players.length === 0 ? '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop players here</div>' : ''}
+              ${group.players.map(player => {
+                const gender = (player.gender || '').toLowerCase();
+                const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
+                return `
+                <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
+                  <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
+                  <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
+                  <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
+                </div>
+              `;}).join('')}
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // Add drop event listeners
+      container.querySelectorAll('.group-box').forEach(box => {
+        box.addEventListener('dragover', handleDragOver);
+        box.addEventListener('drop', handleDrop);
+        box.addEventListener('dragleave', handleDragLeave);
+      });
+      
+      // Add drag listeners for players in groups
+      container.querySelectorAll('.group-player-card').forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+      });
+      
+      renderPlayers();
+    }
+
+    // Drag handlers
+    function handleDragStart(e) {
+      const reg = e.target.getAttribute('data-reg') || e.target.closest('[data-reg]')?.getAttribute('data-reg');
+      draggedPlayer = admittedPlayers.find(p => p.reg === reg);
+      
+      // Track which group the player is being dragged from
+      const card = e.target.closest('.player-card, .group-player-card');
+      if (card?.closest('.group-box')) {
+        draggedFromGroupId = card.closest('.group-box').getAttribute('data-group-id');
+      } else {
+        draggedFromGroupId = null;
+      }
+      
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedFromGroupId = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      
+      if (!draggedPlayer) return;
+      
+      // Check if dropping on a player card (for swap) or on empty group space
+      const targetCard = e.target.closest('.group-player-card');
+      const targetGroupBox = e.currentTarget.closest('.group-box') || e.currentTarget;
+      const targetGroupId = targetGroupBox.getAttribute('data-group-id');
+      const targetGroup = groups.find(g => g.groupId === targetGroupId);
+      
+      if (!targetGroup) return;
+      
+      if (targetCard && targetCard.getAttribute('data-reg')) {
+        // Swap with target player
+        const targetReg = targetCard.getAttribute('data-reg');
+        const targetPlayer = admittedPlayers.find(p => p.reg === targetReg);
+        
+        if (!targetPlayer || !draggedFromGroupId) return;
+        
+        const draggedFromGroup = groups.find(g => g.groupId === draggedFromGroupId);
+        if (!draggedFromGroup) return;
+        
+        // Find positions
+        const draggedIndex = draggedFromGroup.players.findIndex(p => p.reg === draggedPlayer.reg);
+        const targetIndex = targetGroup.players.findIndex(p => p.reg === targetPlayer.reg);
+        
+        if (draggedIndex === -1 || targetIndex === -1) return;
+        
+        // Perform swap
+        if (draggedFromGroupId === targetGroupId) {
+          // Swap within same group
+          [draggedFromGroup.players[draggedIndex], draggedFromGroup.players[targetIndex]] = 
+          [draggedFromGroup.players[targetIndex], draggedFromGroup.players[draggedIndex]];
+        } else {
+          // Swap between different groups
+          draggedFromGroup.players[draggedIndex] = targetPlayer;
+          targetGroup.players[targetIndex] = draggedPlayer;
+        }
+      } else {
+        // Drop on empty space - move player if group has space
+        const groupSize = parseInt(document.getElementById('group-size').value);
+        
+        // Remove from previous group if exists
+        groups.forEach(g => {
+          g.players = g.players.filter(p => p.reg !== draggedPlayer.reg);
+        });
+        
+        // Add to new group if there's space
+        if (targetGroup.players.length < groupSize) {
+          targetGroup.players.push(draggedPlayer);
+        } else {
+          alert(`Group is full (max ${groupSize} players)`);
+        }
+      }
+      
+      draggedPlayer = null;
+      draggedFromGroupId = null;
+      renderGroups();
+    }
+
+    // Remove player from group
+    function removeFromGroup(groupId, reg) {
+      const group = groups.find(g => g.groupId === groupId);
+      if (group) {
+        group.players = group.players.filter(p => p.reg !== reg);
+        renderGroups();
+      }
+    }
+
+    // Open auto group modal
+    function openAutoGroupModal() {
+      document.getElementById('auto-group-modal').classList.add('active');
+      calculateGroupDistribution();
+    }
+
+    // Close auto group modal
+    function closeAutoGroupModal() {
+      document.getElementById('auto-group-modal').classList.remove('active');
+    }
+
+    // Calculate group distribution based on player count and group size
+    function calculateGroupDistribution() {
+      const groupSize = parseInt(document.getElementById('modal-group-size').value);
+      const separateGender = document.getElementById('separate-gender').checked;
+      const separateCategories = document.getElementById('separate-categories').checked;
+      
+      // Get player counts
+      let playerCounts = [];
+      
+      if (separateGender) {
+        const males = admittedPlayers.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
+        const females = admittedPlayers.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
+        if (males.length > 0) playerCounts.push({ label: 'Male', count: males.length });
+        if (females.length > 0) playerCounts.push({ label: 'Female', count: females.length });
+      } else if (separateCategories) {
+        const categorized = {};
+        admittedPlayers.forEach(p => {
+          const cat = (p.categories && p.categories[0]) || 'Uncategorized';
+          if (!categorized[cat]) categorized[cat] = 0;
+          categorized[cat]++;
+        });
+        playerCounts = Object.entries(categorized).map(([cat, count]) => ({ label: cat, count }));
+      } else {
+        playerCounts = [{ label: 'All Players', count: admittedPlayers.length }];
+      }
+
+      const section = document.getElementById('group-distribution-section');
+      const infoDiv = document.getElementById('group-distribution-info');
+      const optionsDiv = document.getElementById('group-distribution-options');
+      
+      // Show distribution for each group
+      let infoHTML = '';
+      let needsOptions = false;
+      
+      playerCounts.forEach(pc => {
+        const { label, count } = pc;
+        const remainder = count % groupSize;
+        
+        if (remainder === 0) {
+          const numGroups = count / groupSize;
+          infoHTML += `<div><strong>${label}:</strong> ${count} players → ${numGroups} groups of ${groupSize}</div>`;
+        } else {
+          needsOptions = true;
+          const baseGroups = Math.floor(count / groupSize);
+          const remainingPlayers = count % groupSize;
+          infoHTML += `<div><strong>${label}:</strong> ${count} players (${baseGroups} × ${groupSize} + ${remainingPlayers} remaining)</div>`;
+        }
+      });
+      
+      infoDiv.innerHTML = infoHTML;
+      
+      // If we need to show options (remainder exists)
+      if (needsOptions) {
+        section.style.display = 'block';
+        optionsDiv.innerHTML = '';
+        
+        playerCounts.forEach((pc, idx) => {
+          const { label, count } = pc;
+          const remainder = count % groupSize;
+          
+          if (remainder > 0) {
+            const options = generateDistributionOptions(count, groupSize);
+            
+            if (options.length > 0) {
+              optionsDiv.innerHTML += `<div style="margin-top: 12px; margin-bottom: 12px;"><strong>${label} - Choose distribution:</strong></div>`;
+              
+              options.forEach((option, optIdx) => {
+                const radioId = `dist-${idx}-${optIdx}`;
+                const isChecked = optIdx === 0 ? 'checked' : '';
+                optionsDiv.innerHTML += `
+                  <div class="distribution-option">
+                    <input type="radio" id="${radioId}" name="distribution-${idx}" value='${JSON.stringify(option)}' ${isChecked}>
+                    <label for="${radioId}">${option.description}</label>
+                  </div>
+                `;
+              });
+            }
+          }
+        });
+      } else {
+        section.style.display = 'block';
+      }
+    }
+
+    // Generate possible distribution options
+    function generateDistributionOptions(totalPlayers, preferredSize) {
+      const options = [];
+      
+      // Calculate base distribution
+      const baseGroups = Math.floor(totalPlayers / preferredSize);
+      const remainder = totalPlayers % preferredSize;
+      
+      if (remainder === 0) {
+        // Perfect division - no options needed
+        return [];
+      }
+      
+      // Option 1: Merge remainder into existing groups (if possible)
+      if (remainder > 0 && baseGroups > 0) {
+        // Can we distribute remainder players into existing groups without exceeding 4?
+        const maxPlayersPerGroup = 4;
+        const extraSlotsNeeded = remainder;
+        const maxExtraSlots = baseGroups * (maxPlayersPerGroup - preferredSize);
+        
+        if (extraSlotsNeeded <= maxExtraSlots) {
+          // Calculate how to distribute
+          const groupsToExpand = Math.ceil(remainder / (maxPlayersPerGroup - preferredSize));
+          const newSize = preferredSize + Math.ceil(remainder / groupsToExpand);
+          
+          if (newSize <= 4) {
+            options.push({
+              description: `${baseGroups} groups: expand ${groupsToExpand} group(s) to include ${remainder} extra player(s)`,
+              distribution: [{ size: preferredSize, count: baseGroups - groupsToExpand }, { size: newSize, count: groupsToExpand }].filter(d => d.count > 0)
+            });
+          }
+        }
+      }
+      
+      // Option 2: Create smaller groups with remainder
+      if (remainder >= 2) {
+        options.push({
+          description: `${baseGroups} groups of ${preferredSize} + 1 group of ${remainder}`,
+          distribution: [{ size: preferredSize, count: baseGroups }, { size: remainder, count: 1 }]
+        });
+      }
+      
+      // Option 3: Split remainder into multiple groups of 2 or 3
+      if (remainder >= 4) {
+        const groupsOf2 = Math.floor(remainder / 2);
+        options.push({
+          description: `${baseGroups} groups of ${preferredSize} + ${groupsOf2} groups of 2`,
+          distribution: [{ size: preferredSize, count: baseGroups }, { size: 2, count: groupsOf2 }]
+        });
+      }
+      
+      if (remainder === 5) {
+        options.push({
+          description: `${baseGroups} groups of ${preferredSize} + 1 group of 3 + 1 group of 2`,
+          distribution: [{ size: preferredSize, count: baseGroups }, { size: 3, count: 1 }, { size: 2, count: 1 }]
+        });
+      }
+      
+      // Remove duplicates and invalid options
+      return options.filter((opt, idx, self) => 
+        idx === self.findIndex(o => o.description === opt.description)
+      );
+    }
+
+    // Confirm and execute auto grouping
+    function confirmAutoGroup() {
+      const orderType = document.getElementById('grouping-order').value;
+      const separateGender = document.getElementById('separate-gender').checked;
+      const separateCategories = document.getElementById('separate-categories').checked;
+      const modalGroupSize = parseInt(document.getElementById('modal-group-size').value);
+
+      // Get selected distribution options (if any)
+      const distributionInputs = document.querySelectorAll('input[name^="distribution-"]:checked');
+      const customDistributions = [];
+      distributionInputs.forEach(input => {
+        try {
+          const dist = JSON.parse(input.value);
+          customDistributions.push(dist);
+        } catch (e) {
+          console.error('Failed to parse distribution', e);
+        }
+      });
+
+      closeAutoGroupModal();
+      executeAutoGroup(orderType, separateGender, separateCategories, modalGroupSize, customDistributions);
+    }
+
+    // Execute auto grouping with selected settings
+    function executeAutoGroup(orderType, separateGender, separateCategories, modalGroupSize, customDistributions = []) {
+      const groupSize = modalGroupSize || parseInt(document.getElementById('group-size').value);
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      
+      // Use all admitted players for auto grouping (clear and restart)
+      const availablePlayers = [...admittedPlayers];
+
+      // Separate players if needed
+      let playerGroups = [];
+      if (separateGender) {
+        const males = availablePlayers.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
+        const females = availablePlayers.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
+        if (males.length > 0) playerGroups.push({ label: 'Male', players: males });
+        if (females.length > 0) playerGroups.push({ label: 'Female', players: females });
+      } else if (separateCategories) {
+        const categorized = {};
+        availablePlayers.forEach(p => {
+          const cat = (p.categories && p.categories[0]) || 'Uncategorized';
+          if (!categorized[cat]) categorized[cat] = [];
+          categorized[cat].push(p);
+        });
+        playerGroups = Object.entries(categorized).map(([cat, players]) => ({ label: cat, players }));
+      } else {
+        playerGroups = [{ label: 'All', players: availablePlayers }];
+      }
+
+      // Clear existing groups
+      groups = [];
+
+      // Sort players based on order type
+      playerGroups.forEach((pg, pgIndex) => {
+        let sorted = [...pg.players];
+        
+        switch(orderType) {
+          case 'hcp-asc':
+            sorted.sort((a, b) => {
+              const aHcp = parseFloat(a.hcp);
+              const bHcp = parseFloat(b.hcp);
+              // Handle invalid/missing HCP
+              if (isNaN(aHcp) && isNaN(bHcp)) return 0;
+              if (isNaN(aHcp)) return 1; // Push invalid to end
+              if (isNaN(bHcp)) return -1;
+              return aHcp - bHcp;
+            });
+            break;
+          case 'hcp-desc':
+            sorted.sort((a, b) => {
+              const aHcp = parseFloat(a.hcp);
+              const bHcp = parseFloat(b.hcp);
+              // Handle invalid/missing HCP
+              if (isNaN(aHcp) && isNaN(bHcp)) return 0;
+              if (isNaN(aHcp)) return 1; // Push invalid to end
+              if (isNaN(bHcp)) return -1;
+              return bHcp - aHcp;
+            });
+            break;
+          case 'phcp-asc':
+            sorted.sort((a, b) => {
+              const aPhcp = getPlayingHcp(a);
+              const bPhcp = getPlayingHcp(b);
+              const aVal = (typeof aPhcp === 'number') ? aPhcp : (parseFloat(aPhcp) || 999);
+              const bVal = (typeof bPhcp === 'number') ? bPhcp : (parseFloat(bPhcp) || 999);
+              return aVal - bVal;
+            });
+            break;
+          case 'phcp-desc':
+            sorted.sort((a, b) => {
+              const aPhcp = getPlayingHcp(a);
+              const bPhcp = getPlayingHcp(b);
+              const aVal = (typeof aPhcp === 'number') ? aPhcp : (parseFloat(aPhcp) || 0);
+              const bVal = (typeof bPhcp === 'number') ? bPhcp : (parseFloat(bPhcp) || 0);
+              return bVal - aVal;
+            });
+            break;
+          case 'hcp-distribution':
+            sorted.sort((a, b) => (parseFloat(a.hcp) || 999) - (parseFloat(b.hcp) || 999));
+            sorted = distributeEvenly(sorted, groupSize);
+            break;
+          case 'club-distribution':
+            const byClub = {};
+            sorted.forEach(p => {
+              const club = p.club || 'Unknown';
+              if (!byClub[club]) byClub[club] = [];
+              byClub[club].push(p);
+            });
+            sorted = distributeByClub(byClub, groupSize);
+            break;
+          case 'random':
+          default:
+            sorted.sort(() => Math.random() - 0.5);
+            break;
+        }
+
+        // Create groups and assign players
+        // Check if there's a custom distribution for this player group
+        const customDist = customDistributions[pgIndex];
+        
+        if (customDist && customDist.distribution) {
+          // Use custom distribution
+          let playerIndex = 0;
+          customDist.distribution.forEach(dist => {
+            for (let i = 0; i < dist.count; i++) {
+              const groupPlayers = sorted.slice(playerIndex, playerIndex + dist.size);
+              playerIndex += dist.size;
+              if (groupPlayers.length > 0) {
+                groups.push({
+                  groupId: `group-${Date.now()}-${groups.length}`,
+                  players: groupPlayers,
+                  time: calculateStartTime(groups.length, protocol, startTime, interval),
+                  tee: calculateTee(groups.length, protocol)
+                });
+              }
+            }
+          });
+        } else {
+          // Use default distribution (equal group sizes)
+          const remainder = sorted.length % groupSize;
+          let playerIndex = 0;
+          
+          if (remainder === 0) {
+            // Perfect division
+            const numGroups = sorted.length / groupSize;
+            for (let i = 0; i < numGroups; i++) {
+              const groupPlayers = sorted.slice(i * groupSize, (i + 1) * groupSize);
+              groups.push({
+                groupId: `group-${Date.now()}-${groups.length}`,
+                players: groupPlayers,
+                time: calculateStartTime(groups.length, protocol, startTime, interval),
+                tee: calculateTee(groups.length, protocol)
+              });
+            }
+          } else {
+            // Has remainder - use default behavior
+            const numGroups = Math.ceil(sorted.length / groupSize);
+            for (let i = 0; i < numGroups; i++) {
+              const groupPlayers = sorted.slice(i * groupSize, (i + 1) * groupSize);
+              if (groupPlayers.length > 0) {
+                groups.push({
+                  groupId: `group-${Date.now()}-${groups.length}`,
+                  players: groupPlayers,
+                  time: calculateStartTime(groups.length, protocol, startTime, interval),
+                  tee: calculateTee(groups.length, protocol)
+                });
+              }
+            }
+          }
+        }
+      });
+
+      renderGroups();
+    }
+
+    // Distribute players evenly by HCP (snake draft style)
+    function distributeEvenly(sortedPlayers, groupSize) {
+      const numGroups = Math.ceil(sortedPlayers.length / groupSize);
+      const tempGroups = Array(numGroups).fill(null).map(() => []);
+      
+      let groupIndex = 0;
+      let direction = 1;
+      
+      sortedPlayers.forEach(player => {
+        tempGroups[groupIndex].push(player);
+        groupIndex += direction;
+        
+        if (groupIndex >= numGroups) {
+          groupIndex = numGroups - 1;
+          direction = -1;
+        } else if (groupIndex < 0) {
+          groupIndex = 0;
+          direction = 1;
+        }
+      });
+      
+      return tempGroups.flat();
+    }
+
+    // Distribute players to mix clubs/countries
+    function distributeByClub(byClub, groupSize) {
+      const clubs = Object.keys(byClub);
+      const result = [];
+      let continueLoop = true;
+      
+      while (continueLoop) {
+        continueLoop = false;
+        clubs.forEach(club => {
+          if (byClub[club].length > 0) {
+            result.push(byClub[club].shift());
+            continueLoop = true;
+          }
+        });
+      }
+      
+      return result;
+    }
+
+    // Clear all groups
+    function clearGroups() {
+      if (confirm('Are you sure you want to clear all groups?')) {
+        groups.forEach(g => g.players = []);
+        renderGroups();
+      }
+    }
+
+    // Save draw
+    function saveDraw() {
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      const groupSize = parseInt(document.getElementById('group-size').value);
+      
+      const draw = {
+        roundId: currentRound,
+        protocol,
+        startTime,
+        interval,
+        groupSize,
+        groups: groups.filter(g => g.players.length > 0)
+      };
+      
+      const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+      draws[currentRound] = draw;
+      localStorage.setItem('draws', JSON.stringify(draws));
+      
+      alert('Draw saved successfully!');
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>

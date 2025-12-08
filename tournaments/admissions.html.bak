@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Player Admissions</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .admissions-container{max-width:1400px;margin:24px auto;padding:16px}
+      .round-selector{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .round-selector label{display:block;font-weight:600;margin-bottom:8px}
+      .round-selector select{padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px;min-width:200px}
+      .admissions-grid{display:flex;gap:20px}
+      .panel{flex:1;background:#fff;border-radius:12px;padding:16px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .panel h2{margin-top:0;font-size:18px;color:#1e293b;margin-bottom:12px}
+      .search-box{margin-bottom:12px}
+      .search-box input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px}
+      .table-wrapper{overflow:auto;max-height:calc(100vh - 320px);border-radius:8px}
+      table{width:100%;border-collapse:collapse}
+      table th{position:sticky;top:0;background:#f8fafc;padding:10px 8px;border-bottom:2px solid #e6e9ef;font-weight:600;text-align:left;font-size:13px;cursor:pointer;user-select:none}
+      table th:hover{background:#e2e8f0}
+      table th.sort-asc::after{content:' ▲';font-size:10px;color:#3b82f6}
+      table th.sort-desc::after{content:' ▼';font-size:10px;color:#3b82f6}
+      table td{padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:14px}
+      table tr:hover{background:#f8fbff;cursor:pointer}
+      table tr.highlighted{background:#fef3c7;font-weight:600}
+      table tr.ineligible{background:#fee;color:#999;cursor:not-allowed}
+      table tr.ineligible:hover{background:#fdd}
+      .btn-back{background:white;border:1px solid #e6e9ef;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;color:#333;text-decoration:none;display:inline-block}
+      .status-text{font-size:13px;color:#64748b;margin-bottom:8px}
+      .criteria-panel{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .criteria-panel h2{margin-top:0;font-size:18px;color:#1e293b;margin-bottom:16px}
+      .criteria-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:16px}
+      .criteria-field{display:flex;flex-direction:column}
+      .criteria-field label{font-weight:600;font-size:13px;margin-bottom:6px;color:#475569}
+      .criteria-field select,.criteria-field input{padding:8px 10px;border-radius:6px;border:1px solid #e6e9ef;font-size:14px}
+      .criteria-field input[type="number"]::-webkit-inner-spin-button,.criteria-field input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+      .criteria-field input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+      .hcp-group{display:flex;gap:8px;align-items:flex-end}
+      .hcp-group select{flex:1}
+      .hcp-group input{flex:0 0 100px}
+      .age-group{display:flex;gap:8px;align-items:center}
+      .age-group input{flex:1}
+      .age-group span{color:#64748b;font-size:13px}
+      .btn-save-criteria{background:linear-gradient(180deg,var(--accent),#0a58d1);color:white;border:0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+      .btn-save-criteria:hover{opacity:0.9}
+    </style>
+  </head>
+  <body>
+    <main class="admissions-container">
+      <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h1>Player Admissions</h1>
+          <p class="lead">Add players to the tournament.</p>
+        </div>
+        <a href="index.html" class="btn-back">Back to Tournaments</a>
+      </header>
+
+      <section id="round-selector" class="round-selector" style="display:none">
+        <label for="round-select">Select Round:</label>
+        <select id="round-select">
+          <!-- Populated dynamically -->
+        </select>
+      </section>
+
+      <section class="criteria-panel">
+        <h2>Admission Criteria</h2>
+        <div class="criteria-grid">
+          <div class="criteria-field">
+            <label for="criteria-hcp-men">HCP Limit Men:</label>
+            <div class="hcp-group">
+              <select id="criteria-hcp-men">
+                <option value="NA">NA</option>
+                <option value="Limit Playing">Limit Playing</option>
+                <option value="Limit WHS">Limit WHS</option>
+              </select>
+              <input type="number" id="criteria-hcp-men-value" placeholder="Value" style="display:none;">
+            </div>
+          </div>
+
+          <div class="criteria-field">
+            <label for="criteria-hcp-women">HCP Limit Women:</label>
+            <div class="hcp-group">
+              <select id="criteria-hcp-women">
+                <option value="NA">NA</option>
+                <option value="Limit Playing">Limit Playing</option>
+                <option value="Limit WHS">Limit WHS</option>
+              </select>
+              <input type="number" id="criteria-hcp-women-value" placeholder="Value" style="display:none;">
+            </div>
+          </div>
+
+          <div class="criteria-field">
+            <label>Age Limit:</label>
+            <div class="age-group">
+              <input type="number" id="criteria-age-min" placeholder="Min">
+              <span>to</span>
+              <input type="number" id="criteria-age-max" placeholder="Max">
+            </div>
+          </div>
+
+          <div class="criteria-field">
+            <label for="criteria-members-only">Members Only:</label>
+            <select id="criteria-members-only">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
+          <div class="criteria-field">
+            <label for="criteria-gender">Gender:</label>
+            <select id="criteria-gender">
+              <option value="both">Both</option>
+              <option value="M">M</option>
+              <option value="F">F</option>
+            </select>
+          </div>
+        </div>
+        <button id="btn-save-criteria" class="btn-save-criteria">Save Criteria</button>
+      </section>
+
+      <section class="admissions-grid">
+        <div class="panel">
+          <h2>Available Players</h2>
+          <div class="search-box">
+            <input id="player-search" type="text" placeholder="Search by name, reg no, or club... (Press Enter to admit)" />
+          </div>
+          <div id="available-status" class="status-text"></div>
+          <div class="table-wrapper">
+            <table id="available-table">
+              <thead>
+                <tr>
+                  <th data-sort="reg">Reg No</th>
+                  <th data-sort="name">Name</th>
+                  <th data-sort="club">Home Club</th>
+                  <th data-sort="tee">Tee</th>
+                  <th data-sort="hcp">HCP</th>
+                  <th data-sort="phcp">Playing HCP</th>
+                  <th data-sort="gender">Gender</th>
+                  <th data-sort="age">Age</th>
+                </tr>
+              </thead>
+              <tbody id="available-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Admitted Players</h2>
+          <div id="admitted-status" class="status-text"></div>
+          <div class="table-wrapper">
+            <table id="admitted-table">
+              <thead>
+                <tr>
+                  <th data-sort="reg">Reg No</th>
+                  <th data-sort="name">Name</th>
+                  <th data-sort="club">Home Club</th>
+                  <th data-sort="tee">Tee</th>
+                  <th data-sort="hcp">HCP</th>
+                  <th data-sort="phcp">Playing HCP</th>
+                  <th data-sort="gender">Gender</th>
+                  <th data-sort="age">Age</th>
+                </tr>
+              </thead>
+              <tbody id="admitted-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Get round or tournament from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const roundId = urlParams.get('roundId');
+      const tournamentIdParam = urlParams.get('tournamentId');
+      
+      let currentTournament = null;
+      let currentRoundId = null;
+      let currentRoundIndex = 0;
+      let allPlayers = [];
+      let admittedPlayers = [];
+      let filteredPlayers = [];
+      let highlightedIndex = -1;
+      let availableSortColumn = null;
+      let availableSortDirection = 'asc';
+      let admittedSortColumn = null;
+      let admittedSortDirection = 'asc';
+
+      // Calculate age based on January 1st of current year
+      function calculateAge(dob) {
+        if (!dob) return '';
+        try {
+          const birthDate = new Date(dob);
+          const currentYear = new Date().getFullYear();
+          const referenceDate = new Date(currentYear, 0, 1);
+          let age = referenceDate.getFullYear() - birthDate.getFullYear();
+          return age;
+        } catch (e) {
+          return '';
+        }
+      }
+
+      // Format handicap for display (negative values show as +)
+      function formatHcp(hcp) {
+        if (!hcp && hcp !== 0) return '';
+        const num = parseFloat(hcp);
+        if (isNaN(num)) return hcp;
+        if (num < 0) return '+' + Math.abs(num).toFixed(1);
+        return num.toFixed(1);
+      }
+
+      // Get tee data for a player (slope, rating, par)
+      function getTeeData(player) {
+        if (!currentTournament || currentRoundIndex === undefined || currentRoundIndex < 0) return null;
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        if (!roundData) return null;
+        
+        const playerGender = (player.gender || '').toLowerCase();
+        let teeValue = '';
+        
+        if (playerGender === 'male' || playerGender === 'm') {
+          teeValue = roundData.teeMen || '';
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          teeValue = roundData.teeWomen || '';
+        }
+        
+        if (!teeValue || !teeValue.includes('||')) return null;
+        
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = getCourses();
+        const course = courses.find(c => (c.courseId === courseId) || (c.fullName === courseId));
+        
+        if (!course) return null;
+        
+        // Calculate total par from pars array (sum of all 18 holes)
+        let par = 0;
+        if (course.pars && Array.isArray(course.pars)) {
+          par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+        }
+        
+        // Get tee-specific data from teeData array
+        const teeData = course.teeData?.[teeIndex];
+        if (!teeData) return null;
+        
+        let slope, rating;
+        
+        // Check if this tee is for both genders (has nested ratings structure)
+        const teeGender = course.genders?.[teeIndex];
+        if (teeGender === 'B' && teeData.ratings) {
+          // Both genders - use appropriate gender's ratings
+          if (playerGender === 'male' || playerGender === 'm') {
+            slope = teeData.ratings.men?.slope18;
+            rating = teeData.ratings.men?.rating18;
+          } else if (playerGender === 'female' || playerGender === 'f') {
+            slope = teeData.ratings.women?.slope18;
+            rating = teeData.ratings.women?.rating18;
+          }
+        } else {
+          // Single gender tee
+          slope = teeData.slope18 || teeData.slope;
+          rating = teeData.rating18 || teeData.rating;
+        }
+        
+        return { slope, rating, par, course };
+      }
+
+      // Calculate playing handicap using the formula:
+      // PHCP = (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
+      // Round to nearest whole number (.5 rounds up)
+      function calculatePlayingHcp(player) {
+        const playerHcp = parseFloat(player.hcp);
+        if (isNaN(playerHcp)) {
+          return '';
+        }
+        
+        const teeData = getTeeData(player);
+        if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+          return formatHcp(player.hcp); // Fallback to WHS HCP if data missing
+        }
+        
+        const slope = parseFloat(teeData.slope);
+        const rating = parseFloat(teeData.rating);
+        const par = parseFloat(teeData.par);
+        const hcpAllowance = parseFloat(currentTournament.meta?.hcpAllow || 100) / 100;
+        
+        if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+          return formatHcp(player.hcp);
+        }
+        
+        // Formula: (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
+        const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+        
+        // Round to nearest whole number (.5 rounds up)
+        const rounded = Math.round(playingHcp);
+        
+        // Format with + for negative values (plus handicaps)
+        if (rounded < 0) {
+          return '+' + Math.abs(rounded);
+        }
+        return rounded.toString();
+      }
+
+      // Get courses from localStorage
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading courses:', err);
+          return [];
+        }
+      }
+
+      // Get tee name from course data
+      function getTeeName(teeValue) {
+        if (!teeValue || !teeValue.includes('||')) return teeValue;
+        
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = getCourses();
+        const course = courses.find(c => (c.courseId === courseId) || (c.fullName === courseId));
+        
+        if (course && Array.isArray(course.tees) && course.tees[teeIndex]) {
+          return course.tees[teeIndex];
+        }
+        
+        return teeValue;
+      }
+
+      // Get tee assignment for player based on gender
+      function getTeeForPlayer(player) {
+        if (!currentTournament || currentRoundIndex === undefined || currentRoundIndex < 0) return '';
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        if (!roundData) return '';
+        
+        const playerGender = (player.gender || '').toLowerCase();
+        let teeValue = '';
+        
+        if (playerGender === 'male' || playerGender === 'm') {
+          teeValue = roundData.teeMen || '';
+        } else if (playerGender === 'female' || playerGender === 'f') {
+          teeValue = roundData.teeWomen || '';
+        }
+        
+        return getTeeName(teeValue);
+      }
+
+      // Get tournaments from localStorage
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading tournaments:', err);
+          return [];
+        }
+      }
+
+      // Get players from localStorage
+      function getPlayers() {
+        try {
+          const raw = localStorage.getItem('players');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading players:', err);
+          return [];
+        }
+      }
+
+      // Get admission criteria for tournament
+      function getAdmissionCriteria() {
+        if (!currentTournament) return null;
+        try {
+          const raw = localStorage.getItem('admissionCriteria');
+          const data = raw ? JSON.parse(raw) : {};
+          return data[currentTournament.tournamentId] || null;
+        } catch (err) {
+          console.error('Error loading criteria:', err);
+          return null;
+        }
+      }
+
+      // Get current criteria from form (for real-time checking)
+      function getCurrentCriteria() {
+        // Check if criteria elements exist (they might not be loaded yet on first render)
+        const hcpMenEl = document.getElementById('criteria-hcp-men');
+        const hcpWomenEl = document.getElementById('criteria-hcp-women');
+        
+        if (!hcpMenEl || !hcpWomenEl) {
+          // Fall back to saved criteria if form not loaded yet
+          return getAdmissionCriteria() || {};
+        }
+        
+        const hcpMen = hcpMenEl.value;
+        const hcpWomen = hcpWomenEl.value;
+        
+        return {
+          hcpMen: hcpMen,
+          hcpMenValue: hcpMen !== 'NA' ? document.getElementById('criteria-hcp-men-value').value : '',
+          hcpWomen: hcpWomen,
+          hcpWomenValue: hcpWomen !== 'NA' ? document.getElementById('criteria-hcp-women-value').value : '',
+          ageMin: document.getElementById('criteria-age-min').value,
+          ageMax: document.getElementById('criteria-age-max').value,
+          membersOnly: document.getElementById('criteria-members-only').value,
+          gender: document.getElementById('criteria-gender').value
+        };
+      }
+
+      // Check if player meets admission criteria
+      function checkEligibility(player, criteria) {
+        if (!criteria) return { eligible: true, reasons: [] };
+        
+        const reasons = [];
+        
+        // Normalize gender values (male/female -> M/F)
+        const playerGender = (player.gender || '').toLowerCase() === 'male' ? 'M' : 
+                            (player.gender || '').toLowerCase() === 'female' ? 'F' : 
+                            (player.gender || '').toUpperCase();
+        
+        // Check HCP Men
+        if (criteria.hcpMen !== 'NA' && playerGender === 'M') {
+          const limit = parseFloat(criteria.hcpMenValue);
+          const playerHcp = parseFloat(player.hcp || 0);
+          if (!isNaN(limit) && playerHcp > limit) {
+            reasons.push(`HCP ${playerHcp} exceeds men's limit ${limit}`);
+          }
+        }
+        
+        // Check HCP Women
+        if (criteria.hcpWomen !== 'NA' && playerGender === 'F') {
+          const limit = parseFloat(criteria.hcpWomenValue);
+          const playerHcp = parseFloat(player.hcp || 0);
+          if (!isNaN(limit) && playerHcp > limit) {
+            reasons.push(`HCP ${playerHcp} exceeds women's limit ${limit}`);
+          }
+        }
+        
+        // Check Age Limit
+        if (criteria.ageMin || criteria.ageMax) {
+          const age = parseInt(player.age || 0);
+          if (criteria.ageMin && age < parseInt(criteria.ageMin)) {
+            reasons.push(`Age ${age} below minimum ${criteria.ageMin}`);
+          }
+          if (criteria.ageMax && age > parseInt(criteria.ageMax)) {
+            reasons.push(`Age ${age} above maximum ${criteria.ageMax}`);
+          }
+        }
+        
+        // Check Members Only
+        if (criteria.membersOnly === 'yes' && !player.isMember) {
+          reasons.push('Non-member');
+        }
+        
+        // Check Gender
+        if (criteria.gender && criteria.gender !== 'both') {
+          if (!playerGender || playerGender !== criteria.gender) {
+            reasons.push(`Only gender ${criteria.gender} allowed`);
+          }
+        }
+        
+        return { eligible: reasons.length === 0, reasons };
+      }
+
+      // Get admitted players for this round
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          return data[currentRoundId] || [];
+        } catch (err) {
+          console.error('Error loading admitted players:', err);
+          return [];
+        }
+      }
+
+      // Save admitted players for this round
+      function saveAdmittedPlayers(players) {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          data[currentRoundId] = players;
+          localStorage.setItem('admittedPlayers', JSON.stringify(data));
+        } catch (err) {
+          console.error('Error saving admitted players:', err);
+        }
+      }
+
+      // Initialize page
+      function init() {
+        const tournaments = getTournaments();
+
+        // Resolve tournament and round
+        if (roundId) {
+          // Preferred: find by roundId
+          currentTournament = tournaments.find(t => (t.meta?.roundIds || []).includes(roundId));
+          if (!currentTournament) {
+            alert('Tournament not found for the selected round.');
+            window.location.href = 'index.html';
+            return;
+          }
+          const roundIds = currentTournament.meta?.roundIds || [];
+          currentRoundIndex = Math.max(0, roundIds.indexOf(roundId));
+          currentRoundId = roundId;
+        } else if (tournamentIdParam) {
+          // Fallback: find by tournament ID and select default round by date
+          currentTournament = tournaments.find(t => t.tournamentId === tournamentIdParam);
+          if (!currentTournament) {
+            alert('Tournament not found.');
+            window.location.href = 'index.html';
+            return;
+          }
+          const roundsData = currentTournament.meta?.roundsData || [];
+          const rIds = currentTournament.meta?.roundIds || [];
+          // Choose default round: latest on/after first, and up to today
+          let defaultIdx = 0;
+          const today = new Date(); today.setHours(0,0,0,0);
+          for (let i=0;i<roundsData.length;i++){
+            const d = roundsData[i]?.date ? new Date(roundsData[i].date) : null;
+            if (d){ d.setHours(0,0,0,0); if (today >= d) defaultIdx = i; else break; }
+          }
+          currentRoundIndex = defaultIdx;
+          currentRoundId = rIds[defaultIdx] || `${currentTournament.tournamentId}_R${defaultIdx+1}`;
+        } else {
+          alert('No round or tournament specified.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        allPlayers = getPlayers();
+        console.log('Loaded players:', allPlayers.length);
+        
+        // Check if multi-round tournament
+        const roundsData = currentTournament.meta?.roundsData || [];
+        const numRounds = currentTournament.meta?.rounds || 1;
+        
+        if (numRounds > 1 && roundsData.length > 1) {
+          document.getElementById('round-selector').style.display = 'block';
+          const select = document.getElementById('round-select');
+          const roundIds = currentTournament.meta?.roundIds || [];
+          roundsData.forEach((round, idx) => {
+            const option = document.createElement('option');
+            option.value = roundIds[idx] || `${currentTournament.tournamentId}_R${idx+1}`;
+            option.textContent = `Round ${idx + 1} - ${round.date || ''}`;
+            select.appendChild(option);
+          });
+          select.value = currentRoundId;
+          select.addEventListener('change', (e) => {
+            // Reload page with new round ID
+            window.location.href = `admissions.html?roundId=${encodeURIComponent(e.target.value)}`;
+          });
+        }
+
+        loadAdmittedPlayers();
+        loadCriteria();
+        setupCriteriaHandlers();
+        renderTables();
+        setupSearch();
+        setupTableSorting();
+      }
+
+      // Load admitted players
+      function loadAdmittedPlayers() {
+        admittedPlayers = getAdmittedPlayers();
+      }
+
+      // Load criteria into form
+      function loadCriteria() {
+        const criteria = getAdmissionCriteria();
+        
+        // HCP Men
+        const hcpMenSelect = document.getElementById('criteria-hcp-men');
+        const hcpMenValue = document.getElementById('criteria-hcp-men-value');
+        if (criteria && criteria.hcpMen) {
+          hcpMenSelect.value = criteria.hcpMen;
+          if (criteria.hcpMen !== 'NA') {
+            hcpMenValue.style.display = 'block';
+            hcpMenValue.value = criteria.hcpMenValue || '';
+          }
+        }
+        
+        // HCP Women
+        const hcpWomenSelect = document.getElementById('criteria-hcp-women');
+        const hcpWomenValue = document.getElementById('criteria-hcp-women-value');
+        if (criteria && criteria.hcpWomen) {
+          hcpWomenSelect.value = criteria.hcpWomen;
+          if (criteria.hcpWomen !== 'NA') {
+            hcpWomenValue.style.display = 'block';
+            hcpWomenValue.value = criteria.hcpWomenValue || '';
+          }
+        }
+        
+        // Age limits
+        if (criteria) {
+          document.getElementById('criteria-age-min').value = criteria.ageMin || '';
+          document.getElementById('criteria-age-max').value = criteria.ageMax || '';
+          document.getElementById('criteria-members-only').value = criteria.membersOnly || 'no';
+          document.getElementById('criteria-gender').value = criteria.gender || 'both';
+        }
+      }
+
+      // Setup criteria form handlers
+      function setupCriteriaHandlers() {
+        // Show/hide HCP value inputs
+        document.getElementById('criteria-hcp-men').addEventListener('change', (e) => {
+          const valueInput = document.getElementById('criteria-hcp-men-value');
+          valueInput.style.display = e.target.value === 'NA' ? 'none' : 'block';
+          if (e.target.value === 'NA') valueInput.value = '';
+        });
+        
+        document.getElementById('criteria-hcp-women').addEventListener('change', (e) => {
+          const valueInput = document.getElementById('criteria-hcp-women-value');
+          valueInput.style.display = e.target.value === 'NA' ? 'none' : 'block';
+          if (e.target.value === 'NA') valueInput.value = '';
+        });
+        
+        // Save criteria button
+        document.getElementById('btn-save-criteria').addEventListener('click', saveCriteria);
+        
+        // Real-time criteria updates - re-render when any criteria field changes
+        const criteriaInputs = [
+          'criteria-hcp-men', 'criteria-hcp-men-value',
+          'criteria-hcp-women', 'criteria-hcp-women-value',
+          'criteria-age-min', 'criteria-age-max',
+          'criteria-members-only', 'criteria-gender'
+        ];
+        
+        criteriaInputs.forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.addEventListener('input', () => {
+              // Re-render tables with updated criteria (temporary, not saved yet)
+              renderTables();
+            });
+          }
+        });
+      }
+
+      // Save criteria to localStorage
+      function saveCriteria() {
+        if (!currentTournament) return;
+        
+        const hcpMen = document.getElementById('criteria-hcp-men').value;
+        const hcpWomen = document.getElementById('criteria-hcp-women').value;
+        
+        const criteria = {
+          hcpMen: hcpMen,
+          hcpMenValue: hcpMen !== 'NA' ? document.getElementById('criteria-hcp-men-value').value : '',
+          hcpWomen: hcpWomen,
+          hcpWomenValue: hcpWomen !== 'NA' ? document.getElementById('criteria-hcp-women-value').value : '',
+          ageMin: document.getElementById('criteria-age-min').value,
+          ageMax: document.getElementById('criteria-age-max').value,
+          membersOnly: document.getElementById('criteria-members-only').value,
+          gender: document.getElementById('criteria-gender').value
+        };
+        
+        try {
+          const raw = localStorage.getItem('admissionCriteria');
+          const data = raw ? JSON.parse(raw) : {};
+          data[currentTournament.tournamentId] = criteria;
+          localStorage.setItem('admissionCriteria', JSON.stringify(data));
+          
+          alert('Criteria saved successfully!');
+          renderTables();
+        } catch (err) {
+          console.error('Error saving criteria:', err);
+          alert('Error saving criteria.');
+        }
+      }
+
+      // Render tables
+      function renderTables() {
+        const availableTbody = document.getElementById('available-tbody');
+        const admittedTbody = document.getElementById('admitted-tbody');
+        // Use current form values for real-time checking
+        const criteria = getCurrentCriteria();
+        
+        console.log('Rendering - allPlayers:', allPlayers.length, 'admittedPlayers:', admittedPlayers.length);
+        
+        // Filter out already admitted players
+        const admittedRegNos = new Set(admittedPlayers.map(p => p.reg));
+        const availablePlayers = allPlayers.filter(p => !admittedRegNos.has(p.reg));
+        
+        // Render available players (use filtered list if search is active)
+        let playersToShow = filteredPlayers.length > 0 || document.getElementById('player-search').value 
+          ? filteredPlayers 
+          : availablePlayers;
+        
+        // Apply sorting if a column is selected
+        if (availableSortColumn) {
+          playersToShow = sortPlayers(playersToShow, availableSortColumn, availableSortDirection);
+        }
+        
+        availableTbody.innerHTML = playersToShow.map((player, idx) => {
+          const eligibility = checkEligibility(player, criteria);
+          const eligibleClass = !eligibility.eligible ? 'ineligible' : '';
+          const highlightClass = idx === highlightedIndex ? 'highlighted' : '';
+          const title = !eligibility.eligible ? eligibility.reasons.join(', ') : '';
+          const age = calculateAge(player.dob);
+          
+          return `
+            <tr class="${highlightClass} ${eligibleClass}" data-index="${idx}" data-eligible="${eligibility.eligible}" title="${title}">
+              <td>${player.reg || ''}</td>
+              <td>${player.firstName || ''} ${player.lastName || ''}</td>
+              <td>${player.club || player.homeClub || ''}</td>
+              <td>${getTeeForPlayer(player)}</td>
+              <td>${formatHcp(player.hcp)}</td>
+              <td>${calculatePlayingHcp(player)}</td>
+              <td>${player.gender || ''}</td>
+              <td>${age}</td>
+            </tr>
+          `;
+        }).join('');
+        
+        // Render admitted players
+        let sortedAdmittedPlayers = admittedPlayers;
+        if (admittedSortColumn) {
+          sortedAdmittedPlayers = sortPlayers(admittedPlayers, admittedSortColumn, admittedSortDirection);
+        }
+        
+        admittedTbody.innerHTML = sortedAdmittedPlayers.map(player => {
+          const age = calculateAge(player.dob);
+          return `
+            <tr data-reg="${player.reg}">
+              <td>${player.reg || ''}</td>
+              <td>${player.firstName || ''} ${player.lastName || ''}</td>
+              <td>${player.club || player.homeClub || ''}</td>
+              <td>${getTeeForPlayer(player)}</td>
+              <td>${formatHcp(player.hcp)}</td>
+              <td>${calculatePlayingHcp(player)}</td>
+              <td>${player.gender || ''}</td>
+              <td>${age}</td>
+            </tr>
+          `;
+        }).join('');
+        
+        // Update status
+        const eligibleCount = playersToShow.filter(p => checkEligibility(p, criteria).eligible).length;
+        document.getElementById('available-status').textContent = `${playersToShow.length} player(s) available (${eligibleCount} eligible)`;
+        document.getElementById('admitted-status').textContent = `${admittedPlayers.length} player(s) admitted`;
+        
+        // Add double-click handlers for available players
+        availableTbody.querySelectorAll('tr').forEach(row => {
+          const idx = parseInt(row.getAttribute('data-index'));
+          const eligible = row.getAttribute('data-eligible') === 'true';
+          
+          row.addEventListener('dblclick', () => {
+            if (eligible && playersToShow[idx]) {
+              admitPlayer(playersToShow[idx]);
+              const searchInput = document.getElementById('player-search');
+              searchInput.value = '';
+              filteredPlayers = [];
+              highlightedIndex = -1;
+              renderTables();
+              searchInput.focus();
+            }
+          });
+        });
+        
+        // Add double-click handlers for admitted players (to remove them)
+        admittedTbody.querySelectorAll('tr').forEach(row => {
+          row.addEventListener('dblclick', () => {
+            const reg = row.getAttribute('data-reg');
+            removePlayer(reg);
+          });
+        });
+      }
+
+      // Setup search functionality
+      function setupSearch() {
+        const searchInput = document.getElementById('player-search');
+        
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase().trim();
+          highlightedIndex = -1;
+          
+          if (!query) {
+            filteredPlayers = [];
+            renderTables();
+            return;
+          }
+          
+          const admittedRegs = new Set(admittedPlayers.map(p => p.reg));
+          filteredPlayers = allPlayers.filter(p => {
+            if (admittedRegs.has(p.reg)) return false;
+            const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+            const reg = (p.reg || '').toString().toLowerCase();
+            const playerNo = (p.playerNo || '').toString().toLowerCase();
+            const club = (p.club || p.homeClub || '').toLowerCase();
+            return name.includes(query) || reg.includes(query) || playerNo.includes(query) || club.includes(query);
+          });
+          
+          if (filteredPlayers.length > 0) {
+            highlightedIndex = 0;
+          }
+          
+          renderTables();
+        });
+        
+        searchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && filteredPlayers[highlightedIndex]) {
+              admitPlayer(filteredPlayers[highlightedIndex]);
+              searchInput.value = '';
+              filteredPlayers = [];
+              highlightedIndex = -1;
+              renderTables();
+              searchInput.focus();
+            }
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (filteredPlayers.length > 0) {
+              highlightedIndex = Math.min(highlightedIndex + 1, filteredPlayers.length - 1);
+              renderTables();
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (filteredPlayers.length > 0) {
+              highlightedIndex = Math.max(highlightedIndex - 1, 0);
+              renderTables();
+            }
+          }
+        });
+      }
+
+      // Sort players array
+      function sortPlayers(players, column, direction) {
+        const sorted = [...players];
+        
+        sorted.sort((a, b) => {
+          let aVal, bVal;
+          
+          switch(column) {
+            case 'reg':
+              aVal = (a.reg || '').toString();
+              bVal = (b.reg || '').toString();
+              break;
+            case 'name':
+              aVal = `${a.firstName || ''} ${a.lastName || ''}`;
+              bVal = `${b.firstName || ''} ${b.lastName || ''}`;
+              break;
+            case 'club':
+              aVal = (a.club || a.homeClub || '');
+              bVal = (b.club || b.homeClub || '');
+              break;
+            case 'tee':
+              aVal = getTeeForPlayer(a);
+              bVal = getTeeForPlayer(b);
+              break;
+            case 'hcp':
+              aVal = parseFloat(a.hcp) || 0;
+              bVal = parseFloat(b.hcp) || 0;
+              break;
+            case 'phcp':
+              // Parse playing HCP (remove + sign for negatives)
+              const aPhcp = calculatePlayingHcp(a).replace('+', '-');
+              const bPhcp = calculatePlayingHcp(b).replace('+', '-');
+              aVal = parseFloat(aPhcp) || 0;
+              bVal = parseFloat(bPhcp) || 0;
+              break;
+            case 'gender':
+              aVal = (a.gender || '');
+              bVal = (b.gender || '');
+              break;
+            case 'age':
+              aVal = calculateAge(a.dob) || 0;
+              bVal = calculateAge(b.dob) || 0;
+              break;
+            default:
+              return 0;
+          }
+          
+          // Compare values
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return direction === 'asc' ? aVal - bVal : bVal - aVal;
+          } else {
+            // Use Turkish locale for string comparison
+            const result = aVal.localeCompare(bVal, 'tr-TR', { sensitivity: 'base' });
+            return direction === 'asc' ? result : -result;
+          }
+        });
+        
+        return sorted;
+      }
+
+      // Setup table header sorting
+      function setupTableSorting() {
+        // Available players table
+        document.querySelectorAll('#available-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            
+            // Toggle direction if same column, otherwise reset to ascending
+            if (availableSortColumn === column) {
+              availableSortDirection = availableSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              availableSortColumn = column;
+              availableSortDirection = 'asc';
+            }
+            
+            // Update header indicators
+            document.querySelectorAll('#available-table th').forEach(h => {
+              h.classList.remove('sort-asc', 'sort-desc');
+            });
+            th.classList.add(`sort-${availableSortDirection}`);
+            
+            renderTables();
+          });
+        });
+        
+        // Admitted players table
+        document.querySelectorAll('#admitted-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            
+            // Toggle direction if same column, otherwise reset to ascending
+            if (admittedSortColumn === column) {
+              admittedSortDirection = admittedSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              admittedSortColumn = column;
+              admittedSortDirection = 'asc';
+            }
+            
+            // Update header indicators
+            document.querySelectorAll('#admitted-table th').forEach(h => {
+              h.classList.remove('sort-asc', 'sort-desc');
+            });
+            th.classList.add(`sort-${admittedSortDirection}`);
+            
+            renderTables();
+          });
+        });
+      }
+
+      // Sort players array
+      function sortPlayers(players, column, direction) {
+        const sorted = [...players];
+        
+        sorted.sort((a, b) => {
+          let aVal, bVal;
+          
+          switch(column) {
+            case 'reg':
+              aVal = (a.reg || '').toString();
+              bVal = (b.reg || '').toString();
+              break;
+            case 'name':
+              aVal = `${a.firstName || ''} ${a.lastName || ''}`;
+              bVal = `${b.firstName || ''} ${b.lastName || ''}`;
+              break;
+            case 'club':
+              aVal = (a.club || a.homeClub || '');
+              bVal = (b.club || b.homeClub || '');
+              break;
+            case 'tee':
+              aVal = getTeeForPlayer(a);
+              bVal = getTeeForPlayer(b);
+              break;
+            case 'hcp':
+              aVal = parseFloat(a.hcp) || 0;
+              bVal = parseFloat(b.hcp) || 0;
+              break;
+            case 'phcp':
+              // Parse playing HCP (remove + sign for negatives)
+              const aPhcp = calculatePlayingHcp(a).replace('+', '-');
+              const bPhcp = calculatePlayingHcp(b).replace('+', '-');
+              aVal = parseFloat(aPhcp) || 0;
+              bVal = parseFloat(bPhcp) || 0;
+              break;
+            case 'gender':
+              aVal = (a.gender || '');
+              bVal = (b.gender || '');
+              break;
+            case 'age':
+              aVal = calculateAge(a.dob) || 0;
+              bVal = calculateAge(b.dob) || 0;
+              break;
+            default:
+              return 0;
+          }
+          
+          // Compare values
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return direction === 'asc' ? aVal - bVal : bVal - aVal;
+          } else {
+            // Use Turkish locale for string comparison
+            const result = aVal.localeCompare(bVal, 'tr-TR', { sensitivity: 'base' });
+            return direction === 'asc' ? result : -result;
+          }
+        });
+        
+        return sorted;
+      }
+
+      // Setup table header sorting
+      function setupTableSorting() {
+        // Available players table
+        document.querySelectorAll('#available-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            
+            // Toggle direction if same column, otherwise reset to ascending
+            if (availableSortColumn === column) {
+              availableSortDirection = availableSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              availableSortColumn = column;
+              availableSortDirection = 'asc';
+            }
+            
+            // Update header indicators
+            document.querySelectorAll('#available-table th').forEach(h => {
+              h.classList.remove('sort-asc', 'sort-desc');
+            });
+            th.classList.add(`sort-${availableSortDirection}`);
+            
+            renderTables();
+          });
+        });
+        
+        // Admitted players table
+        document.querySelectorAll('#admitted-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            
+            // Toggle direction if same column, otherwise reset to ascending
+            if (admittedSortColumn === column) {
+              admittedSortDirection = admittedSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              admittedSortColumn = column;
+              admittedSortDirection = 'asc';
+            }
+            
+            // Update header indicators
+            document.querySelectorAll('#admitted-table th').forEach(h => {
+              h.classList.remove('sort-asc', 'sort-desc');
+            });
+            th.classList.add(`sort-${admittedSortDirection}`);
+            
+            renderTables();
+          });
+        });
+      }
+
+      // Sort players array
+      function sortPlayers(players, column, direction) {
+        const sorted = [...players];
+        
+        sorted.sort((a, b) => {
+          let aVal, bVal;
+          
+          switch(column) {
+            case 'reg':
+              aVal = (a.reg || '').toString();
+              bVal = (b.reg || '').toString();
+              break;
+            case 'name':
+              aVal = `${a.firstName || ''} ${a.lastName || ''}`;
+              bVal = `${b.firstName || ''} ${b.lastName || ''}`;
+              break;
+            case 'club':
+              aVal = (a.club || a.homeClub || '');
+              bVal = (b.club || b.homeClub || '');
+              break;
+            case 'tee':
+              aVal = getTeeForPlayer(a);
+              bVal = getTeeForPlayer(b);
+              break;
+            case 'hcp':
+              aVal = parseFloat(a.hcp) || 0;
+              bVal = parseFloat(b.hcp) || 0;
+              break;
+            case 'phcp':
+              const aPhcp = calculatePlayingHcp(a).replace('+', '-');
+              const bPhcp = calculatePlayingHcp(b).replace('+', '-');
+              aVal = parseFloat(aPhcp) || 0;
+              bVal = parseFloat(bPhcp) || 0;
+              break;
+            case 'gender':
+              aVal = (a.gender || '');
+              bVal = (b.gender || '');
+              break;
+            case 'age':
+              aVal = calculateAge(a.dob) || 0;
+              bVal = calculateAge(b.dob) || 0;
+              break;
+            default:
+              return 0;
+          }
+          
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return direction === 'asc' ? aVal - bVal : bVal - aVal;
+          } else {
+            if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+            return 0;
+          }
+        });
+        
+        return sorted;
+      }
+
+      // Setup table header sorting
+      function setupTableSorting() {
+        document.querySelectorAll('#available-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            if (availableSortColumn === column) {
+              availableSortDirection = availableSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              availableSortColumn = column;
+              availableSortDirection = 'asc';
+            }
+            document.querySelectorAll('#available-table th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            th.classList.add(`sort-${availableSortDirection}`);
+            renderTables();
+          });
+        });
+        
+        document.querySelectorAll('#admitted-table th[data-sort]').forEach(th => {
+          th.addEventListener('click', () => {
+            const column = th.getAttribute('data-sort');
+            if (admittedSortColumn === column) {
+              admittedSortDirection = admittedSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              admittedSortColumn = column;
+              admittedSortDirection = 'asc';
+            }
+            document.querySelectorAll('#admitted-table th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            th.classList.add(`sort-${admittedSortDirection}`);
+            renderTables();
+          });
+        });
+      }
+
+      // Admit player
+      function admitPlayer(player) {
+        const criteria = getAdmissionCriteria();
+        const eligibility = checkEligibility(player, criteria);
+        
+        if (!eligibility.eligible) {
+          alert('Player does not meet admission criteria:\n' + eligibility.reasons.join('\n'));
+          return;
+        }
+        
+        if (!admittedPlayers.find(p => p.reg === player.reg)) {
+          admittedPlayers.push(player);
+          saveAdmittedPlayers(admittedPlayers);
+          renderTables();
+        }
+      }
+
+      // Remove player
+      function removePlayer(reg) {
+        admittedPlayers = admittedPlayers.filter(p => p.reg !== reg);
+        saveAdmittedPlayers(admittedPlayers);
+        renderTables();
+      }
+
+      // Initialize on page load
+      init();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Players Administration</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .players-container{max-width:1200px;margin:24px auto;padding:16px}
+      .players-grid{display:flex;gap:20px}
+      .left-panel{width:48%;background:#fff;border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,0.06);display:flex;flex-direction:column}
+      .right-panel{flex:1;background:#fff;border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .search-box{margin-bottom:10px}
+      .search-box input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+      .players-table-wrapper{overflow:auto;border-radius:8px}
+      table.players{width:100%;border-collapse:collapse}
+      table.players th{position:sticky;top:0;background:#f8fafc;padding:10px 8px;border-bottom:1px solid #e6e9ef;font-weight:700;text-align:left}
+      table.players td{padding:10px 8px;border-bottom:1px solid #f1f5f9}
+      table.players tr:hover{background:#f8fbff}
+      th.sortable{cursor:pointer}
+      .sort-indicator{margin-left:6px;color:#475569;font-size:12px}
+      /* Make the left panel scroll area fit the viewport */
+      .players-grid { align-items: flex-start; }
+      .players-table-wrapper{max-height:calc(100vh - 220px);}
+      .selected{background:#dbeafe}
+    </style>
+  </head>
+  <body>
+    <main class="players-container">
+      <header style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h1>Players</h1>
+          <p class="lead">Manage registered players. Select a player from the list.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+          <label for="user-selector" style="font-size:12px;color:#64748b;margin-bottom:6px">Current user</label>
+          <select id="user-selector" style="padding:8px;border-radius:8px;border:1px solid #e6e9ef">
+            <option value="main">Main Admin</option>
+            <option value="klassis">Club: Klassis</option>
+            <option value="otherclub">Club: OtherClub</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="players-grid">
+        <section class="left-panel">
+          <div class="search-box">
+            <input id="player-search" placeholder="Search by reg no, name, or home club" />
+          </div>
+          <div id="players-status" style="font-size:12px;color:#475569;margin-bottom:8px"></div>
+
+          <div class="players-table-wrapper">
+            <table class="players" id="players-table">
+              <thead>
+                    <tr>
+                      <th data-key="reg">Reg. No <span class="sort-indicator"></span></th>
+                      <th data-key="firstName">Name <span class="sort-indicator"></span></th>
+                      <th data-key="lastName">Last Name <span class="sort-indicator"></span></th>
+                      <th data-key="hcp">HCP <span class="sort-indicator"></span></th>
+                      <th data-key="age">Age <span class="sort-indicator"></span></th>
+                      <th data-key="gender">Gender <span class="sort-indicator"></span></th>
+                      <th data-key="mobile">Mobile <span class="sort-indicator"></span></th>
+                    </tr>
+              </thead>
+              <tbody id="players-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside class="right-panel" id="player-actions">
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="btn-export-players" class="big-btn" style="padding:6px 10px">Export</button>
+              <button id="btn-import-players" class="big-btn" style="padding:6px 10px">Import</button>
+              <input id="import-file" type="file" accept="application/json" style="display:none" />
+            </div>
+            <button id="btn-create-player" class="big-btn" style="padding:8px 12px;max-width:220px">Create Player</button>
+            <button id="btn-modify-player" class="big-btn" style="padding:8px 12px;max-width:220px">Modify Player</button>
+            <button id="btn-delete-player" class="big-btn" style="padding:8px 12px;max-width:220px;background:#c0392b;color:#fff">🗑️ Delete Player</button>
+            <button id="btn-search-player" class="big-btn" style="padding:8px 12px;max-width:220px">Search Player</button>
+            <button id="btn-import-tgf" class="big-btn" style="padding:8px 12px;max-width:220px">🇹🇷 Import from TGF</button>
+            <button id="btn-payments" class="big-btn" style="padding:8px 12px;max-width:220px">Payments</button>
+          </div>
+          <div id="search-results" style="margin-top:18px"></div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      // Players admin: stored in localStorage under 'players'
+      function getPlayers() {
+        try { const raw = localStorage.getItem('players'); return raw ? JSON.parse(raw) : [] } catch(e){console.error(e);return[]}
+      }
+
+      function savePlayers(list){
+        try{
+          // keep a backup of previous state to help recovery
+          const prev = localStorage.getItem('players');
+          if(prev) localStorage.setItem('players_backup', prev);
+          localStorage.setItem('players', JSON.stringify(list||[]));
+          localStorage.setItem('players_backup_ts', new Date().toISOString());
+        }catch(e){ console.error('savePlayers error', e); }
+      }
+
+      // sample data disabled - use import instead
+      function ensureSample() {
+        // No longer auto-creating sample data
+      }
+
+      let sortState = { key: 'reg', dir: 'asc' };
+
+      function getCurrentUser(){
+        try{ const raw = localStorage.getItem('currentUser'); if(raw) return JSON.parse(raw); }catch(e){}
+        return { id: 'main', name: 'Main Admin', role: 'admin' };
+      }
+
+      function setCurrentUser(u){ localStorage.setItem('currentUser', JSON.stringify(u)); }
+
+      function renderUserSelector(){
+        const sel = document.getElementById('user-selector');
+        const cur = getCurrentUser();
+        sel.value = cur.id;
+        sel.addEventListener('change', ()=>{
+          const v = sel.value;
+          const u = v==='main'? {id:'main',name:'Main Admin',role:'admin'} : {id:v,name: sel.options[sel.selectedIndex].text, role:'club'};
+          setCurrentUser(u); loadPlayers(); document.getElementById('search-results').innerHTML='';
+        });
+      }
+
+      // Calculate age based on January 1st of current year
+      function calculateAge(dob) {
+        if (!dob) return '';
+        try {
+          const birthDate = new Date(dob);
+          const currentYear = new Date().getFullYear();
+          const referenceDate = new Date(currentYear, 0, 1); // January 1st of current year
+          let age = referenceDate.getFullYear() - birthDate.getFullYear();
+          return age;
+        } catch (e) {
+          return '';
+        }
+      }
+
+      // Format handicap for display (negative values show as +)
+      function formatHcp(hcp) {
+        if (!hcp && hcp !== 0) return '';
+        const num = parseFloat(hcp);
+        if (isNaN(num)) return hcp;
+        if (num < 0) return '+' + Math.abs(num).toFixed(1);
+        return num.toFixed(1);
+      }
+
+      function loadPlayers() {
+        const tbody = document.getElementById('players-body');
+        const filter = (document.getElementById('player-search').value || '').toLowerCase();
+        const list = getPlayers();
+
+        // augment with orig index and calculated age
+        const augmented = list.map((p, i) => Object.assign({_origIndex:i, age: calculateAge(p.dob)}, p));
+
+        const currentUser = getCurrentUser();
+
+        // filter by ownership: admin sees all, clubs see own or imported
+        const visible = augmented.filter(p => {
+          if(currentUser.role==='admin') return true;
+          if(p.owner === currentUser.id) return true;
+          if(Array.isArray(p.importedBy) && p.importedBy.includes(currentUser.id)) return true;
+          return false;
+        });
+
+        // then apply search filter
+        const filtered = visible.filter(p => {
+          if (!filter) return true;
+          return (p.reg||'').toString().toLowerCase().includes(filter) || ((p.firstName||'') + ' ' + (p.lastName||'')).toLowerCase().includes(filter) || (p.club||'').toLowerCase().includes(filter);
+        });
+
+        // sort
+        filtered.sort((a,b)=>{
+          const k = sortState.key; let va=a[k], vb=b[k];
+          if(k==='hcp' || k==='age') { va = parseFloat(va)||0; vb = parseFloat(vb)||0; return sortState.dir==='asc'? va - vb: vb - va }
+          va = (va||'').toString().toLowerCase(); vb = (vb||'').toString().toLowerCase();
+          if(va<vb) return sortState.dir==='asc'? -1: 1; if(va>vb) return sortState.dir==='asc'? 1: -1; return 0;
+        });
+
+        tbody.innerHTML = '';
+        filtered.forEach((p, idx)=>{
+          const tr = document.createElement('tr');
+          const mobileCell = p.mobile ? escapeHtml(p.mobile) : '';
+          tr.innerHTML = `<td>${escapeHtml(p.reg)}</td><td>${escapeHtml(p.firstName||'')}</td><td>${escapeHtml(p.lastName||'')}</td><td>${formatHcp(p.hcp)}</td><td>${escapeHtml(p.age||'')}</td><td>${escapeHtml(p.gender||'')}</td><td>${mobileCell}</td>`;
+          tr.dataset.index = idx; tr.dataset.origIndex = p._origIndex;
+          tr.addEventListener('click', ()=>{ selectPlayer(p._origIndex, p); });
+          tbody.appendChild(tr);
+        });
+        // status / debug info
+        const status = document.getElementById('players-status');
+        if(status){
+          status.textContent = `Showing ${filtered.length} players (visible: ${visible.length}) — total stored: ${list.length}`;
+        }
+        // also log stored players for debugging
+        console.log('players (stored):', list);
+      }
+
+      function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&\"'<>]/g, c=>({'&':'&amp;','\"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[c])) }
+
+      function setupSorting(){
+        document.querySelectorAll('#players-table thead th').forEach(th=>{
+          const key = th.dataset.key; if(!key) return; th.classList.add('sortable');
+          th.addEventListener('click', ()=>{
+            if(sortState.key===key) sortState.dir = sortState.dir==='asc'?'desc':'asc'; else { sortState.key=key; sortState.dir='asc' }
+            loadPlayers(); renderSortIndicators();
+          })
+        })
+      }
+
+      function renderSortIndicators(){
+        document.querySelectorAll('#players-table thead th').forEach(th=>{
+          const key = th.dataset.key; const ind = th.querySelector('.sort-indicator');
+          if(!ind) return; ind.textContent = key===sortState.key ? (sortState.dir==='asc'? '▲':'▼') : '';
+        })
+      }
+
+      let selectedPlayerIndex = null;
+      function selectPlayer(origIndex, player){
+        selectedPlayerIndex = origIndex;
+        // highlight selected row only
+        document.querySelectorAll('#players-body tr').forEach(r=>r.classList.remove('selected'));
+        const rows = Array.from(document.querySelectorAll('#players-body tr'));
+        const row = rows.find(r=>parseInt(r.dataset.origIndex,10)===origIndex);
+        if(row) row.classList.add('selected');
+      }
+
+      // Create Player (open the dedicated create page)
+      document.getElementById('btn-create-player').addEventListener('click', ()=>{
+        // use relative path from /players/index.html
+        window.location.href = 'new.html';
+      });
+
+      // Export players to JSON file
+      document.getElementById('btn-export-players').addEventListener('click', ()=>{
+        const data = getPlayers();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'players_export_' + (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      });
+
+      // Import players from JSON file (replace storage)
+      const importFile = document.getElementById('import-file');
+      document.getElementById('btn-import-players').addEventListener('click', ()=>{ importFile.click(); });
+      importFile.addEventListener('change', (e)=>{
+        const f = e.target.files && e.target.files[0]; if(!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev)=>{
+          try{
+            const parsed = JSON.parse(ev.target.result);
+            if(!Array.isArray(parsed)) return alert('Import file must be an array of players');
+            if(!confirm('This will replace the current players list. Continue?')) return;
+            savePlayers(parsed);
+            loadPlayers();
+            alert('Import complete.');
+          }catch(err){ alert('Invalid JSON file: ' + err.message) }
+        };
+        reader.readAsText(f);
+      });
+
+      // Modify selected player
+      document.getElementById('btn-modify-player').addEventListener('click', ()=>{
+        if(selectedPlayerIndex === null){ alert('Please select a player to modify.'); return }
+        // navigate to new.html in edit mode
+        window.location.href = 'new.html?edit=' + selectedPlayerIndex;
+      });
+
+      // Delete selected player (admin only)
+      document.getElementById('btn-delete-player').addEventListener('click', ()=>{
+        const currentUser = getCurrentUser();
+        if(currentUser.role !== 'admin'){
+          alert('Only administrators can delete players.');
+          return;
+        }
+        if(selectedPlayerIndex === null){ alert('Please select a player to delete.'); return }
+        const list = getPlayers();
+        const player = list[selectedPlayerIndex];
+        if(!player){ alert('Player not found.'); return }
+        const playerName = (player.firstName || '') + ' ' + (player.lastName || '');
+        if(!confirm('Are you sure you want to delete player "' + playerName.trim() + '" (Reg: ' + (player.reg || 'N/A') + ')?\n\nThis action cannot be undone.')){
+          return;
+        }
+        list.splice(selectedPlayerIndex, 1);
+        savePlayers(list);
+        selectedPlayerIndex = null;
+        loadPlayers();
+        alert('Player deleted successfully.');
+      });
+
+      // Search Player (search across saved players)
+      document.getElementById('btn-search-player').addEventListener('click', ()=>{
+        const q = window.prompt('Search players (reg, name, club):');
+        if(q===null) return;
+        const term = (q||'').toLowerCase();
+        const all = getPlayers();
+        const matches = all.map((p,i)=>Object.assign({_origIndex:i},p)).filter(p => (p.reg||'').toLowerCase().includes(term) || (((p.firstName||'') + ' ' + (p.lastName||'')).toLowerCase().includes(term)) || (p.club||'').toLowerCase().includes(term));
+        const out = document.getElementById('search-results');
+        const currentUser = getCurrentUser();
+        if(matches.length===0){ out.innerHTML = `<p>No matches for "${escapeHtml(q)}"</p>`; return }
+        out.innerHTML = '<strong>Matches:</strong><ul>' + matches.map(m=>{
+          const visible = (currentUser.role==='admin') || (m.owner===currentUser.id) || (Array.isArray(m.importedBy) && m.importedBy.includes(currentUser.id));
+          const addBtn = (!visible && currentUser.role!=='admin') ? `<button data-orig="${m._origIndex}" class="btn-add" style="margin-left:8px">Add to my list</button>` : '';
+          return `<li>${escapeHtml(m.reg)} — ${escapeHtml((m.firstName||'') + ' ' + (m.lastName||''))} (${escapeHtml(m.club)}) ${addBtn}</li>`
+        }).join('') + '</ul>';
+
+        // wire add buttons
+        Array.from(out.querySelectorAll('.btn-add')).forEach(btn=>{
+          btn.addEventListener('click', (e)=>{
+            const idx = parseInt(e.target.dataset.orig,10);
+            addToMyList(idx);
+          })
+        });
+      });
+
+      function addToMyList(origIndex){
+        const currentUser = getCurrentUser();
+        const list = getPlayers();
+        const p = list[origIndex];
+        if(!p) return alert('Player not found');
+        p.importedBy = p.importedBy || [];
+        if(!p.importedBy.includes(currentUser.id)) p.importedBy.push(currentUser.id);
+        savePlayers(list);
+        loadPlayers();
+        document.getElementById('search-results').innerHTML = `<p>Added ${escapeHtml((p.firstName||'') + ' ' + (p.lastName||''))} to your list.</p>`;
+      }
+
+      document.getElementById('btn-payments').addEventListener('click', ()=>{
+        alert('Payments functionality coming soon.');
+      });
+
+      document.getElementById('btn-import-tgf').addEventListener('click', ()=>{
+        window.location.href = 'import_tgf.html';
+      });
+
+      // Init
+      ensureSample();
+      // initialize user selector and persist current user if not set
+      renderUserSelector();
+      setCurrentUser(getCurrentUser());
+      setupSorting();
+      loadPlayers();
+      renderSortIndicators();
+
+      // Replace history so back button goes to main page instead of previous search page
+      history.replaceState(null, '', location.href);
+      window.addEventListener('popstate', function() {
+        window.location.href = '../index.html';
+      });
+
+      // Search
+      document.getElementById('player-search').addEventListener('input', ()=>{ loadPlayers() });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Clear Players</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .container { max-width: 600px; margin: 60px auto; padding: 20px; text-align: center; }
+    .big-btn { background: #ef4444; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; margin: 10px; }
+    .cancel-btn { background: #6b7280; }
+    .status { padding: 12px; border-radius: 8px; margin: 20px 0; }
+    .status.success { background: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Clear All Players</h1>
+    <p style="color: #64748b; margin: 20px 0;">This will remove all players from localStorage. This action cannot be undone.</p>
+    
+    <div id="current-count" style="font-size: 18px; font-weight: 600; margin: 20px 0;"></div>
+    
+    <button class="big-btn" onclick="clearPlayers()">Clear All Players</button>
+    <button class="big-btn cancel-btn" onclick="window.location.href='index.html'">Cancel</button>
+    
+    <div id="status"></div>
+  </main>
+
+  <script>
+    function displayCount() {
+      try {
+        const players = JSON.parse(localStorage.getItem('players') || '[]');
+        document.getElementById('current-count').textContent = `Current players: ${players.length}`;
+      } catch (e) {
+        document.getElementById('current-count').textContent = 'Current players: 0';
+      }
+    }
+
+    function clearPlayers() {
+      if (!confirm('Are you sure you want to delete ALL players? This cannot be undone.')) {
+        return;
+      }
+
+      localStorage.setItem('players', JSON.stringify([]));
+      localStorage.removeItem('players_backup');
+      localStorage.removeItem('players_backup_ts');
+      document.getElementById('status').className = 'status success';
+      document.getElementById('status').innerHTML = '✅ All players cleared (including backups)!<br><br><a href="index.html">Back to Players</a>';
+      displayCount();
+    }
+
+    displayCount();
+  </script>
+</body>
+</html>

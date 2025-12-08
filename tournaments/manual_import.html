@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Manual Import Tool</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 900px; margin: 0 auto; background: #f8fafc; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px 0; }
+    h1 { color: #1e293b; margin-top: 0; }
+    .step { background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #0b6efd; }
+    .step h3 { margin-top: 0; color: #0b6efd; }
+    button { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; margin: 5px 0; }
+    button:hover { background: #0a58d1; }
+    .success { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    input { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 14px; margin: 5px 0; }
+    code { background: #1e293b; color: #e2e8f0; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔧 Manual Data Import (Localhost)</h1>
+    
+    <div class="step">
+      <h3>Step 1: Get Data from Working Page</h3>
+      <p>Open your working tournaments page in Chrome, press <code>F12</code> or <code>Cmd+Option+I</code>, click <strong>Application</strong> tab → <strong>Local Storage</strong> → file://</p>
+      <p>Copy each value and paste below:</p>
+    </div>
+
+    <div class="step">
+      <h3>Step 2: Paste Values</h3>
+      
+      <label><strong>tournaments:</strong></label>
+      <input type="text" id="tournaments" placeholder="Paste tournaments value">
+      
+      <label><strong>players:</strong></label>
+      <input type="text" id="players" placeholder="Paste players value">
+      
+      <label><strong>courses:</strong></label>
+      <input type="text" id="courses" placeholder="Paste courses value">
+      
+      <label><strong>admittedPlayers:</strong></label>
+      <input type="text" id="admittedPlayers" placeholder="Paste admittedPlayers value">
+      
+      <label><strong>scores:</strong></label>
+      <input type="text" id="scores" placeholder="Paste scores value">
+      
+      <label><strong>categories:</strong></label>
+      <input type="text" id="categories" placeholder="Paste categories value">
+      
+      <label><strong>draws:</strong></label>
+      <input type="text" id="draws" placeholder="Paste draws value">
+    </div>
+
+    <button onclick="importAll()">💾 Import All to Localhost</button>
+    <button onclick="checkData()" style="background: #16a34a;">✅ Check Current Data</button>
+    
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function importAll() {
+      const keys = ['tournaments', 'players', 'courses', 'admittedPlayers', 'scores', 'categories', 'draws'];
+      let imported = 0;
+      
+      keys.forEach(key => {
+        const value = document.getElementById(key).value.trim();
+        if (value) {
+          localStorage.setItem(key, value);
+          imported++;
+        }
+      });
+
+      const result = document.getElementById('result');
+      if (imported > 0) {
+        result.innerHTML = '<div class="success">✅ Successfully imported ' + imported + ' items!<br><br><button onclick="window.location.href=\'http://localhost:8080/tournaments/index.html\'">Open Tournaments Page</button></div>';
+      } else {
+        result.innerHTML = '<div class="error">❌ No data to import. Please paste values first.</div>';
+      }
+    }
+
+    function checkData() {
+      const result = document.getElementById('result');
+      const tournaments = localStorage.getItem('tournaments');
+      
+      if (tournaments) {
+        try {
+          const parsed = JSON.parse(tournaments);
+          result.innerHTML = '<div class="success">✅ Found ' + parsed.length + ' tournament(s) in localhost!</div>';
+        } catch (e) {
+          result.innerHTML = '<div class="error">❌ Data exists but may be corrupted</div>';
+        }
+      } else {
+        result.innerHTML = '<div class="error">❌ No tournament data in localhost yet</div>';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Create Player</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .form-card{max-width:720px;margin:28px auto;padding:18px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .form-row{display:flex;gap:12px}
+      .form-row .col{flex:1}
+      .field{display:flex;flex-direction:column;margin-bottom:12px}
+      label{font-weight:600;margin-bottom:6px}
+      input,select{padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+      .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="form-card">
+        <h2 style="margin-top:0">Create Player</h2>
+        <form id="create-player-form">
+          <div id="form-messages" style="margin-bottom:12px"></div>
+          <div class="field">
+            <label for="reg">Reg No</label>
+            <input id="reg" name="reg" readonly />
+          </div>
+          <!-- Duplicate check modal -->
+          <div id="dupe-modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.6);align-items:center;justify-content:center;z-index:60">
+            <div style="background:#fff;border-radius:10px;max-width:720px;width:92%;padding:16px;margin:auto;box-shadow:0 12px 40px rgba(2,6,23,0.5)">
+              <h3 style="margin-top:0">Possible existing player(s) found</h3>
+              <p style="color:#334155">Please check if one of these records is the same person. If it is, cancel registration.</p>
+              <div id="dupe-list" style="max-height:260px;overflow:auto;margin:8px 0;padding:6px;border:1px solid #e6e9ef;border-radius:6px"></div>
+              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+                <button id="dupe-not" type="button" class="big-btn" style="background:#fff;border:1px solid #cbd5e1;color:#0f172a">This is not him/her</button>
+                <button id="dupe-yes" type="button" class="big-btn" style="background:#ef4444;border:0;color:#fff">Yes - This is him/her</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
+              <label for="firstName">Player Name</label>
+              <input id="firstName" name="firstName" required />
+            </div>
+            <div class="col field">
+              <label for="lastName">Last Name</label>
+              <input id="lastName" name="lastName" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="homeClub">Home club</label>
+            <input id="homeClub" name="homeClub" readonly />
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
+              <label for="dob">Date of Birth</label>
+              <input id="dob" name="dob" type="date" required />
+            </div>
+            <div class="col field">
+              <label for="gender">Gender</label>
+              <select id="gender" name="gender" required>
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
+              <label for="idNo">ID No</label>
+              <input id="idNo" name="idNo" inputmode="numeric" maxlength="11" placeholder="11 digits" required />
+            </div>
+            <div class="col field">
+              <label for="email">E-mail</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+          </div>
+
+          <style>
+            .mobile-section{margin-bottom:12px}
+            .mobile-title{font-size:16px;font-weight:700;margin-bottom:6px}
+            .mobile-sub{font-size:12px;color:#64748b;margin-bottom:8px}
+            .mobile-group{display:flex;gap:8px;align-items:center}
+            .country-select{width:90px;padding:8px;border-radius:8px;border:1px solid #e6e9ef}
+            .mobile-input{flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+          </style>
+
+          <div class="mobile-section">
+            <div class="mobile-title">Mobile</div>
+            <div class="mobile-sub">Country code</div>
+            <div class="mobile-group">
+              <select id="countryCode" name="countryCode" class="country-select" required>
+                <option value="+90">TUR (+90)</option>
+                <option value="+1">USA (+1)</option>
+                <option value="+44">UK (+44)</option>
+                <option value="+61">AUS (+61)</option>
+                <option value="+49">DEU (+49)</option>
+              </select>
+              <input id="mobileNumber" name="mobileNumber" class="mobile-input" inputmode="numeric" placeholder="5xx xxx xxxx" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
+              <label for="address">Address (optional)</label>
+              <input id="address" name="address" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="cancel" class="big-btn">Cancel</button>
+            <button type="submit" class="big-btn">Create</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      function getPlayers(){ try{ const raw = localStorage.getItem('players'); return raw?JSON.parse(raw):[] }catch(e){return[]} }
+      function savePlayers(list){
+        try{
+          const prev = localStorage.getItem('players');
+          if(prev) localStorage.setItem('players_backup', prev);
+          localStorage.setItem('players', JSON.stringify(list||[]));
+          localStorage.setItem('players_backup_ts', new Date().toISOString());
+        }catch(e){ console.error('savePlayers error', e); }
+      }
+      function getCurrentUser(){ try{ const raw = localStorage.getItem('currentUser'); return raw?JSON.parse(raw):{id:'main',name:'Main Admin',role:'admin'}}catch(e){return {id:'main',name:'Main Admin',role:'admin'}} }
+
+      function padNum(n, width=3){ const s = String(n); return s.padStart(width, '0'); }
+
+      function nextReg(){
+        const list = getPlayers();
+        let max = 0; 
+        list.forEach(p=>{ 
+          const reg = (p.reg||'').replace(/^P/i, '').replace(/^0+/,'');
+          const v = parseInt(reg)||0; 
+          if(v>max) max=v;
+        });
+        return 'P' + padNum(max+1, 4);
+      }
+
+      // initialize
+      document.addEventListener('DOMContentLoaded', ()=>{
+        const cur = getCurrentUser();
+        const regEl = document.getElementById('reg');
+        const homeClubEl = document.getElementById('homeClub');
+        // derive display club name from currentUser (e.g. 'Club: Klassis' -> 'Klassis')
+        let clubName = cur.name;
+        if(cur.name && cur.name.includes(':')) clubName = cur.name.split(':').pop().trim();
+        homeClubEl.value = clubName;
+
+        // detect edit mode via query param ?edit=<index>
+        const params = new URLSearchParams(window.location.search);
+        const editParam = params.get('edit');
+        let editIndex = null;
+        let editMode = false;
+        if(editParam !== null){
+          const i = parseInt(editParam,10);
+          if(!isNaN(i)){
+            const players = getPlayers();
+            if(players[i]){
+              editIndex = i; editMode = true;
+            }
+          }
+        }
+
+        if(editMode){
+          // populate form with existing player
+          const players = getPlayers();
+          const p = players[editIndex];
+          document.querySelector('h2').textContent = 'Modify Player';
+          regEl.value = p.reg || nextReg();
+          document.getElementById('firstName').value = p.firstName || '';
+          document.getElementById('lastName').value = p.lastName || '';
+          document.getElementById('dob').value = p.dob || '';
+          document.getElementById('gender').value = p.gender || '';
+          document.getElementById('idNo').value = p.idNo || '';
+          // lock ID on edit
+          document.getElementById('idNo').readOnly = true;
+          document.getElementById('email').value = p.email || '';
+          // mobile: split country code and raw digits if available
+          if(p.mobileRaw){
+            // try to detect country code from p.mobile if present
+            if(p.mobile && p.mobile.indexOf(' ')>0){
+              const parts = p.mobile.split(' ');
+              const code = parts[0];
+              const idx = Array.from(document.getElementById('countryCode').options).find(o=>o.value===code);
+              if(idx) document.getElementById('countryCode').value = code;
+            }
+            document.getElementById('mobileNumber').value = formatPhoneDigits(p.mobileRaw);
+          } else if(p.mobile){
+            // fallback: attempt to extract digits
+            const raw = p.mobile.replace(/\D/g,'');
+            document.getElementById('mobileNumber').value = formatPhoneDigits(raw);
+          }
+          document.getElementById('address').value = p.address || '';
+        } else {
+          regEl.value = nextReg();
+        }
+
+        document.getElementById('cancel').addEventListener('click', ()=>{ window.location.href = 'index.html' });
+
+        const mobileEl = document.getElementById('mobileNumber');
+        const countryEl = document.getElementById('countryCode');
+
+        function formatPhoneDigits(digits){
+          // format as 3-3-4 (e.g. 5xx xxx xxxx) when possible
+          if(!digits) return '';
+          const d = digits.replace(/\D/g,'');
+          if(d.length <= 3) return d;
+          if(d.length <= 6) return d.slice(0,3) + ' ' + d.slice(3);
+          return d.slice(0,3) + ' ' + d.slice(3,6) + ' ' + d.slice(6,10);
+        }
+
+        // enforce digits-only and format display while typing
+        mobileEl.addEventListener('input', (ev)=>{
+          const raw = mobileEl.value.replace(/\D/g,'');
+          const formatted = formatPhoneDigits(raw);
+          mobileEl.value = formatted;
+        });
+
+        // ID No: digits only
+        const idEl = document.getElementById('idNo');
+        idEl.addEventListener('input', ()=>{ idEl.value = idEl.value.replace(/\D/g,'').slice(0,11) });
+
+        // Duplicate-name modal elements
+        const dupeModal = document.getElementById('dupe-modal');
+        const dupeList = document.getElementById('dupe-list');
+        const dupeNot = document.getElementById('dupe-not');
+        const dupeYes = document.getElementById('dupe-yes');
+
+        function closeDupeModal(){ dupeModal.style.display='none'; dupeList.innerHTML=''; }
+
+        function showDupeModal(matches){
+          dupeList.innerHTML = '';
+          matches.forEach(m=>{
+            const div = document.createElement('div');
+            div.style.padding='8px'; div.style.borderBottom='1px solid #eef2ff';
+            div.innerHTML = `<strong>Reg:</strong> ${escapeHtml(m.reg||'')} &nbsp; <strong>Name:</strong> ${escapeHtml(((m.firstName||'')+' '+(m.lastName||'')).trim())} <br><strong>ID:</strong> ${escapeHtml(m.idNo||'')} &nbsp; <strong>Mobile:</strong> ${escapeHtml(m.mobile||'')}`;
+            dupeList.appendChild(div);
+          });
+          dupeModal.style.display='flex';
+        }
+
+        // When user confirms 'Yes this is him/her' -> cancel registration (redirect to players list)
+        dupeYes.addEventListener('click', ()=>{
+          closeDupeModal();
+          showMessage('success','Existing player selected. Redirecting to players list...');
+          setTimeout(()=>{ window.location.href = 'index.html' }, 700);
+        });
+
+        // When user clicks 'This is not him/her' -> close modal and let them continue
+        dupeNot.addEventListener('click', ()=>{ closeDupeModal(); dupeConfirmed = true; document.getElementById('firstName').focus(); });
+
+        let dupeConfirmed = false;
+        // perform duplicate-name check (called after entering first+last name)
+        function checkNameDuplicates(){
+          if(editMode) return false; // don't check in edit mode
+          clearMessages();
+          const f = (document.getElementById('firstName').value||'').trim().toLowerCase();
+          const l = (document.getElementById('lastName').value||'').trim().toLowerCase();
+          console.log('Checking for duplicates:', f, l);
+          if(!f || !l) return false;
+          const players = getPlayers();
+          const matches = [];
+          for(let i=0;i<players.length;i++){
+            const p = players[i];
+            const pFirst = (p.firstName||'').toLowerCase();
+            const pLast = (p.lastName||'').toLowerCase();
+            const pTokens = ((p.firstName||'') + ' ' + (p.lastName||'')).toLowerCase().split(/\s+/).filter(Boolean);
+            const newTokens = (f + ' ' + l).toLowerCase().split(/\s+/).filter(Boolean);
+            // require last name match and some token overlap
+            if(pLast && l && pLast === l){
+              const intersection = pTokens.filter(t=> newTokens.includes(t));
+              if(intersection.length>0 || pTokens.join(' ').includes(newTokens.join(' ')) || newTokens.join(' ').includes(pTokens.join(' '))){
+                matches.push(p);
+              }
+            }
+          }
+          console.log('Duplicate matches found:', matches);
+          if(matches.length>0 && !dupeConfirmed) {
+            showDupeModal(matches);
+            return true; // found matches, modal shown
+          }
+          return false; // no matches or already confirmed
+        }
+
+        dupeNot.addEventListener('click', ()=>{ closeDupeModal(); dupeConfirmed = true; document.getElementById('firstName').focus(); });
+
+        // trigger duplicate check after user leaves name fields or types
+        let dupeCheckTimeout = null;
+        function scheduleDupeCheck(){
+          clearTimeout(dupeCheckTimeout);
+          dupeCheckTimeout = setTimeout(checkNameDuplicates, 250);
+        }
+        document.getElementById('firstName').removeEventListener('input', scheduleDupeCheck);
+        document.getElementById('lastName').removeEventListener('input', scheduleDupeCheck);
+        document.getElementById('firstName').addEventListener('blur', function(){ /* no-op */ });
+        document.getElementById('lastName').addEventListener('blur', checkNameDuplicates);
+
+        // Inline message helpers
+        const msgContainer = document.getElementById('form-messages');
+        function clearMessages(){ msgContainer.innerHTML = '' }
+        function showMessage(type, text){
+          clearMessages();
+          const d = document.createElement('div');
+          d.textContent = text;
+          d.style.padding = '10px';
+          d.style.borderRadius = '6px';
+          d.style.marginBottom = '6px';
+          if(type==='error'){ d.style.background = '#fee2e2'; d.style.color = '#991b1b'; d.style.border = '1px solid #fecaca' }
+          else if(type==='warning'){ d.style.background = '#fff7ed'; d.style.color = '#92400e'; d.style.border = '1px solid #ffd8a8' }
+          else if(type==='success'){ d.style.background = '#ecfccb'; d.style.color = '#365314'; d.style.border = '1px solid #bbf7d0' }
+          msgContainer.appendChild(d);
+        }
+
+        // allow pasting digits-only
+        mobileEl.addEventListener('paste', (ev)=>{
+          ev.preventDefault();
+          const text = (ev.clipboardData || window.clipboardData).getData('text') || '';
+          const digits = text.replace(/\D/g,'');
+          mobileEl.value = formatPhoneDigits(digits);
+        });
+
+        document.getElementById('create-player-form').addEventListener('submit', (e)=>{
+          e.preventDefault();
+          // If duplicate modal should show, block submit
+          if(checkNameDuplicates()) return;
+          const countryCode = countryEl.value;
+            const mobileFormatted = mobileEl.value.trim();
+            const mobileRaw = mobileFormatted.replace(/\D/g,'');
+
+            // per-country expected lengths (number of digits without country code)
+            const countryLengths = {
+              '+90': 10, // Turkey
+              '+1': 10,  // USA/Canada
+              '+44': 10, // UK (common mobile length)
+              '+61': 9,  // Australia (mobile w/o leading 0 often 9)
+              '+49': 11  // Germany (varies, using 11 as common)
+            };
+            const expected = countryLengths[countryCode];
+
+          // normalize names: capitalize first letter of each word
+          function capitalizeWords(s){ return s.split(/\s+/).filter(Boolean).map(w=> w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') }
+          const firstRaw = document.getElementById('firstName').value.trim();
+          const lastRaw = document.getElementById('lastName').value.trim();
+          const first = capitalizeWords(firstRaw);
+          const last = capitalizeWords(lastRaw);
+          const data = {
+            reg: document.getElementById('reg').value.trim(),
+            firstName: first,
+            lastName: last,
+            name: (first + ' ' + last).trim(),
+            club: document.getElementById('homeClub').value.trim(),
+            dob: document.getElementById('dob').value,
+            gender: document.getElementById('gender').value,
+            idNo: document.getElementById('idNo').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            mobile: countryCode + ' ' + mobileFormatted,
+            mobileRaw: mobileRaw,
+            address: document.getElementById('address').value.trim()
+          };
+
+          // validate required
+          const required = ['reg','firstName','lastName','club','dob','gender','idNo','email'];
+          // mobile handled separately
+          if(!mobileRaw || mobileRaw.length < 7){ showMessage('error','Please enter a valid mobile number (digits only)'); return }
+          if(expected){
+            if(mobileRaw.length !== expected){
+              showMessage('error','Mobile number should be ' + expected + ' digits for ' + countryEl.options[countryEl.selectedIndex].text);
+              return;
+            }
+          } else {
+            // when country not in mapping, require at least 7 and at most 15 digits
+            if(mobileRaw.length < 7 || mobileRaw.length > 15){ showMessage('error','Please enter a valid mobile number (7-15 digits)'); return }
+          }
+          for(const k of required){ if(!data[k] || data[k].length===0){ showMessage('error','Please fill: '+k); return } }
+          // ID No exact length
+          if(!/^[0-9]{11}$/.test(data.idNo)){ showMessage('error','ID No must be exactly 11 digits'); return }
+
+          // simple email check
+          const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+          if(!emailRe.test(data.email)){ showMessage('error','Please enter a valid email'); return }
+
+          // duplicate ID check (blocking)
+          const players = getPlayers();
+          const curUser = getCurrentUser();
+          const duplicateById = players.find((p,idx)=> p.idNo === data.idNo && (!editMode || idx !== editIndex));
+          if(duplicateById){ showMessage('error','A player with this ID No already exists (Reg: ' + (duplicateById.reg||'') + ').'); return }
+
+          // name-similarity check is now handled by modal, so skip warning
+          if(editMode && editIndex!==null){
+            // overwrite existing
+            const existing = players[editIndex] || {};
+            players[editIndex] = Object.assign(existing, Object.assign({ owner: existing.owner || curUser.id }, data));
+            savePlayers(players);
+            showMessage('success','Player updated');
+            dupeConfirmed = false;
+            setTimeout(()=>{ window.location.href = 'index.html' }, 700);
+          } else {
+            players.push(Object.assign({ owner: curUser.id, importedBy: [] }, data));
+            savePlayers(players);
+            showMessage('success','Player created');
+            dupeConfirmed = false;
+            setTimeout(()=>{ window.location.href = 'index.html' }, 700);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

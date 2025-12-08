@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Documents</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .documents-container { max-width: 1000px; margin: 36px auto; padding: 24px; }
+      .documents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 32px; }
+      .document-card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); cursor: pointer; transition: all 0.2s; text-align: center; border: 2px solid transparent; }
+      .document-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(2,6,23,0.12); border-color: var(--accent); }
+      .document-icon { font-size: 48px; margin-bottom: 16px; }
+      .document-title { font-size: 18px; font-weight: 600; color: #1e293b; margin: 0; }
+      .document-description { font-size: 14px; color: #64748b; margin-top: 8px; }
+      .btn-back { background: white; color: #0b6efd; border: 1px solid #e6e9ef; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <main class="documents-container">
+      <header style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <div>
+          <h1>Documents</h1>
+          <p class="lead" id="tournament-name">Generate and view tournament documents</p>
+        </div>
+        <a href="index.html" class="btn-back">Back to Tournaments</a>
+      </header>
+
+      <div class="documents-grid">
+        <div class="document-card" id="card-draw-list">
+          <div class="document-icon">📋</div>
+          <h3 class="document-title">Draw List</h3>
+          <p class="document-description">View and print flight/pairing sheets</p>
+        </div>
+
+        <div class="document-card" id="card-categories">
+          <div class="document-icon">🏆</div>
+          <h3 class="document-title">Categories</h3>
+          <p class="document-description">Category definitions and players</p>
+        </div>
+
+        <div class="document-card" id="card-results">
+          <div class="document-icon">📊</div>
+          <h3 class="document-title">Results</h3>
+          <p class="document-description">Final scores and standings</p>
+        </div>
+
+        <div class="document-card" id="card-pace-of-play">
+          <div class="document-icon">⏱️</div>
+          <h3 class="document-title">Pace of Play</h3>
+          <p class="document-description">Track group timing and pace</p>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function init() {
+        const tournaments = getTournaments();
+        const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+
+        if (!tournament) {
+          alert('Tournament not found.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = `Documents for ${tournament.name}`;
+      }
+
+      // Card click handlers
+      document.getElementById('card-draw-list').addEventListener('click', () => {
+        window.location.href = `draw_list.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      });
+
+      document.getElementById('card-categories').addEventListener('click', () => {
+        // TODO: Navigate to categories document page
+        alert('Categories Document - Coming soon!');
+      });
+
+      document.getElementById('card-results').addEventListener('click', () => {
+        // TODO: Navigate to results document page
+        window.location.href = `results.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      });
+
+      document.getElementById('card-pace-of-play').addEventListener('click', () => {
+        window.location.href = `pace_of_play.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      });
+
+      init();
+    </script>
+  </body>
+</html>

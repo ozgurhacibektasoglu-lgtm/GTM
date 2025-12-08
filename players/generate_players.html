@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Generate Players</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; }
+    button { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; }
+    .success { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Generate Random Players</h1>
+  <p>This will create 150 random players for testing.</p>
+  <button onclick="generatePlayers()">Generate Players</button>
+  <div id="result"></div>
+  
+  <script>
+    function generatePlayers() {
+      const maleFirstNames = ['Ahmet', 'Mehmet', 'Ali', 'Can', 'Burak', 'Emre', 'Cem', 'Tolga', 'Murat', 'Berk', 'Kaan', 'Hakan', 'Kemal', 'İbrahim', 'Okan', 'Serkan', 'Ercan', 'Onur', 'Barış', 'Mert', 'Furkan', 'Tuncay', 'Volkan', 'Yusuf', 'Sinan', 'Koray', 'Engin', 'Erhan', 'Özgür', 'Tamer'];
+      const femaleFirstNames = ['Ayşe', 'Fatma', 'Zeynep', 'Elif', 'Ece', 'Selin', 'Defne', 'Leyla', 'Esra', 'Özlem', 'Merve', 'Gizem', 'Ebru', 'Hatice', 'Derya', 'Şebnem', 'Pınar', 'Burcu', 'Canan', 'Deniz', 'Dilek', 'Emine', 'Filiz', 'Gül', 'Hülya', 'İpek', 'Nalan', 'Sevgi', 'Tülay', 'Yelda'];
+      const lastNames = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Aydın', 'Özkan', 'Arslan', 'Doğan', 'Kılıç', 'Koç', 'Kurt', 'Özdemir', 'Çetin', 'Erdoğan', 'Polat', 'Aksoy', 'Güneş', 'Tunç', 'Acar', 'Çakır', 'Şimşek', 'Yurt', 'Kaplan', 'Aksu', 'Baş', 'Dal', 'Esen', 'Fidan'];
+      const clubs = ['Klassis', 'Belek', 'Cornelia', 'Carya', 'Sueno', 'Gloria', 'Lykia', 'Ankara', 'Kemer', 'IGK'];
+      
+      const players = [];
+      
+      for (let i = 1; i <= 150; i++) {
+        const gender = Math.random() < 0.5 ? 'male' : 'female';
+        const firstName = gender === 'male' 
+          ? maleFirstNames[Math.floor(Math.random() * maleFirstNames.length)]
+          : femaleFirstNames[Math.floor(Math.random() * femaleFirstNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const club = clubs[Math.floor(Math.random() * clubs.length)];
+        const hcp = Math.round((Math.random() * 35 - 2) * 10) / 10; // -2 to 33
+        const year = 1970 + Math.floor(Math.random() * 40); // 1970-2010
+        const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+        const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+        const dob = `${year}-${month}-${day}`;
+        
+        players.push({
+          reg: `P${String(i).padStart(4, '0')}`,
+          firstName: firstName,
+          lastName: lastName,
+          gender: gender,
+          dob: dob,
+          hcp: hcp,
+          club: club,
+          owner: 'main',
+          mobile: `+90 5${Math.floor(Math.random() * 900000000 + 100000000)}`,
+          email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`
+        });
+      }
+      
+      localStorage.setItem('players', JSON.stringify(players));
+      
+      document.getElementById('result').innerHTML = `<div class="success">✅ Successfully created ${players.length} players!<br><br><a href="http://localhost:8080/players/index.html">Open Players Page</a></div>`;
+    }
+  </script>
+</body>
+</html>

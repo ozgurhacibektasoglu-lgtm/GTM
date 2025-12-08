@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Debug Storage</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; border-radius: 8px; }
+    button { padding: 10px 20px; margin: 10px 5px 10px 0; cursor: pointer; }
+    .danger { background: #dc2626; color: white; border: none; border-radius: 6px; }
+    .primary { background: #0b6efd; color: white; border: none; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>LocalStorage Debug</h1>
+  
+  <button class="primary" onclick="loadData()">Refresh Data</button>
+  <button class="danger" onclick="clearAll()">Clear ALL localStorage</button>
+  
+  <h2>All localStorage Keys</h2>
+  <pre id="keys-output"></pre>
+  
+  <h2>Tournaments Data</h2>
+  <pre id="tournaments-output"></pre>
+  
+  <h2>All Data</h2>
+  <pre id="all-output"></pre>
+
+  <script>
+    function loadData() {
+      // Show all keys
+      const keysOutput = document.getElementById('keys-output');
+      keysOutput.textContent = `Total keys: ${localStorage.length}\n\n`;
+      
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        keys.push(localStorage.key(i));
+      }
+      keysOutput.textContent += keys.join('\n') || 'No keys found';
+
+      // Show tournaments specifically
+      const tournamentsOutput = document.getElementById('tournaments-output');
+      const tournamentsRaw = localStorage.getItem('tournaments');
+      if (tournamentsRaw) {
+        try {
+          const tournaments = JSON.parse(tournamentsRaw);
+          tournamentsOutput.textContent = JSON.stringify(tournaments, null, 2);
+        } catch (e) {
+          tournamentsOutput.textContent = 'Error parsing: ' + e.message + '\n\nRaw value:\n' + tournamentsRaw;
+        }
+      } else {
+        tournamentsOutput.textContent = 'No "tournaments" key found in localStorage';
+      }
+
+      // Show all data
+      const allOutput = document.getElementById('all-output');
+      const allData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        try {
+          allData[key] = JSON.parse(value);
+        } catch (e) {
+          allData[key] = value;
+        }
+      }
+      allOutput.textContent = JSON.stringify(allData, null, 2) || 'No data in localStorage';
+    }
+
+    function clearAll() {
+      if (confirm('This will delete ALL data from localStorage. Are you sure?')) {
+        localStorage.clear();
+        alert('All localStorage cleared!');
+        loadData();
+      }
+    }
+
+    // Load on page load
+    loadData();
+  </script>
+</body>
+</html>
