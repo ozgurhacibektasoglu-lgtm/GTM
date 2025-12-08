@@ -86,13 +86,13 @@ function listenToFirebase(path, callback) {
   return ref; // Return reference so it can be unsubscribed later
 }
 
-// Courses sync functions
-function saveCourses(courses) {
+// Courses sync functions - used by courses pages
+function saveCoursesToStorage(courses) {
   localStorage.setItem('courses', JSON.stringify(courses || []));
   syncToFirebase('courses', courses || []);
 }
 
-function getCourses() {
+function getCoursesFromStorage() {
   try {
     const raw = localStorage.getItem('courses');
     return raw ? JSON.parse(raw) : [];
@@ -108,16 +108,16 @@ async function loadCoursesFromFirebase() {
     localStorage.setItem('courses', JSON.stringify(data));
     return data;
   }
-  return getCourses();
+  return getCoursesFromStorage();
 }
 
-// Players sync functions
-function savePlayers(players) {
+// Players sync functions - used by players pages
+function savePlayersToStorage(players) {
   localStorage.setItem('players', JSON.stringify(players || []));
   syncToFirebase('players', players || []);
 }
 
-function getPlayers() {
+function getPlayersFromStorage() {
   try {
     const raw = localStorage.getItem('players');
     return raw ? JSON.parse(raw) : [];
@@ -133,16 +133,16 @@ async function loadPlayersFromFirebase() {
     localStorage.setItem('players', JSON.stringify(data));
     return data;
   }
-  return getPlayers();
+  return getPlayersFromStorage();
 }
 
-// Tournaments sync functions
-function saveTournaments(tournaments) {
+// Tournaments sync functions - used by tournaments pages
+function saveTournamentsToStorage(tournaments) {
   localStorage.setItem('tournaments', JSON.stringify(tournaments || []));
   syncToFirebase('tournaments', tournaments || []);
 }
 
-function getTournaments() {
+function getTournamentsFromStorage() {
   try {
     const raw = localStorage.getItem('tournaments');
     return raw ? JSON.parse(raw) : [];
@@ -158,7 +158,7 @@ async function loadTournamentsFromFirebase() {
     localStorage.setItem('tournaments', JSON.stringify(data));
     return data;
   }
-  return getTournaments();
+  return getTournamentsFromStorage();
 }
 
 // Current User sync functions
@@ -186,9 +186,11 @@ function syncAllToFirebase() {
 
   console.log('Starting full sync to Firebase...');
   
-  const courses = getCourses();
-  const players = getPlayers();
-  const tournaments = getTournaments();
+  // Read directly from localStorage
+  let courses = [], players = [], tournaments = [];
+  try { courses = JSON.parse(localStorage.getItem('courses') || '[]'); } catch(e) {}
+  try { players = JSON.parse(localStorage.getItem('players') || '[]'); } catch(e) {}
+  try { tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]'); } catch(e) {}
   
   return Promise.all([
     syncToFirebase('courses', courses),
