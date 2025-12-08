@@ -553,9 +553,31 @@
       }
 
       /* Prevent page breaks inside groups */
+      .print-schedule-table {
+        border-collapse: collapse;
+      }
+
       .print-schedule-table tbody.group-rows {
-        break-inside: avoid;
-        page-break-inside: avoid;
+        display: block;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        -webkit-region-break-inside: avoid !important;
+      }
+
+      .print-schedule-table thead {
+        display: table-header-group;
+      }
+
+      .print-schedule-table tbody.group-rows tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      .print-schedule-table thead tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
       }
 
       .print-schedule-table .first-player-row td {
