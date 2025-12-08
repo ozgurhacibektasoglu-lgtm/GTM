@@ -130,12 +130,42 @@
           localStorage.setItem('players', JSON.stringify(list || []));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
           
-          // Sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
-            syncToFirebase('players', list || []);
+          // Sync to Firebase automatically
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('players', list || []).then(function() {
+              console.log('✓ Players synced to cloud');
+            });
           }
         } catch(e) { 
           console.error('savePlayers error', e); 
+        }
+      }
+      
+      // Real-time listener for Firebase updates
+      function setupRealtimeSync() {
+        if (typeof firebase === 'undefined' || !firebase.database) {
+          console.log('Firebase not available for realtime sync');
+          return;
+        }
+        
+        try {
+          firebase.database().ref('players').on('value', function(snapshot) {
+            const data = snapshot.val();
+            if (data && Array.isArray(data)) {
+              const currentLocal = localStorage.getItem('players');
+              const currentData = currentLocal ? JSON.parse(currentLocal) : [];
+              
+              // Only update if Firebase has different data
+              if (JSON.stringify(data) !== JSON.stringify(currentData)) {
+                console.log('📥 Received update from cloud:', data.length, 'players');
+                localStorage.setItem('players', JSON.stringify(data));
+                loadPlayers(); // Refresh the display
+              }
+            }
+          });
+          console.log('✓ Real-time sync enabled');
+        } catch(e) {
+          console.error('Realtime sync setup failed:', e);
         }
       }
 
@@ -393,9 +423,10 @@
       loadPlayers();
       renderSortIndicators();
       
-      // NOTE: We NO longer auto-load from Firebase on page load
-      // This prevents Firebase from overwriting newly imported local data
-      // Use "Pull from Cloud" button on home page to manually sync from Firebase
+      // Start real-time sync with Firebase after a short delay
+      setTimeout(function() {
+        setupRealtimeSync();
+      }, 1500);
 
       // Replace history so back button goes to main page instead of previous search page
       history.replaceState(null, '', location.href);
