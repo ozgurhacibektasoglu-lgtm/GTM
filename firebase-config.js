@@ -43,12 +43,15 @@ function syncToFirebase(path, data) {
     return Promise.resolve();
   }
   
+  console.log(`Syncing to Firebase: ${path}, items: ${Array.isArray(data) ? data.length : 'N/A'}`);
+  
   return db.ref(path).set(data)
     .then(() => {
-      console.log(`Synced to Firebase: ${path}`);
+      console.log(`✓ Successfully synced to Firebase: ${path}`);
     })
     .catch((error) => {
-      console.error(`Firebase sync error for ${path}:`, error);
+      console.error(`✗ Firebase sync error for ${path}:`, error);
+      alert('Warning: Failed to sync to cloud. Changes saved locally only.');
     });
 }
 

@@ -577,28 +577,27 @@
 
       // Initialize: Load from Firebase if available, otherwise use localStorage
       async function initializeCourses() {
-        if (syncEnabled) {
-          const firebaseCourses = await loadCoursesFromFirebase();
-          if (firebaseCourses && firebaseCourses.length > 0) {
-            console.log('Loaded courses from Firebase');
+        console.log('Initializing courses, syncEnabled:', syncEnabled);
+        
+        // Try to load from Firebase
+        if (typeof loadCoursesFromFirebase !== 'undefined') {
+          try {
+            const firebaseCourses = await loadCoursesFromFirebase();
+            if (firebaseCourses && firebaseCourses.length > 0) {
+              console.log('✓ Loaded', firebaseCourses.length, 'courses from Firebase');
+            } else {
+              console.log('No courses found in Firebase, using localStorage');
+            }
+          } catch(e) {
+            console.log('Firebase load failed, using localStorage:', e);
           }
         }
+        
         loadCourses();
       }
 
-      // Call initialization
-      if (syncEnabled) {
-        initializeCourses();
-      } else {
-        // If Firebase not ready yet, wait a bit and try, otherwise just load from localStorage
-        setTimeout(() => {
-          if (syncEnabled) {
-            initializeCourses();
-          } else {
-            loadCourses();
-          }
-        }, 1000);
-      }
+      // Wait a moment for Firebase to initialize, then load
+      setTimeout(initializeCourses, 1500);
 
       // Search and filter functionality
       document.getElementById('search-input').addEventListener('input', loadCourses);

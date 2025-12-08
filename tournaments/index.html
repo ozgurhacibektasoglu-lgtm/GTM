@@ -298,33 +298,30 @@
 
       // Initialize: Load from Firebase if available
       async function initializeTournaments() {
-        if (syncEnabled) {
-          const firebaseTournaments = await loadTournamentsFromFirebase();
-          if (firebaseTournaments && firebaseTournaments.length > 0) {
-            console.log('Loaded tournaments from Firebase');
+        console.log('Initializing tournaments, syncEnabled:', syncEnabled);
+        
+        // Try to load from Firebase
+        if (typeof loadTournamentsFromFirebase !== 'undefined') {
+          try {
+            const firebaseTournaments = await loadTournamentsFromFirebase();
+            if (firebaseTournaments && firebaseTournaments.length > 0) {
+              console.log('✓ Loaded', firebaseTournaments.length, 'tournaments from Firebase');
+            } else {
+              console.log('No tournaments found in Firebase, using localStorage');
+            }
+          } catch(e) {
+            console.log('Firebase load failed, using localStorage:', e);
           }
         }
+        
         loadTournaments();
         setupSorting();
         renderSortIndicators();
         restoreLastSelection();
       }
 
-      // Call initialization
-      if (syncEnabled) {
-        initializeTournaments();
-      } else {
-        setTimeout(() => {
-          if (syncEnabled) {
-            initializeTournaments();
-          } else {
-            loadTournaments();
-            setupSorting();
-            renderSortIndicators();
-            restoreLastSelection();
-          }
-        }, 1000);
-      }
+      // Wait a moment for Firebase to initialize, then load
+      setTimeout(initializeTournaments, 1500);
 
       // Button event listeners
       document.getElementById('btn-new-tournament').addEventListener('click', () => {

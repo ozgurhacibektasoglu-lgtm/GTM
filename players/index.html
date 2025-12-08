@@ -359,29 +359,28 @@
       
       // Initialize: Load from Firebase if available
       async function initializePlayers() {
-        if (syncEnabled) {
-          const firebasePlayers = await loadPlayersFromFirebase();
-          if (firebasePlayers && firebasePlayers.length > 0) {
-            console.log('Loaded players from Firebase');
+        console.log('Initializing players, syncEnabled:', syncEnabled);
+        
+        // Try to load from Firebase
+        if (typeof loadPlayersFromFirebase !== 'undefined') {
+          try {
+            const firebasePlayers = await loadPlayersFromFirebase();
+            if (firebasePlayers && firebasePlayers.length > 0) {
+              console.log('✓ Loaded', firebasePlayers.length, 'players from Firebase');
+            } else {
+              console.log('No players found in Firebase, using localStorage');
+            }
+          } catch(e) {
+            console.log('Firebase load failed, using localStorage:', e);
           }
         }
+        
         loadPlayers();
         renderSortIndicators();
       }
 
-      // Call initialization
-      if (syncEnabled) {
-        initializePlayers();
-      } else {
-        setTimeout(() => {
-          if (syncEnabled) {
-            initializePlayers();
-          } else {
-            loadPlayers();
-            renderSortIndicators();
-          }
-        }, 1000);
-      }
+      // Wait a moment for Firebase to initialize, then load
+      setTimeout(initializePlayers, 1500);
 
       // Replace history so back button goes to main page instead of previous search page
       history.replaceState(null, '', location.href);
