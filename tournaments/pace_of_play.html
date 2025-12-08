@@ -976,7 +976,9 @@
 
     function renderTimeTable() {
       var tbody = document.getElementById('time-table-body');
+      // Always use current courseData.pars for display
       var pars = (courseData && courseData.pars) || [4, 4, 3, 4, 5, 4, 3, 4, 4, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+      console.log('renderTimeTable using pars:', pars);
       var html = '';
 
       html += '<tr><td class="row-header">Par</td>';
