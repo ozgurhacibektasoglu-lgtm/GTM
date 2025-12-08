@@ -177,6 +177,58 @@ function getCurrentUser() {
   }
 }
 
+// Manual sync all data to Firebase
+function syncAllToFirebase() {
+  if (!syncEnabled || !db) {
+    alert('Firebase is not connected. Please refresh the page.');
+    return Promise.resolve();
+  }
+
+  console.log('Starting full sync to Firebase...');
+  
+  const courses = getCourses();
+  const players = getPlayers();
+  const tournaments = getTournaments();
+  
+  return Promise.all([
+    syncToFirebase('courses', courses),
+    syncToFirebase('players', players),
+    syncToFirebase('tournaments', tournaments)
+  ])
+  .then(() => {
+    console.log('✓ Full sync completed');
+    alert(`Synced to cloud:\n${courses.length} courses\n${players.length} players\n${tournaments.length} tournaments`);
+  })
+  .catch((error) => {
+    console.error('Sync failed:', error);
+    alert('Sync failed: ' + error.message);
+  });
+}
+
+// Load all data from Firebase
+function loadAllFromFirebase() {
+  if (!syncEnabled || !db) {
+    console.log('Firebase not available for loading');
+    return Promise.resolve();
+  }
+
+  console.log('Loading all data from Firebase...');
+  
+  return Promise.all([
+    loadCoursesFromFirebase(),
+    loadPlayersFromFirebase(),
+    loadTournamentsFromFirebase()
+  ])
+  .then(() => {
+    console.log('✓ All data loaded from Firebase');
+    window.location.reload();
+  })
+  .catch((error) => {
+    console.error('Load failed:', error);
+    alert('Failed to load from cloud: ' + error.message);
+  });
+}
+
 // Initialize Firebase on load
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
