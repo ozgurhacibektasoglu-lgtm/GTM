@@ -89,6 +89,7 @@
         <button class="btn" id="btn-results">Results</button>
         <button class="btn" id="btn-documents">Documents</button>
         <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
+        <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
         <a href="../index.html" class="btn btn-back">Back</a>
       </div>
       
@@ -482,6 +483,26 @@
         
         document.getElementById('export-textarea').value = JSON.stringify(data);
         document.getElementById('export-modal').style.display = 'flex';
+      });
+
+      document.getElementById('btn-push-cloud').addEventListener('click', async () => {
+        if (typeof syncToFirebase === 'undefined') {
+          alert('Firebase not available. Please refresh the page.');
+          return;
+        }
+        
+        const tournaments = getTournaments();
+        if (tournaments.length === 0) {
+          alert('No tournaments to push.');
+          return;
+        }
+        
+        try {
+          await syncToFirebase('tournaments', tournaments);
+          alert('✅ ' + tournaments.length + ' tournament(s) pushed to cloud successfully!');
+        } catch (e) {
+          alert('❌ Failed to push to cloud: ' + e.message);
+        }
       });
 
       function copyExportData() {
