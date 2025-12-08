@@ -1579,19 +1579,24 @@
 
       function openTGFSearch() {
         var searchName = document.getElementById('tgf-search-name').value.trim();
+        
+        // Open TGF page FIRST (before any alerts) to avoid popup blocking
+        var baseUrl = 'https://scoring-tr.datagolf.pt/scripts/handicaps.asp?club=ALL&ack=6V35FTY88T&fedstatus=9';
+        var tgfWindow = window.open(baseUrl, '_blank');
+        
         if (!searchName) {
-          alert('Please enter a player name to search.');
+          alert('TGF page opened.\n\nEnter a player name in the "İsim:" field and click "ARA" to search.');
           return;
         }
         
-        var baseUrl = 'https://scoring-tr.datagolf.pt/scripts/handicaps.asp?club=ALL&ack=6V35FTY88T&fedstatus=9';
-        window.open(baseUrl, '_blank');
-        
-        alert('TGF page opened in a new tab.\n\n' +
-              '1. On that page, type "' + searchName + '" in the "İsim:" (Name) field\n' +
-              '2. Click "ARA" (Search) button\n' +
-              '3. Select and copy the player row(s) you want\n' +
-              '4. Come back here and paste in the text area');
+        // Show instructions after opening the window
+        setTimeout(function() {
+          alert('TGF page opened in a new tab.\n\n' +
+                '1. On that page, type "' + searchName + '" in the "İsim:" (Name) field\n' +
+                '2. Click "ARA" (Search) button\n' +
+                '3. Select and copy the player row(s) you want\n' +
+                '4. Come back here and paste in the text area');
+        }, 100);
       }
 
       function parseTgfData() {
