@@ -497,7 +497,7 @@
       }
     }
 
-    // Calculate which categories a player belongs to
+    // Calculate which categories a player belongs to (excluding result-only categories)
     function getPlayerCategories(player, tournament) {
       if (!tournament || !tournament.categories || tournament.categories.length === 0) {
         return [];
@@ -509,6 +509,9 @@
       const playerAge = player.age ? parseInt(player.age) : null;
       
       for (const cat of tournament.categories) {
+        // Skip result-only categories (like Gross, Junior, Senior)
+        if (cat.isResultOnly) continue;
+        
         // Check gender match
         const catGender = (cat.gender || '').toLowerCase();
         let genderMatch = false;
