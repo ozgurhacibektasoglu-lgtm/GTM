@@ -232,8 +232,7 @@
         const draws = getDraws();
         const roundDraw = draws[roundId] || [];
 
-        // Get round date
-        const roundIndex = tournament.meta?.roundIds?.indexOf(roundId) || 0;
+        // Get round date (roundIndex already declared above)
         const roundDate = tournament.meta?.roundsData?.[roundIndex]?.date || '';
 
         // Generate scorecards
