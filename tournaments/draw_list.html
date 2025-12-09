@@ -658,6 +658,21 @@
       return age;
     }
 
+    // Get category short name from tournament categories
+    function getCategoryShortName(categoryName, tournament) {
+      if (!categoryName || !tournament || !tournament.categories) return categoryName || '-';
+      
+      const category = tournament.categories.find(cat => cat.name === categoryName);
+      if (category && category.shortName) {
+        return category.shortName;
+      }
+      // Fallback: if no shortName, generate one
+      if (categoryName.length <= 8) {
+        return categoryName;
+      }
+      return categoryName.substring(0, 8);
+    }
+
     function saveOptions() {
       const options = {
         club: document.getElementById('opt-club').checked,
@@ -848,6 +863,9 @@
           }
           
           group.players.forEach((player, pIdx) => {
+            const categoryDisplay = player.categories && player.categories[0] 
+              ? getCategoryShortName(player.categories[0], tournament) 
+              : '-';
             html += `
               <tr class="${pIdx === 0 ? 'group-separator' : ''}">
                 ${pIdx === 0 ? `<td class="time-cell" rowspan="${groupSize}">${group.time || '-'}</td>` : ''}
@@ -857,7 +875,7 @@
                 ${showClub ? `<td>${player.club || player.homeClub || '-'}</td>` : ''}
                 ${showHcp ? `<td class="hcp-cell">${player.hcp || '-'}</td>` : ''}
                 ${showPhcp ? `<td class="phcp-cell">${calculatePlayingHcp(player, roundId)}</td>` : ''}
-                ${showCategory ? `<td class="category-cell">${(player.categories && player.categories[0]) || '-'}</td>` : ''}
+                ${showCategory ? `<td class="category-cell">${categoryDisplay}</td>` : ''}
                 ${showBuggy ? `<td class="buggy-cell" data-group="${idx}" data-player="${pIdx}">${groupBuggies[pIdx] || '-'}</td>` : ''}
               </tr>
             `;

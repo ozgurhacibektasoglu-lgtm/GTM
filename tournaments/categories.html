@@ -56,6 +56,9 @@
       .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
       .btn-secondary { background: #6b7280; }
       .btn-auto { background: linear-gradient(180deg, #059669, #047857); }
+      
+      /* Editable short name styling */
+      .short-name-cell:hover { background: #dbeafe; text-decoration: underline; }
     </style>
   </head>
   <body>
@@ -151,6 +154,7 @@
             <tr>
               <th style="width: 40px;"></th>
               <th>Category Name</th>
+              <th>Short Name</th>
               <th>Handicap Range</th>
               <th>Age Range</th>
               <th>Gender</th>
@@ -163,7 +167,7 @@
           </thead>
           <tbody id="categories-body">
             <tr>
-              <td colspan="9" style="text-align: center; color: #6b7280;">No categories yet. Add a category above.</td>
+              <td colspan="10" style="text-align: center; color: #6b7280;">No categories yet. Add a category above.</td>
             </tr>
           </tbody>
         </table>
@@ -686,7 +690,7 @@
 
         if (categories.length === 0) {
           const row = tbody.insertRow();
-          row.innerHTML = '<td colspan="8" style="text-align: center; color: #6b7280;">No categories yet. Add a category above.</td>';
+          row.innerHTML = '<td colspan="10" style="text-align: center; color: #6b7280;">No categories yet. Add a category above.</td>';
           return;
         }
 
@@ -710,9 +714,13 @@
             ? '<span style="display: inline-block; margin-left: 6px; padding: 2px 6px; font-size: 10px; background: #e0e7ff; color: #4338ca; border-radius: 4px; font-weight: 600;">RESULT-ONLY</span>'
             : '';
           
+          // Generate short name if not exists
+          const shortName = cat.shortName || generateShortName(cat.name);
+          
           row.innerHTML = `
             <td class="drag-handle">☰</td>
             <td>${escapeHtml(cat.name)}${resultOnlyBadge}</td>
+            <td class="short-name-cell" data-index="${index}" style="cursor: pointer; color: #0b6efd;" title="Click to edit">${escapeHtml(shortName)}</td>
             <td>${handicapRange}</td>
             <td>${ageRange}</td>
             <td>${gender}</td>
@@ -733,6 +741,9 @@
           row.addEventListener('dragend', handleDragEnd);
           row.addEventListener('click', () => selectCategory(index, row));
         });
+        
+        // Setup short name editing
+        setupShortNameEditing();
         
         // Update summary table
         updateSummaryTable();
@@ -774,6 +785,41 @@
         if (!str) return '';
         return String(str).replace(/[&"'<>]/g, function (s) {
           return ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[s];
+        });
+      }
+
+      // Generate short name for a category (max 8 chars, or full name if <= 8)
+      function generateShortName(name) {
+        if (!name) return '';
+        const trimmed = name.trim();
+        if (trimmed.length <= 8) {
+          return trimmed;
+        }
+        return trimmed.substring(0, 8);
+      }
+
+      // Edit short name - click handler
+      function setupShortNameEditing() {
+        document.querySelectorAll('.short-name-cell').forEach(cell => {
+          cell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const index = parseInt(this.dataset.index);
+            const categories = getCategories();
+            const cat = categories[index];
+            if (!cat) return;
+            
+            const currentShortName = cat.shortName || generateShortName(cat.name);
+            const newShortName = prompt('Enter short name (max 8 characters):', currentShortName);
+            
+            if (newShortName !== null) {
+              const trimmed = newShortName.trim().substring(0, 8);
+              if (trimmed) {
+                categories[index].shortName = trimmed;
+                saveCategories(categories);
+                loadCategories();
+              }
+            }
+          });
         });
       }
 
@@ -964,9 +1010,14 @@
         if (editingCategoryIndex !== null) {
           // Update existing category
           const existingCategory = categories[editingCategoryIndex];
+          // If name changed, regenerate shortName; otherwise keep existing
+          const shortName = (existingCategory.name === name && existingCategory.shortName) 
+            ? existingCategory.shortName 
+            : generateShortName(name);
           categories[editingCategoryIndex] = {
             name,
             code: existingCategory.code, // Keep the same code
+            shortName,
             handicapMin: handicapMin !== '' ? parseFloat(handicapMin) : undefined,
             handicapMax: handicapMax !== '' ? parseFloat(handicapMax) : undefined,
             ageMin: ageMin !== '' ? parseInt(ageMin) : undefined,
@@ -988,6 +1039,7 @@
           const newCategory = {
             name,
             code,
+            shortName: generateShortName(name),
             handicapMin: handicapMin !== '' ? parseFloat(handicapMin) : undefined,
             handicapMax: handicapMax !== '' ? parseFloat(handicapMax) : undefined,
             ageMin: ageMin !== '' ? parseInt(ageMin) : undefined,
@@ -1364,6 +1416,7 @@
           categories.push({
             name: catName,
             code: code,
+            shortName: generateShortName(catName),
             handicapMin: minHcp,
             handicapMax: maxHcp,
             gender: '',
@@ -1433,6 +1486,7 @@
             categories.push({
               name: catName,
               code: code,
+              shortName: generateShortName(catName),
               handicapMin: minHcp,
               handicapMax: maxHcp,
               gender: 'Male',
@@ -1471,6 +1525,7 @@
             categories.push({
               name: catName,
               code: code,
+              shortName: generateShortName(catName),
               handicapMin: minHcp,
               handicapMax: maxHcp,
               gender: 'Female',
