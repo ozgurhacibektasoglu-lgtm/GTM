@@ -1050,8 +1050,7 @@
         const untieCriteria = getUntieCriteria();
         const hasUntieCriteria = untieCriteria && untieCriteria.length > 0;
         
-        // Check if play-off results exist for this category
-        const tournament = getTournament();
+        // Check if play-off results exist for this category (tournament already declared above)
         const hasPlayOffResults = tournament?.playOffResults?.[categoryCode]?.length > 0;
         
         // Tiebreakers are active if either play-off results exist OR untie criteria are set
