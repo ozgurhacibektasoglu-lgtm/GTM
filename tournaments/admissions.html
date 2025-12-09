@@ -764,24 +764,32 @@
           currentRoundIndex = Math.max(0, roundIds.indexOf(roundId));
           currentRoundId = roundId;
         } else if (tournamentIdParam) {
-          // Fallback: find by tournament ID and select default round by date
+          // Fallback: find by tournament ID
           currentTournament = tournaments.find(t => t.tournamentId === tournamentIdParam);
           if (!currentTournament) {
             alert('Tournament not found.');
             window.location.href = 'index.html';
             return;
           }
-          const roundsData = currentTournament.meta?.roundsData || [];
-          const rIds = currentTournament.meta?.roundIds || [];
-          // Choose default round: latest on/after first, and up to today
-          let defaultIdx = 0;
-          const today = new Date(); today.setHours(0,0,0,0);
-          for (let i=0;i<roundsData.length;i++){
-            const d = roundsData[i]?.date ? new Date(roundsData[i].date) : null;
-            if (d){ d.setHours(0,0,0,0); if (today >= d) defaultIdx = i; else break; }
+          
+          // For match play tournaments, use tournamentId as roundId
+          if (currentTournament.type === 'match') {
+            currentRoundIndex = 0;
+            currentRoundId = currentTournament.tournamentId;
+          } else {
+            // For stroke play, select default round by date
+            const roundsData = currentTournament.meta?.roundsData || [];
+            const rIds = currentTournament.meta?.roundIds || [];
+            // Choose default round: latest on/after first, and up to today
+            let defaultIdx = 0;
+            const today = new Date(); today.setHours(0,0,0,0);
+            for (let i=0;i<roundsData.length;i++){
+              const d = roundsData[i]?.date ? new Date(roundsData[i].date) : null;
+              if (d){ d.setHours(0,0,0,0); if (today >= d) defaultIdx = i; else break; }
+            }
+            currentRoundIndex = defaultIdx;
+            currentRoundId = rIds[defaultIdx] || `${currentTournament.tournamentId}_R${defaultIdx+1}`;
           }
-          currentRoundIndex = defaultIdx;
-          currentRoundId = rIds[defaultIdx] || `${currentTournament.tournamentId}_R${defaultIdx+1}`;
         } else {
           alert('No round or tournament specified.');
           window.location.href = 'index.html';
