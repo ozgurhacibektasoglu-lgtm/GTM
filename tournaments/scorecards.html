@@ -149,10 +149,31 @@
         document.getElementById('tournament-name').textContent = `Scorecards for ${tournament.name}`;
         document.getElementById('back-link').href = `documents.html?tournamentId=${tournamentId}`;
 
+        console.log('Tournament data:', tournament);
+
         // Populate round selector
         const roundSelect = document.getElementById('round-select');
-        const roundIds = tournament.meta?.roundIds || [tournament.tournamentId + '-1'];
+        
+        // Try to get round IDs from different sources
+        let roundIds = tournament.meta?.roundIds;
+        
+        // Fallback: check if draws exist and use those round IDs
+        if (!roundIds || roundIds.length === 0) {
+          const draws = getDraws();
+          const drawKeys = Object.keys(draws).filter(key => key.startsWith(tournament.tournamentId));
+          if (drawKeys.length > 0) {
+            roundIds = drawKeys;
+          }
+        }
+        
+        // Final fallback: create a default round ID
+        if (!roundIds || roundIds.length === 0) {
+          roundIds = [tournament.tournamentId + '-1'];
+        }
+
         const roundsData = tournament.meta?.roundsData || [];
+
+        console.log('Round IDs:', roundIds);
 
         roundIds.forEach((rid, idx) => {
           const option = document.createElement('option');
@@ -179,19 +200,22 @@
         }
 
         // Load course data for this round
+        const courses = getCourses();
         const roundIndex = tournament.meta?.roundIds?.indexOf(roundId) || 0;
         const roundData = tournament.meta?.roundsData?.[roundIndex];
         
-        if (!roundData || !roundData.course) {
-          alert('Course not configured for this round');
+        // Try to get course from round data, or fallback to tournament-level course
+        let courseId = roundData?.course || tournament.courseId || tournament.course;
+        
+        if (!courseId) {
+          alert('Course not configured for this tournament/round');
           return;
         }
 
-        const courses = getCourses();
-        courseData = courses.find(c => c.courseId === roundData.course);
+        courseData = courses.find(c => c.courseId === courseId);
 
         if (!courseData || !courseData.pars) {
-          alert('Course data not available');
+          alert(`Course data not available (Course ID: ${courseId}). Please ensure the course is added in the Courses section.`);
           return;
         }
 
