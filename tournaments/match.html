@@ -203,15 +203,17 @@
           return;
         }
 
+        const now = new Date().toISOString();
         const tournament = {
           tournamentId: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].tournamentId : generateTournamentId(),
           name: name,
           type: 'match',
+          date: now, // Add date field for display in tournaments list
           gameFormat: gameFormat,
           matchType: matchType,
           hcpAllowance: hcpAllowance,
-          createdAt: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].createdAt : new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].createdAt : now,
+          updatedAt: now,
           meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : {}
         };
 
@@ -219,7 +221,7 @@
         if (matchType === 'bracket') {
           tournament.bracketSize = parseInt(document.getElementById('bracket-size').value);
           tournament.duration = document.getElementById('tournament-duration').value;
-          tournament.matchFormat = document.getElementById('match-format').value;
+          tournament.matchFormat = document.getElementById('match-format').value || '18';
           
           // Initialize bracket structure
           if (!isEdit) {
@@ -243,14 +245,20 @@
         saveTournaments(tournaments);
 
         // Sync to Firebase
-        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+        if (typeof syncToFirebase !== 'undefined' && typeof syncEnabled !== 'undefined' && syncEnabled) {
           syncToFirebase('tournaments', tournaments).then(() => {
             console.log('✓ Tournament synced to Firebase');
           }).catch(e => console.log('Firebase sync failed:', e));
         }
 
-        alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
-        window.location.href = 'index.html';
+        if (matchType === 'bracket') {
+          // Redirect to bracket management page
+          alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
+          window.location.href = `bracket.html?tournamentId=${tournament.tournamentId}`;
+        } else {
+          alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
+          window.location.href = 'index.html';
+        }
       });
     </script>
   </body>
