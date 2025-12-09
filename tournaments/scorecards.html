@@ -149,10 +149,6 @@
         document.getElementById('tournament-name').textContent = `Scorecards for ${tournament.name}`;
         document.getElementById('back-link').href = `documents.html?tournamentId=${tournamentId}`;
 
-        // Load course data
-        const courses = getCourses();
-        courseData = courses.find(c => c.courseId === tournament.courseId);
-
         // Populate round selector
         const roundSelect = document.getElementById('round-select');
         const roundIds = tournament.meta?.roundIds || [tournament.tournamentId + '-1'];
@@ -181,6 +177,18 @@
           alert('Please select a round');
           return;
         }
+
+        // Load course data for this round
+        const roundIndex = tournament.meta?.roundIds?.indexOf(roundId) || 0;
+        const roundData = tournament.meta?.roundsData?.[roundIndex];
+        
+        if (!roundData || !roundData.course) {
+          alert('Course not configured for this round');
+          return;
+        }
+
+        const courses = getCourses();
+        courseData = courses.find(c => c.courseId === roundData.course);
 
         if (!courseData || !courseData.pars) {
           alert('Course data not available');
