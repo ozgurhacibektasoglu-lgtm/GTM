@@ -12,7 +12,48 @@
     
     <link rel="stylesheet" href="../styles.css">
     <style>
-      .courses-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
+      body { margin: 0; padding: 0; }
+      
+      /* Top Navigation Bar */
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      
+      .top-nav h1 {
+        margin: 0;
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+      
+      .btn-back-top:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+      }
+      
+      .courses-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
       .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; overflow-x: auto; }
       table { width: 100%; border-collapse: collapse; }
       th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; }
@@ -47,11 +88,14 @@
     </style>
   </head>
   <body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <h1>⛳ Courses</h1>
+      <a href="../index.html" class="btn-back-top">← Back</a>
+    </div>
+    
     <main class="courses-container">
-      <header>
-        <h1>Courses</h1>
-        <p class="lead">Manage golf course information</p>
-      </header>
+      <p class="lead" style="margin-top:0">Manage golf course information</p>
 
       <div class="search-filter" style="margin-bottom: 24px; display: flex; gap: 16px; align-items: center;">
         <div style="flex: 1;">
@@ -97,7 +141,6 @@
         <button class="btn" id="btn-export-courses" style="background: linear-gradient(180deg, #28a745, #1e7e34);">Export CSV</button>
         <button class="btn" id="btn-backup-restore" style="background: linear-gradient(180deg, #ffc107, #e0a800);">Backup/Restore</button>
         <button class="btn" id="btn-debug-export" style="background: linear-gradient(180deg, #dc3545, #c82333);">Debug Export</button>
-        <a href="../index.html" class="btn btn-back">Back</a>
       </div>
     </main>
 

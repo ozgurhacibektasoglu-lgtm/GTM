@@ -12,7 +12,63 @@
     
     <link rel="stylesheet" href="../styles.css">
     <style>
-      .tournaments-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
+      body { margin: 0; padding: 0; }
+      
+      /* Top Navigation Bar */
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      
+      .top-nav h1 {
+        margin: 0;
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+      
+      .btn-back-top:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+      }
+      
+      /* Action Buttons - Below Header */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .tournaments-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
       .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; overflow-x: auto; }
       table { width: 100%; border-collapse: collapse; }
       th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; }
@@ -22,10 +78,8 @@
       tr { cursor: pointer; }
       tr.selected { background: #dbeafe; }
       tbody tr:hover { background: #f0f9ff; }
-      .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
       .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; }
       .btn:active { transform: translateY(1px); }
-      .btn-back { background: white; color: #0b6efd; border: 1px solid #e6e9ef; }
       .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:1000}
       .modal-overlay.active{display:flex}
       .modal-content{background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
@@ -39,6 +93,29 @@
     </style>
   </head>
   <body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <h1>🏆 Tournaments</h1>
+      <a href="../index.html" class="btn-back-top">← Back</a>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <div class="action-buttons">
+        <button class="btn" id="btn-new-tournament">New Tournament</button>
+        <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
+        <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
+        <button class="btn" id="btn-admissions">Admissions</button>
+        <button class="btn" id="btn-draw">Draw</button>
+        <button class="btn" id="btn-categories">Categories</button>
+        <button class="btn" id="btn-scores">Scores</button>
+        <button class="btn" id="btn-results">Results</button>
+        <button class="btn" id="btn-documents">Documents</button>
+        <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
+        <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
+      </div>
+    </div>
+    
     <!-- Round Selection Modal -->
     <div id="round-modal" class="modal-overlay">
       <div class="modal-content">
@@ -54,11 +131,9 @@
         </div>
       </div>
     </div>
+    
     <main class="tournaments-container">
-      <header>
-        <h1>Tournaments</h1>
-        <p class="lead">Manage tournament information, admissions, draws, and results.</p>
-      </header>
+      <p class="lead" style="margin-top: 0;">Manage tournament information, admissions, draws, and results.</p>
 
       <div class="table-wrapper">
         <table id="tournaments-table">
@@ -76,21 +151,6 @@
             <!-- Rows will be inserted here by JavaScript -->
           </tbody>
         </table>
-      </div>
-
-      <div class="action-buttons" style="margin-bottom: 24px;">
-        <button class="btn" id="btn-new-tournament">New Tournament</button>
-        <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
-        <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
-        <button class="btn" id="btn-admissions">Admissions</button>
-        <button class="btn" id="btn-draw">Draw</button>
-        <button class="btn" id="btn-categories">Categories</button>
-        <button class="btn" id="btn-scores">Scores</button>
-        <button class="btn" id="btn-results">Results</button>
-        <button class="btn" id="btn-documents">Documents</button>
-        <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
-        <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
-        <a href="../index.html" class="btn btn-back">Back</a>
       </div>
       
       <div id="export-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
