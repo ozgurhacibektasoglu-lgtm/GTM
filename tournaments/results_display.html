@@ -56,6 +56,17 @@
         color: #1e40af;
         font-weight: 600;
       }
+      .tiebreaker-info {
+        background: #f3e8ff;
+        border: 2px solid #a855f7;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        text-align: center;
+        color: #7c3aed;
+        font-weight: 500;
+        font-size: 13px;
+      }
       .action-buttons { 
         display: flex; 
         gap: 10px; 
@@ -521,6 +532,289 @@
         return 72;
       }
 
+      // ==================== TIEBREAKER FUNCTIONS ====================
+      
+      // Get the untie criteria from tournament settings
+      function getUntieCriteria() {
+        const tournament = getTournament();
+        return tournament?.untieCriteria || [];
+      }
+
+      // Get course data for a round (stroke indexes, pars)
+      function getCourseDataForRound(roundId) {
+        const tournament = getTournament();
+        if (!tournament?.meta?.roundIds) return null;
+        
+        const roundIndex = tournament.meta.roundIds.indexOf(roundId);
+        if (roundIndex === -1) return null;
+        
+        const roundData = tournament.meta.roundsData?.[roundIndex];
+        if (!roundData) return null;
+        
+        try {
+          const raw = localStorage.getItem('courses');
+          const courses = raw ? JSON.parse(raw) : [];
+          return courses.find(c => c.courseId === roundData.course);
+        } catch (err) {
+          console.error('Error loading course data:', err);
+          return null;
+        }
+      }
+
+      // Get player's hole scores for a specific round
+      function getPlayerHoleScores(player, roundId) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        return playerScores?.holes || [];
+      }
+
+      // Get player's stableford points for a specific round
+      function getPlayerStablefordPoints(player, roundId) {
+        const scores = getScores();
+        const playerScores = scores[roundId]?.[player.reg];
+        return playerScores?.stablefordPoints || [];
+      }
+
+      // Tiebreaker: Last Round Score
+      function tiebreakLastRound(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        let scoreA, scoreB;
+        if (isStableford) {
+          scoreA = calculateStablefordTotal(playerA, lastRoundId) || 0;
+          scoreB = calculateStablefordTotal(playerB, lastRoundId) || 0;
+          return scoreB - scoreA; // Higher is better for Stableford
+        } else {
+          scoreA = calculateGrossTotal(playerA, lastRoundId) || 999;
+          scoreB = calculateGrossTotal(playerB, lastRoundId) || 999;
+          return scoreA - scoreB; // Lower is better for Stroke Play
+        }
+      }
+
+      // Tiebreaker: Back 9 (holes 10-18 of last round)
+      function tiebreakBack9(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        if (isStableford) {
+          const pointsA = getPlayerStablefordPoints(playerA, lastRoundId);
+          const pointsB = getPlayerStablefordPoints(playerB, lastRoundId);
+          const sumA = pointsA.slice(9, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          const sumB = pointsB.slice(9, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          return sumB - sumA; // Higher is better
+        } else {
+          const holesA = getPlayerHoleScores(playerA, lastRoundId);
+          const holesB = getPlayerHoleScores(playerB, lastRoundId);
+          const sumA = holesA.slice(9, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          const sumB = holesB.slice(9, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          return sumA - sumB; // Lower is better
+        }
+      }
+
+      // Tiebreaker: Last 6 Holes (holes 13-18 of last round)
+      function tiebreakLast6(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        if (isStableford) {
+          const pointsA = getPlayerStablefordPoints(playerA, lastRoundId);
+          const pointsB = getPlayerStablefordPoints(playerB, lastRoundId);
+          const sumA = pointsA.slice(12, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          const sumB = pointsB.slice(12, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          return sumB - sumA; // Higher is better
+        } else {
+          const holesA = getPlayerHoleScores(playerA, lastRoundId);
+          const holesB = getPlayerHoleScores(playerB, lastRoundId);
+          const sumA = holesA.slice(12, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          const sumB = holesB.slice(12, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          return sumA - sumB; // Lower is better
+        }
+      }
+
+      // Tiebreaker: Last 3 Holes (holes 16-18 of last round)
+      function tiebreakLast3(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        if (isStableford) {
+          const pointsA = getPlayerStablefordPoints(playerA, lastRoundId);
+          const pointsB = getPlayerStablefordPoints(playerB, lastRoundId);
+          const sumA = pointsA.slice(15, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          const sumB = pointsB.slice(15, 18).reduce((s, p) => s + (parseInt(p) || 0), 0);
+          return sumB - sumA; // Higher is better
+        } else {
+          const holesA = getPlayerHoleScores(playerA, lastRoundId);
+          const holesB = getPlayerHoleScores(playerB, lastRoundId);
+          const sumA = holesA.slice(15, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          const sumB = holesB.slice(15, 18).reduce((s, h) => s + (parseInt(h) || 0), 0);
+          return sumA - sumB; // Lower is better
+        }
+      }
+
+      // Tiebreaker: Last Hole (hole 18 of last round)
+      function tiebreakLastHole(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        if (isStableford) {
+          const pointsA = getPlayerStablefordPoints(playerA, lastRoundId);
+          const pointsB = getPlayerStablefordPoints(playerB, lastRoundId);
+          const scoreA = parseInt(pointsA[17]) || 0;
+          const scoreB = parseInt(pointsB[17]) || 0;
+          return scoreB - scoreA; // Higher is better
+        } else {
+          const holesA = getPlayerHoleScores(playerA, lastRoundId);
+          const holesB = getPlayerHoleScores(playerB, lastRoundId);
+          const scoreA = parseInt(holesA[17]) || 0;
+          const scoreB = parseInt(holesB[17]) || 0;
+          return scoreA - scoreB; // Lower is better
+        }
+      }
+
+      // Tiebreaker: Lower Handicap
+      function tiebreakLowerHcp(playerA, playerB) {
+        const hcpA = parseFloat(playerA.hcp) || 999;
+        const hcpB = parseFloat(playerB.hcp) || 999;
+        return hcpA - hcpB; // Lower HCP wins
+      }
+
+      // Tiebreaker: Score on holes by Stroke Index (starting from SI 1)
+      function tiebreakStrokeIndex(playerA, playerB, roundIds, isStableford) {
+        if (roundIds.length === 0) return 0;
+        const lastRoundId = roundIds[roundIds.length - 1];
+        
+        const courseData = getCourseDataForRound(lastRoundId);
+        if (!courseData || !courseData.strokeIndexes) return 0;
+        
+        const strokeIndexes = courseData.strokeIndexes;
+        
+        // Create array of hole indices sorted by stroke index (SI 1 first)
+        const holesBySI = strokeIndexes
+          .map((si, holeIndex) => ({ si: parseInt(si) || 99, holeIndex }))
+          .sort((a, b) => a.si - b.si);
+        
+        if (isStableford) {
+          const pointsA = getPlayerStablefordPoints(playerA, lastRoundId);
+          const pointsB = getPlayerStablefordPoints(playerB, lastRoundId);
+          
+          for (const { holeIndex } of holesBySI) {
+            const scoreA = parseInt(pointsA[holeIndex]) || 0;
+            const scoreB = parseInt(pointsB[holeIndex]) || 0;
+            if (scoreA !== scoreB) {
+              return scoreB - scoreA; // Higher is better for Stableford
+            }
+          }
+        } else {
+          const holesA = getPlayerHoleScores(playerA, lastRoundId);
+          const holesB = getPlayerHoleScores(playerB, lastRoundId);
+          
+          for (const { holeIndex } of holesBySI) {
+            const scoreA = parseInt(holesA[holeIndex]) || 0;
+            const scoreB = parseInt(holesB[holeIndex]) || 0;
+            if (scoreA !== scoreB) {
+              return scoreA - scoreB; // Lower is better for Stroke Play
+            }
+          }
+        }
+        
+        return 0; // Still tied
+      }
+
+      // Tiebreaker: More Eagles, Birdies, Pars (countback)
+      function tiebreakEaglesBirdiesPars(playerA, playerB, roundIds) {
+        const courseData = roundIds.length > 0 ? getCourseDataForRound(roundIds[roundIds.length - 1]) : null;
+        if (!courseData || !courseData.pars) return 0;
+        
+        const pars = courseData.pars;
+        
+        // Count eagles, birdies, pars for each player across all rounds
+        let countA = { eagles: 0, birdies: 0, pars: 0 };
+        let countB = { eagles: 0, birdies: 0, pars: 0 };
+        
+        roundIds.forEach(roundId => {
+          const holesA = getPlayerHoleScores(playerA, roundId);
+          const holesB = getPlayerHoleScores(playerB, roundId);
+          
+          holesA.forEach((score, i) => {
+            const s = parseInt(score);
+            const par = parseInt(pars[i]) || 4;
+            if (!isNaN(s)) {
+              const diff = s - par;
+              if (diff <= -2) countA.eagles++;
+              else if (diff === -1) countA.birdies++;
+              else if (diff === 0) countA.pars++;
+            }
+          });
+          
+          holesB.forEach((score, i) => {
+            const s = parseInt(score);
+            const par = parseInt(pars[i]) || 4;
+            if (!isNaN(s)) {
+              const diff = s - par;
+              if (diff <= -2) countB.eagles++;
+              else if (diff === -1) countB.birdies++;
+              else if (diff === 0) countB.pars++;
+            }
+          });
+        });
+        
+        // Compare eagles first, then birdies, then pars
+        if (countA.eagles !== countB.eagles) return countB.eagles - countA.eagles;
+        if (countA.birdies !== countB.birdies) return countB.birdies - countA.birdies;
+        if (countA.pars !== countB.pars) return countB.pars - countA.pars;
+        
+        return 0; // Still tied
+      }
+
+      // Main tiebreaker comparison function
+      function compareTiebreakers(prA, prB, roundIds, isStableford) {
+        const criteria = getUntieCriteria();
+        
+        // If no tiebreaker criteria defined, return 0 (keep tie)
+        if (!criteria || criteria.length === 0) return 0;
+        
+        for (const criteriaId of criteria) {
+          let result = 0;
+          
+          switch (criteriaId) {
+            case 'last_round':
+              result = tiebreakLastRound(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'back_9':
+              result = tiebreakBack9(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'last_6':
+              result = tiebreakLast6(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'last_3':
+              result = tiebreakLast3(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'last_hole':
+              result = tiebreakLastHole(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'lower_hcp':
+              result = tiebreakLowerHcp(prA.player, prB.player);
+              break;
+            case 'stroke_index':
+              result = tiebreakStrokeIndex(prA.player, prB.player, roundIds, isStableford);
+              break;
+            case 'eagles_birdies_pars':
+              result = tiebreakEaglesBirdiesPars(prA.player, prB.player, roundIds);
+              break;
+          }
+          
+          if (result !== 0) {
+            console.log(`Tiebreak resolved by ${criteriaId}: ${prA.player.firstName} ${prA.player.lastName} vs ${prB.player.firstName} ${prB.player.lastName} = ${result}`);
+            return result;
+          }
+        }
+        
+        return 0; // All tiebreakers exhausted, still tied
+      }
+
+      // ==================== END TIEBREAKER FUNCTIONS ====================
+
       function calculateToParForPlayer(player, roundIds) {
         // To Par is ALWAYS based on gross scores, regardless of tournament format
         // Only includes rounds that have been completed (based on date)
@@ -589,6 +883,24 @@
           // Show warning on page
           const warningDiv = document.getElementById('warning-container');
           warningDiv.innerHTML = `<div class="warning-message">⚠️ Warning: ${incompleteScores.length} incomplete scorecard(s) detected</div>`;
+        }
+
+        // Show tiebreaker criteria if configured
+        const untieCriteriaList = getUntieCriteria();
+        if (untieCriteriaList && untieCriteriaList.length > 0) {
+          const criteriaNames = {
+            'last_round': 'Last Round Score',
+            'back_9': 'Back 9 Score',
+            'last_6': 'Last 6 Holes',
+            'last_3': 'Last 3 Holes',
+            'last_hole': 'Last Hole',
+            'lower_hcp': 'Lower Handicap',
+            'stroke_index': 'Score on Lower S.I. Holes',
+            'eagles_birdies_pars': 'More Eagles, Birdies, Pars'
+          };
+          const criteriaDisplay = untieCriteriaList.map(c => criteriaNames[c] || c).join(' → ');
+          const warningDiv = document.getElementById('warning-container');
+          warningDiv.innerHTML += `<div class="tiebreaker-info">⚖️ Tiebreaker: Total Score → ${criteriaDisplay}</div>`;
         }
 
         // Build table header
@@ -670,34 +982,71 @@
         const normalPlayers = playerResults.filter(pr => !pr.hasStatus);
         const statusPlayers = playerResults.filter(pr => pr.hasStatus);
         
-        // Sort normal players by total
+        // Get untie criteria to check if tiebreakers are enabled
+        const untieCriteria = getUntieCriteria();
+        const hasTiebreakers = untieCriteria && untieCriteria.length > 0;
+        
+        // Sort normal players by total, then apply tiebreakers if enabled
         normalPlayers.sort((a, b) => {
           if (a.total === null && b.total === null) return 0;
           if (a.total === null) return 1;
           if (b.total === null) return -1;
           
+          // Primary comparison: total score
+          let comparison;
           if (isStableford) {
-            return b.total - a.total; // Higher is better
+            comparison = b.total - a.total; // Higher is better
           } else {
-            return a.total - b.total; // Lower is better
+            comparison = a.total - b.total; // Lower is better
           }
+          
+          // If tied and tiebreakers are enabled, apply them
+          if (comparison === 0 && hasTiebreakers) {
+            return compareTiebreakers(a, b, roundIds, isStableford);
+          }
+          
+          return comparison;
         });
 
-        // Assign ranks
+        // Assign ranks - now each player should have unique rank if tiebreakers resolved the tie
         let currentRank = 1;
         let previousTotal = null;
-        let playersWithSameRank = 0;
+        let previousTiebreakerResult = null;
         
         normalPlayers.forEach((pr, index) => {
           if (pr.total === null) {
             pr.rank = '-';
-          } else if (pr.total === previousTotal) {
-            pr.rank = currentRank;
-            playersWithSameRank++;
+          } else if (index === 0) {
+            // First player
+            pr.rank = 1;
+            currentRank = 1;
+            previousTotal = pr.total;
           } else {
-            currentRank = index + 1;
-            pr.rank = currentRank;
-            playersWithSameRank = 0;
+            const prevPlayer = normalPlayers[index - 1];
+            
+            // Check if this player has the same total as previous
+            if (pr.total === prevPlayer.total) {
+              // If tiebreakers are enabled, check if they're actually still tied
+              if (hasTiebreakers) {
+                const tiebreakerResult = compareTiebreakers(prevPlayer, pr, roundIds, isStableford);
+                if (tiebreakerResult !== 0) {
+                  // Tiebreaker resolved - give next rank
+                  currentRank = index + 1;
+                  pr.rank = currentRank;
+                } else {
+                  // Still tied after tiebreakers
+                  pr.rank = currentRank;
+                }
+              } else {
+                // No tiebreakers - same rank
+                pr.rank = currentRank;
+              }
+            } else {
+              // Different total - new rank
+              currentRank = index + 1;
+              pr.rank = currentRank;
+            }
+            
             previousTotal = pr.total;
           }
         });
