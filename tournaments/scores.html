@@ -771,6 +771,22 @@
         html += '<td class="total-cell">-</td>';
         html += '</tr>';
 
+        // Helper function to get score color class
+        function getScoreColorClass(score, holeIndex, isIncomplete) {
+          if (isIncomplete) return 'score-zero';
+          if (!score || !courseData || !courseData.pars) return '';
+          
+          const par = courseData.pars[holeIndex];
+          const diff = score - par;
+          
+          if (diff === 0) return 'score-par';
+          if (diff === -1) return 'score-birdie';
+          if (diff <= -2) return 'score-eagle';
+          if (diff === 1) return 'score-bogey';
+          if (diff >= 2) return 'score-double-bogey';
+          return '';
+        }
+
         // Score row
         html += '<tr><td><strong>Score</strong></td>';
         let front9Score = 0, back9Score = 0;
@@ -781,8 +797,8 @@
           const isIncomplete = playerScores.isIncompleteHole?.[i];
           const displayValue = isIncomplete ? 'X' : (score || '');
           if (score) front9Score += parseInt(score);
-          const incompleteClass = isIncomplete ? 'score-zero' : '';
-          html += `<td><input type="text" class="score-input ${incompleteClass}" value="${displayValue}" 
+          const colorClass = getScoreColorClass(score, i, isIncomplete);
+          html += `<td><input type="text" class="score-input ${colorClass}" value="${displayValue}" 
                     data-hole="${i}" ${disableInputs}></td>`;
         }
         html += `<td class="subtotal-cell" id="front9-score">${front9Score || '-'}</td>`;
@@ -791,8 +807,8 @@
           const isIncomplete = playerScores.isIncompleteHole?.[i];
           const displayValue = isIncomplete ? 'X' : (score || '');
           if (score) back9Score += parseInt(score);
-          const incompleteClass = isIncomplete ? 'score-zero' : '';
-          html += `<td><input type="text" class="score-input ${incompleteClass}" value="${displayValue}" 
+          const colorClass = getScoreColorClass(score, i, isIncomplete);
+          html += `<td><input type="text" class="score-input ${colorClass}" value="${displayValue}" 
                     data-hole="${i}" ${disableInputs}></td>`;
         }
         html += `<td class="subtotal-cell" id="back9-score">${back9Score || '-'}</td>`;
