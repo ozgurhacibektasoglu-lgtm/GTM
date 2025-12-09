@@ -659,18 +659,35 @@
     }
 
     // Get category short name from tournament categories
-    function getCategoryShortName(categoryName, tournament) {
-      if (!categoryName || !tournament || !tournament.categories) return categoryName || '-';
+    // categoryCode can be either the code (like "MA", "WB") or the name
+    function getCategoryShortName(categoryCode, tournament) {
+      if (!categoryCode || !tournament || !tournament.categories) return categoryCode || '-';
       
-      const category = tournament.categories.find(cat => cat.name === categoryName);
+      // First try to find by code
+      let category = tournament.categories.find(cat => cat.code === categoryCode);
+      
+      // If not found by code, try by name
+      if (!category) {
+        category = tournament.categories.find(cat => cat.name === categoryCode);
+      }
+      
       if (category && category.shortName) {
         return category.shortName;
       }
-      // Fallback: if no shortName, generate one
-      if (categoryName.length <= 8) {
-        return categoryName;
+      
+      // If category found but no shortName, use name
+      if (category && category.name) {
+        if (category.name.length <= 8) {
+          return category.name;
+        }
+        return category.name.substring(0, 8);
       }
-      return categoryName.substring(0, 8);
+      
+      // Fallback: return the code/name as-is (truncated if needed)
+      if (categoryCode.length <= 8) {
+        return categoryCode;
+      }
+      return categoryCode.substring(0, 8);
     }
 
     function saveOptions() {
