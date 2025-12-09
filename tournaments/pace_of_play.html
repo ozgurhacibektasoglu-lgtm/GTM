@@ -906,8 +906,10 @@
           roundSelect.appendChild(option);
         });
       } else {
+        // Single round tournament - use roundId from meta.roundIds if available
         var option = document.createElement('option');
-        option.value = tournament.tournamentId;
+        var roundId = (tournament.meta && tournament.meta.roundIds && tournament.meta.roundIds[0]) || (tournament.tournamentId + '-1');
+        option.value = roundId;
         var date = tournament.date ? formatDateDDMMYYYY(tournament.date) : 'TBD';
         option.textContent = 'Single Round: ' + date;
         roundSelect.appendChild(option);
