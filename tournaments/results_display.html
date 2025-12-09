@@ -46,6 +46,16 @@
         color: #92400e;
         font-weight: 600;
       }
+      .info-message { 
+        background: #dbeafe; 
+        border: 2px solid #3b82f6; 
+        border-radius: 8px; 
+        padding: 16px; 
+        margin-bottom: 24px;
+        text-align: center;
+        color: #1e40af;
+        font-weight: 600;
+      }
       .action-buttons { 
         display: flex; 
         gap: 10px; 
@@ -380,6 +390,29 @@
         return result;
       }
 
+      // Check if a player has any incomplete holes (0/X scores) in any round
+      function playerHasIncompleteHoles(player, roundIds) {
+        const scores = getScores();
+        
+        for (const roundId of roundIds) {
+          const playerScores = scores[roundId]?.[player.reg];
+          if (!playerScores) continue;
+          
+          // Check incompleteHoles array
+          if (playerScores.incompleteHoles && playerScores.incompleteHoles.length > 0) {
+            return true;
+          }
+          
+          // Check isIncompleteHole object
+          if (playerScores.isIncompleteHole) {
+            const hasIncomplete = Object.values(playerScores.isIncompleteHole).some(v => v === true);
+            if (hasIncomplete) return true;
+          }
+        }
+        
+        return false;
+      }
+
       function isPlayerRoundComplete(player, roundId) {
         const scores = getScores();
         const playerScores = scores[roundId]?.[player.reg];
@@ -581,8 +614,32 @@
         headerHTML += '</tr>';
         document.getElementById('table-head').innerHTML = headerHTML;
 
-        // Calculate scores for all players
-        const playerResults = players.map(player => {
+        // Determine tournament type
+        const typeUpper = (tournamentType || '').toUpperCase();
+        const isStableford = typeUpper.includes('STABLEFORD');
+        const isStrokePlay = typeUpper.includes('STROKE') || typeUpper.includes('GROSS') || (!isStableford && !typeUpper.includes('MEDAL NET'));
+        
+        // Filter players: For Stroke Play (gross), exclude players with incomplete holes (0/X scores)
+        let eligiblePlayers = players;
+        let excludedPlayers = [];
+        
+        if (isStrokePlay) {
+          eligiblePlayers = players.filter(player => !playerHasIncompleteHoles(player, roundIds));
+          excludedPlayers = players.filter(player => playerHasIncompleteHoles(player, roundIds));
+          
+          if (excludedPlayers.length > 0) {
+            console.log(`Stroke Play: Excluding ${excludedPlayers.length} player(s) with incomplete holes (0/X scores)`);
+            excludedPlayers.forEach(p => console.log(`  - ${p.firstName} ${p.lastName}`));
+            
+            // Show info message on page
+            const warningDiv = document.getElementById('warning-container');
+            const existingContent = warningDiv.innerHTML;
+            warningDiv.innerHTML = existingContent + `<div class="info-message">ℹ️ ${excludedPlayers.length} player(s) excluded from Stroke Play results due to incomplete holes (0/X scores)</div>`;
+          }
+        }
+
+        // Calculate scores for all eligible players
+        const playerResults = eligiblePlayers.map(player => {
           const roundScores = roundIds.map(roundId => getPlayerRoundScore(player, roundId, tournamentType));
           
           // Check if player has status
@@ -607,8 +664,7 @@
         });
 
         // Sort players
-        const typeUpper = (tournamentType || '').toUpperCase();
-        const isStableford = typeUpper.includes('STABLEFORD');
+        // (typeUpper and isStableford already declared above)
         
         // Separate normal players and status players
         const normalPlayers = playerResults.filter(pr => !pr.hasStatus);
