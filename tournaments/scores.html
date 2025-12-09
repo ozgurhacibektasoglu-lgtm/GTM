@@ -568,8 +568,17 @@
           
           const phcpCell = row.insertCell();
           let phcpDisplay = '-';
-          if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
-            phcpDisplay = player.phcp < 0 ? '+' + Math.abs(player.phcp) : player.phcp;
+          // Use stored PHCP or calculate it as fallback
+          let phcpValue = player.phcp;
+          if (phcpValue === undefined || phcpValue === null || phcpValue === '') {
+            phcpValue = calculatePlayingHcp(player);
+            // Store calculated PHCP back to player for consistency
+            if (phcpValue !== '' && phcpValue !== undefined) {
+              player.phcp = phcpValue;
+            }
+          }
+          if (phcpValue !== '' && phcpValue !== undefined && phcpValue !== null) {
+            phcpDisplay = phcpValue < 0 ? '+' + Math.abs(phcpValue) : phcpValue;
           }
           phcpCell.textContent = phcpDisplay;
           phcpCell.style.textAlign = 'center';
@@ -610,10 +619,19 @@
         document.getElementById('player-hcp').textContent = hcpDisplay;
         
         // Use stored playing HCP from admissions (already calculated and rounded)
+        // If not stored, calculate it now as fallback
+        let phcpValue = player.phcp;
+        if (phcpValue === undefined || phcpValue === null || phcpValue === '') {
+          phcpValue = calculatePlayingHcp(player);
+          // Store calculated PHCP back to player for consistency
+          if (phcpValue !== '' && phcpValue !== undefined) {
+            player.phcp = phcpValue;
+          }
+        }
         // Format: negative numbers get + prefix, positive numbers as-is
         let phcpDisplay = '-';
-        if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
-          phcpDisplay = player.phcp < 0 ? '+' + Math.abs(player.phcp) : player.phcp;
+        if (phcpValue !== '' && phcpValue !== undefined && phcpValue !== null) {
+          phcpDisplay = phcpValue < 0 ? '+' + Math.abs(phcpValue) : phcpValue;
         }
         document.getElementById('player-phcp').textContent = phcpDisplay;
 
@@ -649,6 +667,14 @@
         if (!courseData || !courseData.pars) {
           content.innerHTML = '<div class="empty-state"><p>Course data not available</p></div>';
           return;
+        }
+
+        // Ensure PHCP is calculated if not stored
+        if (player.phcp === undefined || player.phcp === null || player.phcp === '') {
+          const calculatedPhcp = calculatePlayingHcp(player);
+          if (calculatedPhcp !== '' && calculatedPhcp !== undefined) {
+            player.phcp = calculatedPhcp;
+          }
         }
 
         const playerKey = player.reg;
