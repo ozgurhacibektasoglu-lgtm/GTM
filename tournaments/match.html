@@ -32,6 +32,20 @@
         </div>
 
         <div class="field">
+          <label for="start-date">Start Date</label>
+          <input id="start-date" name="date" type="date" required>
+          <p class="help-text">Tournament start date</p>
+        </div>
+
+        <div class="field">
+          <label for="course-select">Course</label>
+          <select id="course-select" name="course" required>
+            <option value="">-- Select course --</option>
+          </select>
+          <p class="help-text">Primary course for matches</p>
+        </div>
+
+        <div class="field">
           <label for="game-format">Game Format</label>
           <select id="game-format" name="gameFormat" required>
             <option value="">-- Select format --</option>
@@ -133,6 +147,25 @@
         }
       }
 
+      // Load courses
+      function loadCourses() {
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const select = document.getElementById('course-select');
+        
+        courses.forEach(course => {
+          const option = document.createElement('option');
+          option.value = course.courseId || course.courseName;
+          option.textContent = `${course.courseName} (${course.city || 'Unknown'})`;
+          select.appendChild(option);
+        });
+      }
+
+      // Set default date to today
+      document.getElementById('start-date').valueAsDate = new Date();
+      
+      // Load courses on page load
+      loadCourses();
+
       // If editing, load tournament data
       if (isEdit) {
         const editIndex = parseInt(editIndexParam, 10);
@@ -141,6 +174,12 @@
         
         if (tournament && tournament.type === 'match') {
           document.getElementById('tournament-name').value = tournament.name || '';
+          if (tournament.date) {
+            document.getElementById('start-date').value = tournament.date.split('T')[0];
+          }
+          if (tournament.course) {
+            document.getElementById('course-select').value = tournament.course;
+          }
           document.getElementById('game-format').value = tournament.gameFormat || '';
           document.getElementById('match-type').value = tournament.matchType || '';
           document.getElementById('hcp-allowance').value = tournament.hcpAllowance || '100';
@@ -194,11 +233,13 @@
         e.preventDefault();
         
         const name = document.getElementById('tournament-name').value.trim();
+        const startDate = document.getElementById('start-date').value;
+        const course = document.getElementById('course-select').value;
         const gameFormat = document.getElementById('game-format').value;
         const matchType = document.getElementById('match-type').value;
         const hcpAllowance = document.getElementById('hcp-allowance').value;
 
-        if (!name || !gameFormat || !matchType || !hcpAllowance) {
+        if (!name || !startDate || !course || !gameFormat || !matchType || !hcpAllowance) {
           alert('Please fill in all required fields.');
           return;
         }
@@ -208,13 +249,14 @@
           tournamentId: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].tournamentId : generateTournamentId(),
           name: name,
           type: 'match',
-          date: now, // Add date field for display in tournaments list
+          date: new Date(startDate).toISOString(),
+          course: course,
           gameFormat: gameFormat,
           matchType: matchType,
           hcpAllowance: hcpAllowance,
           createdAt: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].createdAt : now,
           updatedAt: now,
-          meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : {}
+          meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : { courses: [course] }
         };
 
         // Add bracket-specific fields
