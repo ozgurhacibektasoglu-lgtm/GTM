@@ -172,7 +172,7 @@
         <strong>How it works:</strong>
         Drag criteria from "Available Criteria" to "Tournament Untie Criteria" to define tiebreaker rules. 
         The order matters - criteria at the top will be checked first. If still tied, the next criteria will be used.
-        "Total Score" is always the primary ranking and cannot be moved.
+        "Total Score" and "Play Off" are fixed positions. Play Off only applies if manually recorded.
       </div>
 
       <div class="card">
@@ -191,11 +191,17 @@
           <div class="criteria-box">
             <h3>🏆 Tournament Untie Criteria</h3>
             <div id="selected-criteria" class="criteria-list">
-              <!-- Static first item -->
+              <!-- Static first item - Total Score -->
               <div class="criteria-item static" data-id="total_score">
                 <span class="criteria-number">1</span>
                 <span class="criteria-text">Total Score</span>
                 <span style="color: #9ca3af; font-size: 12px;">(Primary - Fixed)</span>
+              </div>
+              <!-- Static second item - Play Off -->
+              <div class="criteria-item static" data-id="play_off">
+                <span class="criteria-number">2</span>
+                <span class="criteria-text">Play Off</span>
+                <span style="color: #9ca3af; font-size: 12px;">(If played - Fixed)</span>
               </div>
               <!-- Drop zone for additional criteria -->
               <div id="drop-zone"></div>
@@ -215,7 +221,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
 
-      // All available criteria definitions
+      // All available criteria definitions (excluding fixed items: total_score and play_off)
       const allCriteria = [
         { id: 'last_round', name: 'Last Round Score', description: 'Score from the final round' },
         { id: 'back_9', name: 'Back 9 Score', description: 'Holes 10-18 of the last round' },
@@ -274,9 +280,10 @@
           availableContainer.innerHTML = '<div class="empty-drop-zone">All criteria have been added</div>';
         } else {
           availableContainer.innerHTML = availableCriteria.map(c => `
-            <div class="criteria-item" draggable="true" data-id="${c.id}" title="${c.description}">
+            <div class="criteria-item" draggable="true" data-id="${c.id}" title="${c.description}" onclick="addCriteria('${c.id}')">
               <span class="drag-handle">⋮⋮</span>
               <span class="criteria-text">${c.name}</span>
+              <span style="color: #10b981; font-size: 16px; margin-left: auto;" title="Click to add">+</span>
             </div>
           `).join('');
         }
@@ -291,7 +298,7 @@
             if (!criteria) return '';
             return `
               <div class="criteria-item" draggable="true" data-id="${criteriaId}" data-index="${index}" title="${criteria.description}">
-                <span class="criteria-number">${index + 2}</span>
+                <span class="criteria-number">${index + 3}</span>
                 <span class="drag-handle">⋮⋮</span>
                 <span class="criteria-text">${criteria.name}</span>
                 <button onclick="removeCriteria('${criteriaId}')" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 16px;" title="Remove">✕</button>
@@ -416,6 +423,14 @@
         const index = selectedCriteria.indexOf(criteriaId);
         if (index !== -1) {
           selectedCriteria.splice(index, 1);
+          renderCriteria();
+        }
+      }
+
+      function addCriteria(criteriaId) {
+        // Only add if not already in selected
+        if (!selectedCriteria.includes(criteriaId)) {
+          selectedCriteria.push(criteriaId);
           renderCriteria();
         }
       }

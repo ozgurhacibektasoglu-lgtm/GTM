@@ -767,11 +767,45 @@
         return 0; // Still tied
       }
 
+      // Tiebreaker: Play Off - checks if a play-off result was recorded
+      // Play-off results are stored in tournament.playOffResults[categoryCode] = { winner: playerReg, loser: playerReg }
+      function tiebreakPlayOff(playerA, playerB) {
+        const tournament = getTournament();
+        if (!tournament.playOffResults || !tournament.playOffResults[categoryCode]) {
+          return 0; // No play-off recorded
+        }
+        
+        const playOff = tournament.playOffResults[categoryCode];
+        
+        // Check if these two players were in a play-off
+        const regA = playerA.reg;
+        const regB = playerB.reg;
+        
+        // Find a play-off involving these two players
+        for (const result of (Array.isArray(playOff) ? playOff : [playOff])) {
+          if ((result.winner === regA && result.loser === regB)) {
+            return -1; // A won the play-off
+          }
+          if ((result.winner === regB && result.loser === regA)) {
+            return 1; // B won the play-off
+          }
+        }
+        
+        return 0; // These players weren't in a play-off together
+      }
+
       // Main tiebreaker comparison function
       function compareTiebreakers(prA, prB, roundIds, isStableford) {
+        // First, always check for play-off results (fixed at position 2)
+        const playOffResult = tiebreakPlayOff(prA.player, prB.player);
+        if (playOffResult !== 0) {
+          console.log(`Tiebreak resolved by Play Off: ${prA.player.firstName} ${prA.player.lastName} vs ${prB.player.firstName} ${prB.player.lastName} = ${playOffResult}`);
+          return playOffResult;
+        }
+        
         const criteria = getUntieCriteria();
         
-        // If no tiebreaker criteria defined, return 0 (keep tie)
+        // If no additional tiebreaker criteria defined, return 0 (keep tie)
         if (!criteria || criteria.length === 0) return 0;
         
         for (const criteriaId of criteria) {
@@ -900,7 +934,11 @@
           };
           const criteriaDisplay = untieCriteriaList.map(c => criteriaNames[c] || c).join(' → ');
           const warningDiv = document.getElementById('warning-container');
-          warningDiv.innerHTML += `<div class="tiebreaker-info">⚖️ Tiebreaker: Total Score → ${criteriaDisplay}</div>`;
+          warningDiv.innerHTML += `<div class="tiebreaker-info">⚖️ Tiebreaker: Total Score → Play Off (if played) → ${criteriaDisplay}</div>`;
+        } else {
+          // Show default tiebreaker info even if no additional criteria selected
+          const warningDiv = document.getElementById('warning-container');
+          warningDiv.innerHTML += `<div class="tiebreaker-info">⚖️ Tiebreaker: Total Score → Play Off (if played)</div>`;
         }
 
         // Build table header
