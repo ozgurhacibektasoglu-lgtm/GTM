@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Scorecards</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .scorecards-container { max-width: 1200px; margin: 24px auto; padding: 16px; }
+      .options-card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
+      .form-group { margin-bottom: 20px; }
+      .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #1e293b; }
+      .form-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 15px; }
+      .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+      .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+      .checkbox-group label { margin: 0; font-weight: 500; cursor: pointer; }
+      .btn-generate { background: linear-gradient(180deg, #0b6efd, #0952cc); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 12px; }
+      .btn-generate:hover { opacity: 0.9; }
+      
+      /* Print Styles */
+      @media print {
+        .scorecards-container { max-width: none; margin: 0; padding: 0; }
+        .options-card, .action-buttons { display: none; }
+        .scorecard { page-break-after: always; }
+        .scorecard:last-child { page-break-after: auto; }
+      }
+      
+      .scorecard { background: white; border: 2px solid #1e293b; margin-bottom: 24px; padding: 20px; border-radius: 8px; }
+      .scorecard-header { text-align: center; border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px; }
+      .scorecard-header h2 { margin: 0 0 8px 0; font-size: 24px; }
+      .scorecard-header p { margin: 4px 0; color: #64748b; }
+      .player-info-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 6px; }
+      .player-info-item { display: flex; flex-direction: column; }
+      .player-info-label { font-size: 12px; color: #64748b; font-weight: 600; }
+      .player-info-value { font-size: 16px; color: #1e293b; font-weight: 600; }
+      .scorecard-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      .scorecard-table th { background: #1e293b; color: white; padding: 8px 4px; text-align: center; font-size: 13px; border: 1px solid #1e293b; }
+      .scorecard-table td { padding: 10px 4px; text-align: center; border: 1px solid #cbd5e1; font-size: 13px; }
+      .scorecard-table td.score-box { height: 40px; min-width: 40px; background: white; }
+      .scorecard-table .row-label { text-align: left; font-weight: 600; background: #f1f5f9; }
+      .scorecard-table .total-cell { background: #dbeafe; font-weight: 700; }
+      .marker-section { margin-top: 20px; padding-top: 16px; border-top: 2px dashed #cbd5e1; }
+      .marker-info { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+      .marker-box { border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; background: #f8fafc; }
+      .marker-label { font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+      .marker-value { font-size: 14px; color: #1e293b; font-weight: 600; }
+      .signature-box { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .signature-field { border-bottom: 1px solid #1e293b; padding: 8px 0; }
+      .signature-field label { font-size: 12px; color: #64748b; display: block; margin-bottom: 20px; }
+    </style>
+  </head>
+  <body>
+    <main class="scorecards-container">
+      <header>
+        <h1>Generate Scorecards</h1>
+        <p class="lead" id="tournament-name">Configure and print scorecards</p>
+      </header>
+
+      <div class="options-card" id="options-panel">
+        <h2 style="margin-top: 0;">Options</h2>
+        
+        <div class="form-group">
+          <label for="round-select">Select Round:</label>
+          <select id="round-select">
+            <option value="">-- Select Round --</option>
+          </select>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-assign-marker">
+          <label for="auto-assign-marker">Auto-assign markers (next player in flight)</label>
+        </div>
+
+        <button class="btn-generate" onclick="generateScorecards()">📝 Generate Scorecards</button>
+      </div>
+
+      <div id="scorecards-output"></div>
+
+      <div class="action-buttons" id="action-buttons" style="display: none;">
+        <button class="btn btn-print" onclick="window.print()">🖨️ Print Scorecards</button>
+        <button class="btn btn-back" onclick="window.location.reload()">🔄 Back to Options</button>
+        <a href="documents.html" id="back-link" class="btn btn-back">Back to Documents</a>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      
+      let tournament = null;
+      let courseData = null;
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getCourses() {
+        try {
+          const raw = localStorage.getItem('courses');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse courses', err);
+          return [];
+        }
+      }
+
+      function getDraws() {
+        try {
+          const raw = localStorage.getItem('draws');
+          return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+          console.error('Failed to parse draws', err);
+          return {};
+        }
+      }
+
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+          console.error('Failed to parse admittedPlayers', err);
+          return {};
+        }
+      }
+
+      function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+
+      function init() {
+        const tournaments = getTournaments();
+        tournament = tournaments.find(t => t.tournamentId === tournamentId);
+
+        if (!tournament) {
+          alert('Tournament not found.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = `Scorecards for ${tournament.name}`;
+        document.getElementById('back-link').href = `documents.html?tournamentId=${tournamentId}`;
+
+        // Load course data
+        const courses = getCourses();
+        courseData = courses.find(c => c.courseId === tournament.courseId);
+
+        // Populate round selector
+        const roundSelect = document.getElementById('round-select');
+        const roundIds = tournament.meta?.roundIds || [tournament.tournamentId + '-1'];
+        const roundsData = tournament.meta?.roundsData || [];
+
+        roundIds.forEach((rid, idx) => {
+          const option = document.createElement('option');
+          option.value = rid;
+          
+          if (roundsData[idx]) {
+            const roundDate = roundsData[idx].date ? formatDate(roundsData[idx].date) : '';
+            option.textContent = `Round ${idx + 1}${roundDate ? ' - ' + roundDate : ''}`;
+          } else {
+            option.textContent = `Round ${idx + 1}`;
+          }
+          
+          roundSelect.appendChild(option);
+        });
+      }
+
+      function generateScorecards() {
+        const roundId = document.getElementById('round-select').value;
+        const autoAssignMarker = document.getElementById('auto-assign-marker').checked;
+
+        if (!roundId) {
+          alert('Please select a round');
+          return;
+        }
+
+        if (!courseData || !courseData.pars) {
+          alert('Course data not available');
+          return;
+        }
+
+        // Get players for this round
+        const admittedPlayers = getAdmittedPlayers();
+        const roundPlayers = admittedPlayers[roundId] || [];
+
+        if (roundPlayers.length === 0) {
+          alert('No players admitted for this round');
+          return;
+        }
+
+        // Get draws for marker assignment
+        const draws = getDraws();
+        const roundDraw = draws[roundId] || [];
+
+        // Get round date
+        const roundIndex = tournament.meta?.roundIds?.indexOf(roundId) || 0;
+        const roundDate = tournament.meta?.roundsData?.[roundIndex]?.date || '';
+
+        // Generate scorecards
+        let html = '';
+        
+        roundPlayers.forEach((player, index) => {
+          let markerName = '';
+          
+          if (autoAssignMarker) {
+            // Find player's flight
+            const flight = roundDraw.find(f => 
+              f.players?.some(p => p.reg === player.reg)
+            );
+            
+            if (flight && flight.players) {
+              // Find player's index in flight
+              const playerIndex = flight.players.findIndex(p => p.reg === player.reg);
+              // Assign next player as marker (wrap around)
+              const markerIndex = (playerIndex + 1) % flight.players.length;
+              const marker = flight.players[markerIndex];
+              markerName = `${marker.firstName} ${marker.lastName}`;
+            }
+          }
+
+          html += generateScorecardHTML(player, markerName, roundDate);
+        });
+
+        document.getElementById('scorecards-output').innerHTML = html;
+        document.getElementById('options-panel').style.display = 'none';
+        document.getElementById('action-buttons').style.display = 'flex';
+      }
+
+      function generateScorecardHTML(player, markerName, roundDate) {
+        const pars = courseData.pars || [];
+        const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
+        
+        // Calculate front 9 and back 9 par
+        let front9Par = 0, back9Par = 0;
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          front9Par += pars[i];
+        }
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          back9Par += pars[i];
+        }
+        const totalPar = front9Par + back9Par;
+
+        // Format HCP and PHCP
+        let hcpDisplay = '-';
+        if (player.hcp !== undefined && player.hcp !== null && player.hcp !== '') {
+          const hcp = parseFloat(player.hcp);
+          hcpDisplay = hcp < 0 ? '+' + Math.abs(hcp).toFixed(1) : hcp.toFixed(1);
+        }
+
+        let phcpDisplay = '-';
+        if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
+          phcpDisplay = player.phcp < 0 ? '+' + Math.abs(player.phcp) : player.phcp;
+        }
+
+        let html = `
+          <div class="scorecard">
+            <div class="scorecard-header">
+              <h2>${tournament.name}</h2>
+              <p><strong>${courseData.courseName || 'Golf Course'}</strong></p>
+              <p>${roundDate ? formatDate(roundDate) : ''}</p>
+            </div>
+
+            <div class="player-info-row">
+              <div class="player-info-item">
+                <span class="player-info-label">PLAYER NAME</span>
+                <span class="player-info-value">${player.firstName} ${player.lastName}</span>
+              </div>
+              <div class="player-info-item">
+                <span class="player-info-label">REG #</span>
+                <span class="player-info-value">${player.reg}</span>
+              </div>
+              <div class="player-info-item">
+                <span class="player-info-label">HCP</span>
+                <span class="player-info-value">${hcpDisplay}</span>
+              </div>
+              <div class="player-info-item">
+                <span class="player-info-label">PHCP</span>
+                <span class="player-info-value">${phcpDisplay}</span>
+              </div>
+            </div>
+
+            <table class="scorecard-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">HOLE</th>`;
+        
+        // Front 9 holes
+        for (let i = 1; i <= 9; i++) {
+          html += `<th>${i}</th>`;
+        }
+        html += `<th class="total-cell">OUT</th>`;
+        
+        // Back 9 holes
+        for (let i = 10; i <= 18; i++) {
+          html += `<th>${i}</th>`;
+        }
+        html += `<th class="total-cell">IN</th>`;
+        html += `<th class="total-cell">TOT</th>`;
+        html += `</tr></thead><tbody>`;
+
+        // Par row
+        html += `<tr><td class="row-label">PAR</td>`;
+        for (let i = 0; i < 9 && i < pars.length; i++) {
+          html += `<td>${pars[i]}</td>`;
+        }
+        html += `<td class="total-cell">${front9Par}</td>`;
+        for (let i = 9; i < 18 && i < pars.length; i++) {
+          html += `<td>${pars[i]}</td>`;
+        }
+        html += `<td class="total-cell">${back9Par}</td>`;
+        html += `<td class="total-cell">${totalPar}</td>`;
+        html += `</tr>`;
+
+        // Stroke Index row
+        html += `<tr><td class="row-label">SI</td>`;
+        for (let i = 0; i < 9 && i < strokeIndexes.length; i++) {
+          html += `<td>${strokeIndexes[i]}</td>`;
+        }
+        html += `<td class="total-cell">-</td>`;
+        for (let i = 9; i < 18 && i < strokeIndexes.length; i++) {
+          html += `<td>${strokeIndexes[i]}</td>`;
+        }
+        html += `<td class="total-cell">-</td>`;
+        html += `<td class="total-cell">-</td>`;
+        html += `</tr>`;
+
+        // Score row (empty boxes)
+        html += `<tr><td class="row-label">SCORE</td>`;
+        for (let i = 0; i < 9; i++) {
+          html += `<td class="score-box"></td>`;
+        }
+        html += `<td class="score-box total-cell"></td>`;
+        for (let i = 9; i < 18; i++) {
+          html += `<td class="score-box"></td>`;
+        }
+        html += `<td class="score-box total-cell"></td>`;
+        html += `<td class="score-box total-cell"></td>`;
+        html += `</tr>`;
+
+        html += `</tbody></table>`;
+
+        // Marker section
+        html += `<div class="marker-section">`;
+        
+        if (markerName) {
+          html += `
+            <div class="marker-info">
+              <div class="marker-box">
+                <div class="marker-label">MARKER NAME</div>
+                <div class="marker-value">${markerName}</div>
+              </div>
+              <div class="marker-box">
+                <div class="marker-label">MARKER HCP</div>
+                <div class="marker-value">_______</div>
+              </div>
+              <div class="marker-box">
+                <div class="marker-label">MARKER SCORE</div>
+                <div class="marker-value">_______</div>
+              </div>
+              <div class="marker-box">
+                <div class="marker-label">MARKER POINTS</div>
+                <div class="marker-value">_______</div>
+              </div>
+            </div>`;
+        }
+
+        html += `
+          <div class="signature-box">
+            <div class="signature-field">
+              <label>Player's Signature</label>
+            </div>
+            <div class="signature-field">
+              <label>Marker's Signature</label>
+            </div>
+          </div>
+        </div>`;
+
+        html += `</div>`;
+
+        return html;
+      }
+
+      init();
+    </script>
+  </body>
+</html>

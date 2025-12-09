@@ -50,6 +50,12 @@
           <h3 class="document-title">Pace of Play</h3>
           <p class="document-description">Track group timing and pace</p>
         </div>
+
+        <div class="document-card" id="card-scorecards">
+          <div class="document-icon">📝</div>
+          <h3 class="document-title">Scorecards</h3>
+          <p class="document-description">Generate printable scorecards</p>
+        </div>
       </div>
     </main>
 
@@ -97,6 +103,10 @@
 
       document.getElementById('card-pace-of-play').addEventListener('click', () => {
         window.location.href = `pace_of_play.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      });
+
+      document.getElementById('card-scorecards').addEventListener('click', () => {
+        window.location.href = `scorecards.html?tournamentId=${encodeURIComponent(tournamentId)}`;
       });
 
       init();
