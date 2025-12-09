@@ -13,8 +13,8 @@
     <link rel="stylesheet" href="../styles.css">
     <style>
       body{padding-top:70px}
-      .admissions-container{max-width:1400px;margin:24px auto;padding:16px}
-      .round-selector{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .admissions-container{max-width:1400px;margin:16px auto;padding:16px}
+      .round-selector{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
       .round-selector label{display:block;font-weight:600;margin-bottom:8px}
       .round-selector select{padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px;min-width:200px}
       .admissions-grid{display:flex;gap:20px}
@@ -22,7 +22,7 @@
       .panel h2{margin-top:0;font-size:18px;color:#1e293b;margin-bottom:12px}
       .search-box{margin-bottom:12px}
       .search-box input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px}
-      .table-wrapper{overflow:auto;max-height:calc(100vh - 320px);border-radius:8px}
+      .table-wrapper{overflow:auto;max-height:calc(100vh - 280px);border-radius:8px}
       table{width:100%;border-collapse:collapse}
       table th{position:sticky;top:0;background:#f8fafc;padding:10px 8px;border-bottom:2px solid #e6e9ef;font-weight:600;text-align:left;font-size:13px;cursor:pointer;user-select:none}
       table th:hover{background:#e2e8f0}
@@ -35,12 +35,12 @@
       table tr.ineligible:hover{background:#fdd}
       .btn-back{background:white;border:1px solid #e6e9ef;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;color:#333;text-decoration:none;display:inline-block}
       .status-text{font-size:13px;color:#64748b;margin-bottom:8px}
-      .criteria-panel{background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .criteria-panel{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
       .criteria-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-      .criteria-header h2{margin:0;font-size:16px;color:#1e293b;display:flex;align-items:center;gap:8px}
+      .criteria-header h2{margin:0;font-size:15px;color:#1e293b;display:flex;align-items:center;gap:8px}
       .criteria-header .toggle-icon{font-size:12px;color:#64748b;transition:transform 0.2s}
       .criteria-header .toggle-icon.expanded{transform:rotate(180deg)}
-      .criteria-content{display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e6e9ef}
+      .criteria-content{display:none;margin-top:12px;padding-top:12px;border-top:1px solid #e6e9ef}
       .criteria-content.expanded{display:block}
       .criteria-row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}
       .criteria-group{display:flex;flex-direction:column;gap:4px}
@@ -60,8 +60,8 @@
       .btn-remove-all:hover{background:#c82333;transform:translateY(-2px);box-shadow:0 6px 16px rgba(220,53,69,0.4)}
       
       /* TGF Import Panel Styles */
-      .tgf-panel{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-      .tgf-panel h2{margin-top:0;font-size:18px;color:#1e293b;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+      .tgf-panel{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+      .tgf-panel h2{margin:0;font-size:15px;color:#1e293b;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
       .tgf-panel h2 .toggle-icon{font-size:14px;color:#64748b}
       .tgf-content{display:none}
       .tgf-content.expanded{display:block}
@@ -95,14 +95,10 @@
   </head>
   <body>
     <div class="top-nav">
-      <h1>🏆 Admissions</h1>
+      <h1>🏆 Admissions <span style="font-size:14px;font-weight:400;opacity:0.9;margin-left:12px">Add players to the tournament</span></h1>
       <a href="index.html" class="btn-back-top">← Back</a>
     </div>
     <main class="admissions-container">
-      <header style="margin-bottom:20px">
-        <p class="lead">Add players to the tournament.</p>
-      </header>
-
       <section id="round-selector" class="round-selector" style="display:none">
         <label for="round-select">Select Round:</label>
         <select id="round-select">
