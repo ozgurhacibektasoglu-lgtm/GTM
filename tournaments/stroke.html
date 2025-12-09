@@ -514,6 +514,11 @@
 
       // Start initialization
       loadDataAndInit();
+
+      function getNextTournamentId() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          const tournaments = raw ? JSON.parse(raw) : [];
           if (tournaments.length === 0) {
             return 'T0001';
           }
