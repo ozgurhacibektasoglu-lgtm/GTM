@@ -511,10 +511,23 @@
         if (!tournament?.meta?.roundIds) return 72;
         
         const roundIndex = tournament.meta.roundIds.indexOf(roundId);
-        if (roundIndex === -1) return 72;
         
-        const roundData = tournament.meta.roundsData?.[roundIndex];
-        if (!roundData) return 72;
+        // Get course identifier - first from roundData, then from tournament
+        let courseIdentifier = null;
+        
+        if (roundIndex !== -1) {
+          const roundData = tournament.meta.roundsData?.[roundIndex];
+          if (roundData && roundData.course) {
+            courseIdentifier = roundData.course;
+          }
+        }
+        
+        // Fallback to tournament course
+        if (!courseIdentifier && tournament.course) {
+          courseIdentifier = tournament.course;
+        }
+        
+        if (!courseIdentifier) return 72;
         
         // Get course data
         try {
@@ -522,9 +535,9 @@
           const courses = raw ? JSON.parse(raw) : [];
           
           // Try to find by courseId first, then by courseName
-          let course = courses.find(c => c.courseId === roundData.course);
+          let course = courses.find(c => c.courseId === courseIdentifier);
           if (!course) {
-            course = courses.find(c => c.courseName === roundData.course);
+            course = courses.find(c => c.courseName === courseIdentifier);
           }
           
           if (course && course.pars) {
@@ -882,27 +895,12 @@
 
       function calculateToParForPlayer(player, roundIds) {
         // To Par is ALWAYS based on gross scores, regardless of tournament format
-        // Only includes rounds that have been completed (based on date)
         const tournament = getTournament();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
         
         let totalToPar = 0;
         let hasAnyScore = false;
         
         roundIds.forEach((roundId, index) => {
-          // Check if this round should be included (date has passed)
-          const roundData = tournament?.meta?.roundsData?.[index];
-          if (roundData && roundData.date) {
-            const roundDate = new Date(roundData.date);
-            roundDate.setHours(0, 0, 0, 0);
-            
-            // Only include if round date has passed
-            if (roundDate > today) {
-              return; // Skip future rounds
-            }
-          }
-          
           // Get gross score for this round
           const grossScore = calculateGrossTotal(player, roundId);
           
