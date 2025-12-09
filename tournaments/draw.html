@@ -315,26 +315,6 @@
       display: block;
     }
 
-    .btn-save {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 24px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      transition: background 0.2s;
-    }
-
-    .btn-save:hover {
-      background: #0056b3;
-    }
-
     .empty-state {
       text-align: center;
       color: #999;
@@ -495,9 +475,83 @@
       margin-right: 8px;
       cursor: pointer;
     }
+    
+    /* Action Buttons - Top Bar */
+    .action-buttons-bar {
+      background: #f8fafc;
+      padding: 12px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .action-btn {
+      background: linear-gradient(180deg, #0b6efd, #0a58d1);
+      color: white;
+      border: 0;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(11,110,253,0.3);
+    }
+    
+    .action-btn.success {
+      background: linear-gradient(180deg, #28a745, #218838);
+    }
+    
+    .action-btn.danger {
+      background: linear-gradient(180deg, #dc3545, #c82333);
+    }
+    
+    .action-btn.secondary {
+      background: white;
+      color: #333;
+      border: 1px solid #e6e9ef;
+    }
+    
+    .btn-save {
+      background: linear-gradient(180deg, #28a745, #218838);
+      color: white;
+      border: 0;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-left: auto;
+    }
+    
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(40,167,69,0.3);
+    }
   </style>
 </head>
 <body>
+  <div class="top-nav">
+    <h1>🏆 Draw</h1>
+    <a href="index.html" class="btn-back-top">← Back</a>
+  </div>
+  
+  <!-- Action Buttons Bar -->
+  <div class="action-buttons-bar">
+    <button class="action-btn" onclick="openAutoGroupModal()">⚡ Auto Group</button>
+    <button class="action-btn success" onclick="addNewGroup()">+ Add Group</button>
+    <button class="action-btn danger" onclick="removeSelectedGroup()">- Remove Group</button>
+    <button class="action-btn secondary" onclick="clearGroups()">Clear All</button>
+    <button class="btn-save" id="btn-save-draw">💾 Save Draw</button>
+  </div>
+  
   <!-- Auto Group Modal -->
   <div id="auto-group-modal" class="modal-overlay">
     <div class="modal-content">
@@ -555,9 +609,7 @@
   </div>
 
   <div class="container">
-    <h1>Tournament Draw</h1>
-    
-    <div style="margin-bottom: 20px;">
+    <div style="margin-bottom: 20px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
       <label for="round-select" style="margin-right: 10px; font-weight: 600;">Select Round:</label>
       <select id="round-select" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
         <option value="">-- Select Round --</option>
@@ -571,12 +623,6 @@
           <div class="groups-area">
             <div class="groups-header">
               <h3>Starting Groups</h3>
-              <div class="auto-buttons">
-                <button onclick="openAutoGroupModal()">Auto Group</button>
-                <button onclick="addNewGroup()" style="background: #28a745;">+ Add Group</button>
-                <button onclick="removeSelectedGroup()" style="background: #dc3545;">- Remove Group</button>
-                <button onclick="clearGroups()" class="secondary">Clear All</button>
-              </div>
             </div>
             <div id="groups-container" class="groups-grid"></div>
           </div>
@@ -625,8 +671,6 @@
           </div>
         </div>
       </div>
-
-      <button class="btn-save" onclick="saveDraw()">Save Draw</button>
     </div>
 
     <div id="no-round" style="display: none; text-align: center; padding: 50px; color: #999;">
@@ -1840,6 +1884,9 @@
 
     // Initialize on load
     init();
+    
+    // Add event listener for the new save button
+    document.getElementById('btn-save-draw').addEventListener('click', saveDraw);
   </script>
 </body>
 </html>
