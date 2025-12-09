@@ -369,8 +369,9 @@
         <div class="info-box">
           <h4>📋 How Bracket Setup Works</h4>
           <p>
-            Select players from the left panel to add them to the bracket. You can seed players manually or use automatic seeding based on handicap.
-            If you have more players than bracket slots, qualifying matches will be automatically created. Players with byes will advance directly to the next round.
+            Players admitted through the "Admit Players" button are automatically included in the bracket.
+            Use the seeding controls to order players by handicap, randomly, or manually.
+            If you have more players than bracket slots, qualifying matches will be automatically created.
           </p>
         </div>
 
@@ -514,8 +515,15 @@
       console.log('Admitted players for this tournament:', admittedPlayersList.length);
       console.log('Admitted players data:', admittedPlayersList);
 
+      // Auto-select all admitted players - they ARE the bracket participants
+      selectedPlayers = allPlayers.filter(p => 
+        admittedPlayersList.some(ap => ap.playerId === p.playerId)
+      );
+      console.log('Selected players:', selectedPlayers.length);
+
       renderTournamentHeader();
       renderPlayerList();
+      renderSeedingList();
       updateStats();
       setupSearch();
     }
@@ -540,51 +548,33 @@
       const container = document.getElementById('player-list');
       container.innerHTML = '';
 
-      // Show only admitted players
-      let playersToShow = admittedPlayersList.length > 0 
-        ? allPlayers.filter(p => admittedPlayersList.some(ap => ap.playerId === p.playerId))
-        : [];
-
-      if (playersToShow.length === 0) {
+      if (selectedPlayers.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">No admitted players yet.<br><br>Click "Admit Players" button to add players.</p>';
         return;
       }
 
-      playersToShow.forEach(player => {
-        const isSelected = selectedPlayers.some(p => p.playerId === player.playerId);
+      // Show admitted players as read-only list
+      selectedPlayers.forEach((player, index) => {
         const div = document.createElement('div');
-        div.className = 'player-item' + (isSelected ? ' selected' : '');
+        div.className = 'player-item selected';
+        div.style.cursor = 'default';
         const fullName = `${player.firstName || ''} ${player.lastName || ''}`.trim() || 'Unknown Player';
         div.innerHTML = `
-          <div class="player-name">${fullName}</div>
+          <div class="player-name"><span style="color:#0b6efd; margin-right:8px;">#${index + 1}</span>${fullName}</div>
           <div class="player-details">HCP: ${player.handicap || 'N/A'} | Gender: ${player.gender || 'N/A'}</div>
         `;
-        div.addEventListener('click', () => togglePlayer(player));
         container.appendChild(div);
       });
     }
 
-    function togglePlayer(player) {
-      const index = selectedPlayers.findIndex(p => p.playerId === player.playerId);
-      
-      if (index > -1) {
-        // Remove player
-        selectedPlayers.splice(index, 1);
-      } else {
-        // Add player
-        selectedPlayers.push(player);
-      }
-      
-      renderPlayerList();
-      renderSeedingList();
-      updateStats();
-    }
+    // No longer needed - all admitted players are automatically selected
+    // Seeding can be changed via the seeding list on the right
 
     function renderSeedingList() {
       const container = document.getElementById('seeding-list');
       
       if (selectedPlayers.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:40px 0;">No players selected yet. Click players from the left panel to add them.</p>';
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:40px 0;">No players in bracket yet.<br><br>Use "Admit Players" to add players to this tournament.</p>';
         return;
       }
 
