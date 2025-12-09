@@ -120,6 +120,11 @@
       </div>
     </main>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
@@ -769,6 +774,15 @@
 
       // Tiebreaker: Play Off - checks if a play-off result was recorded
       // Play-off results are stored in tournament.playOffResults[categoryCode] = [{ playerReg, position, tiedScore }]
+      // 
+      // Important: Supports PARTIAL play-off results. If only the winner is set and others are "Not Set",
+      // the winner gets priority, and the remaining players continue to the next tiebreaker criteria.
+      // 
+      // Example scenario:
+      // - 3 players tied for 1st (all scored 70)
+      // - Play-off: Player 1 scores 4, Players 2 & 3 score 5
+      // - User marks Player 1 as "1st (Winner)", leaves 2 & 3 as "Not Set"
+      // - Result: Player 1 ranks 1st, Players 2 & 3 use other criteria
       function tiebreakPlayOff(playerA, playerB) {
         const tournament = getTournament();
         if (!tournament.playOffResults || !tournament.playOffResults[categoryCode]) {
@@ -781,18 +795,34 @@
         const resultA = playOffResults.find(r => r.playerReg === playerA.reg);
         const resultB = playOffResults.find(r => r.playerReg === playerB.reg);
         
-        // Both players must have play-off positions in the same tie group
-        if (!resultA || !resultB) {
-          return 0; // One or both players not in play-off
+        // Case 1: Neither player has a play-off result - continue to other criteria
+        if (!resultA && !resultB) {
+          return 0;
         }
         
-        // Check if they were in the same tie group (same tiedScore)
-        if (resultA.tiedScore !== resultB.tiedScore) {
-          return 0; // Different tie groups
+        // Case 2: Both have play-off results in the same tie group
+        if (resultA && resultB && resultA.tiedScore === resultB.tiedScore) {
+          // Compare positions (lower position = better, 1st beats 2nd)
+          return resultA.position - resultB.position;
         }
         
-        // Compare positions (lower position = better, 1st beats 2nd)
-        return resultA.position - resultB.position;
+        // Case 3: Only player A has a play-off result
+        // Player A was explicitly marked in play-off, which means they resolved their tie
+        // Player B might be in the same tie group but wasn't marked (left as "Not Set")
+        if (resultA && !resultB) {
+          // A has a play-off position, A ranks better
+          return -1;
+        }
+        
+        // Case 4: Only player B has a play-off result  
+        if (!resultA && resultB) {
+          // B has a play-off position, B ranks better
+          return 1;
+        }
+        
+        // Case 5: Both have results but in different tie groups
+        // This shouldn't happen in practice, but handle it gracefully
+        return 0;
       }
 
       // Main tiebreaker comparison function
@@ -1023,7 +1053,14 @@
         
         // Get untie criteria to check if tiebreakers are enabled
         const untieCriteria = getUntieCriteria();
-        const hasTiebreakers = untieCriteria && untieCriteria.length > 0;
+        const hasUntieCriteria = untieCriteria && untieCriteria.length > 0;
+        
+        // Check if play-off results exist for this category
+        const tournament = getTournament();
+        const hasPlayOffResults = tournament?.playOffResults?.[categoryCode]?.length > 0;
+        
+        // Tiebreakers are active if either play-off results exist OR untie criteria are set
+        const hasTiebreakers = hasPlayOffResults || hasUntieCriteria;
         
         // Sort normal players by total, then apply tiebreakers if enabled
         normalPlayers.sort((a, b) => {

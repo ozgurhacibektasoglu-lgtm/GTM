@@ -161,19 +161,7 @@ async function loadTournamentsFromFirebase() {
   return getTournamentsFromStorage();
 }
 
-// Draws sync functions
-async function loadDrawsFromFirebase() {
-  const data = await syncFromFirebase('draws');
-  if (data && typeof data === 'object') {
-    localStorage.setItem('draws', JSON.stringify(data));
-    return data;
-  }
-  try {
-    return JSON.parse(localStorage.getItem('draws') || '{}');
-  } catch (err) {
-    return {};
-  }
-}
+
 
 // Admitted Players sync functions
 async function loadAdmittedPlayersFromFirebase() {
@@ -187,6 +175,56 @@ async function loadAdmittedPlayersFromFirebase() {
   } catch (err) {
     return {};
   }
+}
+
+// Scores sync functions
+function saveScoresToFirebase(scores) {
+  localStorage.setItem('scores', JSON.stringify(scores || {}));
+  syncToFirebase('scores', scores || {});
+}
+
+function getScoresFromStorage() {
+  try {
+    const raw = localStorage.getItem('scores');
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error('Failed to parse scores from localStorage', err);
+    return {};
+  }
+}
+
+async function loadScoresFromFirebase() {
+  const data = await syncFromFirebase('scores');
+  if (data && typeof data === 'object') {
+    localStorage.setItem('scores', JSON.stringify(data));
+    return data;
+  }
+  return getScoresFromStorage();
+}
+
+// Draws sync functions
+function saveDrawsToFirebase(draws) {
+  localStorage.setItem('draws', JSON.stringify(draws || {}));
+  syncToFirebase('draws', draws || {});
+}
+
+async function loadDrawsFromFirebase() {
+  const data = await syncFromFirebase('draws');
+  if (data && typeof data === 'object') {
+    localStorage.setItem('draws', JSON.stringify(data));
+    return data;
+  }
+  try {
+    return JSON.parse(localStorage.getItem('draws') || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+
+// Admitted Players save function
+function saveAdmittedPlayersToFirebase(admittedPlayers) {
+  localStorage.setItem('admittedPlayers', JSON.stringify(admittedPlayers || {}));
+  syncToFirebase('admittedPlayers', admittedPlayers || {});
 }
 
 // Current User sync functions
@@ -215,19 +253,26 @@ function syncAllToFirebase() {
   console.log('Starting full sync to Firebase...');
   
   // Read directly from localStorage
-  let courses = [], players = [], tournaments = [];
+  let courses = [], players = [], tournaments = [], scores = {}, draws = {}, admittedPlayers = {};
   try { courses = JSON.parse(localStorage.getItem('courses') || '[]'); } catch(e) {}
   try { players = JSON.parse(localStorage.getItem('players') || '[]'); } catch(e) {}
   try { tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]'); } catch(e) {}
+  try { scores = JSON.parse(localStorage.getItem('scores') || '{}'); } catch(e) {}
+  try { draws = JSON.parse(localStorage.getItem('draws') || '{}'); } catch(e) {}
+  try { admittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}'); } catch(e) {}
   
   return Promise.all([
     syncToFirebase('courses', courses),
     syncToFirebase('players', players),
-    syncToFirebase('tournaments', tournaments)
+    syncToFirebase('tournaments', tournaments),
+    syncToFirebase('scores', scores),
+    syncToFirebase('draws', draws),
+    syncToFirebase('admittedPlayers', admittedPlayers)
   ])
   .then(() => {
     console.log('✓ Full sync completed');
-    alert(`Synced to cloud:\n${courses.length} courses\n${players.length} players\n${tournaments.length} tournaments`);
+    const scoreCount = Object.keys(scores).length;
+    alert(`Synced to cloud:\n${courses.length} courses\n${players.length} players\n${tournaments.length} tournaments\n${scoreCount} score records`);
   })
   .catch((error) => {
     console.error('Sync failed:', error);
@@ -247,7 +292,10 @@ function loadAllFromFirebase() {
   return Promise.all([
     loadCoursesFromFirebase(),
     loadPlayersFromFirebase(),
-    loadTournamentsFromFirebase()
+    loadTournamentsFromFirebase(),
+    loadScoresFromFirebase(),
+    loadDrawsFromFirebase(),
+    loadAdmittedPlayersFromFirebase()
   ])
   .then(() => {
     console.log('✓ All data loaded from Firebase');

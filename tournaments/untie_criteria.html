@@ -217,6 +217,11 @@
       </div>
     </main>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
@@ -311,11 +316,15 @@
         attachDragListeners();
       }
 
+      // Flag to track if zone listeners are attached
+      let zoneListenersAttached = false;
+
       function attachDragListeners() {
         const items = document.querySelectorAll('.criteria-item[draggable="true"]');
         const dropZone = document.getElementById('drop-zone');
         const availableContainer = document.getElementById('available-criteria');
         
+        // Re-attach item listeners (items are new after render)
         items.forEach(item => {
           item.addEventListener('dragstart', handleDragStart);
           item.addEventListener('dragend', handleDragEnd);
@@ -324,15 +333,20 @@
           item.addEventListener('dragleave', handleDragLeave);
         });
         
-        // Drop zone listeners
-        dropZone.addEventListener('dragover', handleDragOver);
-        dropZone.addEventListener('drop', handleDropToZone);
-        dropZone.addEventListener('dragleave', handleDragLeave);
-        
-        // Available container listeners (for removing from selected)
-        availableContainer.addEventListener('dragover', handleDragOver);
-        availableContainer.addEventListener('drop', handleDropToAvailable);
-        availableContainer.addEventListener('dragleave', handleDragLeave);
+        // Only attach zone listeners once
+        if (!zoneListenersAttached) {
+          // Drop zone listeners
+          dropZone.addEventListener('dragover', handleDragOver);
+          dropZone.addEventListener('drop', handleDropToZone);
+          dropZone.addEventListener('dragleave', handleDragLeave);
+          
+          // Available container listeners (for removing from selected)
+          availableContainer.addEventListener('dragover', handleDragOver);
+          availableContainer.addEventListener('drop', handleDropToAvailable);
+          availableContainer.addEventListener('dragleave', handleDragLeave);
+          
+          zoneListenersAttached = true;
+        }
       }
 
       let draggedItem = null;
@@ -365,6 +379,7 @@
 
       function handleDrop(e) {
         e.preventDefault();
+        e.stopPropagation();
         this.classList.remove('drag-over');
         
         const targetId = this.dataset.id;
@@ -380,6 +395,7 @@
           // Adding new item, insert at target position
           const insertIndex = targetIndex;
           selectedCriteria.splice(insertIndex, 0, draggedId);
+          console.log('Added at position:', insertIndex, 'Selected:', selectedCriteria);
         } else if (!isFromAvailable && isTargetInSelected) {
           // Reordering within selected
           const fromIndex = selectedCriteria.indexOf(draggedId);
@@ -387,6 +403,7 @@
           
           selectedCriteria.splice(fromIndex, 1);
           selectedCriteria.splice(toIndex, 0, draggedId);
+          console.log('Reordered:', draggedId, 'Selected:', selectedCriteria);
         }
         
         renderCriteria();
@@ -394,6 +411,7 @@
 
       function handleDropToZone(e) {
         e.preventDefault();
+        e.stopPropagation();
         this.classList.remove('drag-over');
         
         if (!draggedId) return;
@@ -401,12 +419,14 @@
         // Only add if not already in selected
         if (!selectedCriteria.includes(draggedId)) {
           selectedCriteria.push(draggedId);
+          console.log('Added criteria:', draggedId, 'Selected:', selectedCriteria);
           renderCriteria();
         }
       }
 
       function handleDropToAvailable(e) {
         e.preventDefault();
+        e.stopPropagation();
         this.classList.remove('drag-over');
         
         if (!draggedId) return;
@@ -415,11 +435,13 @@
         const index = selectedCriteria.indexOf(draggedId);
         if (index !== -1) {
           selectedCriteria.splice(index, 1);
+          console.log('Removed criteria:', draggedId, 'Selected:', selectedCriteria);
           renderCriteria();
         }
       }
 
       function removeCriteria(criteriaId) {
+        event.stopPropagation();
         const index = selectedCriteria.indexOf(criteriaId);
         if (index !== -1) {
           selectedCriteria.splice(index, 1);
@@ -428,9 +450,11 @@
       }
 
       function addCriteria(criteriaId) {
+        event.stopPropagation();
         // Only add if not already in selected
         if (!selectedCriteria.includes(criteriaId)) {
           selectedCriteria.push(criteriaId);
+          console.log('Click-added:', criteriaId, 'Selected:', selectedCriteria);
           renderCriteria();
         }
       }

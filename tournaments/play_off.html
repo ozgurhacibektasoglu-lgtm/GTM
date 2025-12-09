@@ -199,6 +199,11 @@
       </div>
     </main>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
@@ -375,7 +380,7 @@
         });
         
         // Find groups with ties (more than 1 player with same score)
-        tiedGroups = Object.entries(scoreGroups)
+        const allTiedGroups = Object.entries(scoreGroups)
           .filter(([score, players]) => players.length > 1)
           .map(([score, players]) => ({ score: parseInt(score), players }))
           .sort((a, b) => {
@@ -386,10 +391,14 @@
             return a.score - b.score; // Lower is better
           });
         
-        if (tiedGroups.length === 0) {
-          container.innerHTML = '<div class="no-ties">🎉 No ties found in this category! All players have unique scores.</div>';
+        // Only show the first-place tie group (play-offs are for 1st place only)
+        if (allTiedGroups.length === 0) {
+          container.innerHTML = '<div class="no-ties">🎉 No ties for 1st place in this category!</div>';
           return;
         }
+        
+        // Take only the first tie group (1st place)
+        tiedGroups = [allTiedGroups[0]];
         
         // Render tied groups
         let html = '';

@@ -173,6 +173,11 @@
       </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
     <script>
       // Get tournament from URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -373,6 +378,10 @@
 
       function saveScoresData(scoresData) {
         localStorage.setItem('scores', JSON.stringify(scoresData));
+        // Sync to Firebase if available
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('scores', scoresData).catch(e => console.log('Firebase sync failed:', e));
+        }
       }
 
       // Initialize
