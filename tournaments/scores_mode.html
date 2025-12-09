@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Score Entry Method</title>
+    <link rel="stylesheet" href="../styles.css">
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #f8fafc; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #f8fafc; padding-top: 70px; }
       .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
       .modal-content { background: white; border-radius: 16px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
       .modal-title { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 12px; text-align: center; }
@@ -17,12 +18,13 @@
       .option-icon { font-size: 48px; margin-bottom: 16px; }
       .option-title { font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
       .option-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
-      .btn-back { position: absolute; top: 20px; left: 20px; background: white; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #64748b; text-decoration: none; }
-      .btn-back:hover { background: #f8fafc; border-color: #cbd5e1; }
     </style>
   </head>
   <body>
-    <a href="index.html" class="btn-back" id="btn-back">← Back to Tournament</a>
+    <div class="top-nav">
+      <h1>🏆 Scoring Mode</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
     
     <div class="modal-overlay">
       <div class="modal-content">

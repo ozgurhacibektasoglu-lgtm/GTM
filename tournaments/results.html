@@ -6,6 +6,7 @@
     <title>Tournament Results</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
+      body{padding-top:70px}
       .results-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
       .card { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); padding: 24px; margin-bottom: 20px; }
       .card h2 { margin-top: 0; font-size: 18px; margin-bottom: 16px; }
@@ -103,6 +104,10 @@
     </style>
   </head>
   <body>
+    <div class="top-nav">
+      <h1>🏆 Results</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
     <main class="results-container">
       <header>
         <h1>Tournament Results</h1>
@@ -119,10 +124,6 @@
         <div id="categories-list">
           <div class="empty-state">Loading categories...</div>
         </div>
-      </div>
-
-      <div class="action-buttons">
-        <a href="index.html" class="btn btn-back">Back to Tournaments</a>
       </div>
     </main>
 

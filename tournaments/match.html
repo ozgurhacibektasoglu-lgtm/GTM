@@ -6,6 +6,7 @@
     <title>Create Match Play Tournament</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
+      body{padding-top:70px}
       .form-card{max-width:700px;margin:60px auto;padding:36px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.06)}
       .field{margin-bottom:20px}
       label{display:block;font-weight:600;margin-bottom:8px;font-size:15px}
@@ -17,8 +18,11 @@
     </style>
   </head>
   <body>
+    <div class="top-nav">
+      <h1>🏆 Match Play Tournament</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
     <main class="form-card">
-      <h1 style="margin-top:0;font-size:24px">Create Match Play Tournament</h1>
       <p style="color:#64748b;margin-bottom:28px">Configure your match play event details.</p>
       
       <form id="match-form">
@@ -65,7 +69,6 @@
 
         <div class="actions">
           <button type="submit" class="btn-primary">Continue</button>
-          <a href="new.html" class="btn-secondary">Back</a>
         </div>
       </form>
     </main>

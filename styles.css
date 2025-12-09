@@ -29,3 +29,43 @@ header h1{margin:0 0 6px;font-size:28px}
 @media (max-width:640px){
   .sub-menu{flex-direction:column}
 }
+
+/* Global Top Navigation Bar */
+.top-nav {
+  background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-nav h1 {
+  margin: 0;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.btn-back-top {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-block;
+}
+
+.btn-back-top:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+

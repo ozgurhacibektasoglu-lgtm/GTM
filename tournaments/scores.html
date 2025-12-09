@@ -6,6 +6,7 @@
     <title>Score Entry</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
+      body{padding-top:70px}
       .scores-container { max-width: 1600px; margin: 24px auto; padding: 16px; }
       .round-selector { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
       .round-selector label { display: block; font-weight: 600; margin-bottom: 8px; }
@@ -78,13 +79,13 @@
     </style>
   </head>
   <body>
+    <div class="top-nav">
+      <h1>🏆 Scores</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
     <main class="scores-container">
-      <header style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-        <div>
-          <h1>Score Entry</h1>
-          <p class="lead" id="tournament-name">Enter scores for the tournament round.</p>
-        </div>
-        <a href="index.html" class="btn-back">Back to Tournaments</a>
+      <header style="margin-bottom: 20px;">
+        <p class="lead" id="tournament-name">Enter scores for the tournament round.</p>
       </header>
 
       <section class="round-selector">
