@@ -558,33 +558,40 @@
         font-weight: bold;
       }
 
-      /* Prevent page breaks inside groups */
+      /* Prevent page breaks inside groups - simplified approach */
       .print-schedule-table {
         border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
       }
 
       .print-schedule-table tbody.group-rows {
-        display: block;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        -webkit-region-break-inside: avoid !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
 
       .print-schedule-table thead {
         display: table-header-group;
       }
 
-      .print-schedule-table tbody.group-rows tr {
-        display: table;
-        width: 100%;
-        table-layout: fixed;
-      }
-
-      .print-schedule-table thead tr {
-        display: table;
-        width: 100%;
-        table-layout: fixed;
-      }
+      /* Column widths using colgroup or explicit widths */
+      .print-schedule-table th.col-match,
+      .print-schedule-table td.match-cell { width: 30px; }
+      
+      .print-schedule-table th.col-player,
+      .print-schedule-table td.player-cell { width: 100px; }
+      
+      .print-schedule-table th.col-club,
+      .print-schedule-table td.club-cell { width: 50px; }
+      
+      .print-schedule-table th.col-tee,
+      .print-schedule-table td.tee-cell { width: 25px; }
+      
+      .print-schedule-table th.col-time,
+      .print-schedule-table td.start-cell { width: 35px; }
+      
+      .print-schedule-table th.col-hole,
+      .print-schedule-table td.hole-cell { width: 35px; }
 
       .print-schedule-table .first-player-row td {
         border-top: 1px solid #333;
