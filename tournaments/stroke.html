@@ -486,6 +486,9 @@
 
       // Load data from Firebase before initializing form
       async function loadDataAndInit() {
+        // Render rounds immediately so UI appears
+        renderRounds();
+        
         // Wait for Firebase to be ready
         let attempts = 0;
         while (!syncEnabled && attempts < 10) {
@@ -504,12 +507,15 @@
               await loadTournamentsFromFirebase();
               console.log('✓ Tournaments loaded from Firebase');
             }
+            // Re-render rounds with loaded course data
+            initForm();
           } catch(e) {
             console.log('Firebase load error:', e);
           }
+        } else {
+          // Firebase not available, just initialize form
+          initForm();
         }
-        
-        initForm();
       }
 
       // Start initialization
