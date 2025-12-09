@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Play Off Results</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .playoff-container { max-width: 900px; margin: 36px auto; padding: 24px; }
+      .card { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); padding: 24px; margin-bottom: 20px; }
+      .card h2 { margin-top: 0; font-size: 18px; margin-bottom: 16px; color: #1e293b; }
+      
+      .category-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      
+      .tied-players-section {
+        margin-top: 20px;
+      }
+      
+      .tied-group {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .tied-group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .tied-group-title {
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .tied-group-score {
+        background: #3b82f6;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .player-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        gap: 12px;
+      }
+      
+      .player-row:last-child {
+        margin-bottom: 0;
+      }
+      
+      .player-name {
+        flex: 1;
+        font-weight: 500;
+        color: #1e293b;
+      }
+      
+      .player-club {
+        color: #6b7280;
+        font-size: 13px;
+      }
+      
+      .playoff-position {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .position-select {
+        padding: 6px 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 14px;
+        min-width: 120px;
+      }
+      
+      .position-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .position-1 { background: #fef3c7; color: #92400e; }
+      .position-2 { background: #e5e7eb; color: #374151; }
+      .position-3 { background: #fed7aa; color: #9a3412; }
+      .position-other { background: #f3f4f6; color: #6b7280; }
+      
+      .no-ties {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+      }
+      
+      .btn { 
+        background: linear-gradient(180deg, var(--accent), #0a58d1); 
+        color: white; 
+        border: 0; 
+        padding: 10px 20px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-size: 14px; 
+        font-weight: 600;
+        transition: transform 0.08s; 
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-back { 
+        background: white; 
+        color: #0b6efd; 
+        border: 1px solid #e6e9ef; 
+      }
+      .btn-save {
+        background: linear-gradient(180deg, #10b981, #059669);
+      }
+      .btn-clear {
+        background: linear-gradient(180deg, #ef4444, #dc2626);
+      }
+      
+      .action-buttons { 
+        display: flex; 
+        gap: 10px; 
+        margin-top: 24px;
+      }
+      
+      .info-box {
+        background: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #1e40af;
+      }
+      
+      .success-message {
+        background: #d1fae5;
+        border: 1px solid #6ee7b7;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        color: #065f46;
+        font-weight: 500;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="playoff-container">
+      <header>
+        <h1>Play Off Results</h1>
+        <p class="lead" id="tournament-name">Record play-off outcomes</p>
+      </header>
+
+      <div class="info-box">
+        <strong>How to use:</strong>
+        Select a category to see tied players. For each tie group, assign positions (1st, 2nd, etc.) to record play-off results.
+        If only 2 players are tied and you mark one as winner, the other is automatically set as 2nd.
+      </div>
+
+      <div id="success-message" class="success-message">
+        ✓ Play-off results saved successfully!
+      </div>
+
+      <div class="card">
+        <h2>Select Category</h2>
+        <select id="category-select" class="category-select" onchange="loadTiedPlayers()">
+          <option value="">-- Select a category --</option>
+        </select>
+        
+        <div id="tied-players-container" class="tied-players-section">
+          <div class="no-ties">Select a category to view tied players</div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-save" onclick="savePlayOffResults()">💾 Save Play-Off Results</button>
+        <button class="btn btn-clear" onclick="clearPlayOffResults()">🗑️ Clear Results</button>
+        <a href="#" id="back-link" class="btn btn-back">Back to Results</a>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      
+      let currentCategory = null;
+      let tiedGroups = [];
+      let playOffResults = {};
+
+      if (!tournamentId) {
+        alert('No tournament selected. Redirecting to tournaments page.');
+        window.location.href = 'index.html';
+      }
+
+      document.getElementById('back-link').href = `results.html?tournamentId=${tournamentId}`;
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentId);
+      }
+
+      function saveTournaments(tournaments) {
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      }
+
+      function getAdmittedPlayers() {
+        try {
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          const tournament = getTournament();
+          if (!tournament || !tournament.meta || !tournament.meta.roundIds) return [];
+          
+          const allPlayers = [];
+          tournament.meta.roundIds.forEach(roundId => {
+            if (data[roundId]) {
+              data[roundId].forEach(player => {
+                if (!allPlayers.find(p => p.reg === player.reg)) {
+                  allPlayers.push(player);
+                }
+              });
+            }
+          });
+          
+          return allPlayers;
+        } catch (err) {
+          console.error('Error loading admitted players:', err);
+          return [];
+        }
+      }
+
+      function getScores() {
+        try {
+          const raw = localStorage.getItem('scores');
+          return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+          console.error('Error loading scores:', err);
+          return {};
+        }
+      }
+
+      function calculatePlayerTotal(player, roundIds, tournamentType) {
+        const scores = getScores();
+        const typeUpper = (tournamentType || '').toUpperCase();
+        const isStableford = typeUpper.includes('STABLEFORD');
+        
+        let total = 0;
+        
+        roundIds.forEach(roundId => {
+          const playerScores = scores[roundId]?.[player.reg];
+          if (!playerScores) return;
+          
+          // Check for status
+          if (playerScores.status && playerScores.status !== 'OK') return;
+          
+          if (isStableford) {
+            if (playerScores.stablefordPoints) {
+              total += playerScores.stablefordPoints.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+            }
+          } else if (typeUpper.includes('MEDAL NET')) {
+            if (playerScores.holes) {
+              const gross = playerScores.holes.reduce((sum, h) => sum + (parseInt(h) || 0), 0);
+              const phcp = player.phcp || 0;
+              total += gross - phcp;
+            }
+          } else {
+            // Stroke Play (gross)
+            if (playerScores.holes) {
+              total += playerScores.holes.reduce((sum, h) => sum + (parseInt(h) || 0), 0);
+            }
+          }
+        });
+        
+        return total;
+      }
+
+      function init() {
+        const tournament = getTournament();
+        if (!tournament) {
+          alert('Tournament not found');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = `${tournament.name} - Play-Off Results`;
+        
+        // Load existing play-off results
+        playOffResults = tournament.playOffResults || {};
+        
+        // Populate category select
+        const categories = tournament.categories || [];
+        const select = document.getElementById('category-select');
+        
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.code;
+          option.textContent = `${cat.name} (${cat.tournamentType || 'Stroke Play'})`;
+          select.appendChild(option);
+        });
+      }
+
+      function loadTiedPlayers() {
+        const categoryCode = document.getElementById('category-select').value;
+        const container = document.getElementById('tied-players-container');
+        
+        if (!categoryCode) {
+          container.innerHTML = '<div class="no-ties">Select a category to view tied players</div>';
+          return;
+        }
+        
+        const tournament = getTournament();
+        const category = tournament.categories?.find(c => c.code === categoryCode);
+        
+        if (!category) {
+          container.innerHTML = '<div class="no-ties">Category not found</div>';
+          return;
+        }
+        
+        currentCategory = categoryCode;
+        const roundIds = tournament.meta?.roundIds || [];
+        const tournamentType = category.tournamentType || 'Stroke Play';
+        
+        // Get all players in this category
+        const allPlayers = getAdmittedPlayers();
+        const categoryPlayers = allPlayers.filter(player => {
+          if (player.categories && Array.isArray(player.categories)) {
+            return player.categories.includes(categoryCode);
+          }
+          return player.category === categoryCode;
+        });
+        
+        // Calculate totals and group by score
+        const playerTotals = categoryPlayers.map(player => ({
+          player,
+          total: calculatePlayerTotal(player, roundIds, tournamentType)
+        })).filter(pt => pt.total !== null && pt.total !== 0);
+        
+        // Group players by total score
+        const scoreGroups = {};
+        playerTotals.forEach(pt => {
+          const key = pt.total.toString();
+          if (!scoreGroups[key]) {
+            scoreGroups[key] = [];
+          }
+          scoreGroups[key].push(pt.player);
+        });
+        
+        // Find groups with ties (more than 1 player with same score)
+        tiedGroups = Object.entries(scoreGroups)
+          .filter(([score, players]) => players.length > 1)
+          .map(([score, players]) => ({ score: parseInt(score), players }))
+          .sort((a, b) => {
+            const typeUpper = (tournamentType || '').toUpperCase();
+            if (typeUpper.includes('STABLEFORD')) {
+              return b.score - a.score; // Higher is better
+            }
+            return a.score - b.score; // Lower is better
+          });
+        
+        if (tiedGroups.length === 0) {
+          container.innerHTML = '<div class="no-ties">🎉 No ties found in this category! All players have unique scores.</div>';
+          return;
+        }
+        
+        // Render tied groups
+        let html = '';
+        tiedGroups.forEach((group, groupIndex) => {
+          const existingResults = playOffResults[categoryCode]?.filter(r => 
+            group.players.some(p => p.reg === r.playerReg)
+          ) || [];
+          
+          html += `
+            <div class="tied-group" data-group-index="${groupIndex}">
+              <div class="tied-group-header">
+                <span class="tied-group-title">${group.players.length} Players Tied</span>
+                <span class="tied-group-score">Score: ${group.score}</span>
+              </div>
+              <div class="tied-players-list">
+          `;
+          
+          group.players.forEach((player, playerIndex) => {
+            const existingPosition = existingResults.find(r => r.playerReg === player.reg)?.position || '';
+            
+            html += `
+              <div class="player-row" data-player-reg="${player.reg}" data-group-index="${groupIndex}">
+                <span class="player-name">
+                  ${player.firstName} ${player.lastName}
+                  <span class="player-club">${player.club || player.homeClub || ''}</span>
+                </span>
+                <div class="playoff-position">
+                  <select class="position-select" data-player-reg="${player.reg}" data-group-index="${groupIndex}" onchange="handlePositionChange(this)">
+                    <option value="">Not set</option>
+                    ${generatePositionOptions(group.players.length, existingPosition)}
+                  </select>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div></div>';
+        });
+        
+        container.innerHTML = html;
+      }
+
+      function generatePositionOptions(numPlayers, selectedPosition) {
+        let options = '';
+        for (let i = 1; i <= numPlayers; i++) {
+          const label = i === 1 ? '1st (Winner)' : i === 2 ? '2nd' : i === 3 ? '3rd' : `${i}th`;
+          options += `<option value="${i}" ${selectedPosition == i ? 'selected' : ''}>${label}</option>`;
+        }
+        return options;
+      }
+
+      function handlePositionChange(selectElement) {
+        const playerReg = selectElement.dataset.playerReg;
+        const groupIndex = parseInt(selectElement.dataset.groupIndex);
+        const position = selectElement.value;
+        const group = tiedGroups[groupIndex];
+        
+        if (!group) return;
+        
+        // If only 2 players and one is set to 1st, auto-set the other to 2nd
+        if (group.players.length === 2 && position === '1') {
+          const otherPlayer = group.players.find(p => p.reg !== playerReg);
+          if (otherPlayer) {
+            const otherSelect = document.querySelector(`select[data-player-reg="${otherPlayer.reg}"][data-group-index="${groupIndex}"]`);
+            if (otherSelect && otherSelect.value !== '2') {
+              otherSelect.value = '2';
+            }
+          }
+        }
+        
+        // If only 2 players and one is set to 2nd, auto-set the other to 1st
+        if (group.players.length === 2 && position === '2') {
+          const otherPlayer = group.players.find(p => p.reg !== playerReg);
+          if (otherPlayer) {
+            const otherSelect = document.querySelector(`select[data-player-reg="${otherPlayer.reg}"][data-group-index="${groupIndex}"]`);
+            if (otherSelect && otherSelect.value !== '1') {
+              otherSelect.value = '1';
+            }
+          }
+        }
+      }
+
+      function savePlayOffResults() {
+        if (!currentCategory) {
+          alert('Please select a category first');
+          return;
+        }
+        
+        // Collect all position selections for this category
+        const results = [];
+        const selects = document.querySelectorAll('.position-select');
+        
+        selects.forEach(select => {
+          const playerReg = select.dataset.playerReg;
+          const groupIndex = parseInt(select.dataset.groupIndex);
+          const position = select.value;
+          
+          if (position) {
+            const group = tiedGroups[groupIndex];
+            results.push({
+              playerReg,
+              position: parseInt(position),
+              tiedScore: group.score,
+              groupIndex
+            });
+          }
+        });
+        
+        // Save to tournament
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (index !== -1) {
+          if (!tournaments[index].playOffResults) {
+            tournaments[index].playOffResults = {};
+          }
+          tournaments[index].playOffResults[currentCategory] = results;
+          saveTournaments(tournaments);
+          
+          // Update local copy
+          playOffResults[currentCategory] = results;
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments).catch(e => console.log('Firebase sync failed:', e));
+          }
+          
+          // Show success message
+          const successMsg = document.getElementById('success-message');
+          successMsg.style.display = 'block';
+          setTimeout(() => {
+            successMsg.style.display = 'none';
+          }, 3000);
+        }
+      }
+
+      function clearPlayOffResults() {
+        if (!currentCategory) {
+          alert('Please select a category first');
+          return;
+        }
+        
+        if (!confirm('Are you sure you want to clear all play-off results for this category?')) {
+          return;
+        }
+        
+        // Clear selections in UI
+        const selects = document.querySelectorAll('.position-select');
+        selects.forEach(select => {
+          select.value = '';
+        });
+        
+        // Clear from storage
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (index !== -1 && tournaments[index].playOffResults) {
+          delete tournaments[index].playOffResults[currentCategory];
+          saveTournaments(tournaments);
+          
+          // Update local copy
+          delete playOffResults[currentCategory];
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments).catch(e => console.log('Firebase sync failed:', e));
+          }
+        }
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', init);
+    </script>
+  </body>
+</html>

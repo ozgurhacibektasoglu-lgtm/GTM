@@ -768,30 +768,31 @@
       }
 
       // Tiebreaker: Play Off - checks if a play-off result was recorded
-      // Play-off results are stored in tournament.playOffResults[categoryCode] = { winner: playerReg, loser: playerReg }
+      // Play-off results are stored in tournament.playOffResults[categoryCode] = [{ playerReg, position, tiedScore }]
       function tiebreakPlayOff(playerA, playerB) {
         const tournament = getTournament();
         if (!tournament.playOffResults || !tournament.playOffResults[categoryCode]) {
           return 0; // No play-off recorded
         }
         
-        const playOff = tournament.playOffResults[categoryCode];
+        const playOffResults = tournament.playOffResults[categoryCode];
         
-        // Check if these two players were in a play-off
-        const regA = playerA.reg;
-        const regB = playerB.reg;
+        // Find positions for both players
+        const resultA = playOffResults.find(r => r.playerReg === playerA.reg);
+        const resultB = playOffResults.find(r => r.playerReg === playerB.reg);
         
-        // Find a play-off involving these two players
-        for (const result of (Array.isArray(playOff) ? playOff : [playOff])) {
-          if ((result.winner === regA && result.loser === regB)) {
-            return -1; // A won the play-off
-          }
-          if ((result.winner === regB && result.loser === regA)) {
-            return 1; // B won the play-off
-          }
+        // Both players must have play-off positions in the same tie group
+        if (!resultA || !resultB) {
+          return 0; // One or both players not in play-off
         }
         
-        return 0; // These players weren't in a play-off together
+        // Check if they were in the same tie group (same tiedScore)
+        if (resultA.tiedScore !== resultB.tiedScore) {
+          return 0; // Different tie groups
+        }
+        
+        // Compare positions (lower position = better, 1st beats 2nd)
+        return resultA.position - resultB.position;
       }
 
       // Main tiebreaker comparison function
