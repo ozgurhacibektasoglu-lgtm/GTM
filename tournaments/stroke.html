@@ -542,7 +542,7 @@
         return roundIds;
       }
 
-      document.getElementById('stroke-form').addEventListener('submit', function (e) {
+      document.getElementById('stroke-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const data = new FormData(e.target);
         
@@ -626,11 +626,15 @@
           }
           localStorage.setItem('tournaments', JSON.stringify(arr));
           
-          // Sync to Firebase
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('tournaments', arr).then(() => {
+          // Sync to Firebase and wait for completion before redirect
+          if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+            document.getElementById('result').textContent = 'Saving to cloud...';
+            try {
+              await syncToFirebase('tournaments', arr);
               console.log('✓ Tournament synced to Firebase');
-            }).catch(e => console.log('Firebase sync failed:', e));
+            } catch(e) {
+              console.log('Firebase sync failed:', e);
+            }
           }
         } catch (err) {
           console.error('Failed to save tournament', err);
