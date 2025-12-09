@@ -574,13 +574,13 @@
         display: table-header-group;
       }
 
-      /* Column widths using colgroup or explicit widths */
+      /* Column widths - A4 landscape is ~297mm, with margins ~277mm usable */
       .print-schedule-table th.col-match,
-      .print-schedule-table td.match-cell { width: 25px; }
+      .print-schedule-table td.match-cell { width: 22px; }
       
       .print-schedule-table th.col-player,
       .print-schedule-table td.player-cell { 
-        width: 120px; 
+        width: 140px; 
         overflow: hidden;
         text-overflow: ellipsis;
       }
@@ -593,13 +593,13 @@
       }
       
       .print-schedule-table th.col-tee,
-      .print-schedule-table td.tee-cell { width: 25px; }
+      .print-schedule-table td.tee-cell { width: 22px; }
       
       .print-schedule-table th.col-time,
-      .print-schedule-table td.start-cell { width: 30px; }
+      .print-schedule-table td.start-cell { width: 28px; }
       
       .print-schedule-table th.col-hole,
-      .print-schedule-table td.hole-cell { width: 30px; }
+      .print-schedule-table td.hole-cell { width: 28px; }
 
       .print-schedule-table .first-player-row td {
         border-top: 1px solid #333;
