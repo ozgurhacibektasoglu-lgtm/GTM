@@ -83,6 +83,13 @@
       .tgf-btn-success:hover{background:#218838}
       .tgf-btn-secondary{background:#6c757d;color:white}
       .tgf-btn-secondary:hover{background:#5a6268}
+      
+      /* Editable HCP cell */
+      .hcp-editable{cursor:pointer;position:relative}
+      .hcp-editable:hover{background:#e0f2fe;border-radius:4px}
+      .hcp-editable::after{content:'✎';font-size:10px;margin-left:4px;opacity:0.4}
+      .hcp-editable:hover::after{opacity:1}
+      .hcp-input{width:60px;padding:4px 6px;border:2px solid #3b82f6;border-radius:4px;font-size:14px;text-align:center}
     </style>
   </head>
   <body>
@@ -1213,7 +1220,7 @@
               <td>${player.firstName || ''} ${player.lastName || ''}</td>
               <td>${player.club || player.homeClub || ''}</td>
               <td>${getTeeForPlayer(player)}</td>
-              <td style="${hcpStyle}">${formatHcp(player.hcp)}</td>
+              <td class="hcp-editable" data-reg="${player.reg}" data-hcp="${player.hcp}" style="${hcpStyle}">${formatHcp(player.hcp)}</td>
               <td style="${phcpStyle}">${phcpDisplay}</td>
               <td style="${genderStyle}">${player.gender || ''}</td>
               <td style="${ageStyle}">${age}</td>
@@ -1246,9 +1253,66 @@
         
         // Add double-click handlers for admitted players (to remove them)
         admittedTbody.querySelectorAll('tr').forEach(row => {
-          row.addEventListener('dblclick', () => {
+          row.addEventListener('dblclick', (e) => {
+            // Don't remove player if clicking on editable HCP cell
+            if (e.target.classList.contains('hcp-editable') || e.target.classList.contains('hcp-input')) {
+              return;
+            }
             const reg = row.getAttribute('data-reg');
             removePlayer(reg);
+          });
+        });
+        
+        // Add click handlers for editable HCP cells
+        admittedTbody.querySelectorAll('.hcp-editable').forEach(cell => {
+          cell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Don't create another input if already editing
+            if (cell.querySelector('.hcp-input')) return;
+            
+            const reg = cell.getAttribute('data-reg');
+            const currentHcp = parseFloat(cell.getAttribute('data-hcp')) || 0;
+            
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.1';
+            input.min = '-10';
+            input.max = '54';
+            input.value = currentHcp.toFixed(1);
+            input.className = 'hcp-input';
+            
+            // Replace cell content with input
+            const originalContent = cell.innerHTML;
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Handle save on blur or Enter
+            const saveHcp = () => {
+              const newHcp = parseFloat(input.value);
+              if (!isNaN(newHcp) && newHcp >= -10 && newHcp <= 54) {
+                // Update player HCP in admitted list
+                const player = admittedPlayers.find(p => p.reg === reg);
+                if (player) {
+                  player.hcp = Math.round(newHcp * 10) / 10; // Round to 1 decimal
+                  // Recalculate playing HCP
+                  player.phcp = null; // Force recalculation
+                }
+              }
+              renderTables();
+            };
+            
+            input.addEventListener('blur', saveHcp);
+            input.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                saveHcp();
+              } else if (e.key === 'Escape') {
+                renderTables(); // Cancel edit
+              }
+            });
           });
         });
       }
