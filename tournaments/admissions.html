@@ -694,6 +694,13 @@
           const data = raw ? JSON.parse(raw) : {};
           data[currentRoundId] = players;
           localStorage.setItem('admittedPlayers', JSON.stringify(data));
+          
+          // Sync to Firebase
+          if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+            syncToFirebase('admittedPlayers', data).then(() => {
+              console.log('✓ Admitted players synced to Firebase');
+            }).catch(e => console.log('Firebase sync failed:', e));
+          }
         } catch (err) {
           console.error('Error saving admitted players:', err);
         }
@@ -1896,8 +1903,39 @@
       }
       // ========== End TGF Import Functions ==========
 
+      // Load data from Firebase before initializing
+      async function loadFromFirebase() {
+        // Wait for Firebase to be ready
+        let attempts = 0;
+        while (!syncEnabled && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          attempts++;
+        }
+        
+        if (syncEnabled) {
+          try {
+            // Load tournaments
+            if (typeof loadTournamentsFromFirebase !== 'undefined') {
+              await loadTournamentsFromFirebase();
+            }
+            // Load players
+            if (typeof loadPlayersFromFirebase !== 'undefined') {
+              await loadPlayersFromFirebase();
+            }
+            // Load admitted players
+            const admittedData = await syncFromFirebase('admittedPlayers');
+            if (admittedData) {
+              localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
+            }
+            console.log('✓ Data loaded from Firebase');
+          } catch(e) {
+            console.log('Firebase load error:', e);
+          }
+        }
+      }
+
       // Initialize on page load
-      init();
+      loadFromFirebase().then(() => init());
     </script>
   </body>
 </html>

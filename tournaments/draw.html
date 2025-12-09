@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tournament Draw</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  
   <link rel="stylesheet" href="../styles.css">
   <style>
     .container {
@@ -636,8 +642,50 @@
     let draggedPlayer = null;
     let draggedFromGroupId = null;
 
+    // Load data from Firebase before initializing
+    async function loadFromFirebase() {
+      // Wait for Firebase to be ready
+      let attempts = 0;
+      while (!syncEnabled && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+      }
+      
+      if (syncEnabled) {
+        try {
+          // Load tournaments
+          if (typeof loadTournamentsFromFirebase !== 'undefined') {
+            await loadTournamentsFromFirebase();
+            console.log('✓ Tournaments loaded from Firebase');
+          }
+          // Load players
+          if (typeof loadPlayersFromFirebase !== 'undefined') {
+            await loadPlayersFromFirebase();
+            console.log('✓ Players loaded from Firebase');
+          }
+          // Load admitted players
+          const admittedData = await syncFromFirebase('admittedPlayers');
+          if (admittedData) {
+            localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
+            console.log('✓ Admitted players loaded from Firebase');
+          }
+          // Load draws
+          const drawsData = await syncFromFirebase('draws');
+          if (drawsData) {
+            localStorage.setItem('draws', JSON.stringify(drawsData));
+            console.log('✓ Draws loaded from Firebase');
+          }
+        } catch(e) {
+          console.log('Firebase load error:', e);
+        }
+      }
+    }
+
     // Load tournament and rounds
-    function init() {
+    async function init() {
+      // Load data from Firebase first
+      await loadFromFirebase();
+      
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
       
@@ -1767,6 +1815,13 @@
       const draws = JSON.parse(localStorage.getItem('draws') || '{}');
       draws[currentRound] = draw;
       localStorage.setItem('draws', JSON.stringify(draws));
+      
+      // Sync to Firebase
+      if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+        syncToFirebase('draws', draws).then(() => {
+          console.log('✓ Draws synced to Firebase');
+        }).catch(e => console.log('Firebase sync failed:', e));
+      }
       
       alert('Draw saved successfully!');
     }
