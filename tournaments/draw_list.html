@@ -820,14 +820,11 @@
         return { ...group, players: updatedPlayers };
       });
 
-      // Calculate categories for players that don't have them
+      // Calculate categories for players - always recalculate to ensure only main categories (non-result-only) are shown
       groups = groups.map(group => {
         const updatedPlayers = group.players.map(player => {
-          if (!player.categories || player.categories.length === 0) {
-            const calculatedCategories = getPlayerCategories(player, tournament);
-            return { ...player, categories: calculatedCategories };
-          }
-          return player;
+          const calculatedCategories = getPlayerCategories(player, tournament);
+          return { ...player, categories: calculatedCategories };
         });
         return { ...group, players: updatedPlayers };
       });

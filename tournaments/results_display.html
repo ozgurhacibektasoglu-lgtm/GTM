@@ -520,7 +520,12 @@
         try {
           const raw = localStorage.getItem('courses');
           const courses = raw ? JSON.parse(raw) : [];
-          const course = courses.find(c => c.courseId === roundData.course);
+          
+          // Try to find by courseId first, then by courseName
+          let course = courses.find(c => c.courseId === roundData.course);
+          if (!course) {
+            course = courses.find(c => c.courseName === roundData.course);
+          }
           
           if (course && course.pars) {
             return course.pars.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
