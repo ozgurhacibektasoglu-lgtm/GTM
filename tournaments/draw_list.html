@@ -497,6 +497,54 @@
       }
     }
 
+    // Calculate which categories a player belongs to
+    function getPlayerCategories(player, tournament) {
+      if (!tournament || !tournament.categories || tournament.categories.length === 0) {
+        return [];
+      }
+      
+      const matchingCategories = [];
+      const playerGender = (player.gender || '').toLowerCase();
+      const playerHcp = parseFloat(player.hcp);
+      const playerAge = player.age ? parseInt(player.age) : null;
+      
+      for (const cat of tournament.categories) {
+        // Check gender match
+        const catGender = (cat.gender || '').toLowerCase();
+        let genderMatch = false;
+        if (!catGender || catGender === 'any' || catGender === '') {
+          genderMatch = true;
+        } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male' || playerGender === 'e')) {
+          genderMatch = true;
+        } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female' || playerGender === 'k')) {
+          genderMatch = true;
+        }
+        
+        if (!genderMatch) continue;
+        
+        // Check handicap range
+        if (cat.handicapMin !== undefined && cat.handicapMin !== null && cat.handicapMin !== '') {
+          if (isNaN(playerHcp) || playerHcp < parseFloat(cat.handicapMin)) continue;
+        }
+        if (cat.handicapMax !== undefined && cat.handicapMax !== null && cat.handicapMax !== '') {
+          if (isNaN(playerHcp) || playerHcp > parseFloat(cat.handicapMax)) continue;
+        }
+        
+        // Check age range
+        if (cat.ageMin !== undefined && cat.ageMin !== null && cat.ageMin !== '') {
+          if (playerAge === null || playerAge < parseInt(cat.ageMin)) continue;
+        }
+        if (cat.ageMax !== undefined && cat.ageMax !== null && cat.ageMax !== '') {
+          if (playerAge === null || playerAge > parseInt(cat.ageMax)) continue;
+        }
+        
+        // Player matches this category
+        matchingCategories.push(cat.code);
+      }
+      
+      return matchingCategories;
+    }
+
     function getCourses() {
       try {
         const raw = localStorage.getItem('courses');
@@ -763,6 +811,18 @@
           const freshPlayer = admittedByReg[player.reg];
           if (freshPlayer) {
             return { ...player, ...freshPlayer };
+          }
+          return player;
+        });
+        return { ...group, players: updatedPlayers };
+      });
+
+      // Calculate categories for players that don't have them
+      groups = groups.map(group => {
+        const updatedPlayers = group.players.map(player => {
+          if (!player.categories || player.categories.length === 0) {
+            const calculatedCategories = getPlayerCategories(player, tournament);
+            return { ...player, categories: calculatedCategories };
           }
           return player;
         });
