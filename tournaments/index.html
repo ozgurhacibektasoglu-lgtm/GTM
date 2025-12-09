@@ -317,10 +317,17 @@
 
       // Initialize: Load from Firebase if available
       async function initializeTournaments() {
+        // Wait for Firebase to be ready
+        let attempts = 0;
+        while (!syncEnabled && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          attempts++;
+        }
+        
         console.log('Initializing tournaments, syncEnabled:', syncEnabled);
         
         // Try to load from Firebase
-        if (typeof loadTournamentsFromFirebase !== 'undefined') {
+        if (syncEnabled && typeof loadTournamentsFromFirebase !== 'undefined') {
           try {
             const firebaseTournaments = await loadTournamentsFromFirebase();
             if (firebaseTournaments && firebaseTournaments.length > 0) {
@@ -340,7 +347,7 @@
       }
 
       // Wait a moment for Firebase to initialize, then load
-      setTimeout(initializeTournaments, 1500);
+      setTimeout(initializeTournaments, 500);
 
       // Button event listeners
       document.getElementById('btn-new-tournament').addEventListener('click', () => {
