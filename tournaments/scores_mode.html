@@ -51,9 +51,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
       
-      // Update back button
-      document.getElementById('btn-back').href = `index.html?tournamentId=${tournamentId}`;
-      
       // Handle By Player option
       document.getElementById('option-by-player').addEventListener('click', () => {
         window.location.href = `scores.html?tournamentId=${tournamentId}`;
