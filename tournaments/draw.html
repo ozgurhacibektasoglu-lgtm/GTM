@@ -723,10 +723,12 @@
           roundSelect.appendChild(option);
         });
       } else {
+        // Single round tournament - use roundId from meta.roundIds if available
         const option = document.createElement('option');
-        option.value = currentTournament.tournamentId;
+        const roundId = currentTournament.meta?.roundIds?.[0] || `${currentTournament.tournamentId}-1`;
+        option.value = roundId;
         option.textContent = `Single Round: ${currentTournament.date || 'TBD'}`;
-        console.log(`Created single round option: value="${currentTournament.tournamentId}"`);
+        console.log(`Created single round option: value="${roundId}"`);
         roundSelect.appendChild(option);
       }
 
