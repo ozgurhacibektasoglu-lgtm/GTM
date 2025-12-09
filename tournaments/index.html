@@ -652,6 +652,13 @@
         tournaments.splice(selectedTournamentOrigIndex, 1);
         localStorage.setItem('tournaments', JSON.stringify(tournaments));
         
+        // Sync deletion to Firebase
+        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+          syncToFirebase('tournaments', tournaments).then(() => {
+            console.log('✓ Tournament deletion synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
+        
         alert(`✅ Tournament "${selected.name}" has been deleted successfully.`);
         location.reload();
       });
