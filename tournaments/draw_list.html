@@ -439,17 +439,18 @@
           // Use roundId from roundIds array or round object, or construct it
           const roundId = tournament.meta.roundIds?.[index] || round.roundId || `${tournament.tournamentId}_R${index + 1}`;
           option.value = roundId;
-          const date = round.date ? new Date(round.date).toLocaleDateString() : 'TBD';
+          const date = round.date ? formatDateDDMMYYYY(round.date) : 'TBD';
           const course = round.course || '';
           option.textContent = `Round ${index + 1}: ${date}${course ? ' (' + course + ')' : ''}`;
           roundSelect.appendChild(option);
         });
       } else {
-        // Single round tournament
+        // Single round tournament - use roundId from meta.roundIds if available
         roundSelect.innerHTML = '';
         const option = document.createElement('option');
-        option.value = tournament.tournamentId;
-        const date = tournament.date ? new Date(tournament.date).toLocaleDateString() : 'TBD';
+        const roundId = tournament.meta?.roundIds?.[0] || `${tournament.tournamentId}-1`;
+        option.value = roundId;
+        const date = tournament.date ? formatDateDDMMYYYY(tournament.date) : 'TBD';
         option.textContent = `Single Round: ${date}`;
         roundSelect.appendChild(option);
       }

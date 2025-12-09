@@ -133,6 +133,16 @@
 
       let selectedTournamentIndex = null;
       let selectedTournamentOrigIndex = null;
+
+      // Format date as dd.mm.yyyy
+      function formatDateDDMMYYYY(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+      }
       // sort state: key includes 'rounds'
       let sortState = { key: 'date', dir: 'desc' };
 
@@ -425,7 +435,7 @@
           roundsData.forEach((round, idx) => {
             const option = document.createElement('option');
             option.value = roundIds[idx] || `${selected.tournamentId}_R${idx + 1}`;
-            option.textContent = `Round ${idx + 1}${round.date ? ' - ' + round.date : ''}`;
+            option.textContent = `Round ${idx + 1}${round.date ? ' - ' + formatDateDDMMYYYY(round.date) : ''}`;
             if (idx === defaultRoundIndex) {
               option.selected = true;
             }

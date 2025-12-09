@@ -640,6 +640,16 @@
     let admittedPlayers = [];
     let groups = [];
     let draggedPlayer = null;
+
+    // Format date as dd.mm.yyyy
+    function formatDateDDMMYYYY(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}.${month}.${year}`;
+    }
     let draggedFromGroupId = null;
 
     // Load data from Firebase before initializing
@@ -718,7 +728,7 @@
           // Use roundId from roundIds array or round object
           const roundId = currentTournament.meta.roundIds?.[index] || round.roundId || `${currentTournament.tournamentId}_R${index + 1}`;
           option.value = roundId;
-          option.textContent = `Round ${index + 1}: ${round.date || 'TBD'}`;
+          option.textContent = `Round ${index + 1}: ${round.date ? formatDateDDMMYYYY(round.date) : 'TBD'}`;
           console.log(`Created option: value="${roundId}", text="${option.textContent}"`);
           roundSelect.appendChild(option);
         });
@@ -727,7 +737,7 @@
         const option = document.createElement('option');
         const roundId = currentTournament.meta?.roundIds?.[0] || `${currentTournament.tournamentId}-1`;
         option.value = roundId;
-        option.textContent = `Single Round: ${currentTournament.date || 'TBD'}`;
+        option.textContent = `Single Round: ${currentTournament.date ? formatDateDDMMYYYY(currentTournament.date) : 'TBD'}`;
         console.log(`Created single round option: value="${roundId}"`);
         roundSelect.appendChild(option);
       }
