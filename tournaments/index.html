@@ -106,7 +106,6 @@
         <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
         <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
         <button class="btn" id="btn-admissions">Admissions</button>
-        <button class="btn" id="btn-bracket-setup" style="background: linear-gradient(180deg, #f59e0b, #d97706);">🏆 Bracket MP Setup</button>
         <button class="btn" id="btn-draw">Draw</button>
         <button class="btn" id="btn-categories">Categories</button>
         <button class="btn" id="btn-scores">Scores</button>
@@ -451,25 +450,6 @@
           window.location.href = `admissions.html?roundId=${encodeURIComponent(roundId)}`;
         }
       }
-
-      document.getElementById('btn-bracket-setup').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
-          alert('Please select a tournament from the table above.');
-          return;
-        }
-        const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
-        if (!selected) {
-          alert('Selected tournament not found.');
-          return;
-        }
-        // Check if it's a match play bracket tournament
-        if (selected.type !== 'match' || selected.matchType !== 'bracket') {
-          alert('Please select a Match Play Bracket tournament.');
-          return;
-        }
-        window.location.href = `bracket_setup.html?tournamentId=${selected.tournamentId}`;
-      });
 
       document.getElementById('btn-admissions').addEventListener('click', () => {
         if (selectedTournamentOrigIndex === null) {
