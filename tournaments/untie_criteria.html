@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Untie Criteria</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      .criteria-container { max-width: 1200px; margin: 36px auto; padding: 24px; }
+      .card { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); padding: 24px; margin-bottom: 20px; }
+      .card h2 { margin-top: 0; font-size: 18px; margin-bottom: 16px; color: #1e293b; }
+      
+      .criteria-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      
+      .criteria-box {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 400px;
+        background: #f9fafb;
+      }
+      
+      .criteria-box h3 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        color: #475569;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .criteria-list {
+        min-height: 300px;
+      }
+      
+      .criteria-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.15s ease;
+        user-select: none;
+      }
+      
+      .criteria-item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+      }
+      
+      .criteria-item.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+      }
+      
+      .criteria-item.drag-over {
+        border-color: #3b82f6;
+        border-style: dashed;
+        background: #eff6ff;
+      }
+      
+      .criteria-item .drag-handle {
+        color: #9ca3af;
+        font-size: 14px;
+      }
+      
+      .criteria-item .criteria-text {
+        flex: 1;
+        font-size: 14px;
+        color: #1e293b;
+      }
+      
+      .criteria-item .criteria-number {
+        width: 24px;
+        height: 24px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .criteria-item.static {
+        background: #f1f5f9;
+        cursor: default;
+        border-color: #cbd5e1;
+      }
+      
+      .criteria-item.static .criteria-number {
+        background: #64748b;
+      }
+      
+      .criteria-item.static:hover {
+        border-color: #cbd5e1;
+        box-shadow: none;
+      }
+      
+      .empty-drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 14px;
+        margin-top: 8px;
+      }
+      
+      .btn { 
+        background: linear-gradient(180deg, var(--accent), #0a58d1); 
+        color: white; 
+        border: 0; 
+        padding: 10px 20px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-size: 14px; 
+        font-weight: 600;
+        transition: transform 0.08s; 
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-back { 
+        background: white; 
+        color: #0b6efd; 
+        border: 1px solid #e6e9ef; 
+      }
+      .btn-save {
+        background: linear-gradient(180deg, #10b981, #059669);
+      }
+      .btn-reset {
+        background: linear-gradient(180deg, #f59e0b, #d97706);
+      }
+      
+      .action-buttons { 
+        display: flex; 
+        gap: 10px; 
+        margin-top: 24px;
+      }
+      
+      .info-box {
+        background: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #1e40af;
+      }
+      
+      .info-box strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="criteria-container">
+      <header>
+        <h1>Untie Criteria</h1>
+        <p class="lead" id="tournament-name">Configure tiebreaker rules</p>
+      </header>
+
+      <div class="info-box">
+        <strong>How it works:</strong>
+        Drag criteria from "Available Criteria" to "Tournament Untie Criteria" to define tiebreaker rules. 
+        The order matters - criteria at the top will be checked first. If still tied, the next criteria will be used.
+        "Total Score" is always the primary ranking and cannot be moved.
+      </div>
+
+      <div class="card">
+        <h2>Configure Tiebreaker Order</h2>
+        
+        <div class="criteria-layout">
+          <!-- Available Criteria (Left) -->
+          <div class="criteria-box">
+            <h3>📋 Available Criteria</h3>
+            <div id="available-criteria" class="criteria-list">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+          
+          <!-- Selected Criteria (Right) -->
+          <div class="criteria-box">
+            <h3>🏆 Tournament Untie Criteria</h3>
+            <div id="selected-criteria" class="criteria-list">
+              <!-- Static first item -->
+              <div class="criteria-item static" data-id="total_score">
+                <span class="criteria-number">1</span>
+                <span class="criteria-text">Total Score</span>
+                <span style="color: #9ca3af; font-size: 12px;">(Primary - Fixed)</span>
+              </div>
+              <!-- Drop zone for additional criteria -->
+              <div id="drop-zone"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-save" onclick="saveCriteria()">💾 Save Criteria</button>
+        <button class="btn btn-reset" onclick="resetCriteria()">🔄 Reset to Default</button>
+        <a href="#" id="back-link" class="btn btn-back">Back to Results</a>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+
+      // All available criteria definitions
+      const allCriteria = [
+        { id: 'last_round', name: 'Last Round Score', description: 'Score from the final round' },
+        { id: 'back_9', name: 'Back 9 Score', description: 'Holes 10-18 of the last round' },
+        { id: 'last_6', name: 'Last 6 Holes', description: 'Holes 13-18 of the last round' },
+        { id: 'last_3', name: 'Last 3 Holes', description: 'Holes 16-18 of the last round' },
+        { id: 'last_hole', name: 'Last Hole', description: 'Hole 18 of the last round' },
+        { id: 'lower_hcp', name: 'Lower Handicap', description: 'Player with lower HCP wins' },
+        { id: 'stroke_index', name: 'Score on Lower S.I. Holes', description: 'Compare scores hole by hole starting from S.I. 1' },
+        { id: 'eagles_birdies_pars', name: 'More Eagles, Birdies, Pars', description: 'Count of eagles, then birdies, then pars' }
+      ];
+
+      let selectedCriteria = [];
+
+      if (!tournamentId) {
+        alert('No tournament selected. Redirecting to tournaments page.');
+        window.location.href = 'index.html';
+      }
+
+      // Set back link
+      document.getElementById('back-link').href = `results.html?tournamentId=${tournamentId}`;
+
+      function getTournaments() {
+        try {
+          const raw = localStorage.getItem('tournaments');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Failed to parse tournaments', err);
+          return [];
+        }
+      }
+
+      function getTournament() {
+        const tournaments = getTournaments();
+        return tournaments.find(t => t.tournamentId === tournamentId);
+      }
+
+      function saveTournaments(tournaments) {
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      }
+
+      function loadCriteria() {
+        const tournament = getTournament();
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = `${tournament.name} - Tiebreaker Configuration`;
+          selectedCriteria = tournament.untieCriteria || [];
+        }
+        renderCriteria();
+      }
+
+      function renderCriteria() {
+        // Render available criteria (those not selected)
+        const availableContainer = document.getElementById('available-criteria');
+        const availableCriteria = allCriteria.filter(c => !selectedCriteria.includes(c.id));
+        
+        if (availableCriteria.length === 0) {
+          availableContainer.innerHTML = '<div class="empty-drop-zone">All criteria have been added</div>';
+        } else {
+          availableContainer.innerHTML = availableCriteria.map(c => `
+            <div class="criteria-item" draggable="true" data-id="${c.id}" title="${c.description}">
+              <span class="drag-handle">⋮⋮</span>
+              <span class="criteria-text">${c.name}</span>
+            </div>
+          `).join('');
+        }
+        
+        // Render selected criteria
+        const dropZone = document.getElementById('drop-zone');
+        if (selectedCriteria.length === 0) {
+          dropZone.innerHTML = '<div class="empty-drop-zone">Drag criteria here to add tiebreakers</div>';
+        } else {
+          dropZone.innerHTML = selectedCriteria.map((criteriaId, index) => {
+            const criteria = allCriteria.find(c => c.id === criteriaId);
+            if (!criteria) return '';
+            return `
+              <div class="criteria-item" draggable="true" data-id="${criteriaId}" data-index="${index}" title="${criteria.description}">
+                <span class="criteria-number">${index + 2}</span>
+                <span class="drag-handle">⋮⋮</span>
+                <span class="criteria-text">${criteria.name}</span>
+                <button onclick="removeCriteria('${criteriaId}')" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 16px;" title="Remove">✕</button>
+              </div>
+            `;
+          }).join('');
+        }
+        
+        // Re-attach drag event listeners
+        attachDragListeners();
+      }
+
+      function attachDragListeners() {
+        const items = document.querySelectorAll('.criteria-item[draggable="true"]');
+        const dropZone = document.getElementById('drop-zone');
+        const availableContainer = document.getElementById('available-criteria');
+        
+        items.forEach(item => {
+          item.addEventListener('dragstart', handleDragStart);
+          item.addEventListener('dragend', handleDragEnd);
+          item.addEventListener('dragover', handleDragOver);
+          item.addEventListener('drop', handleDrop);
+          item.addEventListener('dragleave', handleDragLeave);
+        });
+        
+        // Drop zone listeners
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('drop', handleDropToZone);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        
+        // Available container listeners (for removing from selected)
+        availableContainer.addEventListener('dragover', handleDragOver);
+        availableContainer.addEventListener('drop', handleDropToAvailable);
+        availableContainer.addEventListener('dragleave', handleDragLeave);
+      }
+
+      let draggedItem = null;
+      let draggedId = null;
+
+      function handleDragStart(e) {
+        draggedItem = this;
+        draggedId = this.dataset.id;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this.dataset.id);
+      }
+
+      function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        draggedItem = null;
+        draggedId = null;
+      }
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over');
+      }
+
+      function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const targetId = this.dataset.id;
+        const targetIndex = parseInt(this.dataset.index);
+        
+        if (draggedId === targetId) return;
+        
+        // Check if dragged item is from available (not in selected)
+        const isFromAvailable = !selectedCriteria.includes(draggedId);
+        const isTargetInSelected = selectedCriteria.includes(targetId);
+        
+        if (isFromAvailable && isTargetInSelected) {
+          // Adding new item, insert at target position
+          const insertIndex = targetIndex;
+          selectedCriteria.splice(insertIndex, 0, draggedId);
+        } else if (!isFromAvailable && isTargetInSelected) {
+          // Reordering within selected
+          const fromIndex = selectedCriteria.indexOf(draggedId);
+          const toIndex = targetIndex;
+          
+          selectedCriteria.splice(fromIndex, 1);
+          selectedCriteria.splice(toIndex, 0, draggedId);
+        }
+        
+        renderCriteria();
+      }
+
+      function handleDropToZone(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        if (!draggedId) return;
+        
+        // Only add if not already in selected
+        if (!selectedCriteria.includes(draggedId)) {
+          selectedCriteria.push(draggedId);
+          renderCriteria();
+        }
+      }
+
+      function handleDropToAvailable(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        if (!draggedId) return;
+        
+        // Remove from selected if it's there
+        const index = selectedCriteria.indexOf(draggedId);
+        if (index !== -1) {
+          selectedCriteria.splice(index, 1);
+          renderCriteria();
+        }
+      }
+
+      function removeCriteria(criteriaId) {
+        const index = selectedCriteria.indexOf(criteriaId);
+        if (index !== -1) {
+          selectedCriteria.splice(index, 1);
+          renderCriteria();
+        }
+      }
+
+      function saveCriteria() {
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (index !== -1) {
+          tournaments[index].untieCriteria = selectedCriteria;
+          saveTournaments(tournaments);
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments).catch(e => console.log('Firebase sync failed:', e));
+          }
+          
+          alert('Untie criteria saved successfully!');
+        }
+      }
+
+      function resetCriteria() {
+        if (confirm('Are you sure you want to reset all untie criteria? This will remove all tiebreaker rules.')) {
+          selectedCriteria = [];
+          renderCriteria();
+        }
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', loadCriteria);
+    </script>
+  </body>
+</html>

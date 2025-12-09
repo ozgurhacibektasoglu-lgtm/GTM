@@ -111,8 +111,9 @@
 
       <div class="card">
         <h2>Category Results Configuration</h2>
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
           <button class="btn" style="background: linear-gradient(180deg, #f59e0b, #d97706);" onclick="openWinnersList()">🏆 Winners List</button>
+          <button class="btn" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);" onclick="openUntieCriteria()">⚖️ Untie Criteria</button>
         </div>
         <div id="categories-list">
           <div class="empty-state">Loading categories...</div>
@@ -444,6 +445,10 @@
         });
 
         window.open(`winners_list.html?${params.toString()}`, '_blank');
+      }
+
+      function openUntieCriteria() {
+        window.location.href = `untie_criteria.html?tournamentId=${tournamentId}`;
       }
 
       // Load categories on page load
