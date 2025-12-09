@@ -15,126 +15,160 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+        background: url('background.jpg') no-repeat center center fixed;
+        background-size: cover;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        overflow: hidden; /* Prevent scrollbars if not needed */
+      }
+
+      /* Overlay for better text readability if needed, but user wants stunning design */
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.2); /* Subtle overlay */
+        z-index: -1;
       }
 
       .home-container {
         text-align: center;
         padding: 40px;
+        width: 100%;
+        max-width: 1200px;
+        z-index: 1;
       }
 
-      /* Logo */
-      .logo {
-        width: 280px;
-        max-width: 70%;
-        height: auto;
-        margin: 0 auto 50px;
-        display: block;
-      }
-
-      .title {
-        font-size: 42px;
-        font-weight: 300;
-        color: #ffffff;
-        margin: 0 0 8px;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      }
-
-      .subtitle {
-        font-size: 16px;
-        color: rgba(255,255,255,0.7);
-        margin: 0 0 50px;
-        font-weight: 400;
-        letter-spacing: 1px;
-      }
-
+      /* Navigation Cards - Glassmorphism */
       .nav-cards {
         display: flex;
-        gap: 24px;
+        gap: 30px;
         justify-content: center;
         flex-wrap: wrap;
+        margin-top: 200px; /* Push cards down to let the background logo shine */
       }
 
       .nav-card {
-        background: rgba(255,255,255,0.95);
-        border: none;
-        border-radius: 16px;
-        padding: 32px 40px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 40px 30px;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        min-width: 160px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: 0.5s;
+      }
+
+      .nav-card:hover::before {
+        left: 100%;
       }
 
       .nav-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-      }
-
-      .nav-card:active {
-        transform: translateY(-4px);
+        transform: translateY(-10px) scale(1.05);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
       }
 
       .nav-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
+        font-size: 56px;
+        margin-bottom: 20px;
         display: block;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        transition: transform 0.3s ease;
+      }
+
+      .nav-card:hover .nav-icon {
+        transform: scale(1.1) rotate(5deg);
       }
 
       .nav-label {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1a472a;
+        font-size: 22px;
+        font-weight: 700;
+        color: #ffffff;
         display: block;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        letter-spacing: 0.5px;
       }
 
       .nav-desc {
-        font-size: 12px;
-        color: #6b7280;
-        margin-top: 6px;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.9);
+        margin-top: 8px;
         display: block;
+        font-weight: 400;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.4);
       }
 
-      /* Card Colors */
-      .nav-card.tournaments { border-bottom: 4px solid #059669; }
-      .nav-card.tournaments .nav-icon { color: #059669; }
-      
-      .nav-card.players { border-bottom: 4px solid #0b6efd; }
-      .nav-card.players .nav-icon { color: #0b6efd; }
-      
-      .nav-card.courses { border-bottom: 4px solid #d97706; }
-      .nav-card.courses .nav-icon { color: #d97706; }
+      /* Card Specific Accents */
+      .nav-card.tournaments:hover { border-bottom: 4px solid #4ade80; }
+      .nav-card.players:hover { border-bottom: 4px solid #60a5fa; }
+      .nav-card.courses:hover { border-bottom: 4px solid #fbbf24; }
 
       .footer {
-        margin-top: 60px;
-        color: rgba(255,255,255,0.5);
+        margin-top: 80px;
+        color: rgba(255,255,255,0.7);
         font-size: 13px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px 30px;
+        border-radius: 50px;
+        display: inline-block;
+        backdrop-filter: blur(4px);
+      }
+
+      .sync-btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        transition: all 0.2s;
+      }
+      
+      .sync-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-2px);
       }
 
       @media (max-width: 640px) {
         .nav-cards {
           flex-direction: column;
           align-items: center;
+          margin-top: 100px;
         }
         .nav-card {
           width: 100%;
-          max-width: 280px;
-        }
-        .title {
-          font-size: 32px;
+          max-width: 300px;
         }
       }
     </style>
   </head>
   <body>
     <main class="home-container">
-      <!-- GTM Logo -->
-      <img src="logo.png?v=3" alt="GTM Logo" class="logo" onerror="this.style.display='none'">
+      <!-- Logo removed as per request, using background logo -->
 
       <nav class="nav-cards" role="navigation" aria-label="Main navigation">
         <button class="nav-card tournaments" id="btn-tournaments">
@@ -161,10 +195,10 @@
         </span>
         <br>
         <span style="margin-top: 10px; display: inline-block;">
-          <button onclick="syncAllToFirebase()" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
+          <button onclick="syncAllToFirebase()" class="sync-btn" style="color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
             ↑ Push to Cloud
           </button>
-          <button onclick="loadAllFromFirebase()" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
+          <button onclick="loadAllFromFirebase()" class="sync-btn" style="color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
             ↓ Pull from Cloud
           </button>
         </span>
