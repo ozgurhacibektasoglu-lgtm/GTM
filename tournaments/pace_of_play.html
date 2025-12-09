@@ -576,22 +576,30 @@
 
       /* Column widths using colgroup or explicit widths */
       .print-schedule-table th.col-match,
-      .print-schedule-table td.match-cell { width: 30px; }
+      .print-schedule-table td.match-cell { width: 25px; }
       
       .print-schedule-table th.col-player,
-      .print-schedule-table td.player-cell { width: 100px; }
+      .print-schedule-table td.player-cell { 
+        width: 120px; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       
       .print-schedule-table th.col-club,
-      .print-schedule-table td.club-cell { width: 50px; }
+      .print-schedule-table td.club-cell { 
+        width: 55px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       
       .print-schedule-table th.col-tee,
       .print-schedule-table td.tee-cell { width: 25px; }
       
       .print-schedule-table th.col-time,
-      .print-schedule-table td.start-cell { width: 35px; }
+      .print-schedule-table td.start-cell { width: 30px; }
       
       .print-schedule-table th.col-hole,
-      .print-schedule-table td.hole-cell { width: 35px; }
+      .print-schedule-table td.hole-cell { width: 30px; }
 
       .print-schedule-table .first-player-row td {
         border-top: 1px solid #333;
