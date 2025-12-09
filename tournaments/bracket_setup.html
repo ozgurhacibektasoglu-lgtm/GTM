@@ -331,7 +331,8 @@
     <div class="main-content">
       <!-- Left Panel: Player List -->
       <div class="players-panel">
-        <h3>Available Players</h3>
+        <h3>Admitted Players</h3>
+        <button class="btn btn-primary" style="width:100%; margin-bottom:16px;" onclick="goToAdmissions()">📋 Admit Players</button>
         <div class="player-search">
           <input type="text" id="player-search" placeholder="🔍 Search players...">
         </div>
@@ -452,6 +453,11 @@
       return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
+    function goToAdmissions() {
+      if (!currentTournament) return;
+      window.location.href = `admissions.html?tournamentId=${currentTournament.tournamentId}`;
+    }
+
     // Initialize
     async function init() {
       const params = new URLSearchParams(window.location.search);
@@ -524,13 +530,13 @@
       const container = document.getElementById('player-list');
       container.innerHTML = '';
 
-      // Filter: show only admitted players, or all players if none admitted
+      // Show only admitted players
       let playersToShow = admittedPlayersList.length > 0 
         ? allPlayers.filter(p => admittedPlayersList.some(ap => ap.playerId === p.playerId))
-        : allPlayers;
+        : [];
 
       if (playersToShow.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">No players available. Use Admissions to add players first.</p>';
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">No admitted players yet.<br><br>Click "Admit Players" button to add players.</p>';
         return;
       }
 
@@ -538,8 +544,9 @@
         const isSelected = selectedPlayers.some(p => p.playerId === player.playerId);
         const div = document.createElement('div');
         div.className = 'player-item' + (isSelected ? ' selected' : '');
+        const fullName = `${player.firstName || ''} ${player.lastName || ''}`.trim() || 'Unknown Player';
         div.innerHTML = `
-          <div class="player-name">${player.name} ${player.surname}</div>
+          <div class="player-name">${fullName}</div>
           <div class="player-details">HCP: ${player.handicap || 'N/A'} | Gender: ${player.gender || 'N/A'}</div>
         `;
         div.addEventListener('click', () => togglePlayer(player));
@@ -575,10 +582,11 @@
       selectedPlayers.forEach((player, index) => {
         const div = document.createElement('div');
         div.className = 'seeding-item';
+        const fullName = `${player.firstName || ''} ${player.lastName || ''}`.trim() || 'Unknown Player';
         div.innerHTML = `
           <div class="seed-number">#${index + 1}</div>
           <div style="flex:1;">
-            <div class="player-name">${player.name} ${player.surname}</div>
+            <div class="player-name">${fullName}</div>
             <div class="player-details">HCP: ${player.handicap || 'N/A'}</div>
           </div>
           ${index > 0 ? '<button class="btn-move" onclick="movePlayer(' + index + ', -1)">↑</button>' : ''}
@@ -707,8 +715,8 @@
         status: 'ready',
         selectedPlayers: selectedPlayers.map(p => ({
           playerId: p.playerId,
-          name: p.name,
-          surname: p.surname,
+          firstName: p.firstName,
+          lastName: p.lastName,
           handicap: p.handicap,
           gender: p.gender
         })),
