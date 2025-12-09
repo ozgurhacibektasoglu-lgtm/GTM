@@ -743,16 +743,22 @@
         
         for (let i = 0; i < 9 && i < pars.length; i++) {
           const score = playerScores.holes[i];
+          const isIncomplete = playerScores.isIncompleteHole?.[i];
+          const displayValue = isIncomplete ? 'X' : (score || '');
           if (score) front9Score += parseInt(score);
-          html += `<td><input type="number" class="score-input" value="${score || ''}" 
-                    data-hole="${i}" min="1" max="15" step="1" ${score ? 'class="score-input has-value"' : ''} ${disableInputs}></td>`;
+          const incompleteClass = isIncomplete ? 'score-zero' : '';
+          html += `<td><input type="text" class="score-input ${incompleteClass}" value="${displayValue}" 
+                    data-hole="${i}" ${disableInputs}></td>`;
         }
         html += `<td class="subtotal-cell" id="front9-score">${front9Score || '-'}</td>`;
         for (let i = 9; i < 18 && i < pars.length; i++) {
           const score = playerScores.holes[i];
+          const isIncomplete = playerScores.isIncompleteHole?.[i];
+          const displayValue = isIncomplete ? 'X' : (score || '');
           if (score) back9Score += parseInt(score);
-          html += `<td><input type="number" class="score-input" value="${score || ''}" 
-                    data-hole="${i}" min="1" max="15" step="1" ${score ? 'class="score-input has-value"' : ''} ${disableInputs}></td>`;
+          const incompleteClass = isIncomplete ? 'score-zero' : '';
+          html += `<td><input type="text" class="score-input ${incompleteClass}" value="${displayValue}" 
+                    data-hole="${i}" ${disableInputs}></td>`;
         }
         html += `<td class="subtotal-cell" id="back9-score">${back9Score || '-'}</td>`;
         html += `<td class="total-cell" id="total-score">${(front9Score + back9Score) || '-'}</td>`;
@@ -826,7 +832,20 @@
 
       function handleScoreInput(e, playerKey) {
         const holeIndex = parseInt(e.target.dataset.hole);
+        const rawValue = e.target.value.trim().toUpperCase();
+        
+        // Handle X input (no score / incomplete hole) - treat as 0
+        if (rawValue === 'X') {
+          processScore(e.target, playerKey, holeIndex, 0);
+          return;
+        }
+        
         let score = e.target.value ? parseInt(e.target.value) : '';
+        
+        // If not a valid number, ignore
+        if (e.target.value && isNaN(score)) {
+          return;
+        }
         
         // Handle score of 1 - ask if hole-in-one or double digit
         if (score === 1 && e.target.value.length === 1) {
@@ -1080,17 +1099,34 @@
             inputElement.value = maxScore;
             isMaxScoreApplied = true;
           }
+        } else if (score === 0) {
+          // Max score not activated but 0 entered - use net double bogey for calculations
+          // Net double bogey = par + 2 + strokes received on this hole
+          const par = courseData.pars[holeIndex];
+          const si = courseData.strokeIndexes?.[holeIndex] || 999;
+          const phcp = selectedPlayer.phcp || 0;
+          const strokesReceived = getStrokesForHole(phcp, si);
+          const netDoubleBogey = par + 2 + Math.max(0, strokesReceived); // Only add positive strokes
+          
+          score = netDoubleBogey;
+          inputElement.value = 'X'; // Display X instead of 0
+          isMaxScoreApplied = true; // Mark so net calculation doesn't subtract strokes again
+          isIncompleteHole = true;
         }
         
         scores[playerKey].holes[holeIndex] = score;
         scores[playerKey].isMaxScoreApplied = scores[playerKey].isMaxScoreApplied || {};
         scores[playerKey].isMaxScoreApplied[holeIndex] = isMaxScoreApplied;
         
+        // Track incomplete holes for display purposes
+        scores[playerKey].isIncompleteHole = scores[playerKey].isIncompleteHole || {};
+        scores[playerKey].isIncompleteHole[holeIndex] = isIncompleteHole;
+        
         // Apply score type styling based on par
         inputElement.classList.remove('has-value', 'score-par', 'score-birdie', 'score-eagle', 'score-bogey', 'score-double-bogey', 'score-zero');
         
-        if (score === 0) {
-          // Special styling for zero score (incomplete hole)
+        if (isIncompleteHole) {
+          // Special styling for incomplete hole (X)
           inputElement.classList.add('score-zero');
         } else if (score && courseData && courseData.pars) {
           const par = courseData.pars[holeIndex];
