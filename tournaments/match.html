@@ -155,7 +155,8 @@
         courses.forEach(course => {
           const option = document.createElement('option');
           option.value = course.courseId || course.courseName;
-          option.textContent = `${course.courseName} (${course.city || 'Unknown'})`;
+          const city = course.city && course.city !== 'undefined' ? course.city : '';
+          option.textContent = city ? `${course.courseName} (${city})` : course.courseName;
           select.appendChild(option);
         });
       }
@@ -293,14 +294,9 @@
           }).catch(e => console.log('Firebase sync failed:', e));
         }
 
-        if (matchType === 'bracket') {
-          // Redirect to bracket management page
-          alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
-          window.location.href = `bracket.html?tournamentId=${tournament.tournamentId}`;
-        } else {
-          alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
-          window.location.href = 'index.html';
-        }
+        // Always redirect to tournaments list
+        alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
+        window.location.href = 'index.html';
       });
     </script>
   </body>
