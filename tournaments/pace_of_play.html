@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pace of Play</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  
   <link rel="stylesheet" href="../styles.css">
   <style>
     body {
@@ -800,6 +806,27 @@
 
     var defaultTimeByPar = { 3: 13, 4: 15, 5: 17 };
 
+    // Load data from Firebase before initializing
+    async function loadFromFirebase() {
+      try {
+        if (typeof loadTournamentsFromFirebase !== 'undefined') {
+          await loadTournamentsFromFirebase();
+          console.log('✓ Tournaments loaded from Firebase');
+        }
+        if (typeof loadCoursesFromFirebase !== 'undefined') {
+          await loadCoursesFromFirebase();
+          console.log('✓ Courses loaded from Firebase');
+        }
+        if (typeof loadDrawsFromFirebase !== 'undefined') {
+          await loadDrawsFromFirebase();
+          console.log('✓ Draws loaded from Firebase');
+        }
+        console.log('✓ Data loaded from Firebase');
+      } catch (err) {
+        console.log('Firebase load error (using localStorage):', err);
+      }
+    }
+
     function getTournaments() {
       try {
         return JSON.parse(localStorage.getItem('tournaments') || '[]');
@@ -1397,7 +1424,10 @@
       window.location.href = 'draw.html?tournamentId=' + encodeURIComponent(tournamentId);
     }
 
-    init();
+    // Load from Firebase first, then initialize
+    loadFromFirebase().then(function() {
+      init();
+    });
   </script>
 </body>
 </html>
