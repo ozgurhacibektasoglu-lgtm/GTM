@@ -161,6 +161,34 @@ async function loadTournamentsFromFirebase() {
   return getTournamentsFromStorage();
 }
 
+// Draws sync functions
+async function loadDrawsFromFirebase() {
+  const data = await syncFromFirebase('draws');
+  if (data && typeof data === 'object') {
+    localStorage.setItem('draws', JSON.stringify(data));
+    return data;
+  }
+  try {
+    return JSON.parse(localStorage.getItem('draws') || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+
+// Admitted Players sync functions
+async function loadAdmittedPlayersFromFirebase() {
+  const data = await syncFromFirebase('admittedPlayers');
+  if (data && typeof data === 'object') {
+    localStorage.setItem('admittedPlayers', JSON.stringify(data));
+    return data;
+  }
+  try {
+    return JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+
 // Current User sync functions
 function saveCurrentUser(user) {
   localStorage.setItem('currentUser', JSON.stringify(user));
