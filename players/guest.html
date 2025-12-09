@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Guest Player</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { padding-top: 70px; }
+    .container { max-width: 600px; margin: 60px auto; padding: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+    .btn-primary { background: #0b6efd; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; width: 100%; margin-top: 10px; }
+    .btn-primary:hover { background: #0956c9; }
+    .status { padding: 12px; border-radius: 8px; margin: 20px 0; }
+    .status.success { background: #d1fae5; color: #065f46; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <h1>🏌️ Guest Player</h1>
+    <a href="index.html" class="btn-back-top">← Back</a>
+  </div>
+  <main class="container">
+    <p style="color: #64748b; margin-bottom: 30px;">Add a guest player for tournament participation</p>
+    
+    <form id="guestForm" onsubmit="addGuest(event)">
+      <div class="form-group">
+        <label for="firstName">First Name *</label>
+        <input type="text" id="firstName" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="lastName">Last Name *</label>
+        <input type="text" id="lastName" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="gender">Gender *</label>
+        <select id="gender" required>
+          <option value="">Select...</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob">
+      </div>
+      
+      <div class="form-group">
+        <label for="hcp">Handicap</label>
+        <input type="number" id="hcp" step="0.1" placeholder="e.g., 15.4">
+      </div>
+      
+      <div class="form-group">
+        <label for="club">Club</label>
+        <input type="text" id="club" placeholder="e.g., Klassis">
+      </div>
+      
+      <button type="submit" class="btn-primary">Add Guest Player</button>
+    </form>
+    
+    <div id="status"></div>
+  </main>
+
+  <script>
+    function addGuest(event) {
+      event.preventDefault();
+      
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const gender = document.getElementById('gender').value;
+      const dob = document.getElementById('dob').value;
+      const hcp = document.getElementById('hcp').value;
+      const club = document.getElementById('club').value.trim();
+      
+      if (!firstName || !lastName || !gender) {
+        showStatus('error', 'Please fill in all required fields');
+        return;
+      }
+      
+      try {
+        // Load existing players
+        const players = JSON.parse(localStorage.getItem('players') || '[]');
+        
+        // Generate guest reg number
+        const guestCount = players.filter(p => p.reg.startsWith('G')).length;
+        const reg = `G${String(guestCount + 1).padStart(4, '0')}`;
+        
+        // Create guest player
+        const guest = {
+          reg: reg,
+          firstName: firstName,
+          lastName: lastName,
+          gender: gender,
+          dob: dob || '',
+          hcp: hcp ? parseFloat(hcp) : 36.0,
+          club: club || 'Guest',
+          owner: 'guest',
+          mobile: '',
+          email: ''
+        };
+        
+        // Add to players
+        players.push(guest);
+        localStorage.setItem('players', JSON.stringify(players));
+        
+        showStatus('success', `✅ Guest player added: ${firstName} ${lastName} (${reg})<br><br><a href="index.html">Back to Players</a>`);
+        
+        // Reset form
+        document.getElementById('guestForm').reset();
+        
+      } catch (err) {
+        showStatus('error', 'Error adding guest player: ' + err.message);
+      }
+    }
+    
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status ' + type;
+      statusDiv.innerHTML = message;
+    }
+  </script>
+</body>
+</html>

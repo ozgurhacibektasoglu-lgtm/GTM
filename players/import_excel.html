@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="../styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
+    body { padding-top: 70px; }
     .import-container { max-width: 900px; margin: 40px auto; padding: 20px; }
     .upload-area { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px; text-align: center; margin: 20px 0; }
     .upload-area.dragover { background: #dbeafe; border-color: #3b82f6; }
@@ -23,8 +24,11 @@
   </style>
 </head>
 <body>
+  <div class="top-nav">
+    <h1>🏌️ Import from Excel</h1>
+    <a href="index.html" class="btn-back-top">← Back</a>
+  </div>
   <main class="import-container">
-    <h1>Import Players from Excel</h1>
     <p class="lead">Upload an Excel file with player data. The file should have columns: Feder.No., İsim, Kulüp, HCP, Cinsiyet, Doğum Tarihi</p>
     
     <div class="upload-area" id="uploadArea">

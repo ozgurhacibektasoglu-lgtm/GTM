@@ -5,6 +5,7 @@
   <title>Clear Players</title>
   <link rel="stylesheet" href="../styles.css">
   <style>
+    body { padding-top: 70px; }
     .container { max-width: 600px; margin: 60px auto; padding: 20px; text-align: center; }
     .big-btn { background: #ef4444; color: white; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; margin: 10px; }
     .cancel-btn { background: #6b7280; }
@@ -13,8 +14,11 @@
   </style>
 </head>
 <body>
+  <div class="top-nav">
+    <h1>🏌️ Clear Players</h1>
+    <a href="index.html" class="btn-back-top">← Back</a>
+  </div>
   <main class="container">
-    <h1>Clear All Players</h1>
     <p style="color: #64748b; margin: 20px 0;">This will remove all players from localStorage. This action cannot be undone.</p>
     
     <div id="current-count" style="font-size: 18px; font-weight: 600; margin: 20px 0;"></div>
