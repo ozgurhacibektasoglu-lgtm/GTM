@@ -808,18 +808,23 @@
 
     // Load data from Firebase before initializing
     async function loadFromFirebase() {
+      // Wait a bit for Firebase to initialize
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       try {
-        if (typeof loadTournamentsFromFirebase !== 'undefined') {
+        if (typeof loadTournamentsFromFirebase === 'function') {
           await loadTournamentsFromFirebase();
           console.log('✓ Tournaments loaded from Firebase');
         }
-        if (typeof loadCoursesFromFirebase !== 'undefined') {
+        if (typeof loadCoursesFromFirebase === 'function') {
           await loadCoursesFromFirebase();
           console.log('✓ Courses loaded from Firebase');
         }
-        if (typeof loadDrawsFromFirebase !== 'undefined') {
+        if (typeof loadDrawsFromFirebase === 'function') {
           await loadDrawsFromFirebase();
           console.log('✓ Draws loaded from Firebase');
+        } else {
+          console.log('loadDrawsFromFirebase not available');
         }
         console.log('✓ Data loaded from Firebase');
       } catch (err) {
