@@ -484,10 +484,36 @@
         }
       }
 
-      function getNextTournamentId() {
-        try {
-          const raw = localStorage.getItem('tournaments');
-          const tournaments = raw ? JSON.parse(raw) : [];
+      // Load data from Firebase before initializing form
+      async function loadDataAndInit() {
+        // Wait for Firebase to be ready
+        let attempts = 0;
+        while (!syncEnabled && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          attempts++;
+        }
+        
+        // Load courses and tournaments from Firebase if available
+        if (syncEnabled) {
+          try {
+            if (typeof loadCoursesFromFirebase !== 'undefined') {
+              await loadCoursesFromFirebase();
+              console.log('✓ Courses loaded from Firebase');
+            }
+            if (typeof loadTournamentsFromFirebase !== 'undefined') {
+              await loadTournamentsFromFirebase();
+              console.log('✓ Tournaments loaded from Firebase');
+            }
+          } catch(e) {
+            console.log('Firebase load error:', e);
+          }
+        }
+        
+        initForm();
+      }
+
+      // Start initialization
+      loadDataAndInit();
           if (tournaments.length === 0) {
             return 'T0001';
           }
@@ -515,8 +541,6 @@
         }
         return roundIds;
       }
-
-      initForm();
 
       document.getElementById('stroke-form').addEventListener('submit', function (e) {
         e.preventDefault();
