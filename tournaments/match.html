@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Create Match Play Tournament</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       body{padding-top:70px}
@@ -148,7 +154,17 @@
       }
 
       // Load courses
-      function loadCourses() {
+      async function loadCourses() {
+        try {
+          // Load from Firebase first if available
+          if (typeof loadCoursesFromFirebase !== 'undefined') {
+            await loadCoursesFromFirebase();
+            console.log('✓ Courses loaded from Firebase');
+          }
+        } catch(e) {
+          console.log('Firebase load error:', e);
+        }
+        
         const courses = JSON.parse(localStorage.getItem('courses') || '[]');
         const select = document.getElementById('course-select');
         
@@ -161,11 +177,17 @@
         });
       }
 
-      // Set default date to today
-      document.getElementById('start-date').valueAsDate = new Date();
+      // Initialize page
+      async function initializePage() {
+        // Set default date to today
+        document.getElementById('start-date').valueAsDate = new Date();
+        
+        // Load courses from Firebase and localStorage
+        await loadCourses();
+      }
       
-      // Load courses on page load
-      loadCourses();
+      // Load on page ready
+      initializePage();
 
       // If editing, load tournament data
       if (isEdit) {
@@ -230,7 +252,7 @@
         return 'T' + String(maxNum + 1).padStart(3, '0');
       }
 
-      document.getElementById('match-form').addEventListener('submit', function(e) {
+      document.getElementById('match-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const name = document.getElementById('tournament-name').value.trim();
@@ -287,11 +309,14 @@
 
         saveTournaments(tournaments);
 
-        // Sync to Firebase
-        if (typeof syncToFirebase !== 'undefined' && typeof syncEnabled !== 'undefined' && syncEnabled) {
-          syncToFirebase('tournaments', tournaments).then(() => {
+        // Sync to Firebase and wait before redirect
+        try {
+          if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+            await syncToFirebase('tournaments', tournaments);
             console.log('✓ Tournament synced to Firebase');
-          }).catch(e => console.log('Firebase sync failed:', e));
+          }
+        } catch(e) {
+          console.log('Firebase sync error:', e);
         }
 
         // Always redirect to tournaments list
