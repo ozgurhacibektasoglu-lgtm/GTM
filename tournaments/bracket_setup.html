@@ -473,9 +473,15 @@
       try {
         if (typeof loadPlayersFromFirebase !== 'undefined') {
           await loadPlayersFromFirebase();
+          console.log('✓ Players loaded from Firebase');
         }
         if (typeof loadTournamentsFromFirebase !== 'undefined') {
           await loadTournamentsFromFirebase();
+          console.log('✓ Tournaments loaded from Firebase');
+        }
+        if (typeof loadAdmittedPlayersFromFirebase !== 'undefined') {
+          await loadAdmittedPlayersFromFirebase();
+          console.log('✓ Admitted players loaded from Firebase');
         }
       } catch(e) {
         console.log('Firebase load error:', e);
@@ -498,11 +504,15 @@
 
       // Load all players
       allPlayers = getPlayers();
+      console.log('All players loaded:', allPlayers.length);
       
       // Load admitted players for this tournament
       const admittedPlayers = getAdmittedPlayers();
       const tournamentKey = currentTournament.tournamentId;
       admittedPlayersList = admittedPlayers[tournamentKey] || [];
+      console.log('Tournament key:', tournamentKey);
+      console.log('Admitted players for this tournament:', admittedPlayersList.length);
+      console.log('Admitted players data:', admittedPlayersList);
 
       renderTournamentHeader();
       renderPlayerList();
