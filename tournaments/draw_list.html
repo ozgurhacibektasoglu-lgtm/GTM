@@ -431,9 +431,15 @@
 
     function populateRoundSelect() {
       const tournaments = getTournaments();
+      console.log('populateRoundSelect - tournaments:', tournaments.length, 'looking for:', tournamentId);
       const tournament = tournaments.find(t => t.tournamentId === tournamentId);
       
-      if (!tournament) return;
+      if (!tournament) {
+        console.log('Tournament not found!');
+        return;
+      }
+      
+      console.log('Tournament found:', tournament.name, 'meta:', tournament.meta);
 
       const roundSelect = document.getElementById('round-select');
       
