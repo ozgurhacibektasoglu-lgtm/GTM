@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Play Bracket</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { padding-top: 70px; background: #f8fafc; }
+    
+    .bracket-container { max-width: 1600px; margin: 16px auto; padding: 16px; }
+    
+    .bracket-header {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .bracket-header h2 { margin: 0 0 8px 0; font-size: 24px; color: #1e293b; }
+    .bracket-info { display: flex; gap: 24px; font-size: 14px; color: #64748b; }
+    .bracket-info-item { display: flex; align-items: center; gap: 8px; }
+    .bracket-info-item strong { color: #1e293b; }
+    
+    /* Action Buttons */
+    .action-buttons {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .btn { 
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary { background: linear-gradient(180deg, #0b6efd, #0a58d1); color: white; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(11,110,253,0.3); }
+    
+    .btn-success { background: linear-gradient(180deg, #28a745, #218838); color: white; }
+    .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(40,167,69,0.3); }
+    
+    .btn-secondary { background: white; border: 1px solid #e6e9ef; color: #333; }
+    .btn-secondary:hover { background: #f8fafc; }
+    
+    /* Tab Navigation */
+    .tab-nav {
+      background: white;
+      padding: 0;
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      overflow-x: auto;
+    }
+    
+    .tab-btn {
+      padding: 16px 24px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .tab-btn:hover { background: #f8fafc; color: #1e293b; }
+    .tab-btn.active { color: #0b6efd; border-bottom-color: #0b6efd; background: #f8fafc; }
+    
+    /* Tab Content */
+    .tab-content {
+      background: white;
+      padding: 24px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 400px;
+    }
+    
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    
+    /* Setup Phase */
+    .setup-section {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .setup-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .setup-info h3 { margin: 0 0 8px 0; color: #1e40af; font-size: 16px; }
+    .setup-info p { margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6; }
+    
+    .setup-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #0b6efd;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Player List */
+    .player-list {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #e6e9ef;
+      border-radius: 8px;
+    }
+    
+    .player-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .player-item:hover { background: #f8fafc; }
+    .player-item:last-child { border-bottom: 0; }
+    
+    .player-name { font-weight: 600; color: #1e293b; }
+    .player-info { font-size: 13px; color: #64748b; }
+    
+    /* Bracket Visualization */
+    .bracket-rounds {
+      display: flex;
+      gap: 40px;
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+    
+    .bracket-round {
+      flex-shrink: 0;
+      min-width: 250px;
+    }
+    
+    .round-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #1e293b;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .bracket-match {
+      background: white;
+      border: 2px solid #e6e9ef;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    
+    .bracket-match:hover {
+      border-color: #0b6efd;
+      box-shadow: 0 2px 8px rgba(11,110,253,0.2);
+    }
+    
+    .bracket-match.completed {
+      border-color: #10b981;
+    }
+    
+    .bracket-match.in-progress {
+      border-color: #f59e0b;
+    }
+    
+    .match-player {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .match-player:first-child {
+      border-bottom: 1px solid #e6e9ef;
+    }
+    
+    .match-player:hover {
+      background: #f8fafc;
+    }
+    
+    .match-player.winner {
+      background: #d1fae5;
+      font-weight: 700;
+    }
+    
+    .match-player.loser {
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
+    
+    .player-seed {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background: #e2e8f0;
+      color: #475569;
+      border-radius: 4px;
+      text-align: center;
+      line-height: 24px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    
+    .match-score {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      min-width: 40px;
+      text-align: right;
+    }
+    
+    .match-date {
+      text-align: center;
+      padding: 8px;
+      background: #f8fafc;
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .empty-slot {
+      color: #cbd5e1;
+      font-style: italic;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .modal-content h3 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      color: #1e293b;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .modal-buttons button {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <h1>🏆 Match Play Bracket</h1>
+    <a href="index.html" class="btn-back-top">← Back</a>
+  </div>
+  
+  <div class="bracket-container">
+    <!-- Header -->
+    <div class="bracket-header">
+      <h2 id="tournament-name">-</h2>
+      <div class="bracket-info">
+        <div class="bracket-info-item">
+          <strong>Format:</strong>
+          <span id="tournament-format">-</span>
+        </div>
+        <div class="bracket-info-item">
+          <strong>Bracket Size:</strong>
+          <span id="bracket-size">-</span>
+        </div>
+        <div class="bracket-info-item">
+          <strong>Status:</strong>
+          <span id="tournament-status">-</span>
+        </div>
+        <div class="bracket-info-item">
+          <strong>Duration:</strong>
+          <span id="tournament-duration">-</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn btn-primary" id="btn-add-players" onclick="goToAdmissions()">
+        👥 Add Players
+      </button>
+      <button class="btn btn-success" id="btn-generate-bracket" onclick="generateBracket()" style="display:none;">
+        ⚡ Generate Bracket
+      </button>
+      <button class="btn btn-secondary" id="btn-seed-players" onclick="openSeedingModal()" style="display:none;">
+        🔢 Seed Players
+      </button>
+      <button class="btn btn-success" id="btn-save-bracket" onclick="saveBracket()" style="display:none;">
+        💾 Save Changes
+      </button>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('setup')">Setup</button>
+      <button class="tab-btn" onclick="switchTab('qualifying')" id="tab-qualifying" style="display:none;">Qualifying</button>
+      <button class="tab-btn" onclick="switchTab('bracket')" id="tab-bracket">Bracket</button>
+      <button class="tab-btn" onclick="switchTab('results')">Results</button>
+    </div>
+    
+    <div class="tab-content">
+      <!-- Setup Tab -->
+      <div class="tab-pane active" id="pane-setup">
+        <div class="setup-section">
+          <div class="setup-info">
+            <h3>📋 Tournament Setup</h3>
+            <p>Add players to this tournament from the admissions page. Once you have all participants, the system will automatically determine if qualifying matches are needed and generate the bracket structure.</p>
+          </div>
+          
+          <div class="setup-stats">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-players">0</div>
+              <div class="stat-label">Registered Players</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-qualifying">0</div>
+              <div class="stat-label">Qualifying Matches</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-bracket-slots">64</div>
+              <div class="stat-label">Main Bracket Slots</div>
+            </div>
+          </div>
+          
+          <h3 style="margin-bottom: 12px;">Registered Players</h3>
+          <div class="player-list" id="setup-player-list">
+            <div style="padding: 40px; text-align: center; color: #94a3b8;">
+              No players registered yet. Click "Add Players" above.
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Qualifying Tab -->
+      <div class="tab-pane" id="pane-qualifying">
+        <h3 style="margin-bottom: 16px;">Qualifying Matches</h3>
+        <p style="color: #64748b; margin-bottom: 24px;">
+          These matches will determine the final players entering the main bracket.
+        </p>
+        <div id="qualifying-matches">
+          <!-- Qualifying matches will be rendered here -->
+        </div>
+      </div>
+      
+      <!-- Bracket Tab -->
+      <div class="tab-pane" id="pane-bracket">
+        <div class="bracket-rounds" id="bracket-rounds">
+          <!-- Bracket rounds will be rendered here -->
+        </div>
+      </div>
+      
+      <!-- Results Tab -->
+      <div class="tab-pane" id="pane-results">
+        <h3>Tournament Results</h3>
+        <div id="results-content">
+          <!-- Results will be shown here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Match Result Modal -->
+  <div id="match-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Enter Match Result</h3>
+      <div id="match-modal-content">
+        <!-- Match details will be populated here -->
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeMatchModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveMatchResult()">Save Result</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let currentTournament = null;
+    let tournamentIndex = null;
+    let bracket = null;
+    
+    // Initialize
+    function init() {
+      const params = new URLSearchParams(window.location.search);
+      const tournamentId = params.get('tournamentId');
+      
+      if (!tournamentId) {
+        alert('No tournament specified');
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      loadTournament(tournamentId);
+    }
+    
+    function loadTournament(tournamentId) {
+      const tournaments = getTournaments();
+      const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+      
+      if (index === -1) {
+        alert('Tournament not found');
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      currentTournament = tournaments[index];
+      tournamentIndex = index;
+      bracket = currentTournament.meta.bracket || {
+        targetSize: currentTournament.bracketSize || 64,
+        status: 'setup',
+        rounds: [],
+        qualifyingMatches: []
+      };
+      
+      renderTournamentInfo();
+      loadPlayers();
+    }
+    
+    function renderTournamentInfo() {
+      document.getElementById('tournament-name').textContent = currentTournament.name;
+      document.getElementById('tournament-format').textContent = 
+        `${currentTournament.gameFormat} (${currentTournament.matchFormat || '18'} holes)`;
+      document.getElementById('bracket-size').textContent = currentTournament.bracketSize;
+      document.getElementById('tournament-status').textContent = bracket.status;
+      document.getElementById('tournament-duration').textContent = currentTournament.duration || 'Not set';
+      document.getElementById('stat-bracket-slots').textContent = currentTournament.bracketSize;
+    }
+    
+    function loadPlayers() {
+      // Load admitted players for this tournament
+      const admittedPlayers = getAdmittedPlayers();
+      const tournamentPlayers = admittedPlayers[currentTournament.tournamentId] || [];
+      
+      document.getElementById('stat-players').textContent = tournamentPlayers.length;
+      
+      // Calculate qualifying matches needed
+      const targetSize = bracket.targetSize;
+      const qualifyingCount = Math.max(0, tournamentPlayers.length - targetSize);
+      document.getElementById('stat-qualifying').textContent = qualifyingCount;
+      
+      // Show qualifying tab if needed
+      if (qualifyingCount > 0) {
+        document.getElementById('tab-qualifying').style.display = 'block';
+      }
+      
+      // Render player list
+      renderPlayerList(tournamentPlayers);
+      
+      // Show generate button if we have players
+      if (tournamentPlayers.length > 0 && bracket.status === 'setup') {
+        document.getElementById('btn-generate-bracket').style.display = 'block';
+      }
+    }
+    
+    function renderPlayerList(players) {
+      const container = document.getElementById('setup-player-list');
+      
+      if (players.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">No players registered yet. Click "Add Players" above.</div>';
+        return;
+      }
+      
+      container.innerHTML = players.map((p, i) => `
+        <div class="player-item">
+          <div>
+            <div class="player-name">${i + 1}. ${p.firstName} ${p.lastName}</div>
+            <div class="player-info">HCP: ${p.hcp} | PHCP: ${p.phcp || p.hcp}</div>
+          </div>
+          <div class="player-info">Reg: ${p.reg}</div>
+        </div>
+      `).join('');
+    }
+    
+    function generateBracket() {
+      if (!confirm('Generate bracket structure? This will create all matches based on current registrations.')) {
+        return;
+      }
+      
+      const admittedPlayers = getAdmittedPlayers();
+      const players = admittedPlayers[currentTournament.tournamentId] || [];
+      
+      if (players.length < 2) {
+        alert('Need at least 2 players to generate bracket');
+        return;
+      }
+      
+      const targetSize = bracket.targetSize;
+      const needsQualifying = players.length > targetSize;
+      
+      // TODO: Implement bracket generation logic
+      alert(`Bracket generation started!\n\nPlayers: ${players.length}\nTarget: ${targetSize}\nQualifying matches: ${needsQualifying ? (players.length - targetSize) : 0}`);
+      
+      bracket.status = needsQualifying ? 'qualifying' : 'in-progress';
+      saveBracket();
+    }
+    
+    function saveBracket() {
+      currentTournament.meta.bracket = bracket;
+      const tournaments = getTournaments();
+      tournaments[tournamentIndex] = currentTournament;
+      saveTournaments(tournaments);
+      
+      alert('Bracket saved!');
+    }
+    
+    function goToAdmissions() {
+      window.location.href = `admissions.html?tournamentId=${currentTournament.tournamentId}`;
+    }
+    
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Update tab panes
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      document.getElementById('pane-' + tabName).classList.add('active');
+    }
+    
+    function getTournaments() {
+      try {
+        return JSON.parse(localStorage.getItem('tournaments') || '[]');
+      } catch(e) {
+        return [];
+      }
+    }
+    
+    function saveTournaments(tournaments) {
+      localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      
+      if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+        syncToFirebase('tournaments', tournaments);
+      }
+    }
+    
+    function getAdmittedPlayers() {
+      try {
+        return JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+      } catch(e) {
+        return {};
+      }
+    }
+    
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>

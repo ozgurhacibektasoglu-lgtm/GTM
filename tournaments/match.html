@@ -44,12 +44,37 @@
 
         <div class="field">
           <label for="match-type">Match Play Type</label>
-          <select id="match-type" name="matchType" required>
+          <select id="match-type" name="matchType" required onchange="updateMatchTypeHelp()">
             <option value="">-- Select type --</option>
-            <option value="tournament">Match Play Tournament</option>
-            <option value="series">Match Play Series</option>
+            <option value="single-event">Single Event Match Play</option>
+            <option value="bracket">Bracket Tournament (Elimination)</option>
           </select>
-          <p class="help-text">Tournament: Single event | Series: Bracket format (64→32→16→8→4→2→Winner)</p>
+          <p class="help-text" id="match-type-help">Single Event: One-time matches | Bracket: Multi-round elimination tournament</p>
+        </div>
+
+        <div class="field" id="bracket-size-field" style="display:none;">
+          <label for="bracket-size">Target Bracket Size</label>
+          <select id="bracket-size" name="bracketSize">
+            <option value="4">4 Players (Semi-finals → Final)</option>
+            <option value="8">8 Players (Quarter → Semi → Final)</option>
+            <option value="16">16 Players (Round of 16 → ... → Final)</option>
+            <option value="32">32 Players</option>
+            <option value="64" selected>64 Players</option>
+            <option value="128">128 Players</option>
+          </select>
+          <p class="help-text">If participants exceed this, qualifying matches will be automatically created</p>
+        </div>
+
+        <div class="field" id="tournament-duration-field" style="display:none;">
+          <label for="tournament-duration">Tournament Duration</label>
+          <select id="tournament-duration" name="duration">
+            <option value="single-day">Single Day Event</option>
+            <option value="weekend">Weekend (2-3 days)</option>
+            <option value="monthly">Monthly (1 month)</option>
+            <option value="seasonal" selected>Seasonal (3-6 months)</option>
+            <option value="annual">Annual (Year-long)</option>
+          </select>
+          <p class="help-text">Determines match scheduling flexibility and deadlines</p>
         </div>
 
         <div class="field">
@@ -67,6 +92,15 @@
           <p class="help-text">Percentage of handicap difference applied to matches</p>
         </div>
 
+        <div class="field" id="match-format-field" style="display:none;">
+          <label for="match-format">Match Format</label>
+          <select id="match-format" name="matchFormat">
+            <option value="18">18 Holes</option>
+            <option value="36">36 Holes (18+18)</option>
+          </select>
+          <p class="help-text">Number of holes per match</p>
+        </div>
+
         <div class="actions">
           <button type="submit" class="btn-primary">Continue</button>
         </div>
@@ -77,6 +111,27 @@
       const params = new URLSearchParams(window.location.search);
       const editIndexParam = params.get('edit');
       const isEdit = editIndexParam !== null;
+
+      // Update form based on match type selection
+      function updateMatchTypeHelp() {
+        const matchType = document.getElementById('match-type').value;
+        const bracketField = document.getElementById('bracket-size-field');
+        const durationField = document.getElementById('tournament-duration-field');
+        const formatField = document.getElementById('match-format-field');
+        const helpText = document.getElementById('match-type-help');
+        
+        if (matchType === 'bracket') {
+          bracketField.style.display = 'block';
+          durationField.style.display = 'block';
+          formatField.style.display = 'block';
+          helpText.textContent = 'Bracket tournament with elimination rounds. Qualifying matches will be created if needed.';
+        } else {
+          bracketField.style.display = 'none';
+          durationField.style.display = 'none';
+          formatField.style.display = 'none';
+          helpText.textContent = 'Single Event: One-time matches | Bracket: Multi-round elimination tournament';
+        }
+      }
 
       // If editing, load tournament data
       if (isEdit) {
@@ -89,6 +144,18 @@
           document.getElementById('game-format').value = tournament.gameFormat || '';
           document.getElementById('match-type').value = tournament.matchType || '';
           document.getElementById('hcp-allowance').value = tournament.hcpAllowance || '100';
+          
+          if (tournament.bracketSize) {
+            document.getElementById('bracket-size').value = tournament.bracketSize;
+          }
+          if (tournament.duration) {
+            document.getElementById('tournament-duration').value = tournament.duration;
+          }
+          if (tournament.matchFormat) {
+            document.getElementById('match-format').value = tournament.matchFormat;
+          }
+          
+          updateMatchTypeHelp();
         }
       }
 
@@ -148,6 +215,23 @@
           meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : {}
         };
 
+        // Add bracket-specific fields
+        if (matchType === 'bracket') {
+          tournament.bracketSize = parseInt(document.getElementById('bracket-size').value);
+          tournament.duration = document.getElementById('tournament-duration').value;
+          tournament.matchFormat = document.getElementById('match-format').value;
+          
+          // Initialize bracket structure
+          if (!isEdit) {
+            tournament.meta.bracket = {
+              targetSize: tournament.bracketSize,
+              status: 'setup', // setup, qualifying, in-progress, completed
+              rounds: [],
+              qualifyingMatches: []
+            };
+          }
+        }
+
         const tournaments = getTournaments();
         
         if (isEdit) {
@@ -157,6 +241,13 @@
         }
 
         saveTournaments(tournaments);
+
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+          syncToFirebase('tournaments', tournaments).then(() => {
+            console.log('✓ Tournament synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
 
         alert(isEdit ? 'Match Play tournament updated successfully!' : 'Match Play tournament created successfully!');
         window.location.href = 'index.html';
