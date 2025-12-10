@@ -82,7 +82,7 @@
             </div>
           </div>
 
-          <!-- Number of rounds aligned left -->
+          <!-- Number of rounds and Teams Tournament aligned left -->
           <div class="row" style="justify-content: flex-start;">
             <div class="field" style="flex:0 0 220px;">
                 <label for="rounds">Number of Rounds</label>
@@ -91,6 +91,13 @@
                   <option value="2">2</option>
                   <option value="3">3</option>
                   <option value="4">4</option>
+                </select>
+            </div>
+            <div class="field" style="flex:0 0 220px;">
+                <label for="teams-tournament">Teams Tournament</label>
+                <select id="teams-tournament" name="teamsTournament" required>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
                 </select>
             </div>
           </div>
@@ -599,6 +606,10 @@
 
         // Use the first round's date as the main tournament date
         const mainDate = roundsData[0]?.date || '';
+        
+        // Check if it's a teams tournament
+        const isTeamsTournament = data.get('teamsTournament') === 'yes';
+        const tournamentType = isTeamsTournament ? 'Stroke Play (Teams)' : 'Stroke Play';
 
         // Persist to localStorage so the tournaments list shows this entry.
         try {
@@ -608,14 +619,15 @@
             tournamentId: tournamentId,
             date: mainDate, 
             name: data.get('name'), 
-            type: 'Stroke Play', 
+            type: tournamentType, 
             meta: { 
               rounds: numRounds, 
               roundIds: roundIds,
               roundsData: roundsData,
               hcpQual: data.get('hcpQual'), 
               hcpAllow: data.get('hcpAllow'), 
-              maxScore: data.get('maxScore')
+              maxScore: data.get('maxScore'),
+              teamsTournament: data.get('teamsTournament')
             } 
           };
           

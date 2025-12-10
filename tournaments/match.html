@@ -112,6 +112,15 @@
           <p class="help-text">Percentage of handicap difference applied to matches</p>
         </div>
 
+        <div class="field">
+          <label for="teams-tournament">Teams Tournament</label>
+          <select id="teams-tournament" name="teamsTournament" required>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+          <p class="help-text">Enable team-based competition</p>
+        </div>
+
         <div class="field" id="match-format-field" style="display:none;">
           <label for="match-format">Match Format</label>
           <select id="match-format" name="matchFormat">
@@ -261,6 +270,7 @@
         const gameFormat = document.getElementById('game-format').value;
         const matchType = document.getElementById('match-type').value;
         const hcpAllowance = document.getElementById('hcp-allowance').value;
+        const teamsTournament = document.getElementById('teams-tournament').value;
 
         if (!name || !startDate || !course || !gameFormat || !matchType || !hcpAllowance) {
           alert('Please fill in all required fields.');
@@ -268,10 +278,13 @@
         }
 
         const now = new Date().toISOString();
+        const isTeamsTournament = teamsTournament === 'yes';
+        const displayType = isTeamsTournament ? 'Match Play (Teams)' : 'Match Play';
+        
         const tournament = {
           tournamentId: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].tournamentId : generateTournamentId(),
           name: name,
-          type: 'match',
+          type: displayType,
           date: new Date(startDate).toISOString(),
           course: course,
           gameFormat: gameFormat,
@@ -279,7 +292,7 @@
           hcpAllowance: hcpAllowance,
           createdAt: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].createdAt : now,
           updatedAt: now,
-          meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : { courses: [course] }
+          meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : { courses: [course], teamsTournament: teamsTournament }
         };
 
         // Add bracket-specific fields

@@ -165,7 +165,7 @@
   <body>
     <div class="top-nav">
       <h1>🏆 Untie Criteria</h1>
-      <a href="index.html" class="btn-back-top">← Back</a>
+      <a href="#" id="back-link-top" class="btn-back-top">← Back</a>
     </div>
     <main class="criteria-container">
       <header>
@@ -196,18 +196,7 @@
           <div class="criteria-box">
             <h3>🏆 Tournament Untie Criteria</h3>
             <div id="selected-criteria" class="criteria-list">
-              <!-- Static first item - Total Score -->
-              <div class="criteria-item static" data-id="total_score">
-                <span class="criteria-number">1</span>
-                <span class="criteria-text">Total Score</span>
-                <span style="color: #9ca3af; font-size: 12px;">(Primary - Fixed)</span>
-              </div>
-              <!-- Static second item - Play Off -->
-              <div class="criteria-item static" data-id="play_off">
-                <span class="criteria-number">2</span>
-                <span class="criteria-text">Play Off</span>
-                <span style="color: #9ca3af; font-size: 12px;">(If played - Fixed)</span>
-              </div>
+              <!-- Static items will be added by JavaScript based on category type -->
               <!-- Drop zone for additional criteria -->
               <div id="drop-zone"></div>
             </div>
@@ -230,9 +219,15 @@
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
+      const categoryCode = urlParams.get('categoryCode'); // Optional - if TEAM, show team criteria
 
-      // All available criteria definitions (excluding fixed items: total_score and play_off)
-      const allCriteria = [
+      // Check if this is a team category
+      function isTeamCategory() {
+        return categoryCode === 'TEAM';
+      }
+
+      // Individual criteria definitions (excluding fixed items: total_score and play_off)
+      const individualCriteria = [
         { id: 'last_round', name: 'Last Round Score', description: 'Score from the final round' },
         { id: 'back_9', name: 'Back 9 Score', description: 'Holes 10-18 of the last round' },
         { id: 'last_6', name: 'Last 6 Holes', description: 'Holes 13-18 of the last round' },
@@ -243,6 +238,23 @@
         { id: 'eagles_birdies_pars', name: 'More Eagles, Birdies, Pars', description: 'Count of eagles, then birdies, then pars' }
       ];
 
+      // Team criteria definitions
+      const teamCriteria = [
+        { id: 'team_best_uncounted', name: 'Best Uncounted Score', description: 'Compare uncounted scores: best uncounted from final round first, then 2nd uncounted, then previous rounds. For multi-round: final round uncounted scores first, then earlier rounds.' },
+        { id: 'team_best_player', name: 'Best Individual Score', description: 'Team with the highest individual player score wins' },
+        { id: 'team_2nd_best', name: '2nd Best Individual Score', description: 'If tied, compare 2nd best individual scores' },
+        { id: 'team_3rd_best', name: '3rd Best Individual Score', description: 'If tied, compare 3rd best individual scores' },
+        { id: 'team_4th_best', name: '4th Best Individual Score', description: 'If tied, compare 4th best individual scores' },
+        { id: 'team_lower_avg_hcp', name: 'Lower Team Average HCP', description: 'Team with lower average handicap wins' },
+        { id: 'team_countback_best', name: 'Countback on Best Scores', description: 'Compare counting scores one by one, highest first' },
+        { id: 'team_more_birdies', name: 'More Birdies (Team Total)', description: 'Team with more total birdies across all players' }
+      ];
+
+      // Get the appropriate criteria based on category type
+      function getAllCriteria() {
+        return isTeamCategory() ? teamCriteria : individualCriteria;
+      }
+
       let selectedCriteria = [];
 
       if (!tournamentId) {
@@ -250,8 +262,10 @@
         window.location.href = 'index.html';
       }
 
-      // Set back link
-      document.getElementById('back-link').href = `results.html?tournamentId=${tournamentId}`;
+      // Set back links
+      const backUrl = `results.html?tournamentId=${tournamentId}`;
+      document.getElementById('back-link').href = backUrl;
+      document.getElementById('back-link-top').href = backUrl;
 
       function getTournaments() {
         try {
@@ -275,13 +289,45 @@
       function loadCriteria() {
         const tournament = getTournament();
         if (tournament) {
-          document.getElementById('tournament-name').textContent = `${tournament.name} - Tiebreaker Configuration`;
-          selectedCriteria = tournament.untieCriteria || [];
+          const categoryType = isTeamCategory() ? 'Team' : 'Individual';
+          document.getElementById('tournament-name').textContent = `${tournament.name} - ${categoryType} Tiebreaker Configuration`;
+          
+          // Load appropriate criteria based on category type
+          if (isTeamCategory()) {
+            selectedCriteria = tournament.teamUntieCriteria || [];
+          } else {
+            selectedCriteria = tournament.untieCriteria || [];
+          }
         }
+        
+        // Update info box text based on category type
+        updateInfoBox();
+        
         renderCriteria();
       }
 
+      function updateInfoBox() {
+        const infoBox = document.querySelector('.info-box');
+        if (isTeamCategory()) {
+          infoBox.innerHTML = `
+            <strong>Team Tiebreaker Rules:</strong>
+            Drag criteria from "Available Criteria" to "Tournament Untie Criteria" to define tiebreaker rules for team competitions.
+            The order matters - criteria at the top will be checked first. If teams are still tied, the next criteria will be used.
+            "Team Total Score" and "Play Off" are fixed positions. Play Off only applies if manually recorded.
+          `;
+        } else {
+          infoBox.innerHTML = `
+            <strong>How it works:</strong>
+            Drag criteria from "Available Criteria" to "Tournament Untie Criteria" to define tiebreaker rules. 
+            The order matters - criteria at the top will be checked first. If still tied, the next criteria will be used.
+            "Total Score" and "Play Off" are fixed positions. Play Off only applies if manually recorded.
+          `;
+        }
+      }
+
       function renderCriteria() {
+        const allCriteria = getAllCriteria();
+        
         // Render available criteria (those not selected)
         const availableContainer = document.getElementById('available-criteria');
         const availableCriteria = allCriteria.filter(c => !selectedCriteria.includes(c.id));
@@ -298,17 +344,21 @@
           `).join('');
         }
         
+        // Update static criteria based on category type
+        updateStaticCriteria();
+        
         // Render selected criteria
         const dropZone = document.getElementById('drop-zone');
         if (selectedCriteria.length === 0) {
           dropZone.innerHTML = '<div class="empty-drop-zone">Drag criteria here to add tiebreakers</div>';
         } else {
+          const startNumber = 3; // Both team and individual have 2 fixed items (Total Score + Play Off)
           dropZone.innerHTML = selectedCriteria.map((criteriaId, index) => {
             const criteria = allCriteria.find(c => c.id === criteriaId);
             if (!criteria) return '';
             return `
               <div class="criteria-item" draggable="true" data-id="${criteriaId}" data-index="${index}" title="${criteria.description}">
-                <span class="criteria-number">${index + 3}</span>
+                <span class="criteria-number">${index + startNumber}</span>
                 <span class="drag-handle">⋮⋮</span>
                 <span class="criteria-text">${criteria.name}</span>
                 <button onclick="removeCriteria('${criteriaId}')" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 16px;" title="Remove">✕</button>
@@ -319,6 +369,63 @@
         
         // Re-attach drag event listeners
         attachDragListeners();
+      }
+
+      function updateStaticCriteria() {
+        const selectedContainer = document.getElementById('selected-criteria');
+        const staticItems = selectedContainer.querySelectorAll('.criteria-item.static');
+        
+        // Remove existing static items
+        staticItems.forEach(item => item.remove());
+        
+        // Add appropriate static items based on category type
+        const dropZone = document.getElementById('drop-zone');
+        
+        if (isTeamCategory()) {
+          // Team: Team Total Score and Play Off are fixed
+          const teamTotalItem = document.createElement('div');
+          teamTotalItem.className = 'criteria-item static';
+          teamTotalItem.dataset.id = 'team_total_score';
+          teamTotalItem.innerHTML = `
+            <span class="criteria-number">1</span>
+            <span class="criteria-text">Team Total Score</span>
+            <span style="color: #9ca3af; font-size: 12px;">(Primary - Fixed)</span>
+          `;
+          
+          const playOffItem = document.createElement('div');
+          playOffItem.className = 'criteria-item static';
+          playOffItem.dataset.id = 'team_play_off';
+          playOffItem.innerHTML = `
+            <span class="criteria-number">2</span>
+            <span class="criteria-text">Play Off</span>
+            <span style="color: #9ca3af; font-size: 12px;">(If played - Fixed)</span>
+          `;
+          
+          dropZone.parentNode.insertBefore(teamTotalItem, dropZone);
+          dropZone.parentNode.insertBefore(playOffItem, dropZone);
+        } else {
+          // Individual: Total Score and Play Off are fixed
+          const totalScoreItem = document.createElement('div');
+          totalScoreItem.className = 'criteria-item static';
+          totalScoreItem.dataset.id = 'total_score';
+          totalScoreItem.innerHTML = `
+            <span class="criteria-number">1</span>
+            <span class="criteria-text">Total Score</span>
+            <span style="color: #9ca3af; font-size: 12px;">(Primary - Fixed)</span>
+          `;
+          
+          const playOffItem = document.createElement('div');
+          playOffItem.className = 'criteria-item static';
+          playOffItem.dataset.id = 'play_off';
+          playOffItem.innerHTML = `
+            <span class="criteria-number">2</span>
+            <span class="criteria-text">Play Off</span>
+            <span style="color: #9ca3af; font-size: 12px;">(If played - Fixed)</span>
+          `;
+          
+          dropZone.parentNode.insertBefore(totalScoreItem, dropZone);
+          dropZone.parentNode.insertBefore(playOffItem, dropZone);
+        }
       }
 
       // Flag to track if zone listeners are attached
@@ -469,7 +576,27 @@
         const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
         
         if (index !== -1) {
-          tournaments[index].untieCriteria = selectedCriteria;
+          // Save to appropriate property based on category type
+          if (isTeamCategory()) {
+            tournaments[index].teamUntieCriteria = selectedCriteria;
+            // Invalidate cached results for TEAM category
+            if (tournaments[index].calculatedResults) {
+              delete tournaments[index].calculatedResults['TEAM'];
+              console.log('Invalidated cached results for TEAM category due to criteria change');
+            }
+          } else {
+            tournaments[index].untieCriteria = selectedCriteria;
+            // Invalidate cached results for ALL individual categories (criteria applies to all)
+            if (tournaments[index].calculatedResults) {
+              const categories = tournaments[index].categories || [];
+              categories.forEach(cat => {
+                if (cat.code !== 'TEAM') {
+                  delete tournaments[index].calculatedResults[cat.code];
+                }
+              });
+              console.log('Invalidated cached results for all individual categories due to criteria change');
+            }
+          }
           saveTournaments(tournaments);
           
           // Sync to Firebase if available
@@ -477,7 +604,8 @@
             syncToFirebase('tournaments', tournaments).catch(e => console.log('Firebase sync failed:', e));
           }
           
-          alert('Untie criteria saved successfully!');
+          const categoryType = isTeamCategory() ? 'Team' : 'Individual';
+          alert(`${categoryType} untie criteria saved successfully!`);
         }
       }
 

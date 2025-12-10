@@ -823,6 +823,108 @@
       // Load admitted players
       function loadAdmittedPlayers() {
         admittedPlayers = getAdmittedPlayers();
+        // Refresh player tees/categories based on current category definitions
+        refreshPlayerTeesFromCategories();
+      }
+      
+      // Refresh player tees and PHCP based on current category definitions
+      // This ensures any stale data from before category changes is corrected
+      function refreshPlayerTeesFromCategories() {
+        if (!currentTournament || !admittedPlayers || admittedPlayers.length === 0) return;
+        
+        const categories = currentTournament.categories || [];
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        
+        if (!roundData) return;
+        
+        let updated = false;
+        
+        admittedPlayers.forEach(player => {
+          // Find ALL categories this player belongs to
+          let teeAssigningCategory = null;
+          const allMatchingCategories = [];
+          
+          for (const cat of categories) {
+            const playerGender = (player.gender || '').toLowerCase();
+            const catGender = (cat.gender || '').toLowerCase();
+            
+            let genderMatch = false;
+            if (!catGender || catGender === 'any' || catGender === '') {
+              genderMatch = true;
+            } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male' || playerGender === 'e')) {
+              genderMatch = true;
+            } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female' || playerGender === 'k')) {
+              genderMatch = true;
+            }
+            
+            if (genderMatch && playerMatchesCategory(player, cat)) {
+              allMatchingCategories.push(cat.code);
+              
+              // For tee assignment, use the first non-result-only category
+              if (!cat.isResultOnly && !teeAssigningCategory) {
+                teeAssigningCategory = cat;
+              }
+            }
+          }
+          
+          // Store ALL categories this player belongs to
+          player.categories = allMatchingCategories;
+          
+          // For backward compatibility, also store primary category
+          if (allMatchingCategories.length > 0) {
+            player.category = allMatchingCategories[0];
+          } else {
+            player.category = null;
+            player.categories = [];
+          }
+          
+          // Determine correct tee for this player
+          let correctTee = null;
+          const playerGender = (player.gender || '').toLowerCase();
+          
+          if (teeAssigningCategory) {
+            const isMixedCategory = !teeAssigningCategory.gender || teeAssigningCategory.gender === '' || teeAssigningCategory.gender === 'Any';
+            
+            if (isMixedCategory && (teeAssigningCategory.playsFromMen || teeAssigningCategory.playsFromWomen)) {
+              // Mixed category with separate tees - choose based on player gender
+              if (playerGender === 'm' || playerGender === 'male' || playerGender === 'e') {
+                correctTee = teeAssigningCategory.playsFromMen;
+              } else if (playerGender === 'f' || playerGender === 'female' || playerGender === 'k') {
+                correctTee = teeAssigningCategory.playsFromWomen;
+              }
+            } else if (teeAssigningCategory.playsFrom) {
+              // Single gender category with single tee
+              correctTee = teeAssigningCategory.playsFrom;
+            }
+          }
+          
+          // If no category tee, use default from tournament settings
+          if (!correctTee) {
+            if (playerGender === 'male' || playerGender === 'm' || playerGender === 'e') {
+              correctTee = roundData.teeMen || null;
+            } else if (playerGender === 'female' || playerGender === 'f' || playerGender === 'k') {
+              correctTee = roundData.teeWomen || null;
+            }
+          }
+          
+          // If tee changed, update it and recalculate PHCP
+          if (player.tee !== correctTee) {
+            console.log(`Updating player ${player.firstName} ${player.lastName}: tee ${player.tee} -> ${correctTee}`);
+            player.tee = correctTee;
+            
+            // Recalculate PHCP
+            const phcpString = calculatePlayingHcp(player);
+            player.phcp = phcpString.startsWith('+') ? parseInt(phcpString.substring(1)) * -1 : (phcpString === '' ? null : parseInt(phcpString));
+            
+            updated = true;
+          }
+        });
+        
+        // Save if any changes were made
+        if (updated) {
+          saveAdmittedPlayers(admittedPlayers);
+          console.log('Player tees refreshed based on current categories');
+        }
       }
 
       // Load criteria into form
@@ -1565,9 +1667,22 @@
           }
           
           // If player matches a tee-assigning category, override the tee
-          if (teeAssigningCategory && teeAssigningCategory.playsFrom) {
-            playerWithTee.tee = teeAssigningCategory.playsFrom;
-            console.log(`✓ Player ${playerWithTee.firstName} ${playerWithTee.lastName} admitted with category tee: ${teeAssigningCategory.name} (${teeAssigningCategory.playsFrom})`);
+          if (teeAssigningCategory) {
+            const playerGender = (playerWithTee.gender || '').toLowerCase();
+            const isMixedCategory = !teeAssigningCategory.gender || teeAssigningCategory.gender === '' || teeAssigningCategory.gender === 'Any';
+            
+            if (isMixedCategory && (teeAssigningCategory.playsFromMen || teeAssigningCategory.playsFromWomen)) {
+              // Mixed category with separate tees - choose based on player gender
+              if (playerGender === 'm' || playerGender === 'male' || playerGender === 'e') {
+                playerWithTee.tee = teeAssigningCategory.playsFromMen;
+              } else if (playerGender === 'f' || playerGender === 'female' || playerGender === 'k') {
+                playerWithTee.tee = teeAssigningCategory.playsFromWomen;
+              }
+              console.log(`✓ Player ${playerWithTee.firstName} ${playerWithTee.lastName} admitted with mixed category tee: ${teeAssigningCategory.name} (${playerWithTee.tee})`);
+            } else if (teeAssigningCategory.playsFrom) {
+              playerWithTee.tee = teeAssigningCategory.playsFrom;
+              console.log(`✓ Player ${playerWithTee.firstName} ${playerWithTee.lastName} admitted with category tee: ${teeAssigningCategory.name} (${teeAssigningCategory.playsFrom})`);
+            }
           }
           
           // Calculate and save PHCP with the player (as numeric value)
@@ -1577,16 +1692,16 @@
           
           // Apply PHCP adjustment if criteria specifies it
           const criteria = getCurrentCriteria();
-          const playerGender = (playerWithTee.gender || '').toLowerCase() === 'male' ? 'M' : 
+          const playerGenderCode = (playerWithTee.gender || '').toLowerCase() === 'male' ? 'M' : 
                               (playerWithTee.gender || '').toLowerCase() === 'female' ? 'F' : 
                               (playerWithTee.gender || '').toUpperCase();
           
-          if (playerGender === 'M' && criteria.hcpMen === 'Adjust Playing') {
+          if (playerGenderCode === 'M' && criteria.hcpMen === 'Adjust Playing') {
             const adjustLimit = parseFloat(criteria.hcpMenValue);
             if (!isNaN(adjustLimit) && phcpValue !== null && phcpValue > adjustLimit) {
               phcpValue = adjustLimit;
             }
-          } else if (playerGender === 'F' && criteria.hcpWomen === 'Adjust Playing') {
+          } else if (playerGenderCode === 'F' && criteria.hcpWomen === 'Adjust Playing') {
             const adjustLimit = parseFloat(criteria.hcpWomenValue);
             if (!isNaN(adjustLimit) && phcpValue !== null && phcpValue > adjustLimit) {
               phcpValue = adjustLimit;

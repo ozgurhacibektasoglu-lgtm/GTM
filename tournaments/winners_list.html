@@ -195,6 +195,21 @@
         }
       }
 
+      function getTeams() {
+        try {
+          const raw = localStorage.getItem('teams');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading teams:', err);
+          return [];
+        }
+      }
+
+      function isTeamCategory(categoryCode) {
+        const tournament = getTournament();
+        return tournament?.meta?.teamsTournament === 'yes' && categoryCode === 'TEAM';
+      }
+
       function getCategoryPlayers(categoryCode) {
         const allPlayers = getAdmittedPlayers();
         return allPlayers.filter(player => {
@@ -233,34 +248,138 @@
         }, 0);
       }
 
-      function calculateNetScore(grossScore, hcp) {
-        if (typeof grossScore !== 'number' || isNaN(grossScore)) return null;
-        if (typeof hcp !== 'number' || isNaN(hcp)) return grossScore;
-        return grossScore - hcp;
-      }
-
-      function getPlayerRoundScore(player, roundId, tournamentType) {
-        const scores = getScores();
-        const playerScores = scores[roundId]?.[player.reg];
+      // Generate winners from saved calculated results
+      function generateWinnersFromSavedResults(tournament, category, roundIds) {
+        console.log(`Looking for saved results for category: ${category.code}`);
+        console.log('Tournament calculatedResults:', tournament.calculatedResults);
         
-        if (!playerScores) return null;
+        const savedResults = tournament.calculatedResults?.[category.code]?.results;
         
-        if (playerScores.status && playerScores.status !== 'OK') {
-          return playerScores.status;
+        console.log(`Found savedResults for ${category.code}:`, savedResults ? savedResults.length + ' entries' : 'NONE');
+        
+        if (!savedResults || savedResults.length === 0) {
+          return null; // No saved results, fall back to calculation
         }
         
-        const typeUpper = (tournamentType || '').toUpperCase();
+        // Get top N winners from saved results (already sorted by rank)
+        let winners = savedResults
+          .filter(r => r.rank && r.rank !== '-')
+          .slice(0, numWinners);
         
-        if (typeUpper.includes('STABLEFORD')) {
-          return calculateStablefordTotal(player, roundId);
-        } else if (typeUpper.includes('MEDAL NET')) {
-          const gross = calculateGrossTotal(player, roundId);
-          if (gross === null) return null;
-          const phcp = typeof player.phcp === 'number' ? player.phcp : (parseFloat(player.hcp) || 0);
-          return calculateNetScore(gross, phcp);
+        // Reverse order if descending
+        if (order === 'descending') {
+          winners = winners.reverse();
+        }
+        
+        const isTeam = winners[0]?.type === 'team';
+        
+        // Get display preferences
+        const prefs = tournament.resultPreferences?.[category.code] || { display: 'club', hcp: false, phcp: false, topar: false };
+        
+        let html = '';
+        html += `<div class="category-row">`;
+        html += `<div class="category-section">`;
+        html += `<div class="category-title">${category.name}</div>`;
+        
+        if (winners.length === 0) {
+          html += `<div class="no-winners">No winners available</div>`;
+        } else if (isTeam) {
+          // Team winners table
+          html += `<table class="winners-table"><thead><tr>`;
+          html += `<th class="text-center" style="width: 40px;">Rank</th>`;
+          html += `<th style="width: 140px;">Team</th>`;
+          html += `<th style="width: 100px;">Players</th>`;
+          
+          if (roundIds.length === 1) {
+            html += `<th class="text-center" style="width: 50px;">Score</th>`;
+          } else {
+            roundIds.forEach((_, idx) => {
+              html += `<th class="text-center" style="width: 50px;">D${idx + 1}</th>`;
+            });
+            html += `<th class="text-center" style="width: 60px;">Total</th>`;
+          }
+          html += `</tr></thead><tbody>`;
+          
+          winners.forEach(tr => {
+            const rankClass = tr.rank === 1 ? 'rank-1' : (tr.rank === 2 ? 'rank-2' : (tr.rank === 3 ? 'rank-3' : ''));
+            const memberNames = tr.players.map(p => `${p.firstName} ${p.lastName}`).join(', ');
+            
+            html += `<tr>`;
+            html += `<td class="text-center rank-cell ${rankClass}">${tr.rank}</td>`;
+            html += `<td class="player-cell">${tr.teamName}</td>`;
+            html += `<td style="font-size: 8px; color: #64748b;">${memberNames}</td>`;
+            
+            if (tr.roundTotals) {
+              tr.roundTotals.forEach(score => {
+                html += `<td class="text-center">${score}</td>`;
+              });
+            }
+            
+            if (roundIds.length > 1) {
+              html += `<td class="text-center total-cell">${tr.total}</td>`;
+            }
+            html += `</tr>`;
+          });
+          
+          html += `</tbody></table>`;
         } else {
-          return calculateGrossTotal(player, roundId);
+          // Individual winners table
+          html += `<table class="winners-table"><thead><tr>`;
+          html += `<th class="text-center" style="width: 40px;">Rank</th>`;
+          html += `<th style="width: 140px;">Player</th>`;
+          if (prefs.display === 'club') html += `<th style="width: 100px;">Club</th>`;
+          if (prefs.display === 'country') html += `<th style="width: 100px;">Country</th>`;
+          
+          if (roundIds.length === 1) {
+            html += `<th class="text-center" style="width: 50px;">Score</th>`;
+          } else {
+            roundIds.forEach((_, idx) => {
+              html += `<th class="text-center" style="width: 50px;">D${idx + 1}</th>`;
+            });
+            html += `<th class="text-center" style="width: 60px;">Total</th>`;
+          }
+          html += `</tr></thead><tbody>`;
+          
+          winners.forEach(pr => {
+            const rankClass = pr.rank === 1 ? 'rank-1' : (pr.rank === 2 ? 'rank-2' : (pr.rank === 3 ? 'rank-3' : ''));
+            html += `<tr>`;
+            html += `<td class="text-center rank-cell ${rankClass}">${pr.rank}</td>`;
+            html += `<td class="player-cell">${pr.firstName} ${pr.lastName}</td>`;
+            
+            if (prefs.display === 'club') {
+              html += `<td>${pr.club || '-'}</td>`;
+            }
+            if (prefs.display === 'country') {
+              html += `<td>${pr.nationality || '-'}</td>`;
+            }
+            
+            if (pr.roundScores) {
+              pr.roundScores.forEach(score => {
+                html += `<td class="text-center">${score !== null ? score : '-'}</td>`;
+              });
+            }
+            
+            // Show total in the total cell (or status if DQ/NR/NS)
+            if (roundIds.length > 1) {
+              html += `<td class="text-center total-cell">${pr.status || pr.total}</td>`;
+            }
+            html += `</tr>`;
+          });
+          
+          html += `</tbody></table>`;
         }
+        
+        html += `</div>`; // Close category-section
+        
+        // Add awards box
+        html += `<div class="awards-section">`;
+        html += `<div class="awards-header">Awards Given By:</div>`;
+        html += `<div class="awards-content" contenteditable="true"></div>`;
+        html += `</div>`;
+        
+        html += `</div>`; // Close category-row
+        
+        return html;
       }
 
       function generateWinnersList() {
@@ -282,130 +401,33 @@
         }
 
         let html = '';
+        let missingResults = [];
 
         categories.forEach(category => {
-          const players = getCategoryPlayers(category.code);
-          const tournamentType = category.tournamentType || 'Stroke Play';
+          // Try to use saved results first
+          const savedHtml = generateWinnersFromSavedResults(tournament, category, roundIds);
           
-          // Calculate scores for all players
-          const playerResults = players.map(player => {
-            const roundScores = roundIds.map(roundId => getPlayerRoundScore(player, roundId, tournamentType));
-            const hasStatus = roundScores.some(score => typeof score === 'string' && ['DQ', 'NS', 'NR'].includes(score));
-            const statusValue = hasStatus ? roundScores.find(score => typeof score === 'string') : null;
-            
-            let total = null;
-            if (!hasStatus) {
-              total = roundScores.reduce((sum, score) => {
-                if (typeof score === 'number') return sum + score;
-                return sum;
-              }, 0);
-            }
-            
-            return { player, roundScores, total, status: statusValue, hasStatus };
-          });
-
-          // Sort and get top N
-          const typeUpper = (tournamentType || '').toUpperCase();
-          const isStableford = typeUpper.includes('STABLEFORD');
-          
-          const normalPlayers = playerResults.filter(pr => !pr.hasStatus && pr.total !== null);
-          normalPlayers.sort((a, b) => {
-            if (isStableford) {
-              return b.total - a.total;
-            } else {
-              return a.total - b.total;
-            }
-          });
-
-          // Assign ranks
-          let currentRank = 1;
-          let previousTotal = null;
-          
-          normalPlayers.forEach((pr, index) => {
-            if (pr.total === previousTotal) {
-              pr.rank = currentRank;
-            } else {
-              currentRank = index + 1;
-              pr.rank = currentRank;
-              previousTotal = pr.total;
-            }
-          });
-
-          // Get top N winners
-          let winners = normalPlayers.slice(0, numWinners);
-          
-          // Reverse order if descending
-          if (order === 'descending') {
-            winners = winners.reverse();
-          }
-
-          // Get display preferences (use first category's preferences for consistency across all tables)
-          const prefs = tournament.resultPreferences?.[categories[0].code] || { display: 'club', hcp: false, phcp: false, topar: false };
-
-          html += `<div class="category-row">`;
-          html += `<div class="category-section">`;
-          html += `<div class="category-title">${category.name}</div>`;
-          
-          if (winners.length === 0) {
-            html += `<div class="no-winners">No winners available (no completed scores)</div>`;
+          if (savedHtml) {
+            html += savedHtml;
           } else {
-            html += `<table class="winners-table"><thead><tr>`;
-            html += `<th class="text-center" style="width: 40px;">Rank</th>`;
-            html += `<th style="width: 140px;">Player</th>`;
-            if (prefs.display === 'club') html += `<th style="width: 100px;">Club</th>`;
-            if (prefs.display === 'country') html += `<th style="width: 100px;">Country</th>`;
-            
-            // Round columns
-            if (roundIds.length === 1) {
-              html += `<th class="text-center" style="width: 50px;">Score</th>`;
-            } else {
-              roundIds.forEach((_, idx) => {
-                html += `<th class="text-center" style="width: 50px;">D${idx + 1}</th>`;
-              });
-              html += `<th class="text-center" style="width: 60px;">Total</th>`;
-            }
-            
-            html += `</tr></thead><tbody>`;
-
-            winners.forEach(pr => {
-              const rankClass = pr.rank === 1 ? 'rank-1' : (pr.rank === 2 ? 'rank-2' : (pr.rank === 3 ? 'rank-3' : ''));
-              html += `<tr>`;
-              html += `<td class="text-center rank-cell ${rankClass}">${pr.rank}</td>`;
-              html += `<td class="player-cell">${pr.player.firstName} ${pr.player.lastName}</td>`;
-              
-              if (prefs.display === 'club') {
-                html += `<td>${pr.player.club || pr.player.homeClub || '-'}</td>`;
-              }
-              if (prefs.display === 'country') {
-                html += `<td>${pr.player.nationality || pr.player.country || '-'}</td>`;
-              }
-              
-              // Round scores
-              pr.roundScores.forEach(score => {
-                html += `<td class="text-center">${score !== null ? score : '-'}</td>`;
-              });
-              
-              // Total
-              if (roundIds.length > 1) {
-                html += `<td class="text-center total-cell">${pr.total}</td>`;
-              }
-              
-              html += `</tr>`;
-            });
-
-            html += `</tbody></table>`;
+            // No saved results - show warning
+            missingResults.push(category.name);
+            html += `<div class="category-row">`;
+            html += `<div class="category-section">`;
+            html += `<div class="category-title">${category.name}</div>`;
+            html += `<div class="no-winners">⚠️ Results not yet calculated. Please click "Show Results" for this category first.</div>`;
+            html += `</div>`;
+            html += `<div class="awards-section">`;
+            html += `<div class="awards-header">Awards Given By:</div>`;
+            html += `<div class="awards-content" contenteditable="true"></div>`;
+            html += `</div>`;
+            html += `</div>`;
           }
-          
-          html += `</div>`; // Close category-section
-          
-          // Add awards box
-          html += `<div class="awards-section">`;
-          html += `<div class="awards-header">Awards Given By:</div>`;
-          html += `<div class="awards-content" contenteditable="true"></div>`;
-          html += `</div>`;
-          
-          html += `</div>`; // Close category-row
         });
+        
+        if (missingResults.length > 0) {
+          console.warn('Missing calculated results for categories:', missingResults);
+        }
 
         document.getElementById('winners-content').innerHTML = html;
       }

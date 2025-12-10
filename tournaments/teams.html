@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Define Teams</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { padding-top: 70px; background: #f8fafc; }
+      .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+      
+      .header-section { background: white; padding: 20px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; }
+      .header-section h1 { margin: 0 0 8px 0; color: #1e293b; font-size: 24px; }
+      .header-section .tournament-info { color: #64748b; font-size: 14px; }
+      
+      /* Three-column layout */
+      .main-layout { display: grid; grid-template-columns: 350px 1fr 350px; gap: 20px; }
+      
+      /* Panel styling */
+      .panel { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); display: flex; flex-direction: column; }
+      .panel-header { padding: 16px 20px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+      .panel-header h2 { margin: 0; font-size: 18px; color: #1e293b; }
+      .panel-header button { padding: 8px 16px; background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+      .panel-header button:hover { opacity: 0.9; }
+      .panel-content { flex: 1; overflow-y: auto; max-height: 600px; }
+      
+      /* Teams list (left panel) */
+      .teams-list { padding: 0; }
+      .team-item { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
+      .team-item:hover { background: #f8fafc; }
+      .team-item.selected { background: #dbeafe; border-left: 4px solid var(--accent); }
+      .team-item.highlighted { background: #f0f9ff; border-left: 4px solid #cbd5e1; }
+      .team-item .team-name { font-weight: 600; color: #1e293b; font-size: 15px; }
+      .team-item .team-count { color: #64748b; font-size: 13px; margin-top: 4px; }
+      .team-item.full { background: #dcfce7; border-left: 4px solid #16a34a; }
+      .team-item.full:hover { background: #bbf7d0; }
+      .team-item.full.selected { background: #bbf7d0; border-left: 4px solid #16a34a; }
+      .team-item.full .team-count { color: #16a34a; font-weight: 600; }
+      .team-item.over-limit { background: #fee2e2; border-left: 4px solid #dc2626; }
+      .team-item.over-limit:hover { background: #fecaca; }
+      .team-item.over-limit.selected { background: #fecaca; border-left: 4px solid #dc2626; }
+      .team-item.over-limit .team-count { color: #dc2626; font-weight: 600; }
+      .team-item .delete-icon { color: #dc2626; padding: 4px 8px; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+      .team-item:hover .delete-icon { opacity: 1; }
+      .team-item .delete-icon:hover { background: #fee2e2; border-radius: 4px; }
+      
+      /* Center panel - Selected Team Details */
+      .team-details { padding: 20px; }
+      .team-details .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+      .team-details .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+      .team-details .team-title { font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 20px; }
+      .team-details .drop-zone { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; min-height: 200px; background: #f8fafc; }
+      .team-details .drop-zone.drag-over { border-color: var(--accent); background: #f0f9ff; }
+      .team-details .drop-zone.full { border-color: #16a34a; background: #dcfce7; border-style: solid; }
+      .team-details .drop-zone.over-limit { border-color: #dc2626; background: #fee2e2; border-style: solid; }
+      .team-details .drop-zone .hint { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 16px; }
+      .team-details .player-list { display: flex; flex-direction: column; gap: 8px; }
+      .team-details .player-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; }
+      .team-details .player-item .player-name { font-weight: 500; color: #1e293b; }
+      .team-details .player-item .remove-btn { color: #dc2626; cursor: pointer; padding: 4px 8px; font-size: 12px; }
+      .team-details .player-item .remove-btn:hover { background: #fee2e2; border-radius: 4px; }
+      
+      /* Players list (right panel) */
+      .players-list { padding: 12px; }
+      .player-card { padding: 12px 14px; margin-bottom: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; cursor: grab; transition: all 0.15s; }
+      .player-card:hover { background: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(2,6,23,0.1); }
+      .player-card.dragging { opacity: 0.5; cursor: grabbing; }
+      .player-card .player-name { font-weight: 600; color: #1e293b; font-size: 14px; }
+      .player-card .player-info { color: #64748b; font-size: 12px; margin-top: 4px; }
+      
+      /* Search box */
+      .search-box { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+      .search-box input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+      .search-box input:focus { outline: none; border-color: var(--accent); }
+      .player-card.highlighted { background: #dbeafe; border-color: var(--accent); box-shadow: 0 2px 8px rgba(2,6,23,0.15); }
+      
+      /* Modal */
+      .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+      .modal-overlay.active { display: flex; }
+      .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+      .modal-content h2 { margin-top: 0; font-size: 20px; color: #1e293b; }
+      .modal-content label { display: block; font-weight: 600; margin-bottom: 8px; }
+      .modal-content input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+      .modal-buttons { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+      .modal-buttons button { padding: 10px 20px; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+      .modal-buttons .btn-cancel { background: white; border: 1px solid #e2e8f0; color: #1e293b; }
+      .modal-buttons .btn-confirm { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; }
+      
+      .actions { display: flex; gap: 12px; margin-top: 24px; }
+      .btn-back { padding: 10px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-decoration: none; color: #1e293b; font-weight: 600; display: inline-block; }
+      .btn-save { padding: 10px 20px; background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="top-nav">
+      <h1>🏆 Define Teams</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
+
+    <div class="container">
+      <!-- Tournament Info -->
+      <div class="header-section">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+          <div style="flex: 1;">
+            <h1 id="tournament-name">Loading...</h1>
+            <div class="tournament-info">
+              <span id="tournament-type">-</span> | <span id="tournament-date">-</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 20px;">
+            <div style="padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+              <label for="max-players-input" style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 13px;">Players per Team</label>
+              <input type="number" id="max-players-input" min="1" max="50" placeholder="e.g. 4" style="width: 80px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 600;" oninput="updateTeamCriteria()" />
+            </div>
+            <div style="padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+              <label for="team-scores-input" style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 13px;">Scores for Team</label>
+              <input type="number" id="team-scores-input" min="1" max="50" placeholder="e.g. 3" style="width: 80px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 600;" oninput="updateTeamCriteria()" />
+            </div>
+          </div>
+          <div id="team-criteria" style="text-align: right; padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+            <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">Team Criteria</div>
+            <div id="criteria-content" style="font-size: 13px; color: #64748b;">
+              <!-- Criteria will be displayed here -->
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button onclick="saveTeamsData()" style="padding: 10px 20px; background: linear-gradient(180deg, #16a34a, #15803d); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; white-space: nowrap;">💾 Save Teams</button>
+            <button onclick="autoCreateTeams()" style="padding: 10px 20px; background: linear-gradient(180deg, #7c3aed, #6d28d9); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; white-space: nowrap;">⚡ Auto Teams</button>
+            <button onclick="resetTeams()" style="padding: 10px 20px; background: linear-gradient(180deg, #dc2626, #b91c1c); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; white-space: nowrap;">🔄 Reset Teams</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Three-column layout -->
+      <div class="main-layout">
+        <!-- Left Panel: Teams List -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Teams</h2>
+            <button onclick="openAddTeamModal()">+ Add Team</button>
+          </div>
+          <div class="search-box">
+            <input type="text" id="team-search" placeholder="Search teams..." oninput="filterTeams()" onkeydown="handleTeamSearchKeydown(event)" />
+          </div>
+          <div class="panel-content">
+            <div class="teams-list" id="teams-list">
+              <!-- Teams will be loaded here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Panel: Team Details & Player Assignment -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2 id="center-panel-title">Team Details</h2>
+          </div>
+          <div class="panel-content">
+            <div class="team-details" id="team-details">
+              <div class="empty-state">
+                <div class="icon">👈</div>
+                <div>Select a team from the left to assign players</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Admitted Players -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Admitted Players</h2>
+          </div>
+          <div class="search-box">
+            <input type="text" id="player-search" placeholder="Search by name, club, or reg... (↑↓ to navigate, Enter to assign)" oninput="filterPlayers()" onkeydown="handlePlayerSearchKeydown(event)" />
+          </div>
+          <div class="panel-content">
+            <div class="players-list" id="players-list">
+              <!-- Admitted players will be loaded here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a href="index.html" class="btn-back">← Back to Tournaments</a>
+        <button class="btn-save" onclick="saveAndReturn()">Save & Return</button>
+      </div>
+    </div>
+
+    <!-- Add Team Modal -->
+    <div id="add-team-modal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Add New Team</h2>
+        <label for="team-name-input">Team Name</label>
+        <input type="text" id="team-name-input" placeholder="Enter team name..." />
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeAddTeamModal()">Cancel</button>
+          <button class="btn-confirm" onclick="confirmAddTeam()">Add Team</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const tournamentId = params.get('tournamentId');
+      let currentTournament = null;
+      let allTeams = [];
+      let selectedTeam = null;
+      let admittedPlayers = [];
+      let highlightedPlayerIndex = -1;
+      let filteredPlayersList = [];
+      let filteredTeamsList = [];
+      let highlightedTeamIndex = -1;
+      let teamMaxPlayers = null; // Will be set from team criteria
+
+      // Load tournament info
+      function loadTournament() {
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (!currentTournament) {
+            alert('Tournament not found');
+            window.location.href = 'index.html';
+            return;
+          }
+
+          document.getElementById('tournament-name').textContent = currentTournament.name;
+          document.getElementById('tournament-type').textContent = currentTournament.type || 'Tournament';
+          document.getElementById('tournament-date').textContent = formatDate(currentTournament.date);
+          
+          // Load team criteria inputs
+          if (currentTournament.meta?.teamMaxPlayers) {
+            document.getElementById('max-players-input').value = currentTournament.meta.teamMaxPlayers;
+            teamMaxPlayers = parseInt(currentTournament.meta.teamMaxPlayers);
+          }
+          if (currentTournament.meta?.teamScoresCount) {
+            document.getElementById('team-scores-input').value = currentTournament.meta.teamScoresCount;
+          }
+          
+          // Display team criteria
+          displayTeamCriteria();
+          
+          // Auto-focus team search on page load
+          setTimeout(() => {
+            document.getElementById('team-search').focus();
+          }, 100);
+        } catch (e) {
+          console.error('Error loading tournament:', e);
+        }
+      }
+      
+      // Display team criteria
+      function displayTeamCriteria() {
+        const criteriaContent = document.getElementById('criteria-content');
+        if (!currentTournament || !currentTournament.meta) {
+          criteriaContent.innerHTML = '<div>No criteria set</div>';
+          return;
+        }
+        
+        const meta = currentTournament.meta;
+        const criteria = [];
+        
+        if (meta.rounds) criteria.push(`Rounds: ${meta.rounds}`);
+        if (meta.hcpQual) criteria.push(`HCP Qual: ${meta.hcpQual === 'yes' ? 'Yes' : 'No'}`);
+        if (meta.hcpAllow) criteria.push(`HCP Allow: ${meta.hcpAllow}%`);
+        if (meta.teamMaxPlayers) {
+          criteria.push(`Max Players/Team: ${meta.teamMaxPlayers}`);
+          teamMaxPlayers = parseInt(meta.teamMaxPlayers);
+        }
+        
+        criteriaContent.innerHTML = criteria.length > 0 
+          ? criteria.map(c => `<div>${c}</div>`).join('')
+          : '<div>No criteria set</div>';
+      }
+      
+      // Update team criteria (when inputs change)
+      function updateTeamCriteria() {
+        const maxPlayers = document.getElementById('max-players-input').value;
+        const teamScores = document.getElementById('team-scores-input').value;
+        
+        // Update global variable for validation
+        if (maxPlayers) {
+          teamMaxPlayers = parseInt(maxPlayers);
+        } else {
+          teamMaxPlayers = null;
+        }
+        
+        // Store in tournament meta for saving
+        if (!currentTournament.meta) currentTournament.meta = {};
+        currentTournament.meta.teamMaxPlayers = maxPlayers || null;
+        currentTournament.meta.teamScoresCount = teamScores || null;
+        
+        displayTeamCriteria();
+        
+        // Re-render teams to update colors dynamically
+        renderTeams();
+        renderTeamDetails();
+      }
+      
+      // Load admitted players for this tournament
+      function loadAdmittedPlayers() {
+        try {
+          const roundId = currentTournament.meta?.roundIds?.[0] || `${tournamentId}_R1`;
+          const admittedData = localStorage.getItem('admittedPlayers');
+          const allAdmitted = admittedData ? JSON.parse(admittedData) : {};
+          const playersData = allAdmitted[roundId] || [];
+          
+          // Normalize player data to include a consistent ID and name
+          admittedPlayers = playersData.map(player => ({
+            ...player,
+            playerId: player.reg || player.playerId,
+            name: `${player.firstName || ''} ${player.lastName || ''}`.trim() || player.name || 'Unknown'
+          }));
+          
+          console.log('Loaded admitted players:', admittedPlayers.length);
+          renderAdmittedPlayers();
+        } catch (e) {
+          console.error('Error loading admitted players:', e);
+          admittedPlayers = [];
+        }
+      }
+
+      // Load all teams from localStorage
+      function loadTeams() {
+        try {
+          const teamsData = localStorage.getItem('teams');
+          allTeams = teamsData ? JSON.parse(teamsData) : [];
+          
+          // Clean up teams - remove players who are no longer admitted
+          cleanupTeamPlayers();
+          
+          renderTeams();
+        } catch (e) {
+          console.error('Error loading teams:', e);
+          allTeams = [];
+        }
+      }
+      
+      // Remove players from teams if they're no longer in admitted players list
+      function cleanupTeamPlayers() {
+        if (!allTeams || allTeams.length === 0) return;
+        if (!admittedPlayers || admittedPlayers.length === 0) return;
+        
+        const admittedPlayerIds = new Set(admittedPlayers.map(p => p.playerId || p.reg));
+        let needsSave = false;
+        
+        allTeams.forEach(team => {
+          if (team.players && team.players.length > 0) {
+            const originalLength = team.players.length;
+            // Keep only players who are still admitted
+            team.players = team.players.filter(playerId => admittedPlayerIds.has(playerId));
+            
+            if (team.players.length !== originalLength) {
+              needsSave = true;
+            }
+          }
+        });
+        
+        // Save teams if any players were removed
+        if (needsSave) {
+          saveTeams();
+          console.log('Teams cleaned up - removed players no longer in admissions');
+        }
+      }
+
+      // Save teams to localStorage
+      function saveTeams() {
+        try {
+          localStorage.setItem('teams', JSON.stringify(allTeams));
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('teams', allTeams);
+          }
+        } catch (e) {
+          console.error('Error saving teams:', e);
+        }
+      }
+
+      // Modal functions
+      function openAddTeamModal() {
+        document.getElementById('add-team-modal').classList.add('active');
+        document.getElementById('team-name-input').value = '';
+        document.getElementById('team-name-input').focus();
+      }
+
+      function closeAddTeamModal() {
+        document.getElementById('add-team-modal').classList.remove('active');
+      }
+
+      function confirmAddTeam() {
+        const teamName = document.getElementById('team-name-input').value.trim();
+        
+        if (!teamName) {
+          alert('Please enter a team name');
+          return;
+        }
+
+        // Check for duplicate names
+        if (allTeams.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
+          alert('A team with this name already exists');
+          return;
+        }
+
+        const newTeam = {
+          teamId: generateTeamId(),
+          name: teamName,
+          players: [],
+          createdAt: new Date().toISOString(),
+          active: true
+        };
+
+        allTeams.push(newTeam);
+        saveTeams();
+        renderTeams();
+        closeAddTeamModal();
+        
+        // Auto-select the new team
+        selectTeam(newTeam.teamId);
+      }
+
+      // Generate unique team ID
+      function generateTeamId() {
+        const maxId = allTeams.reduce((max, team) => {
+          const match = team.teamId?.match(/^TEAM(\d+)$/);
+          return match ? Math.max(max, parseInt(match[1])) : max;
+        }, 0);
+        return `TEAM${String(maxId + 1).padStart(4, '0')}`;
+      }
+
+      // Filter teams based on search
+      function filterTeams() {
+        const searchTerm = document.getElementById('team-search')?.value || '';
+        // If there's a search term, highlight the first result
+        highlightedTeamIndex = searchTerm.trim() ? 0 : -1;
+        renderTeams();
+      }
+
+      // Render teams list
+      function renderTeams() {
+        const list = document.getElementById('teams-list');
+        
+        if (allTeams.length === 0) {
+          filteredTeamsList = [];
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No teams yet. Click "Add Team" to create one.</div>';
+          return;
+        }
+
+        // Apply search filter
+        const searchTerm = document.getElementById('team-search')?.value.toLowerCase() || '';
+        let teamsToShow = allTeams;
+        if (searchTerm) {
+          teamsToShow = allTeams.filter(team => {
+            const name = team.name.toLowerCase();
+            const teamId = (team.teamId || '').toLowerCase();
+            return name.includes(searchTerm) || teamId.includes(searchTerm);
+          });
+        }
+
+        // Sort teams: incomplete teams first (alphabetically), then full teams (alphabetically)
+        teamsToShow = teamsToShow.sort((a, b) => {
+          const aPlayerCount = a.players?.length || 0;
+          const bPlayerCount = b.players?.length || 0;
+          const aIsFull = teamMaxPlayers && aPlayerCount >= teamMaxPlayers;
+          const bIsFull = teamMaxPlayers && bPlayerCount >= teamMaxPlayers;
+          
+          // If one is full and the other isn't, incomplete teams come first
+          if (aIsFull !== bIsFull) {
+            return aIsFull ? 1 : -1;
+          }
+          
+          // If both have same status, sort alphabetically by name
+          return a.name.localeCompare(b.name);
+        });
+
+        filteredTeamsList = teamsToShow;
+
+        if (teamsToShow.length === 0) {
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No teams match your search</div>';
+          return;
+        }
+
+        list.innerHTML = teamsToShow.map((team, index) => {
+          const playerCount = team.players?.length || 0;
+          const isFull = teamMaxPlayers && playerCount === teamMaxPlayers;
+          const isOverLimit = teamMaxPlayers && playerCount > teamMaxPlayers;
+          let statusClass = '';
+          let statusIcon = '';
+          
+          if (isOverLimit) {
+            statusClass = 'over-limit';
+            statusIcon = ' ⚠️';
+          } else if (isFull) {
+            statusClass = 'full';
+            statusIcon = ' ✓';
+          }
+          
+          return `
+          <div class="team-item ${selectedTeam?.teamId === team.teamId ? 'selected' : ''} ${index === highlightedTeamIndex ? 'highlighted' : ''} ${statusClass}" 
+               data-team-id="${team.teamId}"
+               onclick="selectTeam('${team.teamId}')">
+            <div>
+              <div class="team-name">${escapeHtml(team.name)}</div>
+              <div class="team-count">${playerCount} players${statusIcon}</div>
+            </div>
+            <div class="delete-icon" onclick="event.stopPropagation(); deleteTeam('${team.teamId}')">🗑️</div>
+          </div>
+        `;
+        }).join('');
+        
+        // Scroll highlighted team into view
+        if (highlightedTeamIndex >= 0) {
+          const highlightedTeam = list.querySelector('.team-item.highlighted');
+          if (highlightedTeam) {
+            highlightedTeam.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }
+
+      // Select a team
+      function selectTeam(teamId) {
+        selectedTeam = allTeams.find(t => t.teamId === teamId);
+        renderTeams();
+        renderTeamDetails();
+        
+        // Clear team search bar
+        document.getElementById('team-search').value = '';
+        
+        // Auto-focus player search when team is selected
+        setTimeout(() => {
+          document.getElementById('player-search').focus();
+          document.getElementById('player-search').select();
+        }, 100);
+      }
+
+      // Render team details and drop zone
+      function renderTeamDetails() {
+        const container = document.getElementById('team-details');
+        const titleEl = document.getElementById('center-panel-title');
+        
+        if (!selectedTeam) {
+          titleEl.textContent = 'Team Details';
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">👈</div>
+              <div>Select a team from the left to assign players</div>
+            </div>
+          `;
+          return;
+        }
+
+        titleEl.textContent = selectedTeam.name;
+        const teamPlayers = selectedTeam.players || [];
+        const playerCount = teamPlayers.length;
+        const isFull = teamMaxPlayers && playerCount === teamMaxPlayers;
+        const isOverLimit = teamMaxPlayers && playerCount > teamMaxPlayers;
+        
+        let statusClass = '';
+        let statusText = '';
+        
+        if (isOverLimit) {
+          statusClass = 'over-limit';
+          statusText = ` (OVER LIMIT ⚠️ ${playerCount}/${teamMaxPlayers})`;
+        } else if (isFull) {
+          statusClass = 'full';
+          statusText = ' (FULL ✓)';
+        }
+        
+        container.innerHTML = `
+          <div class="team-title">${escapeHtml(selectedTeam.name)}</div>
+          <div class="drop-zone ${statusClass}" id="drop-zone">
+            <div class="hint">👉 Drag players from the right panel and drop them here${statusText}</div>
+            <div class="player-list" id="team-player-list">
+              ${teamPlayers.map(playerId => {
+                const player = findPlayerById(playerId);
+                return player ? `
+                  <div class="player-item">
+                    <div class="player-name">${escapeHtml(player.name)}</div>
+                    <div class="remove-btn" onclick="removePlayerFromTeam('${playerId}')">✕ Remove</div>
+                  </div>
+                ` : '';
+              }).join('')}
+            </div>
+          </div>
+        `;
+
+        setupDropZone();
+      }
+
+      // Setup drag and drop
+      function setupDropZone() {
+        const dropZone = document.getElementById('drop-zone');
+        if (!dropZone) return;
+
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+          dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('drag-over');
+          
+          const playerId = e.dataTransfer.getData('playerId');
+          if (playerId && selectedTeam) {
+            addPlayerToTeam(playerId);
+          }
+        });
+      }
+
+      // Filter players based on search
+      function filterPlayers() {
+        const searchTerm = document.getElementById('player-search')?.value || '';
+        // If there's a search term, highlight the first result
+        highlightedPlayerIndex = searchTerm.trim() ? 0 : -1;
+        renderAdmittedPlayers();
+      }
+
+      // Render admitted players
+      function renderAdmittedPlayers() {
+        const container = document.getElementById('players-list');
+        
+        if (admittedPlayers.length === 0) {
+          container.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No admitted players</div>';
+          filteredPlayersList = [];
+          return;
+        }
+
+        // Filter out players who are already assigned to teams
+        let unassignedPlayers = admittedPlayers.filter(player => 
+          !isPlayerAssignedToAnyTeam(player.playerId)
+        );
+
+        // Apply search filter
+        const searchTerm = document.getElementById('player-search')?.value.toLowerCase() || '';
+        if (searchTerm) {
+          unassignedPlayers = unassignedPlayers.filter(player => {
+            const name = player.name.toLowerCase();
+            const club = (player.club || player.homeClub || '').toLowerCase();
+            const reg = (player.reg || player.playerId || '').toLowerCase();
+            return name.includes(searchTerm) || club.includes(searchTerm) || reg.includes(searchTerm);
+          });
+        }
+
+        // Store filtered list for keyboard navigation
+        filteredPlayersList = unassignedPlayers;
+
+        if (unassignedPlayers.length === 0) {
+          const message = searchTerm 
+            ? 'No players match your search' 
+            : 'All players have been assigned to teams';
+          container.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b;">${message}</div>`;
+          return;
+        }
+
+        container.innerHTML = unassignedPlayers.map((player, index) => {
+          const hcp = player.hcp || player.handicap || 'N/A';
+          const club = player.club || player.homeClub || '';
+          const highlightClass = index === highlightedPlayerIndex ? 'highlighted' : '';
+          return `
+            <div class="player-card ${highlightClass}" 
+                 draggable="true" 
+                 data-player-id="${player.playerId}"
+                 data-player-index="${index}"
+                 ondragstart="handleDragStart(event)"
+                 ondragend="handleDragEnd(event)"
+                 onclick="selectPlayerByClick(${index})">
+              <div class="player-name">${escapeHtml(player.name)}</div>
+              <div class="player-info">${club ? escapeHtml(club) + ' • ' : ''}HCP: ${hcp}</div>
+            </div>
+          `;
+        }).join('');
+        
+        // Scroll highlighted player into view
+        if (highlightedPlayerIndex >= 0) {
+          const highlightedCard = container.querySelector('.player-card.highlighted');
+          if (highlightedCard) {
+            highlightedCard.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }
+
+      // Select player by clicking
+      function selectPlayerByClick(index) {
+        highlightedPlayerIndex = index;
+        renderAdmittedPlayers();
+      }
+
+      // Handle Tab key in team search box
+      function handleTeamSearchKeydown(event) {
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          document.getElementById('player-search').focus();
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (filteredTeamsList.length > 0) {
+            if (highlightedTeamIndex === -1) {
+              highlightedTeamIndex = 0;
+            } else {
+              highlightedTeamIndex = Math.min(highlightedTeamIndex + 1, filteredTeamsList.length - 1);
+            }
+            renderTeams();
+          }
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (filteredTeamsList.length > 0) {
+            if (highlightedTeamIndex === -1) {
+              highlightedTeamIndex = 0;
+            } else {
+              highlightedTeamIndex = Math.max(highlightedTeamIndex - 1, 0);
+            }
+            renderTeams();
+          }
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          if (filteredTeamsList.length > 0) {
+            const indexToUse = highlightedTeamIndex === -1 ? 0 : highlightedTeamIndex;
+            if (indexToUse < filteredTeamsList.length) {
+              const team = filteredTeamsList[indexToUse];
+              selectTeam(team.teamId);
+              // Clear search bar (selectTeam handles this)
+              filterTeams(); // Re-render to show all teams again
+            }
+          }
+        }
+      }
+
+      // Handle Tab key in player search box
+      function handlePlayerSearchKeydown(event) {
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          if (event.shiftKey) {
+            // Shift+Tab goes back to team search
+            document.getElementById('team-search').focus();
+          } else {
+            // Tab cycles back to team search
+            document.getElementById('team-search').focus();
+          }
+        } else {
+          // Handle other keys (arrows, enter) for player search
+          handleSearchKeydown(event);
+        }
+      }
+
+      // Handle keyboard navigation in search box
+      function handleSearchKeydown(event) {
+        if (!selectedTeam) {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+            alert('Please select a team first');
+            event.preventDefault();
+          }
+          return;
+        }
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (filteredPlayersList.length > 0) {
+            if (highlightedPlayerIndex === -1) {
+              highlightedPlayerIndex = 0; // Start at first item
+            } else {
+              highlightedPlayerIndex = Math.min(highlightedPlayerIndex + 1, filteredPlayersList.length - 1);
+            }
+            renderAdmittedPlayers();
+          }
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (filteredPlayersList.length > 0) {
+            if (highlightedPlayerIndex === -1) {
+              highlightedPlayerIndex = 0; // Start at first item
+            } else {
+              highlightedPlayerIndex = Math.max(highlightedPlayerIndex - 1, 0);
+            }
+            renderAdmittedPlayers();
+          }
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          if (filteredPlayersList.length > 0) {
+            // If no item is highlighted, use the first one
+            const indexToUse = highlightedPlayerIndex === -1 ? 0 : highlightedPlayerIndex;
+            if (indexToUse < filteredPlayersList.length) {
+              const player = filteredPlayersList[indexToUse];
+              addPlayerToTeam(player.playerId);
+              // Reset search and highlight
+              document.getElementById('player-search').value = '';
+              highlightedPlayerIndex = -1;
+              filterPlayers();
+            }
+          }
+        }
+      }
+
+      // Drag handlers
+      function handleDragStart(event) {
+        const playerId = event.target.dataset.playerId;
+        event.dataTransfer.setData('playerId', playerId);
+        event.target.classList.add('dragging');
+      }
+
+      function handleDragEnd(event) {
+        event.target.classList.remove('dragging');
+      }
+
+      // Add player to selected team
+      function addPlayerToTeam(playerId) {
+        if (!selectedTeam) return;
+        
+        // Check if player already in this team
+        if (selectedTeam.players && selectedTeam.players.includes(playerId)) {
+          alert('This player is already in the team');
+          return;
+        }
+        
+        // Check max players limit
+        if (teamMaxPlayers && selectedTeam.players && selectedTeam.players.length >= teamMaxPlayers) {
+          alert(`Team has reached maximum of ${teamMaxPlayers} players`);
+          return;
+        }
+
+        // Remove from other teams first
+        allTeams.forEach(team => {
+          if (team.players && team.players.includes(playerId)) {
+            team.players = team.players.filter(id => id !== playerId);
+          }
+        });
+
+        // Add to selected team
+        if (!selectedTeam.players) selectedTeam.players = [];
+        selectedTeam.players.push(playerId);
+        
+        saveTeams();
+        renderTeams(); // Update team list to show new count
+        renderTeamDetails();
+        renderAdmittedPlayers();
+        
+        // Keep focus on player search if team not full
+        if (!teamMaxPlayers || selectedTeam.players.length < teamMaxPlayers) {
+          setTimeout(() => {
+            document.getElementById('player-search').focus();
+            document.getElementById('player-search').select();
+          }, 50);
+        } else {
+          // Team is full, move focus back to team search
+          setTimeout(() => {
+            document.getElementById('team-search').focus();
+          }, 50);
+        }
+      }
+
+      // Remove player from team
+      function removePlayerFromTeam(playerId) {
+        if (!selectedTeam) return;
+        
+        selectedTeam.players = selectedTeam.players.filter(id => id !== playerId);
+        saveTeams();
+        renderTeams(); // Update team list to show new count
+        renderTeamDetails();
+        renderAdmittedPlayers();
+      }
+
+      // Check if player is assigned to any team
+      function isPlayerAssignedToAnyTeam(playerId) {
+        return allTeams.some(team => team.players && team.players.includes(playerId));
+      }
+
+      // Find player by ID
+      function findPlayerById(playerId) {
+        return admittedPlayers.find(p => p.playerId === playerId);
+      }
+
+      // Delete team
+      function deleteTeam(teamId) {
+        const team = allTeams.find(t => t.teamId === teamId);
+        if (!team) return;
+
+        if (!confirm(`Are you sure you want to delete team "${team.name}"?\n\nThis will remove all player assignments.`)) {
+          return;
+        }
+
+        allTeams = allTeams.filter(t => t.teamId !== teamId);
+        
+        // Deselect if this was the selected team
+        if (selectedTeam?.teamId === teamId) {
+          selectedTeam = null;
+          renderTeamDetails();
+        }
+        
+        saveTeams();
+        renderTeams();
+        renderAdmittedPlayers();
+      }
+
+      // Check if any teams have more players than allowed
+      function checkOverLimitTeams() {
+        if (!teamMaxPlayers) return [];
+        
+        const overLimitTeams = [];
+        allTeams.forEach(team => {
+          const playerCount = team.players?.length || 0;
+          if (playerCount > teamMaxPlayers) {
+            overLimitTeams.push({
+              name: team.name,
+              count: playerCount,
+              excess: playerCount - teamMaxPlayers
+            });
+          }
+        });
+        
+        return overLimitTeams;
+      }
+      
+      // Trim teams to max player limit
+      function trimTeamsToLimit() {
+        if (!teamMaxPlayers) return;
+        
+        allTeams.forEach(team => {
+          if (team.players && team.players.length > teamMaxPlayers) {
+            // Keep only the first N players (remove from bottom of list)
+            team.players = team.players.slice(0, teamMaxPlayers);
+          }
+        });
+        
+        saveTeams();
+      }
+
+      // Save and return
+      function saveTeamsData() {
+        try {
+          // Check for over-limit teams
+          const overLimitTeams = checkOverLimitTeams();
+          
+          if (overLimitTeams.length > 0) {
+            const teamsList = overLimitTeams.map(t => `  • ${t.name}: ${t.count} players (${t.excess} over limit)`).join('\n');
+            const proceed = confirm(
+              `⚠️ WARNING: The following teams have more players than the maximum allowed (${teamMaxPlayers}):` +
+              `\n\n${teamsList}` +
+              `\n\nIf you save now, excess players will be automatically removed from the bottom of each team's roster.` +
+              `\n\nDo you want to continue and trim these teams?`
+            );
+            
+            if (!proceed) {
+              return; // Cancel save
+            }
+            
+            // Trim teams to limit
+            trimTeamsToLimit();
+            
+            // Refresh display
+            renderTeams();
+            renderTeamDetails();
+            renderAdmittedPlayers();
+          }
+          
+          // Save team criteria to tournament
+          updateTeamCriteria();
+          
+          // Update tournament in localStorage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (tournamentIndex >= 0) {
+            tournaments[tournamentIndex] = currentTournament;
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            
+            // Sync to Firebase if available
+            if (typeof syncToFirebase !== 'undefined') {
+              syncToFirebase('tournaments', tournaments);
+            }
+          }
+          
+          // Teams are already saved to localStorage via saveTeams()
+          // Just sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('teams', allTeams);
+          }
+
+          alert('Teams and criteria saved successfully!');
+        } catch (e) {
+          console.error('Error saving:', e);
+          alert('Error saving teams. Please try again.');
+        }
+      }
+
+      function resetTeams() {
+        if (!confirm('Are you sure you want to reset all teams? This will remove all team assignments. This action cannot be undone.')) {
+          return;
+        }
+        
+        try {
+          // Clear all player assignments from teams
+          allTeams.forEach(team => {
+            team.players = [];
+          });
+          
+          // Save the reset teams
+          saveTeams();
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('teams', allTeams);
+          }
+          
+          // Refresh the display
+          selectedTeam = null;
+          renderTeams();
+          renderTeamDetails();
+          renderAdmittedPlayers();
+          
+          alert('All team assignments have been reset.');
+          
+          // Auto-focus team search
+          setTimeout(() => {
+            document.getElementById('team-search').focus();
+          }, 100);
+        } catch (e) {
+          console.error('Error resetting teams:', e);
+          alert('Error resetting teams. Please try again.');
+        }
+      }
+
+      function autoCreateTeams() {
+        if (!teamMaxPlayers) {
+          alert('Please set "Players per Team" limit before using Auto Teams');
+          return;
+        }
+        
+        if (allTeams.length > 0) {
+          const proceed = confirm('This will replace existing teams. Continue?');
+          if (!proceed) return;
+        }
+        
+        try {
+          // Group players by club
+          const playersByClub = {};
+          
+          admittedPlayers.forEach(player => {
+            const club = (player.club || 'No Club').trim();
+            if (!playersByClub[club]) {
+              playersByClub[club] = [];
+            }
+            playersByClub[club].push(player);
+          });
+          
+          // Clear existing teams and create new ones by club
+          allTeams = [];
+          const clubs = Object.keys(playersByClub).sort();
+          
+          clubs.forEach(club => {
+            const clubPlayers = playersByClub[club];
+            
+            // Sort players by handicap (ascending - lower HCP first)
+            clubPlayers.sort((a, b) => {
+              const aHcp = parseFloat(a.hcp) || 999;
+              const bHcp = parseFloat(b.hcp) || 999;
+              return aHcp - bHcp;
+            });
+            
+            // Create teams for this club based on max players
+            let playerIndex = 0;
+            let teamNumber = 1;
+            
+            while (playerIndex < clubPlayers.length) {
+              const teamName = clubs.length > 1 ? `${club} ${teamNumber > 1 ? '#' + teamNumber : ''}`.trim() : `${club}`;
+              const newTeam = {
+                teamId: generateTeamId(),
+                name: teamName,
+                players: []
+              };
+              
+              // Add up to maxPlayers to this team
+              for (let i = 0; i < teamMaxPlayers && playerIndex < clubPlayers.length; i++) {
+                const playerId = clubPlayers[playerIndex].playerId || clubPlayers[playerIndex].reg;
+                newTeam.players.push(playerId);
+                playerIndex++;
+              }
+              
+              allTeams.push(newTeam);
+              teamNumber++;
+            }
+          });
+          
+          // Save teams
+          saveTeams();
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('teams', allTeams);
+          }
+          
+          // Refresh the display
+          selectedTeam = null;
+          renderTeams();
+          renderTeamDetails();
+          renderAdmittedPlayers();
+          
+          alert(`Auto Teams created! ${allTeams.length} teams created from ${clubs.length} clubs`);
+          
+          // Auto-focus team search
+          setTimeout(() => {
+            document.getElementById('team-search').focus();
+          }, 100);
+        } catch (e) {
+          console.error('Error creating auto teams:', e);
+          alert('Error creating auto teams. Please try again.');
+        }
+      }
+
+      function saveAndReturn() {
+        try {
+          // Check for over-limit teams
+          const overLimitTeams = checkOverLimitTeams();
+          
+          if (overLimitTeams.length > 0) {
+            const teamsList = overLimitTeams.map(t => `  • ${t.name}: ${t.count} players (${t.excess} over limit)`).join('\n');
+            const proceed = confirm(
+              `⚠️ WARNING: The following teams have more players than the maximum allowed (${teamMaxPlayers}):` +
+              `\n\n${teamsList}` +
+              `\n\nIf you leave this page, excess players will be automatically removed from the bottom of each team's roster.` +
+              `\n\nDo you want to continue?`
+            );
+            
+            if (!proceed) {
+              return; // Cancel navigation
+            }
+            
+            // Trim teams to limit
+            trimTeamsToLimit();
+          }
+          
+          // Save team criteria to tournament
+          updateTeamCriteria();
+          
+          // Update tournament in localStorage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (tournamentIndex >= 0) {
+            tournaments[tournamentIndex] = currentTournament;
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            
+            // Sync to Firebase if available
+            if (typeof syncToFirebase !== 'undefined') {
+              syncToFirebase('tournaments', tournaments);
+            }
+          }
+          
+          // Teams are already saved to localStorage via saveTeams()
+          // Just sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('teams', allTeams);
+          }
+
+          alert('Teams and criteria saved successfully!');
+          window.location.href = 'index.html';
+        } catch (e) {
+          console.error('Error saving:', e);
+          alert('Error saving teams. Please try again.');
+        }
+      }
+
+      // Utility functions
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&"'<>]/g, s => 
+          ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[s]
+        );
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+
+      // Initialize
+      loadTournament();
+      loadAdmittedPlayers();
+      loadTeams(); // Load teams after admitted players so cleanup can validate
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAddTeamModal();
+        } else if (e.key === 'Enter' && document.getElementById('add-team-modal').classList.contains('active')) {
+          confirmAddTeam();
+        }
+      });
+    </script>
+  </body>
+</html>

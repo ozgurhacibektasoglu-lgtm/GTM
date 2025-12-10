@@ -7,15 +7,15 @@
     <link rel="stylesheet" href="../styles.css">
     <style>
       body{padding-top:70px}
-      .results-display-container { max-width: 1400px; margin: 36px auto; padding: 24px; }
+      .results-display-container { max-width: 1000px; margin: 36px auto; padding: 24px; }
       .results-header { text-align: center; margin-bottom: 32px; }
       .results-header h1 { margin: 0; font-size: 28px; color: #1e293b; }
       .results-header .category-name { font-size: 20px; color: #64748b; margin-top: 8px; }
       .results-table-wrapper { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); overflow-x: auto; padding: 24px; }
-      .results-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .results-table { width: auto; border-collapse: collapse; font-size: 14px; }
       .results-table thead th { 
         background: #f8fafc; 
-        padding: 12px 16px; 
+        padding: 10px 12px; 
         text-align: left; 
         font-weight: 600; 
         color: #475569;
@@ -25,7 +25,7 @@
       .results-table thead th.text-center { text-align: center; }
       .results-table thead th.text-right { text-align: right; }
       .results-table tbody td { 
-        padding: 10px 16px; 
+        padding: 8px 12px; 
         border-bottom: 1px solid #f1f5f9;
         color: #1e293b;
       }
@@ -37,6 +37,18 @@
       .rank-cell { font-weight: 600; color: #0f172a; font-size: 15px; }
       .player-cell { font-weight: 500; color: #0f172a; }
       .total-cell { font-weight: 700; color: #0f172a; font-size: 15px; background: #f1f5f9; }
+      /* Team results specific styles */
+      .team-results-table { width: 100%; table-layout: fixed; }
+      .team-results-table .col-rank { width: 50px; }
+      .team-results-table .col-name { width: auto; }
+      .team-results-table .col-hcp { width: 80px; }
+      .team-results-table .col-phcp { width: 60px; }
+      .team-results-table .col-topar { width: 60px; }
+      .team-results-table .col-round { width: 50px; }
+      .team-results-table .col-score { width: 60px; }
+      .team-row { background: #f1f5f9 !important; }
+      .team-row:hover { background: #e2e8f0 !important; }
+      .player-row td { padding-top: 6px !important; padding-bottom: 6px !important; }
       .warning-message { 
         background: #fef3c7; 
         border: 2px solid #f59e0b; 
@@ -102,7 +114,7 @@
   <body>
     <div class="top-nav">
       <h1>🏆 Results Display</h1>
-      <a href="index.html" class="btn-back-top">← Back</a>
+      <a href="#" onclick="window.close(); return false;" class="btn-back-top">✕ Close</a>
     </div>
     <main class="results-display-container">
       <div class="results-header">
@@ -194,6 +206,67 @@
           console.error('Error loading courses:', err);
           return [];
         }
+      }
+
+      function getTeams() {
+        try {
+          const raw = localStorage.getItem('teams');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading teams:', err);
+          return [];
+        }
+      }
+
+      // Save calculated results to tournament data (localStorage and Firebase)
+      function saveCalculatedResults(categoryCode, resultsData) {
+        try {
+          const tournaments = getTournaments();
+          const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (index !== -1) {
+            // Initialize calculatedResults if not exists
+            if (!tournaments[index].calculatedResults) {
+              tournaments[index].calculatedResults = {};
+            }
+            
+            // Save the results for this category
+            tournaments[index].calculatedResults[categoryCode] = {
+              results: resultsData,
+              calculatedAt: new Date().toISOString()
+            };
+            
+            // Save to localStorage FIRST
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            console.log(`Results saved to localStorage for category ${categoryCode}:`, resultsData.length, 'entries');
+            
+            // Verify it was saved correctly
+            const verify = JSON.parse(localStorage.getItem('tournaments'));
+            const verifyTournament = verify.find(t => t.tournamentId === tournamentId);
+            if (verifyTournament?.calculatedResults?.[categoryCode]) {
+              console.log('✓ Verified: calculatedResults saved in localStorage');
+            } else {
+              console.error('✗ ERROR: calculatedResults NOT found in localStorage after save!');
+            }
+            
+            // Sync to Firebase
+            if (typeof syncToFirebase !== 'undefined') {
+              syncToFirebase('tournaments', tournaments)
+                .then(() => console.log('✓ Results synced to Firebase'))
+                .catch(e => console.error('✗ Firebase sync failed:', e));
+            }
+          } else {
+            console.error('Tournament not found in array, cannot save results');
+          }
+        } catch (err) {
+          console.error('Error saving calculated results:', err);
+        }
+      }
+
+      function isTeamCategory() {
+        const tournament = getTournament();
+        // Check if tournament is a team tournament and category is "TEAM"
+        return tournament?.meta?.teamsTournament === 'yes' && categoryCode === 'TEAM';
       }
 
       function getTeeData(player, roundIndex) {
@@ -898,6 +971,500 @@
 
       // ==================== END TIEBREAKER FUNCTIONS ====================
 
+      // ==================== TEAM RESULTS FUNCTIONS ====================
+
+      function generateTeamResults() {
+        const tournament = getTournament();
+        if (!tournament) {
+          alert('Tournament not found');
+          return;
+        }
+
+        document.getElementById('tournament-name').textContent = tournament.name;
+        document.getElementById('category-name').textContent = 'Team Results';
+
+        const teams = getTeams();
+        const allPlayers = getAdmittedPlayers();
+        const roundIds = tournament.meta?.roundIds || [];
+        const teamScoresCount = parseInt(tournament.meta?.teamScoresCount) || 3; // Best N scores count
+        const teamMaxPlayers = parseInt(tournament.meta?.teamMaxPlayers) || 4;
+
+        console.log('=== TEAM RESULTS DEBUG ===');
+        console.log('Teams loaded:', teams.length, teams);
+        console.log('All admitted players:', allPlayers.length);
+        console.log('Round IDs:', roundIds);
+        console.log('Team scores count:', teamScoresCount);
+        console.log('Team max players:', teamMaxPlayers);
+
+        // Filter teams that have players
+        const teamsWithPlayers = teams.filter(t => t.players && t.players.length > 0);
+        console.log('Teams with players:', teamsWithPlayers.length);
+
+        // Show team scoring info
+        const warningDiv = document.getElementById('warning-container');
+        warningDiv.innerHTML = `<div class="info-message">🏆 Team Scoring: Best ${teamScoresCount} out of ${teamMaxPlayers} player scores per team</div>`;
+
+        // Add class to table for team-specific styling
+        document.getElementById('results-table').classList.add('team-results-table');
+
+        // Build colgroup for fixed column widths
+        let colgroupHTML = '<colgroup>';
+        colgroupHTML += '<col class="col-rank">';
+        colgroupHTML += '<col class="col-name">';
+        if (showHcp) colgroupHTML += '<col class="col-hcp">';
+        if (showPhcp) colgroupHTML += '<col class="col-phcp">';
+        if (showToPar) colgroupHTML += '<col class="col-topar">';
+        if (roundIds.length > 1) {
+          roundIds.forEach(() => {
+            colgroupHTML += '<col class="col-round">';
+          });
+        }
+        colgroupHTML += '<col class="col-score">';
+        colgroupHTML += '</colgroup>';
+
+        // Build table header
+        let headerHTML = '<tr>';
+        headerHTML += '<th class="text-center">Rank</th>';
+        headerHTML += '<th>Team / Player</th>';
+        if (showHcp) headerHTML += '<th class="text-center">HCP</th>';
+        if (showPhcp) headerHTML += '<th class="text-center">PHCP</th>';
+        if (showToPar) headerHTML += '<th class="text-center">To Par</th>';
+        
+        // Add round columns if multiple rounds
+        if (roundIds.length > 1) {
+          roundIds.forEach((_, index) => {
+            headerHTML += `<th class="text-center">R${index + 1}</th>`;
+          });
+        }
+        
+        headerHTML += '<th class="text-center">Scores</th>';
+        headerHTML += '</tr>';
+        
+        // Insert colgroup before thead
+        const table = document.getElementById('results-table');
+        const existingColgroup = table.querySelector('colgroup');
+        if (existingColgroup) existingColgroup.remove();
+        table.insertAdjacentHTML('afterbegin', colgroupHTML);
+        
+        document.getElementById('table-head').innerHTML = headerHTML;
+
+        // Calculate team scores
+        const teamResults = teams.map(team => {
+          // Get player data for this team
+          const teamPlayers = (team.players || []).map(playerId => {
+            return allPlayers.find(p => (p.reg === playerId || p.playerId === playerId));
+          }).filter(p => p); // Remove undefined
+
+          // Calculate scores for each player across all rounds
+          const playerScoresData = teamPlayers.map(player => {
+            let totalStableford = 0;
+            let hasAnyScore = false;
+            const roundScores = [];
+
+            roundIds.forEach(roundId => {
+              const stablefordScore = calculateStablefordTotal(player, roundId);
+              if (stablefordScore !== null && typeof stablefordScore === 'number') {
+                totalStableford += stablefordScore;
+                hasAnyScore = true;
+                roundScores.push(stablefordScore);
+              } else {
+                // Check for status
+                const scores = getScores();
+                const playerScores = scores[roundId]?.[player.reg];
+                if (playerScores?.status && playerScores.status !== 'OK') {
+                  roundScores.push(playerScores.status);
+                } else {
+                  roundScores.push(null);
+                }
+              }
+            });
+
+            // Get player HCP and PHCP
+            const hcp = player.hcp;
+            const phcp = getPlayerPhcp(player);
+
+            return {
+              player,
+              totalStableford: hasAnyScore ? totalStableford : null,
+              roundScores,
+              hasScore: hasAnyScore,
+              hcp,
+              phcp
+            };
+          });
+
+          // Sort players by total stableford (highest first) for determining best N
+          const sortedPlayers = [...playerScoresData].sort((a, b) => (b.totalStableford || 0) - (a.totalStableford || 0));
+          
+          // Mark which players count toward team score (best N)
+          const countingPlayerRegs = new Set();
+          let countUsed = 0;
+          sortedPlayers.forEach(ps => {
+            if (ps.hasScore && countUsed < teamScoresCount) {
+              countingPlayerRegs.add(ps.player.reg);
+              countUsed++;
+            }
+          });
+
+          // Calculate team total from best N
+          let teamTotal = 0;
+          sortedPlayers.forEach(ps => {
+            if (countingPlayerRegs.has(ps.player.reg)) {
+              teamTotal += ps.totalStableford || 0;
+            }
+          });
+
+          // Calculate average HCP for team
+          const hcpValues = playerScoresData.map(ps => parseFloat(ps.hcp)).filter(h => !isNaN(h));
+          const avgHcp = hcpValues.length > 0 ? (hcpValues.reduce((a, b) => a + b, 0) / hcpValues.length).toFixed(1) : null;
+
+          // Calculate round totals for display (sum of best N players per round)
+          const roundTotals = roundIds.map((roundId, roundIndex) => {
+            const roundPlayerScores = playerScoresData
+              .map(ps => ({
+                reg: ps.player.reg,
+                score: typeof ps.roundScores[roundIndex] === 'number' ? ps.roundScores[roundIndex] : null
+              }))
+              .filter(s => s.score !== null)
+              .sort((a, b) => b.score - a.score);
+
+            // Sum best N for this round
+            return roundPlayerScores.slice(0, teamScoresCount).reduce((sum, s) => sum + s.score, 0);
+          });
+
+          return {
+            team,
+            teamTotal,
+            avgHcp,
+            roundTotals,
+            playerScoresData,
+            countingPlayerRegs,
+            hasValidScore: countingPlayerRegs.size > 0
+          };
+        });
+
+        // Get team untie criteria - always include play_off as fixed position 1 (after total score which is implicit)
+        const savedTeamUntieCriteria = tournament.teamUntieCriteria || [];
+        // Ensure team_play_off is always first in the criteria (it's the fixed #2 after total score)
+        const teamUntieCriteria = ['team_play_off', ...savedTeamUntieCriteria.filter(c => c !== 'team_play_off' && c !== 'play_off')];
+        const hasTeamTiebreakers = true; // Always has at least play_off
+
+        // Helper function to get uncounted scores by round for a team (final round first)
+        function getUncountedScoresByRound(teamResult) {
+          const uncountedByRound = [];
+          const numRounds = roundIds.length;
+          
+          // Process rounds from last (final) to first
+          for (let roundIdx = numRounds - 1; roundIdx >= 0; roundIdx--) {
+            // Get scores for this round from non-counting players
+            const uncountedScores = teamResult.playerScoresData
+              .filter(ps => !teamResult.countingPlayerRegs.has(ps.player.reg)) // Non-counting players
+              .map(ps => {
+                const score = ps.roundScores[roundIdx];
+                return typeof score === 'number' ? score : null;
+              })
+              .filter(score => score !== null)
+              .sort((a, b) => b - a); // Highest first (better for Stableford)
+            
+            uncountedByRound.push(uncountedScores);
+          }
+          
+          return uncountedByRound; // Array of arrays: [[finalRoundScores], [prevRoundScores], ...]
+        }
+
+        // Team tiebreaker comparison function
+        function compareTeamTiebreakers(teamA, teamB) {
+          for (const criteriaId of teamUntieCriteria) {
+            let result = 0;
+            
+            // Get sorted player scores (highest first) for each team
+            const scoresA = teamA.playerScoresData
+              .filter(ps => ps.hasScore)
+              .map(ps => ps.totalStableford)
+              .sort((a, b) => b - a);
+            const scoresB = teamB.playerScoresData
+              .filter(ps => ps.hasScore)
+              .map(ps => ps.totalStableford)
+              .sort((a, b) => b - a);
+            
+            switch (criteriaId) {
+              case 'team_best_uncounted':
+                // Compare non-counting scores starting from best uncounted of final round
+                // Then 2nd uncounted of final round, etc. When exhausted, move to previous round
+                const uncountedA = getUncountedScoresByRound(teamA);
+                const uncountedB = getUncountedScoresByRound(teamB);
+                
+                // Iterate through rounds (already ordered from final to first)
+                for (let roundIdx = 0; roundIdx < uncountedA.length || roundIdx < uncountedB.length; roundIdx++) {
+                  const roundScoresA = uncountedA[roundIdx] || [];
+                  const roundScoresB = uncountedB[roundIdx] || [];
+                  
+                  // Compare scores within this round (best to worst)
+                  const maxScores = Math.max(roundScoresA.length, roundScoresB.length);
+                  for (let scoreIdx = 0; scoreIdx < maxScores; scoreIdx++) {
+                    const scoreA = roundScoresA[scoreIdx];
+                    const scoreB = roundScoresB[scoreIdx];
+                    
+                    // If one team has a score and the other doesn't, the one with score wins
+                    if (scoreA !== undefined && scoreB === undefined) {
+                      result = -1; // Team A has more uncounted scores, wins
+                      break;
+                    }
+                    if (scoreB !== undefined && scoreA === undefined) {
+                      result = 1; // Team B has more uncounted scores, wins
+                      break;
+                    }
+                    
+                    // Compare the scores (higher is better for Stableford)
+                    if (scoreA !== undefined && scoreB !== undefined) {
+                      const diff = scoreA - scoreB;
+                      if (diff !== 0) {
+                        result = -diff; // Negative if A > B (A wins), positive if B > A (B wins)
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if (result !== 0) break; // Tiebreaker resolved
+                }
+                break;
+
+              case 'team_best_player':
+                // Compare best individual scores
+                result = (scoresB[0] || 0) - (scoresA[0] || 0);
+                if (result !== 0) result = -result; // Higher is better
+                break;
+                
+              case 'team_2nd_best':
+                // Compare 2nd best individual scores
+                result = (scoresB[1] || 0) - (scoresA[1] || 0);
+                if (result !== 0) result = -result;
+                break;
+                
+              case 'team_3rd_best':
+                // Compare 3rd best individual scores
+                result = (scoresB[2] || 0) - (scoresA[2] || 0);
+                if (result !== 0) result = -result;
+                break;
+                
+              case 'team_4th_best':
+                // Compare 4th best individual scores
+                result = (scoresB[3] || 0) - (scoresA[3] || 0);
+                if (result !== 0) result = -result;
+                break;
+                
+              case 'team_lower_avg_hcp':
+                // Lower average HCP wins
+                const avgA = parseFloat(teamA.avgHcp) || 999;
+                const avgB = parseFloat(teamB.avgHcp) || 999;
+                result = avgA - avgB;
+                break;
+                
+              case 'team_countback_best':
+                // Compare counting scores one by one
+                const countA = scoresA.slice(0, teamScoresCount);
+                const countB = scoresB.slice(0, teamScoresCount);
+                for (let i = 0; i < Math.max(countA.length, countB.length); i++) {
+                  const diff = (countB[i] || 0) - (countA[i] || 0);
+                  if (diff !== 0) {
+                    result = -diff; // Higher is better
+                    break;
+                  }
+                }
+                break;
+                
+              case 'team_more_birdies':
+                // Count total birdies across all team players
+                // This would require hole-by-hole data - simplified version
+                // Just use as secondary check based on total scores for now
+                break;
+                
+              case 'play_off':
+              case 'team_play_off':
+                // Team play-off tiebreaker
+                const playOffResults = tournament.playOffResults?.[categoryCode] || [];
+                const playOffA = playOffResults.find(r => r.teamId === teamA.team.teamId);
+                const playOffB = playOffResults.find(r => r.teamId === teamB.team.teamId);
+                
+                // Neither team has play-off result
+                if (!playOffA && !playOffB) {
+                  result = 0;
+                  break;
+                }
+                
+                // Both have play-off results in the same tie group
+                if (playOffA && playOffB && playOffA.tiedScore === playOffB.tiedScore) {
+                  result = playOffA.position - playOffB.position;
+                  break;
+                }
+                
+                // Only team A has play-off result
+                if (playOffA && !playOffB) {
+                  result = -1;
+                  break;
+                }
+                
+                // Only team B has play-off result
+                if (!playOffA && playOffB) {
+                  result = 1;
+                  break;
+                }
+                break;
+            }
+            
+            if (result !== 0) {
+              console.log(`Team tiebreak resolved by ${criteriaId}: ${teamA.team.name} vs ${teamB.team.name} = ${result}`);
+              return result;
+            }
+          }
+          return 0; // Still tied
+        }
+
+        // Sort teams by total (higher is better for Stableford), then apply tiebreakers
+        teamResults.sort((a, b) => {
+          if (!a.hasValidScore && !b.hasValidScore) return 0;
+          if (!a.hasValidScore) return 1;
+          if (!b.hasValidScore) return -1;
+          
+          // Primary: team total
+          const totalDiff = b.teamTotal - a.teamTotal;
+          
+          // If tied and tiebreakers are enabled, apply them
+          if (totalDiff === 0 && hasTeamTiebreakers) {
+            return compareTeamTiebreakers(a, b);
+          }
+          
+          return totalDiff;
+        });
+
+        // Assign ranks - consider tiebreakers for unique ranks
+        let currentRank = 1;
+        let previousTotal = null;
+        
+        teamResults.forEach((tr, index) => {
+          if (!tr.hasValidScore) {
+            tr.rank = '-';
+          } else if (index === 0) {
+            tr.rank = 1;
+            currentRank = 1;
+            previousTotal = tr.teamTotal;
+          } else {
+            const prevTeam = teamResults[index - 1];
+            
+            if (tr.teamTotal === prevTeam.teamTotal) {
+              // If tiebreakers resolved it, give next rank
+              if (hasTeamTiebreakers && compareTeamTiebreakers(prevTeam, tr) !== 0) {
+                currentRank = index + 1;
+                tr.rank = currentRank;
+              } else {
+                // Still tied - same rank
+                tr.rank = currentRank;
+              }
+            } else {
+              currentRank = index + 1;
+              tr.rank = currentRank;
+            }
+            previousTotal = tr.teamTotal;
+          }
+        });
+
+        // Build table body - each team has a header row + player rows
+        let bodyHTML = '';
+        
+        teamResults.forEach(tr => {
+          // Team header row
+          bodyHTML += '<tr class="team-row">';
+          bodyHTML += `<td class="text-center" style="font-weight: 700;">${tr.rank}</td>`;
+          bodyHTML += `<td style="font-weight: 700;">${tr.team.name}</td>`;
+          if (showHcp) bodyHTML += `<td class="text-center" style="font-weight: 600;">AVG (${tr.avgHcp || '-'})</td>`;
+          if (showPhcp) bodyHTML += `<td class="text-center"></td>`;
+          if (showToPar) bodyHTML += `<td class="text-center"></td>`;
+          
+          // Round totals for team (if multiple rounds)
+          if (roundIds.length > 1) {
+            tr.roundTotals.forEach(roundTotal => {
+              bodyHTML += `<td class="text-center" style="font-weight: 600;">${roundTotal || '-'}</td>`;
+            });
+          }
+          
+          bodyHTML += `<td class="text-center" style="font-weight: 700;">${tr.teamTotal || '-'}</td>`;
+          bodyHTML += '</tr>';
+
+          // Player rows (sorted by score descending)
+          const sortedPlayers = [...tr.playerScoresData].sort((a, b) => (b.totalStableford || 0) - (a.totalStableford || 0));
+          
+          sortedPlayers.forEach(ps => {
+            const isCounting = tr.countingPlayerRegs.has(ps.player.reg);
+            const scoreColor = isCounting ? 'color: #16a34a; font-weight: 600;' : '';
+            const playerName = `${ps.player.firstName} ${ps.player.lastName}`;
+            
+            bodyHTML += '<tr class="player-row">';
+            bodyHTML += `<td></td>`; // Empty rank for player rows
+            bodyHTML += `<td style="padding-left: 20px;">${playerName}</td>`;
+            
+            if (showHcp) {
+              const hcpDisplay = ps.hcp !== null && ps.hcp !== undefined ? ps.hcp : '-';
+              bodyHTML += `<td class="text-center">${hcpDisplay}</td>`;
+            }
+            
+            if (showPhcp) {
+              const phcpDisplay = ps.phcp !== null && ps.phcp !== undefined ? (ps.phcp < 0 ? '+' + Math.abs(ps.phcp) : ps.phcp) : '-';
+              bodyHTML += `<td class="text-center">${phcpDisplay}</td>`;
+            }
+            
+            if (showToPar) {
+              // Calculate to par for this player
+              const toPar = calculateToParForPlayer(ps.player, roundIds);
+              const toParDisplay = toPar !== null ? (toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar)) : '-';
+              bodyHTML += `<td class="text-center">${toParDisplay}</td>`;
+            }
+            
+            // Round scores (if multiple rounds)
+            if (roundIds.length > 1) {
+              ps.roundScores.forEach(score => {
+                if (typeof score === 'string') {
+                  bodyHTML += `<td class="text-center">${score}</td>`;
+                } else if (score !== null) {
+                  bodyHTML += `<td class="text-center" style="${scoreColor}">${score}</td>`;
+                } else {
+                  bodyHTML += `<td class="text-center">-</td>`;
+                }
+              });
+            }
+            
+            // Total score
+            const scoreDisplay = ps.hasScore ? ps.totalStableford : '-';
+            bodyHTML += `<td class="text-center" style="${scoreColor}">${scoreDisplay}</td>`;
+            
+            bodyHTML += '</tr>';
+          });
+        });
+
+        document.getElementById('table-body').innerHTML = bodyHTML;
+        
+        // Save calculated team results to Firebase
+        console.log('Preparing to save team results for category:', categoryCode);
+        const teamResultsToSave = teamResults.map(tr => ({
+          type: 'team',
+          teamId: tr.team.teamId,
+          teamName: tr.team.name,
+          rank: tr.rank,
+          total: tr.teamTotal,
+          roundTotals: tr.roundTotals,
+          avgHcp: tr.avgHcp,
+          players: tr.playerScoresData.map(ps => ({
+            reg: ps.player.reg,
+            firstName: ps.player.firstName,
+            lastName: ps.player.lastName,
+            club: ps.player.club || ps.player.homeClub
+          }))
+        }));
+        console.log('Team results to save:', teamResultsToSave.length, 'teams');
+        saveCalculatedResults(categoryCode, teamResultsToSave);
+      }
+
+      // ==================== END TEAM RESULTS FUNCTIONS ====================
+
       function calculateToParForPlayer(player, roundIds) {
         // To Par is ALWAYS based on gross scores, regardless of tournament format
         const tournament = getTournament();
@@ -1205,6 +1772,24 @@
         });
 
         document.getElementById('table-body').innerHTML = bodyHTML;
+        
+        // Save calculated individual results to Firebase
+        const allPlayerResults = [...normalPlayers, ...statusPlayers];
+        const individualResultsToSave = allPlayerResults.map(pr => ({
+          type: 'individual',
+          reg: pr.player.reg,
+          firstName: pr.player.firstName,
+          lastName: pr.player.lastName,
+          club: pr.player.club || pr.player.homeClub,
+          nationality: pr.player.nationality || pr.player.country,
+          rank: pr.rank,
+          total: pr.total,
+          roundScores: pr.roundScores,
+          status: pr.status || null,
+          hcp: pr.player.hcp,
+          phcp: pr.player.phcp
+        }));
+        saveCalculatedResults(categoryCode, individualResultsToSave);
       }
 
       // Generate results on page load
@@ -1212,7 +1797,12 @@
         alert('Missing parameters');
         window.close();
       } else {
-        generateResults();
+        // Check if this is a team category in a team tournament
+        if (isTeamCategory()) {
+          generateTeamResults();
+        } else {
+          generateResults();
+        }
       }
     </script>
   </body>

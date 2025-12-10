@@ -168,7 +168,7 @@
   <body>
     <div class="top-nav">
       <h1>🏆 Play Off</h1>
-      <a href="index.html" class="btn-back-top">← Back</a>
+      <a href="#" id="back-link-top" class="btn-back-top">← Back</a>
     </div>
     <main class="playoff-container">
       <header>
@@ -178,8 +178,8 @@
 
       <div class="info-box">
         <strong>How to use:</strong>
-        Select a category to see tied players. For each tie group, assign positions (1st, 2nd, etc.) to record play-off results.
-        If only 2 players are tied and you mark one as winner, the other is automatically set as 2nd.
+        Select a category to see tied players or teams. For each tie group, assign positions (1st, 2nd, etc.) to record play-off results.
+        If only 2 are tied and you mark one as winner, the other is automatically set as 2nd.
       </div>
 
       <div id="success-message" class="success-message">
@@ -222,7 +222,10 @@
         window.location.href = 'index.html';
       }
 
-      document.getElementById('back-link').href = `results.html?tournamentId=${tournamentId}`;
+      // Set back links
+      const backUrl = `results.html?tournamentId=${tournamentId}`;
+      document.getElementById('back-link').href = backUrl;
+      document.getElementById('back-link-top').href = backUrl;
 
       function getTournaments() {
         try {
@@ -276,6 +279,21 @@
           console.error('Error loading scores:', err);
           return {};
         }
+      }
+
+      function getTeams() {
+        try {
+          const raw = localStorage.getItem('teams');
+          return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+          console.error('Error loading teams:', err);
+          return [];
+        }
+      }
+
+      function isTeamCategory(categoryCode) {
+        const tournament = getTournament();
+        return tournament?.meta?.teamsTournament === 'yes' && categoryCode === 'TEAM';
       }
 
       function calculatePlayerTotal(player, roundIds, tournamentType) {
@@ -356,6 +374,14 @@
         }
         
         currentCategory = categoryCode;
+        
+        // Check if this is a team category - handle differently
+        if (isTeamCategory(categoryCode)) {
+          loadTiedTeams(tournament, category, container);
+          return;
+        }
+        
+        // Individual category logic
         const roundIds = tournament.meta?.roundIds || [];
         const tournamentType = category.tournamentType || 'Stroke Play';
         
@@ -446,6 +472,161 @@
         container.innerHTML = html;
       }
 
+      function loadTiedTeams(tournament, category, container) {
+        const roundIds = tournament.meta?.roundIds || [];
+        const tournamentType = category.tournamentType || 'Stableford';
+        const teamScoresCount = parseInt(tournament.meta?.teamScoresCount) || 3;
+        
+        // Get all teams (teams are global, not per-tournament)
+        const allTeams = getTeams().filter(t => t.players && t.players.length > 0);
+        
+        if (allTeams.length === 0) {
+          container.innerHTML = '<div class="no-ties">No teams found</div>';
+          return;
+        }
+        
+        // Get all admitted players
+        const allPlayers = getAdmittedPlayers();
+        const scores = getScores();
+        
+        // Calculate team totals (best N scores from each team)
+        const teamTotals = allTeams.map(team => {
+          const teamPlayers = (team.players || []).map(playerId => {
+            return allPlayers.find(p => (p.reg === playerId || p.playerId === playerId));
+          }).filter(p => p);
+          
+          // Calculate scores for each player
+          const playerScores = teamPlayers.map(player => {
+            let total = 0;
+            let hasScore = false;
+            
+            roundIds.forEach(roundId => {
+              const playerScoreData = scores[roundId]?.[player.reg];
+              if (!playerScoreData) return;
+              if (playerScoreData.status && playerScoreData.status !== 'OK') return;
+              
+              if (playerScoreData.stablefordPoints) {
+                total += playerScoreData.stablefordPoints.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+                hasScore = true;
+              }
+            });
+            
+            return { player, total, hasScore };
+          }).filter(ps => ps.hasScore);
+          
+          // Sort by score (highest first for Stableford) and take best N
+          playerScores.sort((a, b) => b.total - a.total);
+          const countingScores = playerScores.slice(0, teamScoresCount);
+          const teamTotal = countingScores.reduce((sum, ps) => sum + ps.total, 0);
+          
+          return {
+            team,
+            total: teamTotal,
+            countingPlayers: countingScores.map(ps => ps.player)
+          };
+        }).filter(tt => tt.total > 0);
+        
+        // Group teams by total score
+        const scoreGroups = {};
+        teamTotals.forEach(tt => {
+          const key = tt.total.toString();
+          if (!scoreGroups[key]) {
+            scoreGroups[key] = [];
+          }
+          scoreGroups[key].push(tt);
+        });
+        
+        // Find groups with ties (more than 1 team with same score)
+        const allTiedGroups = Object.entries(scoreGroups)
+          .filter(([score, teams]) => teams.length > 1)
+          .map(([score, teams]) => ({ score: parseInt(score), teams }))
+          .sort((a, b) => b.score - a.score); // Higher is better for Stableford
+        
+        if (allTiedGroups.length === 0) {
+          container.innerHTML = '<div class="no-ties">🎉 No ties for 1st place in team category!</div>';
+          return;
+        }
+        
+        // Take only the first tie group (1st place)
+        tiedGroups = [allTiedGroups[0]];
+        // Store that these are team groups
+        tiedGroups[0].isTeamGroup = true;
+        
+        // Render tied teams
+        let html = '';
+        tiedGroups.forEach((group, groupIndex) => {
+          const existingResults = playOffResults[currentCategory]?.filter(r => 
+            group.teams.some(t => t.team.teamId === r.teamId)
+          ) || [];
+          
+          html += `
+            <div class="tied-group" data-group-index="${groupIndex}">
+              <div class="tied-group-header">
+                <span class="tied-group-title">${group.teams.length} Teams Tied</span>
+                <span class="tied-group-score">Score: ${group.score}</span>
+              </div>
+              <div class="tied-players-list">
+          `;
+          
+          group.teams.forEach((teamData, teamIndex) => {
+            const existingPosition = existingResults.find(r => r.teamId === teamData.team.teamId)?.position || '';
+            
+            // Show team members
+            const memberNames = teamData.countingPlayers.map(p => `${p.firstName} ${p.lastName}`).join(', ');
+            
+            html += `
+              <div class="player-row team-row" data-team-id="${teamData.team.teamId}" data-group-index="${groupIndex}">
+                <span class="player-name">
+                  <strong>${teamData.team.name}</strong>
+                  <span class="player-club" style="display: block; margin-top: 4px; font-size: 12px;">${memberNames}</span>
+                </span>
+                <div class="playoff-position">
+                  <select class="position-select team-position-select" data-team-id="${teamData.team.teamId}" data-group-index="${groupIndex}" onchange="handleTeamPositionChange(this)">
+                    <option value="">Not set</option>
+                    ${generatePositionOptions(group.teams.length, existingPosition)}
+                  </select>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div></div>';
+        });
+        
+        container.innerHTML = html;
+      }
+
+      function handleTeamPositionChange(selectElement) {
+        const teamId = selectElement.dataset.teamId;
+        const groupIndex = parseInt(selectElement.dataset.groupIndex);
+        const position = selectElement.value;
+        const group = tiedGroups[groupIndex];
+        
+        if (!group || !group.isTeamGroup) return;
+        
+        // If only 2 teams and one is set to 1st, auto-set the other to 2nd
+        if (group.teams.length === 2 && position === '1') {
+          const otherTeam = group.teams.find(t => t.team.teamId !== teamId);
+          if (otherTeam) {
+            const otherSelect = document.querySelector(`select[data-team-id="${otherTeam.team.teamId}"][data-group-index="${groupIndex}"]`);
+            if (otherSelect && otherSelect.value !== '2') {
+              otherSelect.value = '2';
+            }
+          }
+        }
+        
+        // If only 2 teams and one is set to 2nd, auto-set the other to 1st
+        if (group.teams.length === 2 && position === '2') {
+          const otherTeam = group.teams.find(t => t.team.teamId !== teamId);
+          if (otherTeam) {
+            const otherSelect = document.querySelector(`select[data-team-id="${otherTeam.team.teamId}"][data-group-index="${groupIndex}"]`);
+            if (otherSelect && otherSelect.value !== '1') {
+              otherSelect.value = '1';
+            }
+          }
+        }
+      }
+
       function generatePositionOptions(numPlayers, selectedPosition) {
         let options = '';
         for (let i = 1; i <= numPlayers; i++) {
@@ -486,31 +667,74 @@
         }
       }
 
+      // Invalidate cached results for a category (forces recalculation)
+      function invalidateCachedResults(categoryCode) {
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (index !== -1 && tournaments[index].calculatedResults) {
+          delete tournaments[index].calculatedResults[categoryCode];
+          saveTournaments(tournaments);
+          
+          // Sync to Firebase
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments).catch(e => console.log('Firebase sync failed:', e));
+          }
+          
+          console.log(`Invalidated cached results for category: ${categoryCode}`);
+        }
+      }
+
       function savePlayOffResults() {
         if (!currentCategory) {
           alert('Please select a category first');
           return;
         }
         
+        // Check if this is a team category
+        const isTeam = isTeamCategory(currentCategory);
+        
         // Collect all position selections for this category
         const results = [];
-        const selects = document.querySelectorAll('.position-select');
         
-        selects.forEach(select => {
-          const playerReg = select.dataset.playerReg;
-          const groupIndex = parseInt(select.dataset.groupIndex);
-          const position = select.value;
-          
-          if (position) {
-            const group = tiedGroups[groupIndex];
-            results.push({
-              playerReg,
-              position: parseInt(position),
-              tiedScore: group.score,
-              groupIndex
-            });
-          }
-        });
+        if (isTeam) {
+          // Handle team results
+          const selects = document.querySelectorAll('.team-position-select');
+          selects.forEach(select => {
+            const teamId = select.dataset.teamId;
+            const groupIndex = parseInt(select.dataset.groupIndex);
+            const position = select.value;
+            
+            if (position) {
+              const group = tiedGroups[groupIndex];
+              results.push({
+                teamId,
+                position: parseInt(position),
+                tiedScore: group.score,
+                groupIndex,
+                isTeam: true
+              });
+            }
+          });
+        } else {
+          // Handle individual player results
+          const selects = document.querySelectorAll('.position-select:not(.team-position-select)');
+          selects.forEach(select => {
+            const playerReg = select.dataset.playerReg;
+            const groupIndex = parseInt(select.dataset.groupIndex);
+            const position = select.value;
+            
+            if (position) {
+              const group = tiedGroups[groupIndex];
+              results.push({
+                playerReg,
+                position: parseInt(position),
+                tiedScore: group.score,
+                groupIndex
+              });
+            }
+          });
+        }
         
         // Save to tournament
         const tournaments = getTournaments();
@@ -521,6 +745,17 @@
             tournaments[index].playOffResults = {};
           }
           tournaments[index].playOffResults[currentCategory] = results;
+          
+          // Invalidate cached results since play-off changes affect rankings
+          console.log('Current calculatedResults:', tournaments[index].calculatedResults);
+          if (tournaments[index].calculatedResults && tournaments[index].calculatedResults[currentCategory]) {
+            delete tournaments[index].calculatedResults[currentCategory];
+            console.log(`✓ Invalidated cached results for category: ${currentCategory}`);
+          } else {
+            console.log(`No cached results to invalidate for category: ${currentCategory}`);
+          }
+          
+          // Save everything at once
           saveTournaments(tournaments);
           
           // Update local copy
@@ -562,6 +797,11 @@
         
         if (index !== -1 && tournaments[index].playOffResults) {
           delete tournaments[index].playOffResults[currentCategory];
+          
+          // Invalidate cached results since play-off changes affect rankings
+          if (tournaments[index].calculatedResults) {
+            delete tournaments[index].calculatedResults[currentCategory];
+          }
           saveTournaments(tournaments);
           
           // Update local copy

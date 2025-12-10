@@ -58,8 +58,44 @@
       .btn-secondary { background: #6b7280; }
       .btn-auto { background: linear-gradient(180deg, #059669, #047857); }
       
-      /* Editable short name styling */
+      /* Editable cell styling */
       .short-name-cell:hover { background: #dbeafe; text-decoration: underline; }
+      .type-cell:hover { background: #dbeafe; text-decoration: underline; cursor: pointer; }
+      
+      /* Type selection modal */
+      .type-selection-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+      .type-selection-modal.active { display: flex; }
+      .type-selection-content { background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+      .type-selection-content h3 { margin-top: 0; margin-bottom: 20px; font-size: 18px; }
+      .type-option { display: flex; align-items: center; padding: 12px; margin: 8px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+      .type-option:hover { background: #dbeafe; }
+      .type-option input[type="radio"] { margin-right: 12px; cursor: pointer; }
+      .type-option label { margin: 0; cursor: pointer; flex: 1; }
+      .type-selection-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+      .type-selection-actions button { padding: 10px 20px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
+      .btn-type-confirm { background: linear-gradient(180deg, #0b6efd, #0a58d1); color: white; }
+      .btn-type-cancel { background: #e5e7eb; color: #1e293b; }
+      
+      /* Plays From cell styling */
+      .plays-from-cell:hover { background: #dbeafe; text-decoration: underline; cursor: pointer; }
+      
+      /* Tee selection modal */
+      .tee-selection-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+      .tee-selection-modal.active { display: flex; }
+      .tee-selection-content { background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+      .tee-selection-content h3 { margin-top: 0; margin-bottom: 20px; font-size: 18px; }
+      .tee-option { display: flex; align-items: center; padding: 12px; margin: 8px 0; background: #f3f4f6; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+      .tee-option:hover { background: #dbeafe; }
+      .tee-option input[type="radio"] { margin-right: 12px; cursor: pointer; }
+      .tee-option label { margin: 0; cursor: pointer; flex: 1; }
+      .tee-selection-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+      .tee-selection-actions button { padding: 10px 20px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
+      .btn-tee-confirm { background: linear-gradient(180deg, #0b6efd, #0a58d1); color: white; }
+      .btn-tee-cancel { background: #e5e7eb; color: #1e293b; }
+      .tee-gender-section { margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; }
+      .tee-gender-section h4 { margin: 0 0 12px 0; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+      .tee-gender-section h4 .gender-icon { font-size: 16px; }
+      .tee-gender-options { max-height: 200px; overflow-y: auto; }
     </style>
   </head>
   <body>
@@ -115,15 +151,28 @@
             <div class="form-group">
               <label for="tournament-type">Tournament Type</label>
               <select id="tournament-type">
-                <option value="">Any</option>
+                <option value="Stableford Net" selected>Stableford Net</option>
                 <option value="Stroke Play">Stroke Play</option>
                 <option value="Medal Net">Medal Net</option>
-                <option value="Stableford Net">Stableford Net</option>
+              </select>
+            </div>
+            <div class="form-group" id="plays-from-single-container">
+              <label for="plays-from">Category Plays From:</label>
+              <select id="plays-from">
+                <option value="">Select tee...</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" id="plays-from-dual-container" style="display: none;">
+            <div class="form-group">
+              <label for="plays-from-men">🚹 Men Play From:</label>
+              <select id="plays-from-men">
+                <option value="">Select tee...</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="plays-from">Category Plays From:</label>
-              <select id="plays-from">
+              <label for="plays-from-women">🚺 Women Play From:</label>
+              <select id="plays-from-women">
                 <option value="">Select tee...</option>
               </select>
             </div>
@@ -228,6 +277,63 @@
           <div class="modal-actions">
             <button class="btn btn-secondary" id="btn-cancel-auto">Cancel</button>
             <button class="btn btn-auto" id="btn-generate-categories">Generate Categories</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type Selection Modal -->
+      <div class="type-selection-modal" id="type-selection-modal">
+        <div class="type-selection-content">
+          <h3>Select Tournament Type</h3>
+          <div id="type-options-container">
+            <div class="type-option">
+              <input type="radio" id="type-stableford" name="type-select" value="Stableford Net">
+              <label for="type-stableford">Stableford Net</label>
+            </div>
+            <div class="type-option">
+              <input type="radio" id="type-stroke" name="type-select" value="Stroke Play">
+              <label for="type-stroke">Stroke Play</label>
+            </div>
+            <div class="type-option">
+              <input type="radio" id="type-medal" name="type-select" value="Medal Net">
+              <label for="type-medal">Medal Net</label>
+            </div>
+          </div>
+          <div class="type-selection-actions">
+            <button class="btn-type-cancel" onclick="closeTypeSelectionModal()">Cancel</button>
+            <button class="btn-type-confirm" onclick="confirmTypeSelection()">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tee Selection Modal -->
+      <div class="tee-selection-modal" id="tee-selection-modal">
+        <div class="tee-selection-content">
+          <h3 id="tee-modal-title">Select Tee</h3>
+          <!-- Single gender tee selection -->
+          <div id="tee-single-container">
+            <div id="tee-options-container">
+              <!-- Tee options will be populated dynamically -->
+            </div>
+          </div>
+          <!-- Dual gender tee selection (for mixed categories) -->
+          <div id="tee-dual-container" style="display: none;">
+            <div class="tee-gender-section">
+              <h4><span class="gender-icon">🚹</span> Men Play From:</h4>
+              <div class="tee-gender-options" id="tee-men-options">
+                <!-- Men's tee options will be populated dynamically -->
+              </div>
+            </div>
+            <div class="tee-gender-section">
+              <h4><span class="gender-icon">🚺</span> Women Play From:</h4>
+              <div class="tee-gender-options" id="tee-women-options">
+                <!-- Women's tee options will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+          <div class="tee-selection-actions">
+            <button class="btn-tee-cancel" onclick="closeTeeSelectionModal()">Cancel</button>
+            <button class="btn-tee-confirm" onclick="confirmTeeSelection()">OK</button>
           </div>
         </div>
       </div>
@@ -346,11 +452,35 @@
         // Fallback: return the raw value
         return teeValue;
       }
+      
+      // Get tee display for category (handles both single and dual gender)
+      function getCategoryTeeDisplay(cat) {
+        const isMixedGender = !cat.gender || cat.gender === '' || cat.gender === 'Any';
+        
+        if (isMixedGender && (cat.playsFromMen || cat.playsFromWomen)) {
+          // Mixed gender category with separate tees
+          const menTee = getTeeDisplayName(cat.playsFromMen) || '-';
+          const womenTee = getTeeDisplayName(cat.playsFromWomen) || '-';
+          return `${menTee} / ${womenTee}`;
+        } else if (cat.playsFrom) {
+          // Single tee for specific gender category
+          return getTeeDisplayName(cat.playsFrom);
+        }
+        
+        return '-';
+      }
 
       // Get tournament course and populate tees
       function loadAvailableTees(selectedGender) {
         const playsFromSelect = document.getElementById('plays-from');
+        const playsFromMenSelect = document.getElementById('plays-from-men');
+        const playsFromWomenSelect = document.getElementById('plays-from-women');
+        const singleContainer = document.getElementById('plays-from-single-container');
+        const dualContainer = document.getElementById('plays-from-dual-container');
+        
         playsFromSelect.innerHTML = '<option value="">Select tee...</option>';
+        playsFromMenSelect.innerHTML = '<option value="">Select tee...</option>';
+        playsFromWomenSelect.innerHTML = '<option value="">Select tee...</option>';
 
         const tournament = getTournament();
         if (!tournament || !tournament.meta) return;
@@ -363,38 +493,84 @@
         if (courseIds.length === 0) return;
 
         const courses = getCourses();
-        const uniqueTees = new Map(); // Use Map to avoid duplicates
+        
+        // Show dual selector for "Any" gender, single for specific gender
+        const isMixedGender = !selectedGender || selectedGender === '' || selectedGender === 'Any';
+        
+        if (isMixedGender) {
+          singleContainer.style.display = 'none';
+          dualContainer.style.display = 'flex';
+          
+          // Populate men's tees
+          const menTees = new Map();
+          const womenTees = new Map();
+          
+          courseIds.forEach(courseId => {
+            const course = courses.find(c => c.courseId === courseId);
+            if (!course || !course.tees || !course.genders) return;
 
-        courseIds.forEach(courseId => {
-          const course = courses.find(c => c.courseId === courseId);
-          if (!course || !course.tees || !course.genders) return;
-
-          course.tees.forEach((teeName, idx) => {
-            const teeGender = course.genders[idx];
-            
-            // Filter based on selected gender
-            if (selectedGender === 'Male' && teeGender !== 'M' && teeGender !== 'B') return;
-            if (selectedGender === 'Female' && teeGender !== 'F' && teeGender !== 'B') return;
-            
-            // Create display name
-            const displayName = `${teeName}${course.fullName ? ' - ' + course.fullName : ''}`;
-            const teeId = course.teeIds && course.teeIds[idx] 
-              ? (typeof course.teeIds[idx] === 'object' 
-                  ? (selectedGender === 'Female' ? course.teeIds[idx].women : course.teeIds[idx].men)
-                  : course.teeIds[idx])
-              : `${courseId}-${teeName}`;
-            
-            uniqueTees.set(teeId, displayName);
+            course.tees.forEach((teeName, idx) => {
+              const teeGender = course.genders[idx];
+              const teeValue = `${course.courseId}||${idx}`;
+              const displayName = `${teeName}${course.fullName ? ' - ' + course.fullName : ''}`;
+              
+              // Men's tees (M or B)
+              if (teeGender === 'M' || teeGender === 'B') {
+                menTees.set(teeValue, displayName);
+              }
+              // Women's tees (F or B)
+              if (teeGender === 'F' || teeGender === 'B') {
+                womenTees.set(teeValue, displayName);
+              }
+            });
           });
-        });
+          
+          menTees.forEach((displayName, teeValue) => {
+            const option = document.createElement('option');
+            option.value = teeValue;
+            option.textContent = displayName;
+            playsFromMenSelect.appendChild(option);
+          });
+          
+          womenTees.forEach((displayName, teeValue) => {
+            const option = document.createElement('option');
+            option.value = teeValue;
+            option.textContent = displayName;
+            playsFromWomenSelect.appendChild(option);
+          });
+        } else {
+          singleContainer.style.display = 'block';
+          dualContainer.style.display = 'none';
+          
+          const uniqueTees = new Map();
 
-        // Add options
-        uniqueTees.forEach((displayName, teeId) => {
-          const option = document.createElement('option');
-          option.value = teeId;
-          option.textContent = displayName;
-          playsFromSelect.appendChild(option);
-        });
+          courseIds.forEach(courseId => {
+            const course = courses.find(c => c.courseId === courseId);
+            if (!course || !course.tees || !course.genders) return;
+
+            course.tees.forEach((teeName, idx) => {
+              const teeGender = course.genders[idx];
+              
+              // Filter based on selected gender
+              if (selectedGender === 'Male' && teeGender !== 'M' && teeGender !== 'B') return;
+              if (selectedGender === 'Female' && teeGender !== 'F' && teeGender !== 'B') return;
+              
+              // Create display name
+              const displayName = `${teeName}${course.fullName ? ' - ' + course.fullName : ''}`;
+              const teeValue = `${course.courseId}||${idx}`;
+              
+              uniqueTees.set(teeValue, displayName);
+            });
+          });
+
+          // Add options
+          uniqueTees.forEach((displayName, teeValue) => {
+            const option = document.createElement('option');
+            option.value = teeValue;
+            option.textContent = displayName;
+            playsFromSelect.appendChild(option);
+          });
+        }
       }
 
       // Update tees when gender changes
@@ -686,7 +862,49 @@
         return true;
       }
 
+      // Check if this is a team tournament and create default Team category if needed
+      function ensureTeamCategoryExists() {
+        const tournament = getTournament();
+        if (!tournament) return;
+        
+        // Check if it's a team tournament
+        const isTeamTournament = tournament.meta && tournament.meta.teamsTournament === 'yes';
+        if (!isTeamTournament) return;
+        
+        const categories = getCategories();
+        
+        // Check if Team category already exists
+        const hasTeamCategory = categories.some(cat => cat.code === 'TEAM' || cat.name.toLowerCase() === 'team');
+        if (hasTeamCategory) return;
+        
+        // Get default tees from tournament definition (first round)
+        const roundData = tournament.meta?.roundsData?.[0];
+        const defaultTeeMen = roundData?.teeMen || '';
+        const defaultTeeWomen = roundData?.teeWomen || '';
+        
+        // Create default Team category with separate tees for men and women
+        const teamCategory = {
+          name: 'Team',
+          code: 'TEAM',
+          shortName: 'Team',
+          gender: '', // Any (mixed gender)
+          tournamentType: 'Stableford Net',
+          playsFromMen: defaultTeeMen,
+          playsFromWomen: defaultTeeWomen,
+          isResultOnly: false
+          // No handicap or age limits
+        };
+        
+        // Add to beginning of categories
+        categories.unshift(teamCategory);
+        saveCategories(categories);
+        console.log('✓ Default Team category created for team tournament with dual tees');
+      }
+
       function loadCategories() {
+        // For team tournaments, ensure Team category exists
+        ensureTeamCategoryExists();
+        
         const tbody = document.getElementById('categories-body');
         tbody.innerHTML = '';
         const categories = getCategories();
@@ -706,8 +924,9 @@
           const handicapRange = formatHandicapRange(cat.handicapMin, cat.handicapMax);
           const ageRange = formatAgeRange(cat.ageMin, cat.ageMax);
           const gender = cat.gender || 'Any';
-          const tournamentType = cat.tournamentType || 'Any';
-          const playsFrom = getTeeDisplayName(cat.playsFrom);
+          const tournamentType = cat.tournamentType || 'Stableford Net';
+          const playsFrom = getCategoryTeeDisplay(cat);
+          const isMixedGender = !cat.gender || cat.gender === '' || cat.gender === 'Any';
           
           // Calculate player counts
           const playerStats = calculatePlayerStats(cat);
@@ -721,6 +940,16 @@
           // Generate short name if not exists
           const shortName = cat.shortName || generateShortName(cat.name);
           
+          // Check if this is an undeletable Team category
+          const tournament = getTournament();
+          const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
+          const isTeamCategory = cat.code === 'TEAM' || cat.name.toLowerCase() === 'team';
+          const canDelete = !(isTeamTournament && isTeamCategory);
+          
+          const deleteButton = canDelete 
+            ? `<button class="btn btn-delete" style="padding: 4px 8px; font-size: 12px;" onclick="deleteCategory(${index}); event.stopPropagation();">Delete</button>`
+            : `<button class="btn" style="padding: 4px 8px; font-size: 12px; background: #d1d5db; cursor: not-allowed;" disabled title="Team category cannot be deleted">Delete</button>`;
+          
           row.innerHTML = `
             <td class="drag-handle">☰</td>
             <td>${escapeHtml(cat.name)}${resultOnlyBadge}</td>
@@ -728,13 +957,13 @@
             <td>${handicapRange}</td>
             <td>${ageRange}</td>
             <td>${gender}</td>
-            <td>${tournamentType}</td>
-            <td>${escapeHtml(playsFrom)}</td>
+            <td class="type-cell" data-index="${index}" style="cursor: pointer; color: #0b6efd;" title="Click to edit">${tournamentType}</td>
+            <td class="plays-from-cell" data-index="${index}" data-gender="${cat.gender || ''}" data-tee-men="${cat.playsFromMen || ''}" data-tee-women="${cat.playsFromWomen || ''}" data-tee-id="${cat.playsFrom || ''}" style="cursor: pointer; color: #0b6efd;" title="Click to change tee">${escapeHtml(playsFrom) || '-'}</td>
             <td>${noPlayersDisplay}</td>
             <td>${percentageDisplay}</td>
             <td>
               <button class="btn" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;" onclick="editCategory(${index}); event.stopPropagation();">Edit</button>
-              <button class="btn btn-delete" style="padding: 4px 8px; font-size: 12px;" onclick="deleteCategory(${index}); event.stopPropagation();">Delete</button>
+              ${deleteButton}
             </td>
           `;
           
@@ -748,6 +977,8 @@
         
         // Setup short name editing
         setupShortNameEditing();
+        setupTypeEditing();
+        setupPlaysFromEditing();
         
         // Update summary table
         updateSummaryTable();
@@ -825,6 +1056,314 @@
             }
           });
         });
+      }
+
+      // Global variable for type selection
+      let typeSelectionCategoryIndex = null;
+
+      function setupTypeEditing() {
+        document.querySelectorAll('.type-cell').forEach(cell => {
+          cell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const index = parseInt(this.dataset.index);
+            const categories = getCategories();
+            const cat = categories[index];
+            if (!cat) return;
+            
+            openTypeSelectionModal(index, cat.tournamentType || 'Stableford Net');
+          });
+        });
+      }
+
+      function openTypeSelectionModal(categoryIndex, currentType) {
+        typeSelectionCategoryIndex = categoryIndex;
+        
+        // Set the current type as selected
+        document.querySelectorAll('input[name="type-select"]').forEach(radio => {
+          radio.checked = (radio.value === currentType);
+        });
+        
+        document.getElementById('type-selection-modal').classList.add('active');
+      }
+
+      function closeTypeSelectionModal() {
+        document.getElementById('type-selection-modal').classList.remove('active');
+        typeSelectionCategoryIndex = null;
+      }
+
+      function confirmTypeSelection() {
+        const selected = document.querySelector('input[name="type-select"]:checked');
+        if (!selected) {
+          alert('Please select a tournament type');
+          return;
+        }
+        
+        const categories = getCategories();
+        if (typeSelectionCategoryIndex !== null && categories[typeSelectionCategoryIndex]) {
+          categories[typeSelectionCategoryIndex].tournamentType = selected.value;
+          saveCategories(categories);
+          loadCategories();
+        }
+        
+        closeTypeSelectionModal();
+      }
+
+      // Plays From (Tee) selection modal functionality
+      let teeSelectionCategoryIndex = null;
+      let teeSelectionIsMixed = false;
+
+      function setupPlaysFromEditing() {
+        document.querySelectorAll('.plays-from-cell').forEach(cell => {
+          cell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(cell.dataset.index, 10);
+            const categories = getCategories();
+            const cat = categories[index];
+            if (!cat) return;
+            
+            const isMixedGender = !cat.gender || cat.gender === '' || cat.gender === 'Any';
+            openTeeSelectionModal(index, cat, isMixedGender);
+          });
+        });
+      }
+
+      function openTeeSelectionModal(categoryIndex, category, isMixedGender) {
+        teeSelectionCategoryIndex = categoryIndex;
+        teeSelectionIsMixed = isMixedGender;
+        
+        // Get available tees from tournament
+        const tournament = getTournament();
+        const courses = getCourses();
+        
+        if (!tournament || !tournament.meta || !tournament.meta.roundsData) {
+          alert('No tournament data available');
+          return;
+        }
+        
+        // Get tees from the first round's course
+        const roundData = tournament.meta.roundsData[0];
+        if (!roundData || !roundData.course) {
+          alert('No course configured for this tournament');
+          return;
+        }
+        
+        const course = courses.find(c => c.courseId === roundData.course);
+        if (!course || !course.tees || !course.teeIds) {
+          alert('Course data not found');
+          return;
+        }
+        
+        const singleContainer = document.getElementById('tee-single-container');
+        const dualContainer = document.getElementById('tee-dual-container');
+        const modalTitle = document.getElementById('tee-modal-title');
+        
+        if (isMixedGender) {
+          // Show dual gender selection
+          singleContainer.style.display = 'none';
+          dualContainer.style.display = 'block';
+          modalTitle.textContent = 'Select Tees by Gender';
+          
+          const menContainer = document.getElementById('tee-men-options');
+          const womenContainer = document.getElementById('tee-women-options');
+          menContainer.innerHTML = '';
+          womenContainer.innerHTML = '';
+          
+          // Add "No specific tee" option for both
+          menContainer.innerHTML = `
+            <div class="tee-option">
+              <input type="radio" id="tee-men-none" name="tee-men-select" value="">
+              <label for="tee-men-none">Use default (from tournament)</label>
+            </div>
+          `;
+          womenContainer.innerHTML = `
+            <div class="tee-option">
+              <input type="radio" id="tee-women-none" name="tee-women-select" value="">
+              <label for="tee-women-none">Use default (from tournament)</label>
+            </div>
+          `;
+          
+          // Populate men's and women's tees
+          course.tees.forEach((teeName, idx) => {
+            const teeGender = course.genders ? course.genders[idx] : null;
+            const teeValue = `${course.courseId}||${idx}`;
+            
+            // Get slope/rating info
+            let menRatingInfo = '';
+            let womenRatingInfo = '';
+            if (course.teeData && course.teeData[idx]) {
+              const teeData = course.teeData[idx];
+              if (teeData.ratings) {
+                menRatingInfo = teeData.ratings.men ? ` (CR: ${teeData.ratings.men.rating18}, SR: ${teeData.ratings.men.slope18})` : '';
+                womenRatingInfo = teeData.ratings.women ? ` (CR: ${teeData.ratings.women.rating18}, SR: ${teeData.ratings.women.slope18})` : '';
+              } else {
+                const info = teeData.rating18 && teeData.slope18 ? ` (CR: ${teeData.rating18}, SR: ${teeData.slope18})` : '';
+                menRatingInfo = info;
+                womenRatingInfo = info;
+              }
+            }
+            
+            // Men's tees (M or B)
+            if (!teeGender || teeGender === 'M' || teeGender === 'B') {
+              const teeDiv = document.createElement('div');
+              teeDiv.className = 'tee-option';
+              teeDiv.innerHTML = `
+                <input type="radio" id="tee-men-${idx}" name="tee-men-select" value="${teeValue}">
+                <label for="tee-men-${idx}">${escapeHtml(teeName)}${menRatingInfo}</label>
+              `;
+              menContainer.appendChild(teeDiv);
+            }
+            
+            // Women's tees (F or B)
+            if (!teeGender || teeGender === 'F' || teeGender === 'B') {
+              const teeDiv = document.createElement('div');
+              teeDiv.className = 'tee-option';
+              teeDiv.innerHTML = `
+                <input type="radio" id="tee-women-${idx}" name="tee-women-select" value="${teeValue}">
+                <label for="tee-women-${idx}">${escapeHtml(teeName)}${womenRatingInfo}</label>
+              `;
+              womenContainer.appendChild(teeDiv);
+            }
+          });
+          
+          // Set current selections
+          document.querySelectorAll('input[name="tee-men-select"]').forEach(radio => {
+            radio.checked = (radio.value === (category.playsFromMen || ''));
+          });
+          document.querySelectorAll('input[name="tee-women-select"]').forEach(radio => {
+            radio.checked = (radio.value === (category.playsFromWomen || ''));
+          });
+          
+        } else {
+          // Show single gender selection
+          singleContainer.style.display = 'block';
+          dualContainer.style.display = 'none';
+          modalTitle.textContent = 'Select Tee';
+          
+          const container = document.getElementById('tee-options-container');
+          container.innerHTML = '';
+          
+          // Add "No specific tee" option
+          const noTeeDiv = document.createElement('div');
+          noTeeDiv.className = 'tee-option';
+          noTeeDiv.innerHTML = `
+            <input type="radio" id="tee-none" name="tee-select" value="">
+            <label for="tee-none">Use default (from tournament)</label>
+          `;
+          container.appendChild(noTeeDiv);
+          
+          // Build tee options based on category gender
+          const genderLower = (category.gender || '').toLowerCase();
+          
+          course.tees.forEach((teeName, idx) => {
+            const teeGender = course.genders ? course.genders[idx] : null;
+            
+            // Filter by gender
+            let shouldShow = true;
+            if (genderLower === 'male' || genderLower === 'm') {
+              shouldShow = !teeGender || teeGender === 'M' || teeGender === 'B';
+            } else if (genderLower === 'female' || genderLower === 'f') {
+              shouldShow = !teeGender || teeGender === 'F' || teeGender === 'B';
+            }
+            
+            if (!shouldShow) return;
+            
+            const teeValue = `${course.courseId}||${idx}`;
+            
+            // Get slope/rating info for display
+            let ratingInfo = '';
+            if (course.teeData && course.teeData[idx]) {
+              const teeData = course.teeData[idx];
+              if (teeData.ratings) {
+                if (genderLower === 'male' || genderLower === 'm') {
+                  ratingInfo = teeData.ratings.men ? ` (CR: ${teeData.ratings.men.rating18}, SR: ${teeData.ratings.men.slope18})` : '';
+                } else if (genderLower === 'female' || genderLower === 'f') {
+                  ratingInfo = teeData.ratings.women ? ` (CR: ${teeData.ratings.women.rating18}, SR: ${teeData.ratings.women.slope18})` : '';
+                }
+              } else {
+                ratingInfo = teeData.rating18 && teeData.slope18 ? ` (CR: ${teeData.rating18}, SR: ${teeData.slope18})` : '';
+              }
+            }
+            
+            const teeDiv = document.createElement('div');
+            teeDiv.className = 'tee-option';
+            teeDiv.innerHTML = `
+              <input type="radio" id="tee-${idx}" name="tee-select" value="${teeValue}">
+              <label for="tee-${idx}">${escapeHtml(teeName)}${ratingInfo}</label>
+            `;
+            container.appendChild(teeDiv);
+          });
+          
+          // Set current selection
+          document.querySelectorAll('input[name="tee-select"]').forEach(radio => {
+            radio.checked = (radio.value === (category.playsFrom || ''));
+          });
+        }
+        
+        document.getElementById('tee-selection-modal').classList.add('active');
+      }
+
+      function closeTeeSelectionModal() {
+        document.getElementById('tee-selection-modal').classList.remove('active');
+        teeSelectionCategoryIndex = null;
+        teeSelectionIsMixed = false;
+      }
+
+      function confirmTeeSelection() {
+        const categories = getCategories();
+        if (teeSelectionCategoryIndex === null || !categories[teeSelectionCategoryIndex]) {
+          closeTeeSelectionModal();
+          return;
+        }
+        
+        const cat = categories[teeSelectionCategoryIndex];
+        let changed = false;
+        
+        if (teeSelectionIsMixed) {
+          // Dual gender selection
+          const menSelected = document.querySelector('input[name="tee-men-select"]:checked');
+          const womenSelected = document.querySelector('input[name="tee-women-select"]:checked');
+          
+          if (!menSelected || !womenSelected) {
+            alert('Please select tees for both men and women');
+            return;
+          }
+          
+          const oldMenTee = cat.playsFromMen;
+          const oldWomenTee = cat.playsFromWomen;
+          
+          cat.playsFromMen = menSelected.value || undefined;
+          cat.playsFromWomen = womenSelected.value || undefined;
+          // Clear single playsFrom for mixed categories
+          cat.playsFrom = undefined;
+          
+          changed = (oldMenTee !== cat.playsFromMen || oldWomenTee !== cat.playsFromWomen);
+        } else {
+          // Single gender selection
+          const selected = document.querySelector('input[name="tee-select"]:checked');
+          
+          if (selected === null) {
+            alert('Please select a tee');
+            return;
+          }
+          
+          const oldTee = cat.playsFrom;
+          cat.playsFrom = selected.value || undefined;
+          // Clear dual tees for single gender categories
+          cat.playsFromMen = undefined;
+          cat.playsFromWomen = undefined;
+          
+          changed = (oldTee !== cat.playsFrom);
+        }
+        
+        saveCategories(categories);
+        
+        // Update player tees and handicaps if tee changed
+        if (changed) {
+          updatePlayerTeesAndHandicaps();
+        }
+        
+        loadCategories();
+        closeTeeSelectionModal();
       }
 
       // Get admitted players for this tournament
@@ -949,10 +1488,19 @@
         document.getElementById('tournament-type').value = cat.tournamentType || '';
         document.getElementById('result-only').checked = cat.isResultOnly || false;
         
-        // Load tees and set plays from
+        // Load tees and set plays from (handles both single and dual gender)
         loadAvailableTees(cat.gender || '');
+        
+        const isMixedGender = !cat.gender || cat.gender === '' || cat.gender === 'Any';
         setTimeout(() => {
-          document.getElementById('plays-from').value = cat.playsFrom || '';
+          if (isMixedGender) {
+            // Set dual tees for mixed gender
+            document.getElementById('plays-from-men').value = cat.playsFromMen || '';
+            document.getElementById('plays-from-women').value = cat.playsFromWomen || '';
+          } else {
+            // Set single tee for specific gender
+            document.getElementById('plays-from').value = cat.playsFrom || '';
+          }
         }, 100);
         
         // Update form UI
@@ -971,6 +1519,14 @@
         const cat = categories[index];
         
         if (!cat) return;
+        
+        // Prevent deletion of Team category in team tournaments
+        const tournament = getTournament();
+        const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
+        if (isTeamTournament && (cat.code === 'TEAM' || cat.name.toLowerCase() === 'team')) {
+          alert('The Team category cannot be deleted in a team tournament.');
+          return;
+        }
         
         if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
           categories.splice(index, 1);
@@ -1001,8 +1557,21 @@
         const ageMax = document.getElementById('age-max').value;
         const gender = document.getElementById('gender').value;
         const tournamentType = document.getElementById('tournament-type').value;
-        const playsFrom = document.getElementById('plays-from').value;
         const isResultOnly = document.getElementById('result-only').checked;
+        
+        // Get tee values based on gender
+        const isMixedGender = !gender || gender === '' || gender === 'Any';
+        let playsFrom, playsFromMen, playsFromWomen;
+        
+        if (isMixedGender) {
+          playsFromMen = document.getElementById('plays-from-men').value;
+          playsFromWomen = document.getElementById('plays-from-women').value;
+          playsFrom = undefined; // Clear single tee for mixed categories
+        } else {
+          playsFrom = document.getElementById('plays-from').value;
+          playsFromMen = undefined; // Clear dual tees for single gender categories
+          playsFromWomen = undefined;
+        }
 
         if (!name) {
           alert('Please enter a category name.');
@@ -1029,6 +1598,8 @@
             gender: gender || undefined,
             tournamentType: tournamentType || undefined,
             playsFrom: playsFrom || undefined,
+            playsFromMen: playsFromMen || undefined,
+            playsFromWomen: playsFromWomen || undefined,
             isResultOnly: isResultOnly
           };
           
@@ -1051,6 +1622,8 @@
             gender: gender || undefined,
             tournamentType: tournamentType || undefined,
             playsFrom: playsFrom || undefined,
+            playsFromMen: playsFromMen || undefined,
+            playsFromWomen: playsFromWomen || undefined,
             isResultOnly: isResultOnly
           };
           categories.push(newCategory);
@@ -1126,7 +1699,7 @@
                   genderMatch = true;
                 }
                 
-                console.log(`  Testing category ${cat.name}: genderMatch=${genderMatch}, gender=${catGender}, playsFrom=${cat.playsFrom}, isResultOnly=${cat.isResultOnly}`);
+                console.log(`  Testing category ${cat.name}: genderMatch=${genderMatch}, gender=${catGender}, playsFrom=${cat.playsFrom}, playsFromMen=${cat.playsFromMen}, playsFromWomen=${cat.playsFromWomen}, isResultOnly=${cat.isResultOnly}`);
                 
                 if (genderMatch && playerMatchesCategory(player, cat)) {
                   allMatchingCategories.push(cat.code);
@@ -1148,13 +1721,36 @@
               }
               
               // If player matches a tee-assigning category, update tee and PHCP
-              if (teeAssigningCategory && teeAssigningCategory.playsFrom) {
-                const oldTee = player.tee;
-                const oldPhcp = player.phcp;
-                player.tee = teeAssigningCategory.playsFrom;
+              if (teeAssigningCategory) {
+                const playerGender = (player.gender || '').toLowerCase();
+                const isMixedCategory = !teeAssigningCategory.gender || teeAssigningCategory.gender === '' || teeAssigningCategory.gender === 'Any';
                 
-                // PHCP is already calculated during admission, so we don't recalculate it here
-                updatedCount++;
+                let newTee = null;
+                
+                if (isMixedCategory && (teeAssigningCategory.playsFromMen || teeAssigningCategory.playsFromWomen)) {
+                  // Mixed category with separate tees - choose based on player gender
+                  if (playerGender === 'm' || playerGender === 'male' || playerGender === 'e') {
+                    newTee = teeAssigningCategory.playsFromMen;
+                  } else if (playerGender === 'f' || playerGender === 'female' || playerGender === 'k') {
+                    newTee = teeAssigningCategory.playsFromWomen;
+                  }
+                } else if (teeAssigningCategory.playsFrom) {
+                  // Single gender category with single tee
+                  newTee = teeAssigningCategory.playsFrom;
+                }
+                
+                if (newTee) {
+                  const oldTee = player.tee;
+                  const oldPhcp = player.phcp;
+                  player.tee = newTee;
+                  
+                  // Recalculate PHCP with new tee
+                  const phcpString = calculatePlayingHcpForPlayer(player, roundId);
+                  player.phcp = phcpString.startsWith('+') ? parseInt(phcpString.substring(1)) * -1 : (phcpString === '' ? null : parseInt(phcpString));
+                  
+                  console.log(`✓ Player ${player.firstName} ${player.lastName}: tee=${player.tee} (was ${oldTee}), phcp=${player.phcp} (was ${oldPhcp}), category=${teeAssigningCategory.name}`);
+                  updatedCount++;
+                }
               } else {
                 // No category match - reset to default tee based on gender
                 const roundIndex = roundIds.indexOf(roundId);
@@ -1189,6 +1785,13 @@
           
           localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
           console.log(`Updated ${updatedCount} players with tees and playing handicaps`);
+          
+          // Sync to Firebase
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('admittedPlayers', admittedData).then(() => {
+              console.log('✓ Admitted players synced to Firebase');
+            }).catch(e => console.log('Firebase sync failed:', e));
+          }
           
           // Verify the data was saved
           const savedData = JSON.parse(localStorage.getItem('admittedPlayers'));
@@ -1425,6 +2028,7 @@
             handicapMax: maxHcp,
             gender: '',
             playsFrom: undefined,
+            tournamentType: 'Stableford Net',
             isResultOnly: false
           });
         }
@@ -1495,6 +2099,7 @@
               handicapMax: maxHcp,
               gender: 'Male',
               playsFrom: playsFrom,
+              tournamentType: 'Stableford Net',
               isResultOnly: false
             });
           }
@@ -1534,6 +2139,7 @@
               handicapMax: maxHcp,
               gender: 'Female',
               playsFrom: playsFrom,
+              tournamentType: 'Stableford Net',
               isResultOnly: false
             });
           }

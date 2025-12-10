@@ -118,7 +118,6 @@
         <h2>Category Results Configuration</h2>
         <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
           <button class="btn" style="background: linear-gradient(180deg, #f59e0b, #d97706);" onclick="openWinnersList()">🏆 Winners List</button>
-          <button class="btn" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);" onclick="openUntieCriteria()">⚖️ Untie Criteria</button>
           <button class="btn" style="background: linear-gradient(180deg, #ec4899, #db2777);" onclick="openPlayOff()">🏌️ Play Off Results</button>
         </div>
         <div id="categories-list">
@@ -202,6 +201,10 @@
           const showPhcp = savedPrefs?.phcp !== undefined ? savedPrefs.phcp : true;
           const showToPar = savedPrefs?.topar !== undefined ? savedPrefs.topar : false;
           
+          // Check if this is the Team category
+          const isTeamCategory = cat.code === 'TEAM';
+          const untieCriteriaLabel = isTeamCategory ? '⚖️ Team Untie Criteria' : '⚖️ Untie Criteria';
+          
           html += `
             <div class="category-item">
               <div class="category-header">
@@ -243,7 +246,10 @@
                 </div>
               </div>
 
-              <button class="btn btn-show" onclick="showResults(${index})">Show Results</button>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-show" onclick="showResults(${index})">Show Results</button>
+                <button class="btn" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);" onclick="openUntieCriteria('${cat.code}')">${untieCriteriaLabel}</button>
+              </div>
             </div>
           `;
         });
@@ -454,8 +460,12 @@
         window.open(`winners_list.html?${params.toString()}`, '_blank');
       }
 
-      function openUntieCriteria() {
-        window.location.href = `untie_criteria.html?tournamentId=${tournamentId}`;
+      function openUntieCriteria(categoryCode) {
+        if (categoryCode === 'TEAM') {
+          window.location.href = `untie_criteria.html?tournamentId=${tournamentId}&categoryCode=TEAM`;
+        } else {
+          window.location.href = `untie_criteria.html?tournamentId=${tournamentId}`;
+        }
       }
 
       function openPlayOff() {

@@ -62,10 +62,16 @@
       
       .action-buttons {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 10px;
         max-width: 1200px;
         margin: 0 auto;
+      }
+      
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
       }
       
       .tournaments-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
@@ -78,7 +84,7 @@
       tr { cursor: pointer; }
       tr.selected { background: #dbeafe; }
       tbody tr:hover { background: #f0f9ff; }
-      .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; }
+      .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; flex: 0 0 calc((100% - 60px) / 7); }
       .btn:active { transform: translateY(1px); }
       .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:1000}
       .modal-overlay.active{display:flex}
@@ -102,17 +108,26 @@
     <!-- Action Buttons -->
     <div class="action-buttons-container">
       <div class="action-buttons">
-        <button class="btn" id="btn-new-tournament">New Tournament</button>
-        <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
-        <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
-        <button class="btn" id="btn-admissions">Admissions</button>
-        <button class="btn" id="btn-draw">Draw</button>
-        <button class="btn" id="btn-categories">Categories</button>
-        <button class="btn" id="btn-scores">Scores</button>
-        <button class="btn" id="btn-results">Results</button>
-        <button class="btn" id="btn-documents">Documents</button>
-        <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
-        <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
+        <!-- First Row -->
+        <div class="button-row">
+          <button class="btn" id="btn-new-tournament">New Tournament</button>
+          <button class="btn" id="btn-admissions">Admissions</button>
+          <button class="btn" id="btn-categories">Categories</button>
+          <button class="btn" id="btn-draw">Draw</button>
+          <button class="btn" id="btn-documents">Documents</button>
+          <button class="btn" id="btn-scores">Scores</button>
+          <button class="btn" id="btn-results">Results</button>
+        </div>
+        <!-- Second Row -->
+        <div class="button-row">
+          <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
+          <button class="btn" id="btn-define-teams">Define Teams</button>
+          <button class="btn" style="visibility: hidden;"></button>
+          <button class="btn" style="visibility: hidden;"></button>
+          <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
+          <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
+          <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
+        </div>
       </div>
     </div>
     
@@ -260,7 +275,8 @@
           const roundsCount = (t.meta && t.meta.rounds) ? parseInt(t.meta.rounds,10) : (t.meta && Array.isArray(t.meta.roundsData) ? t.meta.roundsData.length : 1);
           const displayDate = formatTournamentDate(t);
           const coursesDisplay = buildCoursesDisplay(t);
-          row.innerHTML = `<td>${escapeHtml(tournamentId)}</td><td>${displayDate}</td><td>${escapeHtml(t.name)}</td><td>${roundsCount}</td><td>${escapeHtml(coursesDisplay)}</td><td>${escapeHtml(t.type)}</td>`;
+          const displayType = formatTournamentType(t);
+          row.innerHTML = `<td>${escapeHtml(tournamentId)}</td><td>${displayDate}</td><td>${escapeHtml(t.name)}</td><td>${roundsCount}</td><td>${escapeHtml(coursesDisplay)}</td><td>${escapeHtml(displayType)}</td>`;
           row.dataset.index = index;
           row.dataset.origIndex = t._origIndex;
           row.addEventListener('click', () => selectTournament(index, row));
@@ -304,6 +320,19 @@
           return courseObj.shortName || courseObj.fullName || courseObj.name || id;
         });
         return mapped.join(' / ');
+      }
+      
+      function formatTournamentType(t){
+        // If type already includes display info (like "Stroke Play" or "Stroke Play (Teams)"), return as-is
+        if (t.type && (t.type.includes('Stroke') || t.type.includes('Match'))) {
+          return t.type;
+        }
+        // Convert internal 'match' type to display name
+        if (t.type === 'match') {
+          const isTeams = t.meta && t.meta.teamsTournament === 'yes';
+          return isTeams ? 'Match Play (Teams)' : 'Match Play';
+        }
+        return t.type || '-';
       }
 
       // Simple escape to avoid injecting raw HTML from stored names/types
@@ -507,6 +536,28 @@
           const roundId = roundIds[0] || `${selected.tournamentId}_R1`;
           window.location.href = `admissions.html?roundId=${encodeURIComponent(roundId)}`;
         }
+      });
+
+      document.getElementById('btn-define-teams').addEventListener('click', () => {
+        if (selectedTournamentOrigIndex === null) {
+          alert('Please select a tournament from the table above.');
+          return;
+        }
+        const list = getTournaments();
+        const selected = list[selectedTournamentOrigIndex];
+        if (!selected) {
+          alert('Selected tournament not found.');
+          return;
+        }
+        // Check if it's a teams tournament
+        const isTeamsTournament = selected.meta?.teamsTournament === 'yes' || 
+                                  selected.type?.includes('Teams');
+        if (!isTeamsTournament) {
+          alert('This is not a teams tournament. Please select a teams tournament or create a new teams tournament first.');
+          return;
+        }
+        // Navigate to teams definition page (to be created)
+        window.location.href = `teams.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
       });
 
       document.getElementById('btn-draw').addEventListener('click', () => {
