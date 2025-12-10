@@ -5,28 +5,82 @@
   <title>Debug Storage</title>
   <style>
     body { font-family: system-ui; padding: 20px; max-width: 1200px; margin: 0 auto; }
-    pre { background: #f5f5f5; padding: 15px; overflow: auto; border-radius: 8px; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; border-radius: 8px; max-height: 400px; }
     button { padding: 10px 20px; margin: 10px 5px 10px 0; cursor: pointer; }
     .danger { background: #dc2626; color: white; border: none; border-radius: 6px; }
     .primary { background: #0b6efd; color: white; border: none; border-radius: 6px; }
+    .success { background: #16a34a; color: white; border: none; border-radius: 6px; }
+    .warning { background: #f59e0b; color: white; border: none; border-radius: 6px; }
+    h2 { margin-top: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+    .status { padding: 10px; border-radius: 6px; margin: 10px 0; }
+    .status.ok { background: #dcfce7; color: #166534; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .status.warning { background: #fef3c7; color: #92400e; }
   </style>
 </head>
 <body>
-  <h1>LocalStorage Debug</h1>
+  <h1>🔍 Storage Debug Tool</h1>
   
-  <button class="primary" onclick="loadData()">Refresh Data</button>
-  <button class="danger" onclick="clearAll()">Clear ALL localStorage</button>
+  <div class="status" id="firebase-status">Checking Firebase connection...</div>
   
-  <h2>All localStorage Keys</h2>
-  <pre id="keys-output"></pre>
+  <h2>Actions</h2>
+  <button class="primary" onclick="loadData()">🔄 Refresh Local Data</button>
+  <button class="success" onclick="loadFromFirebase()">☁️ Load from Firebase</button>
+  <button class="warning" onclick="syncToFirebaseAll()">⬆️ Push Local to Firebase</button>
+  <button class="danger" onclick="clearAll()">🗑️ Clear ALL localStorage</button>
   
-  <h2>Tournaments Data</h2>
+  <h2>📊 Scores Data (by Tournament Round)</h2>
+  <pre id="scores-output"></pre>
+  
+  <h2>🎯 Admitted Players (by Tournament Round)</h2>
+  <pre id="admitted-output"></pre>
+  
+  <h2>🏆 Tournaments</h2>
   <pre id="tournaments-output"></pre>
   
-  <h2>All Data</h2>
-  <pre id="all-output"></pre>
+  <h2>☁️ Firebase Scores Data</h2>
+  <pre id="firebase-scores-output">Click "Load from Firebase" to check</pre>
+  
+  <h2>📁 All localStorage Keys</h2>
+  <pre id="keys-output"></pre>
 
+  <!-- Firebase SDK - load first -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  
   <script>
+    let db = null;
+    
+    // Initialize Firebase directly here
+    const firebaseConfig = {
+      apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+      authDomain: "gtm-management-6350e.firebaseapp.com",
+      databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com/",
+      projectId: "gtm-management-6350e",
+      storageBucket: "gtm-management-6350e.firebasestorage.app",
+      messagingSenderId: "461806742170",
+      appId: "1:461806742170:web:9a2af43d50c0a26718cd23"
+    };
+    
+    function initFirebaseDebug() {
+      try {
+        if (typeof firebase === 'undefined') {
+          throw new Error('Firebase SDK not loaded');
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.database();
+        document.getElementById('firebase-status').className = 'status ok';
+        document.getElementById('firebase-status').textContent = '✓ Firebase connected - Ready to sync';
+        console.log('Firebase initialized successfully');
+      } catch (e) {
+        document.getElementById('firebase-status').className = 'status error';
+        document.getElementById('firebase-status').textContent = '✗ Firebase error: ' + e.message;
+        console.error('Firebase init error:', e);
+      }
+    }
+
     function loadData() {
       // Show all keys
       const keysOutput = document.getElementById('keys-output');
@@ -38,33 +92,169 @@
       }
       keysOutput.textContent += keys.join('\n') || 'No keys found';
 
-      // Show tournaments specifically
+      // Show scores specifically
+      const scoresOutput = document.getElementById('scores-output');
+      const scoresRaw = localStorage.getItem('scores');
+      if (scoresRaw) {
+        try {
+          const scores = JSON.parse(scoresRaw);
+          const roundIds = Object.keys(scores);
+          let summary = `Found ${roundIds.length} round(s) with scores:\n\n`;
+          
+          roundIds.forEach(roundId => {
+            const roundScores = scores[roundId];
+            const playerCount = Object.keys(roundScores).length;
+            const playersWithScores = Object.values(roundScores).filter(s => 
+              s.holes && s.holes.some(h => h !== '' && h !== null)
+            ).length;
+            summary += `📌 ${roundId}: ${playersWithScores}/${playerCount} players have scores\n`;
+          });
+          
+          summary += '\n--- Full Data ---\n';
+          summary += JSON.stringify(scores, null, 2);
+          scoresOutput.textContent = summary;
+        } catch (e) {
+          scoresOutput.textContent = 'Error parsing: ' + e.message;
+        }
+      } else {
+        scoresOutput.textContent = '⚠️ No "scores" key found in localStorage';
+      }
+
+      // Show admitted players
+      const admittedOutput = document.getElementById('admitted-output');
+      const admittedRaw = localStorage.getItem('admittedPlayers');
+      if (admittedRaw) {
+        try {
+          const admitted = JSON.parse(admittedRaw);
+          const roundIds = Object.keys(admitted);
+          let summary = `Found ${roundIds.length} round(s) with admitted players:\n\n`;
+          
+          roundIds.forEach(roundId => {
+            const players = admitted[roundId] || [];
+            summary += `📌 ${roundId}: ${players.length} players admitted\n`;
+          });
+          
+          summary += '\n--- Full Data ---\n';
+          summary += JSON.stringify(admitted, null, 2);
+          admittedOutput.textContent = summary;
+        } catch (e) {
+          admittedOutput.textContent = 'Error parsing: ' + e.message;
+        }
+      } else {
+        admittedOutput.textContent = '⚠️ No "admittedPlayers" key found in localStorage';
+      }
+
+      // Show tournaments
       const tournamentsOutput = document.getElementById('tournaments-output');
       const tournamentsRaw = localStorage.getItem('tournaments');
       if (tournamentsRaw) {
         try {
           const tournaments = JSON.parse(tournamentsRaw);
-          tournamentsOutput.textContent = JSON.stringify(tournaments, null, 2);
+          let summary = `Found ${tournaments.length} tournament(s):\n\n`;
+          
+          tournaments.forEach(t => {
+            const roundIds = t.meta?.roundIds || [t.tournamentId + '-1'];
+            summary += `📌 ${t.tournamentId}: ${t.name} (${roundIds.length} round(s): ${roundIds.join(', ')})\n`;
+          });
+          
+          summary += '\n--- Full Data ---\n';
+          summary += JSON.stringify(tournaments, null, 2);
+          tournamentsOutput.textContent = summary;
         } catch (e) {
-          tournamentsOutput.textContent = 'Error parsing: ' + e.message + '\n\nRaw value:\n' + tournamentsRaw;
+          tournamentsOutput.textContent = 'Error parsing: ' + e.message;
         }
       } else {
-        tournamentsOutput.textContent = 'No "tournaments" key found in localStorage';
+        tournamentsOutput.textContent = '⚠️ No "tournaments" key found in localStorage';
       }
+    }
 
-      // Show all data
-      const allOutput = document.getElementById('all-output');
-      const allData = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const value = localStorage.getItem(key);
-        try {
-          allData[key] = JSON.parse(value);
-        } catch (e) {
-          allData[key] = value;
-        }
+    async function loadFromFirebase() {
+      if (!db) {
+        alert('Firebase not connected. Please refresh the page.');
+        return;
       }
-      allOutput.textContent = JSON.stringify(allData, null, 2) || 'No data in localStorage';
+      
+      const firebaseScoresOutput = document.getElementById('firebase-scores-output');
+      firebaseScoresOutput.textContent = 'Loading from Firebase...';
+      
+      try {
+        const snapshot = await db.ref('scores').once('value');
+        const scores = snapshot.val();
+        
+        if (scores) {
+          const roundIds = Object.keys(scores);
+          let summary = `☁️ Firebase has ${roundIds.length} round(s) with scores:\n\n`;
+          
+          roundIds.forEach(roundId => {
+            const roundScores = scores[roundId];
+            const playerCount = Object.keys(roundScores).length;
+            const playersWithScores = Object.values(roundScores).filter(s => 
+              s.holes && s.holes.some(h => h !== '' && h !== null)
+            ).length;
+            summary += `📌 ${roundId}: ${playersWithScores}/${playerCount} players have scores\n`;
+          });
+          
+          summary += '\n--- Full Data ---\n';
+          summary += JSON.stringify(scores, null, 2);
+          firebaseScoresOutput.textContent = summary;
+          
+          // Ask to sync to localStorage
+          if (confirm('Do you want to restore Firebase scores to localStorage?')) {
+            localStorage.setItem('scores', JSON.stringify(scores));
+            alert('Scores restored from Firebase!');
+            loadData();
+          }
+        } else {
+          firebaseScoresOutput.textContent = '⚠️ No scores found in Firebase';
+        }
+      } catch (e) {
+        firebaseScoresOutput.textContent = 'Error: ' + e.message;
+        console.error('Firebase load error:', e);
+      }
+    }
+
+    async function syncToFirebaseAll() {
+      if (!db) {
+        alert('Firebase not connected. Please refresh the page.');
+        return;
+      }
+      
+      if (!confirm('This will upload your local data to Firebase (cloud). Continue?')) {
+        return;
+      }
+      
+      const statusEl = document.getElementById('firebase-status');
+      statusEl.textContent = 'Uploading to Firebase...';
+      statusEl.className = 'status warning';
+      
+      try {
+        const scores = JSON.parse(localStorage.getItem('scores') || '{}');
+        const admittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const players = JSON.parse(localStorage.getItem('players') || '[]');
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        
+        console.log('Uploading scores:', Object.keys(scores));
+        console.log('Uploading admittedPlayers:', Object.keys(admittedPlayers));
+        
+        await db.ref('scores').set(scores);
+        await db.ref('admittedPlayers').set(admittedPlayers);
+        await db.ref('tournaments').set(tournaments);
+        await db.ref('players').set(players);
+        await db.ref('courses').set(courses);
+        await db.ref('draws').set(draws);
+        
+        statusEl.textContent = '✓ Successfully uploaded to Firebase!';
+        statusEl.className = 'status ok';
+        
+        alert(`✓ Uploaded to Firebase:\n- ${Object.keys(scores).length} score rounds\n- ${Object.keys(admittedPlayers).length} admission rounds\n- ${tournaments.length} tournaments\n- ${players.length} players\n- ${courses.length} courses`);
+      } catch (e) {
+        statusEl.textContent = '✗ Upload failed: ' + e.message;
+        statusEl.className = 'status error';
+        alert('Error uploading to Firebase: ' + e.message);
+        console.error('Firebase upload error:', e);
+      }
     }
 
     function clearAll() {
@@ -75,8 +265,11 @@
       }
     }
 
-    // Load on page load
-    loadData();
+    // Initialize when page loads
+    window.addEventListener('DOMContentLoaded', function() {
+      initFirebaseDebug();
+      loadData();
+    });
   </script>
 </body>
 </html>

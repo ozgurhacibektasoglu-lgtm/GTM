@@ -203,7 +203,14 @@
           <button onclick="loadAllFromFirebase()" class="sync-btn" style="color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
             ↓ Pull from Cloud
           </button>
+          <button onclick="exportBackup()" class="sync-btn" style="color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
+            💾 Export Backup
+          </button>
+          <button onclick="importBackup()" class="sync-btn" style="color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 4px;">
+            📂 Import Backup
+          </button>
         </span>
+        <input type="file" id="backup-file-input" accept=".json" style="display: none;" onchange="handleBackupFile(event)">
       </p>
     </main>
 

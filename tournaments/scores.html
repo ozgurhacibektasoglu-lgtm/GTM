@@ -156,7 +156,8 @@
         </div>
       </section>
       
-      <button class="btn-save-scores" onclick="saveScores()">Save Scores</button>
+      <button class="btn-save-scores" onclick="saveScores()">Save Scores (F12)</button>
+      <button class="btn-save-scores" style="right: 180px; background: #3b82f6;" onclick="forceSyncToCloud()">☁️ Sync to Cloud</button>
     </main>
 
     <!-- Modal for score input -->
@@ -381,7 +382,14 @@
         localStorage.setItem('scores', JSON.stringify(scoresData));
         // Sync to Firebase if available
         if (typeof syncToFirebase !== 'undefined') {
-          syncToFirebase('scores', scoresData).catch(e => console.log('Firebase sync failed:', e));
+          syncToFirebase('scores', scoresData)
+            .then(() => console.log('✓ Scores synced to Firebase'))
+            .catch(e => {
+              console.error('Firebase sync failed:', e);
+              alert('Warning: Failed to sync scores to cloud. Saved locally only.');
+            });
+        } else {
+          console.warn('syncToFirebase not available');
         }
       }
 
@@ -1388,6 +1396,24 @@
           searchInput.focus();
           searchInput.select();
         }
+      }
+
+      function forceSyncToCloud() {
+        if (typeof syncToFirebase === 'undefined') {
+          alert('Firebase sync not available. Please refresh the page.');
+          return;
+        }
+        
+        const scoresData = getScoresData();
+        const roundCount = Object.keys(scoresData).length;
+        
+        syncToFirebase('scores', scoresData)
+          .then(() => {
+            alert(`✓ Successfully synced ${roundCount} round(s) to cloud!`);
+          })
+          .catch(e => {
+            alert('✗ Sync failed: ' + e.message);
+          });
       }
 
       // Search functionality

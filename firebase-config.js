@@ -165,16 +165,40 @@ async function loadTournamentsFromFirebase() {
 
 // Admitted Players sync functions
 async function loadAdmittedPlayersFromFirebase() {
-  const data = await syncFromFirebase('admittedPlayers');
-  if (data && typeof data === 'object') {
-    localStorage.setItem('admittedPlayers', JSON.stringify(data));
-    return data;
-  }
+  const firebaseData = await syncFromFirebase('admittedPlayers');
+  let localData = {};
   try {
-    return JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+    localData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
   } catch (err) {
-    return {};
+    localData = {};
   }
+  
+  if (firebaseData && typeof firebaseData === 'object') {
+    // Smart merge: keep data from both sources
+    const mergedData = { ...localData };
+    
+    for (const roundId in firebaseData) {
+      if (!mergedData[roundId] || mergedData[roundId].length === 0) {
+        mergedData[roundId] = firebaseData[roundId];
+      } else if (firebaseData[roundId] && firebaseData[roundId].length > mergedData[roundId].length) {
+        mergedData[roundId] = firebaseData[roundId];
+      }
+    }
+    
+    localStorage.setItem('admittedPlayers', JSON.stringify(mergedData));
+    
+    // Sync back if local had more data
+    const localRounds = Object.keys(localData);
+    const firebaseRounds = Object.keys(firebaseData);
+    const missingInFirebase = localRounds.filter(r => !firebaseRounds.includes(r));
+    if (missingInFirebase.length > 0) {
+      syncToFirebase('admittedPlayers', mergedData);
+    }
+    
+    return mergedData;
+  }
+  
+  return localData;
 }
 
 // Scores sync functions
@@ -194,12 +218,56 @@ function getScoresFromStorage() {
 }
 
 async function loadScoresFromFirebase() {
-  const data = await syncFromFirebase('scores');
-  if (data && typeof data === 'object') {
-    localStorage.setItem('scores', JSON.stringify(data));
-    return data;
+  const firebaseData = await syncFromFirebase('scores');
+  const localData = getScoresFromStorage();
+  
+  // Smart merge: keep data from both sources
+  if (firebaseData && typeof firebaseData === 'object') {
+    const mergedData = { ...localData };
+    
+    // Add/update rounds from Firebase
+    for (const roundId in firebaseData) {
+      if (!mergedData[roundId]) {
+        // Round doesn't exist locally, add it
+        mergedData[roundId] = firebaseData[roundId];
+      } else {
+        // Round exists in both - merge players, keeping the one with more scores
+        const localRound = mergedData[roundId];
+        const firebaseRound = firebaseData[roundId];
+        
+        for (const playerId in firebaseRound) {
+          if (!localRound[playerId]) {
+            localRound[playerId] = firebaseRound[playerId];
+          } else {
+            // Both have this player - keep the one with more filled holes
+            const localHoles = (localRound[playerId].holes || []).filter(h => h !== '' && h !== null).length;
+            const firebaseHoles = (firebaseRound[playerId].holes || []).filter(h => h !== '' && h !== null).length;
+            if (firebaseHoles > localHoles) {
+              localRound[playerId] = firebaseRound[playerId];
+            }
+          }
+        }
+      }
+    }
+    
+    // Save merged data back to both localStorage and Firebase
+    localStorage.setItem('scores', JSON.stringify(mergedData));
+    
+    // Check if we have local data that Firebase doesn't have
+    const localRounds = Object.keys(localData);
+    const firebaseRounds = Object.keys(firebaseData);
+    const missingInFirebase = localRounds.filter(r => !firebaseRounds.includes(r));
+    
+    if (missingInFirebase.length > 0) {
+      console.log('Found local scores not in Firebase:', missingInFirebase);
+      // Sync merged data back to Firebase
+      syncToFirebase('scores', mergedData);
+    }
+    
+    return mergedData;
   }
-  return getScoresFromStorage();
+  
+  return localData;
 }
 
 // Draws sync functions
