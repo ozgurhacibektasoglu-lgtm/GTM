@@ -819,41 +819,65 @@
 
       // Load admitted players
       async function loadAdmittedPlayers() {
-        // First load from localStorage
-        let admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
-        console.log('All admitted player keys:', Object.keys(admittedData));
+        console.log('=== Loading admitted players ===');
+        console.log('Looking for roundId:', currentRoundId);
         
-        admittedPlayers = admittedData[currentRoundId] || [];
-        console.log('Admitted players for', currentRoundId, ':', admittedPlayers.length);
-        
-        // Try alternative roundId format
-        if (admittedPlayers.length === 0) {
-          for (const key of Object.keys(admittedData)) {
-            if (key.endsWith(currentRoundId) || currentRoundId.endsWith(key) || 
-                key.includes(currentRoundId.replace(/^[A-Z]+-/, '')) ||
-                currentRoundId.includes(key.replace(/^[A-Z]+-/, ''))) {
-              console.log('Found admitted players with matching key:', key);
-              admittedPlayers = admittedData[key];
-              break;
-            }
-          }
-        }
-        
-        // Also try Firebase
+        // Try Firebase FIRST for cross-device sync
         if (db) {
           try {
             const snapshot = await db.ref('admittedPlayers').once('value');
             const firebaseData = snapshot.val() || {};
+            console.log('Firebase admittedPlayers keys:', Object.keys(firebaseData));
             
-            if (firebaseData[currentRoundId] && firebaseData[currentRoundId].length > admittedPlayers.length) {
+            // Try exact match first
+            if (firebaseData[currentRoundId] && Array.isArray(firebaseData[currentRoundId])) {
               admittedPlayers = firebaseData[currentRoundId];
+              console.log('Found admitted players in Firebase (exact match):', admittedPlayers.length);
+            } else {
+              // Try alternative key formats
+              for (const key of Object.keys(firebaseData)) {
+                if (key.includes(currentTournament?.tournamentId) || 
+                    currentRoundId.includes(key) || 
+                    key.includes(currentRoundId)) {
+                  if (Array.isArray(firebaseData[key])) {
+                    admittedPlayers = firebaseData[key];
+                    console.log('Found admitted players in Firebase (partial match):', key, admittedPlayers.length);
+                    break;
+                  }
+                }
+              }
             }
           } catch (e) {
             console.error('Firebase admitted players error:', e);
           }
         }
         
+        // Fallback to localStorage if Firebase didn't have data
+        if (admittedPlayers.length === 0) {
+          let admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          console.log('localStorage admittedPlayers keys:', Object.keys(admittedData));
+          
+          admittedPlayers = admittedData[currentRoundId] || [];
+          console.log('Admitted players from localStorage (exact):', admittedPlayers.length);
+          
+          // Try alternative roundId format
+          if (admittedPlayers.length === 0) {
+            for (const key of Object.keys(admittedData)) {
+              if (key.includes(currentTournament?.tournamentId) || 
+                  currentRoundId.includes(key) || 
+                  key.includes(currentRoundId)) {
+                admittedPlayers = admittedData[key];
+                console.log('Found admitted players in localStorage (partial match):', key, admittedPlayers.length);
+                break;
+              }
+            }
+          }
+        }
+        
         console.log('Final admitted players count:', admittedPlayers.length);
+        if (admittedPlayers.length > 0) {
+          console.log('Sample player:', admittedPlayers[0]);
+        }
       }
 
       // Get teams from tournament
