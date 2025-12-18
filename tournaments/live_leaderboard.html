@@ -1382,12 +1382,19 @@
 
       // Render leaderboard
       function renderLeaderboard(changedPlayers = []) {
+        console.log('=== renderLeaderboard called ===');
+        console.log('currentCategory:', currentCategory);
+        console.log('isTeamLeaderboardView():', isTeamLeaderboardView());
+        console.log('teamsTournament:', currentTournament?.meta?.teamsTournament);
+        
         // Check if we should show team leaderboard
         if (isTeamLeaderboardView()) {
+          console.log('Routing to renderTeamLeaderboard');
           renderTeamLeaderboard(changedPlayers);
           return;
         }
         
+        console.log('Rendering individual leaderboard');
         const container = document.getElementById('leaderboard-body');
         const noData = document.getElementById('no-data');
         
