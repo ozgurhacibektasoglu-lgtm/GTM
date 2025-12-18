@@ -1398,6 +1398,13 @@
         const container = document.getElementById('leaderboard-body');
         const noData = document.getElementById('no-data');
         
+        // Clear any team rows that might be left over from team view
+        const teamRows = container.querySelectorAll('.team-header-row, .team-player-row');
+        if (teamRows.length > 0) {
+          console.log('Clearing', teamRows.length, 'team rows from previous view');
+          container.innerHTML = ''; // Clear everything and rebuild
+        }
+        
         // If leaderboard is hidden, show message
         if (!isLeaderboardVisible) {
           container.innerHTML = '';
