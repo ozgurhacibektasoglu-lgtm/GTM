@@ -813,7 +813,7 @@
         await loadTournament();
         await loadPlayers();
         loadAdmissionCriteria();
-        loadExistingConfig();
+        await loadExistingConfig();
         setupEventListeners();
       });
       
@@ -1084,9 +1084,30 @@
       }
       
       // Load existing configuration
-      function loadExistingConfig() {
+      async function loadExistingConfig() {
         const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
-        const saved = localStorage.getItem(configKey);
+        let saved = null;
+        
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+          try {
+            const db = firebase.database();
+            const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${selectedRound}/config`).once('value');
+            const fbConfig = snapshot.val();
+            if (fbConfig) {
+              saved = JSON.stringify(fbConfig);
+              console.log('Loaded config from Firebase');
+            }
+          } catch (e) {
+            console.warn('Firebase config load failed:', e);
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!saved) {
+          saved = localStorage.getItem(configKey);
+          console.log('Loaded config from localStorage');
+        }
         
         if (saved) {
           try {
@@ -1132,15 +1153,35 @@
         }
         
         // Load registration stats
-        loadRegistrationStats();
+        await loadRegistrationStats();
       }
       
       // Load registration stats
-      function loadRegistrationStats() {
-        const registrationsKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
-        const registrations = JSON.parse(localStorage.getItem(registrationsKey) || '[]');
+      async function loadRegistrationStats() {
+        let registrations = [];
         
-        const maxPlayers = parseInt(document.getElementById('max-players').value) || 72;
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+          try {
+            const db = firebase.database();
+            const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${selectedRound}/registrations`).once('value');
+            const data = snapshot.val();
+            if (data) {
+              registrations = Object.values(data);
+              console.log('Loaded registrations from Firebase:', registrations.length);
+            }
+          } catch (e) {
+            console.warn('Firebase load failed:', e);
+          }
+        }
+        
+        // Fallback to localStorage
+        if (registrations.length === 0) {
+          const registrationsKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+          registrations = JSON.parse(localStorage.getItem(registrationsKey) || '[]');
+          console.log('Loaded registrations from localStorage:', registrations.length);
+        }
+        
         const admitted = registrations.filter(r => r.status === 'admitted').length;
         const reserve = registrations.filter(r => r.status === 'reserve').length;
         
