@@ -397,7 +397,7 @@
           document.querySelector('.btn-back-top').style.display = 'none';
           
           // Load tournament data (public access)
-          loadTournamentDetails();
+          await loadTournamentDetails();
           loadDocumentViewOnly();
         } else {
           // Admin/club mode - require auth
@@ -407,12 +407,10 @@
           if (typeof firebase !== 'undefined' && firebase.storage) {
             storage = firebase.storage();
             console.log('Firebase Storage initialized');
-          } else {
-            console.warn('Firebase Storage not available');
           }
           
           // Load tournament data
-          loadTournamentDetails();
+          await loadTournamentDetails();
           loadCurrentDocument();
           
           // Setup upload handlers
@@ -420,9 +418,29 @@
         }
       })();
       
-      function loadTournamentDetails() {
-        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-        currentTournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+      async function loadTournamentDetails() {
+        // Try Firebase first for public access / most up-to-date data
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+          try {
+            const db = firebase.database();
+            const snapshot = await db.ref('tournaments').once('value');
+            const data = snapshot.val();
+            if (data) {
+              const tournaments = Object.values(data);
+              currentTournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+              console.log('Loaded tournament from Firebase:', currentTournament?.name);
+            }
+          } catch (e) {
+            console.error('Firebase error:', e);
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!currentTournament) {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          currentTournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+          console.log('Loaded tournament from localStorage:', currentTournament?.name);
+        }
         
         if (!currentTournament) {
           showAlert('Tournament not found.', 'error');

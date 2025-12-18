@@ -757,16 +757,45 @@
     // Load tournament
     async function loadTournament() {
       try {
-        // Try localStorage first (faster)
-        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-        tournament = tournaments.find(t => t.tournamentId === tournamentId);
+        // Try Firebase first (most up-to-date for public access)
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref('tournaments').once('value');
+          const data = snapshot.val();
+          if (data) {
+            const tournaments = Object.values(data);
+            tournament = tournaments.find(t => t.tournamentId === tournamentId);
+            console.log('Loaded tournament from Firebase:', tournament?.name);
+          }
+        }
+        
+        // Fallback to localStorage if not found in Firebase
+        if (!tournament) {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          tournament = tournaments.find(t => t.tournamentId === tournamentId);
+          console.log('Loaded tournament from localStorage:', tournament?.name);
+        }
         
         if (tournament) {
           document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
           document.getElementById('tournament-date').textContent = formatDate(tournament.date || tournament.startDate);
+        } else {
+          console.error('Tournament not found:', tournamentId);
+          document.getElementById('tournament-name').textContent = 'Tournament Not Found';
         }
       } catch (e) {
         console.error('Error loading tournament:', e);
+        // Last resort - try localStorage
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          tournament = tournaments.find(t => t.tournamentId === tournamentId);
+          if (tournament) {
+            document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+            document.getElementById('tournament-date').textContent = formatDate(tournament.date || tournament.startDate);
+          }
+        } catch (e2) {
+          console.error('localStorage fallback also failed:', e2);
+        }
       }
     }
     
