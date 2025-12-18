@@ -882,12 +882,33 @@
       let allPlayers = [];
       let selectedPlayer = null;
       
+      // Helper to wait for Firebase initialization
+      function waitForFirebase(maxWait = 3000) {
+        return new Promise((resolve) => {
+          const startTime = Date.now();
+          const check = () => {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+              resolve(true);
+            } else if (Date.now() - startTime > maxWait) {
+              console.warn('Firebase initialization timeout, proceeding with localStorage');
+              resolve(false);
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+        });
+      }
+      
       // Initialize
       document.addEventListener('DOMContentLoaded', async function() {
         if (!tournamentId) {
           showError('Invalid Link', 'No tournament specified in the link.');
           return;
         }
+        
+        // Wait for Firebase to be ready
+        await waitForFirebase();
         
         await loadData();
         setupEventListeners();
@@ -899,7 +920,8 @@
           // Try to load from Firebase first
           let loadedFromFirebase = false;
           
-          if (typeof firebase !== 'undefined' && firebase.database) {
+          // Wait for Firebase to be ready (check for initialized app)
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
             try {
               const db = firebase.database();
               

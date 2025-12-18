@@ -756,31 +756,46 @@
     
     // Load tournament
     async function loadTournament() {
+      console.log('=== loadTournament START ===');
+      console.log('Looking for tournamentId:', tournamentId);
+      
       try {
         // Try Firebase first (most up-to-date for public access)
+        console.log('Firebase check:', typeof firebase !== 'undefined', firebase?.apps?.length > 0, typeof firebase?.database);
+        
         if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          console.log('Attempting Firebase load...');
           const db = firebase.database();
           const snapshot = await db.ref('tournaments').once('value');
           const data = snapshot.val();
+          console.log('Firebase tournaments data:', data);
+          console.log('Firebase tournaments count:', data ? Object.keys(data).length : 0);
+          
           if (data) {
             const tournaments = Object.values(data);
+            console.log('All tournament IDs in Firebase:', tournaments.map(t => t.tournamentId));
             tournament = tournaments.find(t => t.tournamentId === tournamentId);
-            console.log('Loaded tournament from Firebase:', tournament?.name);
+            console.log('Found in Firebase:', tournament?.name || 'NOT FOUND');
           }
+        } else {
+          console.log('Firebase not available or not ready');
         }
         
         // Fallback to localStorage if not found in Firebase
         if (!tournament) {
-          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-          tournament = tournaments.find(t => t.tournamentId === tournamentId);
-          console.log('Loaded tournament from localStorage:', tournament?.name);
+          console.log('Trying localStorage fallback...');
+          const localTournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          console.log('localStorage tournaments count:', localTournaments.length);
+          tournament = localTournaments.find(t => t.tournamentId === tournamentId);
+          console.log('Found in localStorage:', tournament?.name || 'NOT FOUND');
         }
         
         if (tournament) {
           document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
           document.getElementById('tournament-date').textContent = formatDate(tournament.date || tournament.startDate);
+          console.log('Tournament loaded successfully:', tournament.name);
         } else {
-          console.error('Tournament not found:', tournamentId);
+          console.error('Tournament not found anywhere! ID:', tournamentId);
           document.getElementById('tournament-name').textContent = 'Tournament Not Found';
         }
       } catch (e) {
@@ -797,6 +812,7 @@
           console.error('localStorage fallback also failed:', e2);
         }
       }
+      console.log('=== loadTournament END ===');
     }
     
     // Load admissions config
@@ -1811,10 +1827,30 @@
         btn.textContent = 'Register This Player';
       }
     }
+    // Helper to wait for Firebase initialization
+    function waitForFirebase(maxWait = 3000) {
+      return new Promise((resolve) => {
+        const startTime = Date.now();
+        const check = () => {
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            resolve(true);
+          } else if (Date.now() - startTime > maxWait) {
+            console.warn('Firebase initialization timeout, proceeding with localStorage');
+            resolve(false);
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+    }
     
     // Initialize
     async function init() {
       initFirebaseApp();
+      
+      // Wait for Firebase to be ready
+      await waitForFirebase();
       
       if (!tournamentId) {
         document.getElementById('tournament-name').textContent = 'Tournament Not Found';
