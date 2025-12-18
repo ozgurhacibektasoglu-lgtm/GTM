@@ -580,7 +580,7 @@
         
         const rows = document.querySelectorAll('#tournaments-body tr');
         rows.forEach((row, index) => {
-          const tournamentId = row.querySelector('td:first-child')?.textContent;
+          const tournamentId = row.dataset.tournamentId;
           if (tournamentId === lastTournamentId) {
             selectTournament(index, row);
             row.scrollIntoView({ block: 'center', behavior: 'smooth' });
