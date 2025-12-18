@@ -1859,6 +1859,9 @@
         const teamScoresCount = parseInt(currentTournament.meta?.teamScoresCount) || 3;
         
         console.log('Rendering team leaderboard:', teams.length, 'teams');
+        console.log('Teams data:', JSON.stringify(teams, null, 2));
+        console.log('Admitted players count:', admittedPlayers.length);
+        console.log('Admitted players IDs:', admittedPlayers.map(p => ({ reg: p.reg, playerId: p.playerId, name: p.firstName + ' ' + p.lastName })));
         
         if (teams.length === 0) {
           container.innerHTML = '';
@@ -1873,9 +1876,15 @@
         
         // Calculate team scores
         const teamResults = teams.map(team => {
+          console.log(`Processing team ${team.name}, players:`, team.players);
+          
           const teamPlayers = (team.players || []).map(playerId => {
-            return admittedPlayers.find(p => p.reg === playerId || p.playerId === playerId);
+            const found = admittedPlayers.find(p => p.reg === playerId || p.playerId === playerId);
+            console.log(`  Looking for player ${playerId}: ${found ? 'FOUND' : 'NOT FOUND'}`);
+            return found;
           }).filter(p => p);
+          
+          console.log(`  Team ${team.name} matched ${teamPlayers.length} players`);
           
           // Get scores for each player
           const playerScoresData = teamPlayers.map(player => {
