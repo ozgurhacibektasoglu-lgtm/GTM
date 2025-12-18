@@ -53,23 +53,43 @@
         transform: translateY(-1px);
       }
       
-      .players-container{max-width:1200px;margin:24px auto;padding:16px}
-      .players-grid{display:flex;gap:20px}
-      .left-panel{width:48%;background:#fff;border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,0.06);display:flex;flex-direction:column}
-      .right-panel{flex:1;background:#fff;border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-      .search-box{margin-bottom:10px}
-      .search-box input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef}
-      .players-table-wrapper{overflow:auto;border-radius:8px}
-      table.players{width:100%;border-collapse:collapse}
-      table.players th{position:sticky;top:0;background:#f8fafc;padding:10px 8px;border-bottom:1px solid #e6e9ef;font-weight:700;text-align:left}
-      table.players td{padding:10px 8px;border-bottom:1px solid #f1f5f9}
-      table.players tr:hover{background:#f8fbff}
-      th.sortable{cursor:pointer}
-      .sort-indicator{margin-left:6px;color:#475569;font-size:12px}
-      /* Make the left panel scroll area fit the viewport */
-      .players-grid { align-items: flex-start; }
-      .players-table-wrapper{max-height:calc(100vh - 220px);}
-      .selected{background:#dbeafe}
+      /* Action Buttons - Below Header */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      .btn { background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; flex: 0 0 calc((100% - 70px) / 8); }
+      .btn:active { transform: translateY(1px); }
+      
+      .players-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
+      .search-box { margin-bottom: 16px; }
+      .search-box input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 15px; }
+      .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); overflow-x: auto; }
+      table.players { width: 100%; border-collapse: collapse; }
+      table.players th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; position: sticky; top: 0; }
+      table.players th.sortable { cursor: pointer; user-select: none; }
+      table.players td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+      table.players tr { cursor: pointer; }
+      table.players tr.selected { background: #dbeafe; }
+      table.players tbody tr:hover { background: #f0f9ff; }
+      .sort-indicator { margin-left: 8px; font-size: 12px; color: #475569; }
+      #players-status { font-size: 13px; color: #475569; margin-bottom: 12px; }
     </style>
   </head>
   <body>
@@ -79,61 +99,49 @@
       <a href="../index.html" class="btn-back-top">← Back</a>
     </div>
     
-    <main class="players-container">
-      <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <p class="lead" style="margin:0">Manage registered players. Select a player from the list.</p>
-        <div style="display:flex;flex-direction:column;align-items:flex-end">
-          <label for="user-selector" style="font-size:12px;color:#64748b;margin-bottom:6px">Current user</label>
-          <select id="user-selector" style="padding:8px;border-radius:8px;border:1px solid #e6e9ef">
-            <option value="main">Main Admin</option>
-            <option value="klassis">Club: Klassis</option>
-            <option value="otherclub">Club: OtherClub</option>
-          </select>
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <div class="action-buttons">
+        <div class="button-row">
+          <button class="btn" id="btn-create-player">Create Player</button>
+          <button class="btn" id="btn-modify-player">Modify Player</button>
+          <button class="btn" id="btn-search-player">Search Player</button>
+          <button class="btn" id="btn-import-tgf">🇹🇷 Import from TGF</button>
+          <button class="btn" id="btn-payments">Payments</button>
+          <button class="btn" id="btn-export-players" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export</button>
+          <button class="btn" id="btn-import-players" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">📥 Import</button>
+          <button class="btn" id="btn-delete-player" style="background: linear-gradient(180deg, #dc2626, #991b1b);">🗑️ Delete Player</button>
+          <input id="import-file" type="file" accept="application/json" style="display:none" />
         </div>
-      </header>
-
-      <div class="players-grid">
-        <section class="left-panel">
-          <div class="search-box">
-            <input id="player-search" placeholder="Search by reg no, name, or home club" />
-          </div>
-          <div id="players-status" style="font-size:12px;color:#475569;margin-bottom:8px"></div>
-
-          <div class="players-table-wrapper">
-            <table class="players" id="players-table">
-              <thead>
-                    <tr>
-                      <th data-key="reg">Reg. No <span class="sort-indicator"></span></th>
-                      <th data-key="firstName">Name <span class="sort-indicator"></span></th>
-                      <th data-key="lastName">Last Name <span class="sort-indicator"></span></th>
-                      <th data-key="hcp">HCP <span class="sort-indicator"></span></th>
-                      <th data-key="age">Age <span class="sort-indicator"></span></th>
-                      <th data-key="gender">Gender <span class="sort-indicator"></span></th>
-                      <th data-key="mobile">Mobile <span class="sort-indicator"></span></th>
-                    </tr>
-              </thead>
-              <tbody id="players-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <aside class="right-panel" id="player-actions">
-          <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
-            <div style="display:flex;gap:8px;align-items:center">
-              <button id="btn-export-players" class="big-btn" style="padding:6px 10px">Export</button>
-              <button id="btn-import-players" class="big-btn" style="padding:6px 10px">Import</button>
-              <input id="import-file" type="file" accept="application/json" style="display:none" />
-            </div>
-            <button id="btn-create-player" class="big-btn" style="padding:8px 12px;max-width:220px">Create Player</button>
-            <button id="btn-modify-player" class="big-btn" style="padding:8px 12px;max-width:220px">Modify Player</button>
-            <button id="btn-delete-player" class="big-btn" style="padding:8px 12px;max-width:220px;background:#c0392b;color:#fff">🗑️ Delete Player</button>
-            <button id="btn-search-player" class="big-btn" style="padding:8px 12px;max-width:220px">Search Player</button>
-            <button id="btn-import-tgf" class="big-btn" style="padding:8px 12px;max-width:220px">🇹🇷 Import from TGF</button>
-            <button id="btn-payments" class="big-btn" style="padding:8px 12px;max-width:220px">Payments</button>
-          </div>
-          <div id="search-results" style="margin-top:18px"></div>
-        </aside>
       </div>
+    </div>
+    
+    <main class="players-container">
+      <div class="search-box">
+        <input id="player-search" placeholder="Search by reg no, name, or home club" />
+      </div>
+      <div id="players-status"></div>
+      
+      <div class="table-wrapper">
+        <table class="players" id="players-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-key="reg">Reg. No <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="firstName">First Name <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="lastName">Last Name <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="hcp">HCP <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="ageGroup">Age Group <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="age">Age <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="gender">Gender <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="homeClub">Home Club <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="mobile">Mobile <span class="sort-indicator"></span></th>
+            </tr>
+          </thead>
+          <tbody id="players-body"></tbody>
+        </table>
+      </div>
+      
+      <div id="search-results" style="margin-top:18px"></div>
     </main>
 
     <script>
@@ -215,17 +223,25 @@
             }
             
             const data = snapshot.val();
-            if (data && Array.isArray(data)) {
+            if (data) {
               const currentLocal = getPlayers();
+              
+              // Convert Firebase object format to array (or handle legacy array)
+              let playersArray = [];
+              if (Array.isArray(data)) {
+                playersArray = data; // Legacy format
+              } else if (typeof data === 'object') {
+                playersArray = Object.values(data); // New object format keyed by reg no
+              }
               
               // Only update if Firebase has MORE data than local
               // This prevents older Firebase data from overwriting newer local data
-              if (data.length > currentLocal.length) {
-                console.log('📥 Received update from cloud:', data.length, 'players (local had', currentLocal.length, ')');
-                localStorage.setItem('players', JSON.stringify(data));
+              if (playersArray.length > currentLocal.length) {
+                console.log('📥 Received update from cloud:', playersArray.length, 'players (local had', currentLocal.length, ')');
+                localStorage.setItem('players', JSON.stringify(playersArray));
                 loadPlayers(); // Refresh the display
               } else {
-                console.log('📥 Firebase has', data.length, 'players, local has', currentLocal.length, '- keeping local');
+                console.log('📥 Firebase has', playersArray.length, 'players, local has', currentLocal.length, '- keeping local');
               }
             }
           });
@@ -251,6 +267,7 @@
 
       function renderUserSelector(){
         const sel = document.getElementById('user-selector');
+        if (!sel) return; // Element removed in new layout
         const cur = getCurrentUser();
         sel.value = cur.id;
         sel.addEventListener('change', ()=>{
@@ -271,6 +288,57 @@
           return age;
         } catch (e) {
           return '';
+        }
+      }
+
+      // Get age group based on age
+      function getAgeGroup(age) {
+        if (!age && age !== 0) return '';
+        
+        try {
+          const prefsRaw = localStorage.getItem('preferences');
+          if (!prefsRaw) return '';
+          
+          const prefs = JSON.parse(prefsRaw);
+          const ageGroups = prefs.ageGroups || [];
+          
+          for (let group of ageGroups) {
+            if (age >= group.minAge && age <= group.maxAge) {
+              return group.name;
+            }
+          }
+        } catch(e) {
+          console.error('Error getting age group:', e);
+        }
+        
+        return '';
+      }
+
+      // Update age and age group for all players
+      function updateAllPlayersAgeGroups() {
+        try {
+          const players = getPlayers();
+          let updated = false;
+          
+          players.forEach(player => {
+            if (player.dob) {
+              const age = calculateAge(player.dob);
+              const ageGroup = getAgeGroup(age);
+              
+              if (player.age !== age || player.ageGroup !== ageGroup) {
+                player.age = age;
+                player.ageGroup = ageGroup;
+                updated = true;
+              }
+            }
+          });
+          
+          if (updated) {
+            savePlayers(players);
+            console.log('✓ Updated age groups for all players');
+          }
+        } catch(e) {
+          console.error('Error updating age groups:', e);
         }
       }
 
@@ -295,8 +363,12 @@
           return;
         }
 
-        // augment with orig index and calculated age
-        const augmented = list.map((p, i) => Object.assign({_origIndex:i, age: calculateAge(p.dob)}, p));
+        // augment with orig index and calculated age/age group
+        const augmented = list.map((p, i) => {
+          const age = calculateAge(p.dob);
+          const ageGroup = getAgeGroup(age);
+          return Object.assign({_origIndex:i, age: age, ageGroup: ageGroup}, p);
+        });
 
         const currentUser = getCurrentUser();
 
@@ -326,7 +398,9 @@
         filtered.forEach((p, idx)=>{
           const tr = document.createElement('tr');
           const mobileCell = p.mobile ? escapeHtml(p.mobile) : '';
-          tr.innerHTML = `<td>${escapeHtml(p.reg)}</td><td>${escapeHtml(p.firstName||'')}</td><td>${escapeHtml(p.lastName||'')}</td><td>${formatHcp(p.hcp)}</td><td>${escapeHtml(p.age||'')}</td><td>${escapeHtml(p.gender||'')}</td><td>${mobileCell}</td>`;
+          const homeClubCell = p.homeClub ? escapeHtml(p.homeClub) : (p.club ? escapeHtml(p.club) : '');
+          const ageGroupCell = p.ageGroup ? escapeHtml(p.ageGroup) : '';
+          tr.innerHTML = `<td>${escapeHtml(p.reg)}</td><td>${escapeHtml(p.firstName||'')}</td><td>${escapeHtml(p.lastName||'')}</td><td>${formatHcp(p.hcp)}</td><td>${ageGroupCell}</td><td>${escapeHtml(p.age||'')}</td><td>${escapeHtml(p.gender||'')}</td><td>${homeClubCell}</td><td>${mobileCell}</td>`;
           tr.dataset.index = idx; tr.dataset.origIndex = p._origIndex;
           tr.addEventListener('click', ()=>{ selectPlayer(p._origIndex, p); });
           tbody.appendChild(tr);
@@ -407,6 +481,12 @@
       // Modify selected player
       document.getElementById('btn-modify-player').addEventListener('click', ()=>{
         if(selectedPlayerIndex === null){ alert('Please select a player to modify.'); return }
+        const players = getPlayers();
+        if (!players[selectedPlayerIndex]) {
+          alert('Player not found. Please select a player from the table.');
+          return;
+        }
+        console.log('Modifying player at index:', selectedPlayerIndex, players[selectedPlayerIndex]);
         // navigate to new.html in edit mode
         window.location.href = 'new.html?edit=' + selectedPlayerIndex;
       });
@@ -484,6 +564,9 @@
       renderUserSelector();
       setCurrentUser(getCurrentUser());
       setupSorting();
+      
+      // Update age groups for all players (recalculate based on preferences)
+      updateAllPlayersAgeGroups();
       
       // Load players from localStorage first
       loadPlayers();

@@ -88,6 +88,29 @@
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      (async function(){
+        const { role } = await window.Auth.requireAuth();
+        // Hide or disable edit controls for non-admins
+        if (role !== 'admin'){
+          document.querySelectorAll('[data-admin-only]')?.forEach(el => {
+            el.setAttribute('disabled','true');
+            el.style.opacity = '0.6';
+            el.style.pointerEvents = 'none';
+            const note = document.createElement('div');
+            note.textContent = 'Admin only';
+            note.style.fontSize = '12px';
+            note.style.color = '#64748b';
+            el.parentElement?.appendChild(note);
+          });
+        }
+      })();
+    </script>
     <!-- Top Navigation -->
     <div class="top-nav">
       <h1>⛳ Courses</h1>

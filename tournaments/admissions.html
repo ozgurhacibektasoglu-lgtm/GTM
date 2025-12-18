@@ -12,8 +12,90 @@
     
     <link rel="stylesheet" href="../styles.css">
     <style>
-      body{padding-top:70px}
+      body{padding-top:0}
       .admissions-container{max-width:1400px;margin:16px auto;padding:16px}
+      
+      /* Top Navigation Bar */
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .top-nav h1 { margin: 0; color: white; font-size: 24px; font-weight: 700; }
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-back-top:hover { background: rgba(255,255,255,0.3); }
+      
+      /* Action Buttons Container */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-width: 1400px;
+        margin: 0 auto;
+        align-items: center;
+      }
+      .action-btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .action-btn:hover { transform: translateY(-1px); }
+      .action-btn-primary {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+      }
+      .action-btn-primary:hover { box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+      .action-btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+      }
+      .action-btn-danger:hover { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+      .action-btn-purple {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+      }
+      .action-btn-purple:hover { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+      .action-btn-blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+      }
+      .action-btn-blue:hover { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+      .action-btn-secondary {
+        background: white;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+      }
+      .action-btn-secondary:hover { background: #f1f5f9; }
+      
       .round-selector{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
       .round-selector label{display:block;font-weight:600;margin-bottom:8px}
       .round-selector select{padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px;min-width:200px}
@@ -54,10 +136,21 @@
       .criteria-divider{width:1px;height:40px;background:#e6e9ef;margin:0 8px}
       .btn-save-criteria{background:linear-gradient(180deg,var(--accent),#0a58d1);color:white;border:0;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-left:auto}
       .btn-save-criteria:hover{opacity:0.9}
-      .btn-save-admissions{position:fixed;bottom:20px;right:20px;background:#28a745;color:white;border:0;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(40,167,69,0.3);transition:all 0.2s}
-      .btn-save-admissions:hover{background:#218838;transform:translateY(-2px);box-shadow:0 6px 16px rgba(40,167,69,0.4)}
-      .btn-remove-all{position:fixed;bottom:20px;right:180px;background:#dc3545;color:white;border:0;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(220,53,69,0.3);transition:all 0.2s}
-      .btn-remove-all:hover{background:#c82333;transform:translateY(-2px);box-shadow:0 6px 16px rgba(220,53,69,0.4)}
+      
+      /* Admit from Previous Round Button */
+      .btn-admit-previous{background:linear-gradient(180deg, #8b5cf6, #7c3aed);color:white;border:0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.2s}
+      .btn-admit-previous:hover{background:linear-gradient(180deg, #7c3aed, #6d28d9);transform:translateY(-1px);box-shadow:0 4px 12px rgba(139,92,246,0.3)}
+      
+      /* Modal Styles */
+      .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1000}
+      .modal-overlay.active{display:flex}
+      .modal-box{background:white;border-radius:12px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+      .modal-box h3{margin:0 0 12px 0;font-size:20px;color:#1e293b}
+      .modal-buttons{display:flex;gap:12px;justify-content:flex-end}
+      .modal-btn-primary{background:#3b82f6;color:white;border:0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+      .modal-btn-primary:hover{background:#2563eb}
+      .modal-btn-secondary{background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+      .modal-btn-secondary:hover{background:#e2e8f0}
       
       /* TGF Import Panel Styles */
       .tgf-panel{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
@@ -98,13 +191,66 @@
       <h1>🏆 Admissions <span style="font-size:14px;font-weight:400;opacity:0.9;margin-left:12px">Add players to the tournament</span></h1>
       <a href="index.html" class="btn-back-top">← Back</a>
     </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <div class="action-buttons">
+        <button class="action-btn action-btn-primary" onclick="saveAdmissionsNow()">💾 Save Admissions</button>
+        <button class="action-btn action-btn-danger" onclick="removeAllAdmissions()">🗑️ Remove All</button>
+        <button class="action-btn action-btn-purple" id="btn-import-online" onclick="importFromOnlineRegistration()">📥 Import from Online Registration</button>
+        <div style="flex: 1;"></div>
+        <span id="round-info-badge" style="display: none; background: #e0e7ff; color: #3730a3; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;"></span>
+      </div>
+    </div>
+    
     <main class="admissions-container">
       <section id="round-selector" class="round-selector" style="display:none">
-        <label for="round-select">Select Round:</label>
-        <select id="round-select">
-          <!-- Populated dynamically -->
-        </select>
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div>
+            <label for="round-select">Select Round:</label>
+            <select id="round-select">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <button id="btn-admit-previous" class="btn-admit-previous" style="display: none;" onclick="showAdmitPreviousModal()">
+            📋 Admit from Previous Round
+          </button>
+        </div>
       </section>
+
+      <!-- Admit from Previous Round Modal -->
+      <div id="admit-previous-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 450px;">
+          <h3>📋 Admit from Previous Round</h3>
+          <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+            This will copy all admitted players from the previous round to the current round.
+          </p>
+          <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="font-weight: 600; margin: 0 0 12px 0; font-size: 14px; color: #475569;">Also include players with:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px;">
+                <input type="checkbox" id="admit-dq" style="width: 18px; height: 18px;">
+                <span><strong>DQ</strong> - Disqualified</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px;">
+                <input type="checkbox" id="admit-ns" style="width: 18px; height: 18px;">
+                <span><strong>NS</strong> - No Show</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px;">
+                <input type="checkbox" id="admit-nr" style="width: 18px; height: 18px;">
+                <span><strong>NR</strong> - No Return</span>
+              </label>
+            </div>
+          </div>
+          <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
+            💡 By default, only players who completed their round (no DQ/NS/NR status) will be admitted.
+          </p>
+          <div class="modal-buttons">
+            <button class="modal-btn-secondary" onclick="closeAdmitPreviousModal()">Cancel</button>
+            <button class="modal-btn-primary" onclick="admitFromPreviousRound()">Admit Players</button>
+          </div>
+        </div>
+      </div>
 
       <section class="criteria-panel">
         <div class="criteria-header" onclick="toggleCriteriaPanel()">
@@ -285,9 +431,6 @@
           </div>
         </div>
       </section>
-      
-      <button class="btn-remove-all" onclick="removeAllAdmissions()">Remove All Admissions</button>
-      <button class="btn-save-admissions" onclick="saveAdmissionsNow()">Save Admissions</button>
     </main>
 
     <script>
@@ -446,6 +589,86 @@
           return '+' + Math.abs(rounded);
         }
         return rounded.toString();
+      }
+
+      // Get current criteria values from the form
+      function getCriteriaValues() {
+        const hcpMen = document.getElementById('criteria-hcp-men').value;
+        const hcpWomen = document.getElementById('criteria-hcp-women').value;
+        
+        return {
+          hcpMen: hcpMen,
+          hcpMenValue: hcpMen !== 'NA' ? document.getElementById('criteria-hcp-men-value').value : '',
+          hcpWomen: hcpWomen,
+          hcpWomenValue: hcpWomen !== 'NA' ? document.getElementById('criteria-hcp-women-value').value : '',
+          ageMin: document.getElementById('criteria-age-min').value,
+          ageMax: document.getElementById('criteria-age-max').value,
+          membersOnly: document.getElementById('criteria-members-only').value,
+          gender: document.getElementById('criteria-gender').value
+        };
+      }
+
+      // Apply PHCP adjustment to player based on criteria
+      function applyPhcpAdjustment(player, criteria) {
+        if (!player) return;
+        
+        // First, calculate and set the base PHCP
+        const phcpString = calculatePlayingHcp(player);
+        let phcp = phcpString.startsWith('+') ? -parseFloat(phcpString.substring(1)) : parseFloat(phcpString);
+        
+        // Set the base PHCP value
+        if (!isNaN(phcp)) {
+          player.phcp = Math.round(phcp);
+        }
+        
+        // If no criteria, just use the calculated PHCP
+        if (!criteria) return;
+        
+        const playerGender = (player.gender || '').toLowerCase() === 'male' ? 'M' : 
+                            (player.gender || '').toLowerCase() === 'female' ? 'F' : 
+                            (player.gender || '').toUpperCase();
+        
+        // Check if Adjust Playing criteria for men - cap at limit if over
+        if (playerGender === 'M' && criteria.hcpMen === 'Adjust Playing') {
+          const adjustLimit = parseFloat(criteria.hcpMenValue);
+          if (!isNaN(adjustLimit) && !isNaN(phcp) && phcp > adjustLimit) {
+            player.phcp = adjustLimit;
+          }
+        }
+        // Check if Adjust Playing criteria for women - cap at limit if over
+        else if (playerGender === 'F' && criteria.hcpWomen === 'Adjust Playing') {
+          const adjustLimit = parseFloat(criteria.hcpWomenValue);
+          if (!isNaN(adjustLimit) && !isNaN(phcp) && phcp > adjustLimit) {
+            player.phcp = adjustLimit;
+          }
+        }
+      }
+
+      // Apply PHCP cap only (used after tees have been assigned and PHCP calculated)
+      function applyPhcpCap(player, criteria) {
+        if (!player || !criteria) return;
+        
+        const phcp = parseFloat(player.phcp);
+        if (isNaN(phcp)) return;
+        
+        const playerGender = (player.gender || '').toLowerCase() === 'male' ? 'M' : 
+                            (player.gender || '').toLowerCase() === 'female' ? 'F' : 
+                            (player.gender || '').toUpperCase();
+        
+        // Check if Adjust Playing criteria for men - cap at limit if over
+        if (playerGender === 'M' && criteria.hcpMen === 'Adjust Playing') {
+          const adjustLimit = parseFloat(criteria.hcpMenValue);
+          if (!isNaN(adjustLimit) && phcp > adjustLimit) {
+            player.phcp = adjustLimit;
+          }
+        }
+        // Check if Adjust Playing criteria for women - cap at limit if over
+        else if (playerGender === 'F' && criteria.hcpWomen === 'Adjust Playing') {
+          const adjustLimit = parseFloat(criteria.hcpWomenValue);
+          if (!isNaN(adjustLimit) && phcp > adjustLimit) {
+            player.phcp = adjustLimit;
+          }
+        }
       }
 
       // Get courses from localStorage
@@ -737,6 +960,134 @@
         }
       }
 
+      // Import from Online Registration
+      async function importFromOnlineRegistration() {
+        if (!currentTournament || !currentRoundId) {
+          alert('No tournament or round selected');
+          return;
+        }
+        
+        const tournamentId = currentTournament.tournamentId;
+        const roundNum = currentRoundIndex + 1;
+        
+        try {
+          // Check if Firebase is available
+          if (typeof firebase === 'undefined' || !firebase.apps.length) {
+            alert('Firebase is not available. Please refresh the page.');
+            return;
+          }
+          
+          const db = firebase.database();
+          
+          // Load online registrations
+          const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).once('value');
+          const registrationsData = snapshot.val();
+          
+          if (!registrationsData) {
+            alert('No online registrations found for this tournament/round.');
+            return;
+          }
+          
+          // Convert to array and filter only admitted players (not reserve)
+          const registrations = Object.values(registrationsData);
+          const admittedRegistrations = registrations.filter(r => r.status === 'admitted');
+          
+          if (admittedRegistrations.length === 0) {
+            alert('No admitted players found in online registrations (all players might be on reserve list).');
+            return;
+          }
+          
+          // Confirm import
+          const existingCount = admittedPlayers.length;
+          let message = `Found ${admittedRegistrations.length} admitted player(s) from online registration.\n\n`;
+          if (existingCount > 0) {
+            message += `You currently have ${existingCount} admitted player(s).\n`;
+            message += `New players will be ADDED to the existing list.\n\n`;
+          }
+          message += 'Do you want to import these players?';
+          
+          if (!confirm(message)) {
+            return;
+          }
+          
+          // Find player data from allPlayers array and add to admitted
+          let importedCount = 0;
+          let skippedCount = 0;
+          
+          // Get current criteria for PHCP adjustment
+          const criteria = getCriteriaValues();
+          
+          for (const reg of admittedRegistrations) {
+            const playerReg = (reg.playerReg || '').toUpperCase();
+            
+            // Check if already admitted
+            const alreadyAdmitted = admittedPlayers.some(p => 
+              (p.reg || p.id || '').toUpperCase() === playerReg
+            );
+            
+            if (alreadyAdmitted) {
+              skippedCount++;
+              continue;
+            }
+            
+            // Find player in allPlayers
+            let player = allPlayers.find(p => 
+              (p.reg || p.id || '').toUpperCase() === playerReg
+            );
+            
+            if (player) {
+              // Add the player with their data
+              const importedPlayer = {...player};
+              
+              admittedPlayers.push(importedPlayer);
+              importedCount++;
+            } else {
+              // Create player from registration data
+              const newPlayer = {
+                reg: reg.playerReg,
+                id: reg.playerReg,
+                firstName: reg.firstName || '',
+                lastName: reg.lastName || '',
+                hcp: reg.handicap || '',
+                gender: reg.gender || '',
+                homeClub: reg.club || '',
+                club: reg.club || ''
+              };
+              
+              admittedPlayers.push(newPlayer);
+              importedCount++;
+            }
+          }
+          
+          // Refresh tees from categories (this also handles tee assignment and PHCP calculation)
+          refreshPlayerTeesFromCategories();
+          
+          // Now apply PHCP adjustments based on criteria AFTER tees are assigned
+          // This ensures the adjustment caps are applied to the correctly calculated PHCP
+          for (const player of admittedPlayers) {
+            applyPhcpCap(player, criteria);
+          }
+          
+          // Save and render
+          saveAdmittedPlayers(admittedPlayers);
+          renderTables();
+          
+          // Show result
+          let resultMsg = `✅ Import complete!\n\n`;
+          resultMsg += `• Imported: ${importedCount} player(s)\n`;
+          if (skippedCount > 0) {
+            resultMsg += `• Skipped (already admitted): ${skippedCount} player(s)\n`;
+          }
+          resultMsg += `\nTotal admitted players: ${admittedPlayers.length}`;
+          
+          alert(resultMsg);
+          
+        } catch (error) {
+          console.error('Error importing from online registration:', error);
+          alert('Error importing players: ' + error.message);
+        }
+      }
+
       // Format date as dd.mm.yyyy
       function formatDateDDMMYYYY(dateStr) {
         if (!dateStr) return '';
@@ -795,6 +1146,15 @@
         const roundsData = currentTournament.meta?.roundsData || [];
         const numRounds = currentTournament.meta?.rounds || 1;
         
+        // Update round info badge
+        const roundInfoBadge = document.getElementById('round-info-badge');
+        if (roundInfoBadge) {
+          const roundData = roundsData[currentRoundIndex];
+          const roundDate = roundData?.date ? formatDateDDMMYYYY(roundData.date) : '';
+          roundInfoBadge.textContent = `${currentTournament.name || 'Tournament'} • Round ${currentRoundIndex + 1}${roundDate ? ' • ' + roundDate : ''}`;
+          roundInfoBadge.style.display = 'inline-block';
+        }
+        
         if (numRounds > 1 && roundsData.length > 1) {
           document.getElementById('round-selector').style.display = 'block';
           const select = document.getElementById('round-select');
@@ -810,6 +1170,11 @@
             // Reload page with new round ID
             window.location.href = `admissions.html?roundId=${encodeURIComponent(e.target.value)}`;
           });
+          
+          // Show "Admit from Previous Round" button if not on round 1
+          if (currentRoundIndex > 0) {
+            document.getElementById('btn-admit-previous').style.display = 'inline-block';
+          }
         }
 
         loadAdmittedPlayers();
@@ -2049,11 +2414,219 @@
             if (admittedData) {
               localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
             }
+            // Load scores (needed for checking player status)
+            const scoresData = await syncFromFirebase('scores');
+            if (scoresData) {
+              localStorage.setItem('scores', JSON.stringify(scoresData));
+            }
             console.log('✓ Data loaded from Firebase');
           } catch(e) {
             console.log('Firebase load error:', e);
           }
         }
+      }
+
+      // ===== Admit from Previous Round Functions =====
+      
+      function showAdmitPreviousModal() {
+        // Reset checkboxes
+        document.getElementById('admit-dq').checked = false;
+        document.getElementById('admit-ns').checked = false;
+        document.getElementById('admit-nr').checked = false;
+        
+        document.getElementById('admit-previous-modal').classList.add('active');
+      }
+      
+      function closeAdmitPreviousModal() {
+        document.getElementById('admit-previous-modal').classList.remove('active');
+      }
+      
+      function admitFromPreviousRound() {
+        console.log('admitFromPreviousRound called');
+        
+        const includeDQ = document.getElementById('admit-dq').checked;
+        const includeNS = document.getElementById('admit-ns').checked;
+        const includeNR = document.getElementById('admit-nr').checked;
+        
+        console.log('Include DQ:', includeDQ, 'NS:', includeNS, 'NR:', includeNR);
+        
+        // Get previous round ID
+        const roundIds = currentTournament.meta?.roundIds || [];
+        console.log('Current round index:', currentRoundIndex, 'Round IDs:', roundIds);
+        
+        if (currentRoundIndex <= 0) {
+          alert('This is the first round. There is no previous round to admit from.');
+          closeAdmitPreviousModal();
+          return;
+        }
+        
+        const previousRoundId = roundIds[currentRoundIndex - 1];
+        console.log('Previous round ID:', previousRoundId);
+        
+        // Get admitted players from previous round
+        const allAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        const previousRoundPlayers = allAdmitted[previousRoundId] || [];
+        
+        console.log('Previous round players:', previousRoundPlayers.length);
+        
+        if (previousRoundPlayers.length === 0) {
+          alert('No players found in the previous round.');
+          closeAdmitPreviousModal();
+          return;
+        }
+        
+        // Get scores to check player status
+        const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+        const previousRoundScores = scoresData[previousRoundId] || {};
+        
+        // Filter players based on their status
+        const playersToAdmit = [];
+        const excludedPlayers = [];
+        
+        previousRoundPlayers.forEach(player => {
+          const playerScores = previousRoundScores[player.reg];
+          const playerStatus = playerScores?.status || '';
+          
+          // Check if player should be excluded
+          if (playerStatus === 'DQ' && !includeDQ) {
+            excludedPlayers.push({ player, reason: 'DQ' });
+            return;
+          }
+          if (playerStatus === 'NS' && !includeNS) {
+            excludedPlayers.push({ player, reason: 'NS' });
+            return;
+          }
+          if (playerStatus === 'NR' && !includeNR) {
+            excludedPlayers.push({ player, reason: 'NR' });
+            return;
+          }
+          
+          // Player passes the filter - add to admit list
+          // Create a fresh copy without previous round's specific data
+          const playerCopy = { ...player };
+          // Clear any status from previous round
+          delete playerCopy.status;
+          playersToAdmit.push(playerCopy);
+        });
+        
+        if (playersToAdmit.length === 0) {
+          alert('No players to admit after applying the filters.');
+          closeAdmitPreviousModal();
+          return;
+        }
+        
+        // Check for duplicates - don't re-admit players already in current round
+        const currentRoundPlayers = admittedPlayers || [];
+        const currentRegNumbers = new Set(currentRoundPlayers.map(p => p.reg));
+        
+        const newPlayers = playersToAdmit.filter(p => !currentRegNumbers.has(p.reg));
+        const duplicateCount = playersToAdmit.length - newPlayers.length;
+        
+        if (newPlayers.length === 0) {
+          alert('All players from the previous round are already admitted to this round.');
+          closeAdmitPreviousModal();
+          return;
+        }
+        
+        // Recalculate PHCP for current round - use admitPlayer logic
+        newPlayers.forEach(player => {
+          // Add tee assignment and PHCP to player
+          const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+          
+          // First, set default tee based on gender
+          if (roundData) {
+            const playerGender = (player.gender || '').toLowerCase();
+            if (playerGender === 'male' || playerGender === 'm' || playerGender === 'e') {
+              player.tee = roundData.teeMen || '';
+            } else if (playerGender === 'female' || playerGender === 'f' || playerGender === 'k') {
+              player.tee = roundData.teeWomen || '';
+            }
+          }
+          
+          // Check if player matches any category and override tee if needed
+          const categories = currentTournament.categories || [];
+          let teeAssigningCategory = null;
+          const allMatchingCategories = [];
+          
+          for (const cat of categories) {
+            const playerGender = (player.gender || '').toLowerCase();
+            const catGender = (cat.gender || '').toLowerCase();
+            
+            let genderMatch = false;
+            if (!catGender || catGender === 'any' || catGender === '') {
+              genderMatch = true;
+            } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male' || playerGender === 'e')) {
+              genderMatch = true;
+            } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female' || playerGender === 'k')) {
+              genderMatch = true;
+            }
+            
+            if (genderMatch && typeof playerMatchesCategory === 'function' && playerMatchesCategory(player, cat)) {
+              allMatchingCategories.push(cat.code);
+              
+              // For tee assignment, use the first non-result-only category
+              if (!cat.isResultOnly && !teeAssigningCategory) {
+                teeAssigningCategory = cat;
+              }
+            }
+          }
+          
+          // Store ALL categories this player belongs to
+          player.categories = allMatchingCategories;
+          
+          // For backward compatibility, also store primary category
+          if (allMatchingCategories.length > 0) {
+            player.category = allMatchingCategories[0];
+          }
+          
+          // If player matches a tee-assigning category, override the tee
+          if (teeAssigningCategory) {
+            const playerGender = (player.gender || '').toLowerCase();
+            const isMixedCategory = !teeAssigningCategory.gender || teeAssigningCategory.gender === '' || teeAssigningCategory.gender === 'Any';
+            
+            if (isMixedCategory && (teeAssigningCategory.playsFromMen || teeAssigningCategory.playsFromWomen)) {
+              if (playerGender === 'm' || playerGender === 'male' || playerGender === 'e') {
+                player.tee = teeAssigningCategory.playsFromMen;
+              } else if (playerGender === 'f' || playerGender === 'female' || playerGender === 'k') {
+                player.tee = teeAssigningCategory.playsFromWomen;
+              }
+            } else if (teeAssigningCategory.playsFrom) {
+              player.tee = teeAssigningCategory.playsFrom;
+            }
+          }
+          
+          // Calculate and save PHCP
+          if (typeof calculatePlayingHcp === 'function') {
+            const phcpString = calculatePlayingHcp(player);
+            player.phcp = phcpString.startsWith('+') ? parseInt(phcpString.substring(1)) * -1 : (phcpString === '' ? null : parseInt(phcpString));
+          }
+        });
+        
+        // Add new players to current round
+        admittedPlayers = [...currentRoundPlayers, ...newPlayers];
+        saveAdmittedPlayers(admittedPlayers);
+        renderTables();
+        
+        // Show summary
+        let message = `✅ Successfully admitted ${newPlayers.length} player(s) from Round ${currentRoundIndex}.`;
+        
+        if (duplicateCount > 0) {
+          message += `\n\n⚠️ ${duplicateCount} player(s) were already admitted and skipped.`;
+        }
+        
+        if (excludedPlayers.length > 0) {
+          const dqCount = excludedPlayers.filter(e => e.reason === 'DQ').length;
+          const nsCount = excludedPlayers.filter(e => e.reason === 'NS').length;
+          const nrCount = excludedPlayers.filter(e => e.reason === 'NR').length;
+          
+          message += '\n\n🚫 Excluded players:';
+          if (dqCount > 0) message += `\n   • ${dqCount} DQ (Disqualified)`;
+          if (nsCount > 0) message += `\n   • ${nsCount} NS (No Show)`;
+          if (nrCount > 0) message += `\n   • ${nrCount} NR (No Return)`;
+        }
+        
+        alert(message);
+        closeAdmitPreviousModal();
       }
 
       // Initialize on page load

@@ -26,7 +26,7 @@
   <h2>Actions</h2>
   <button class="primary" onclick="loadData()">🔄 Refresh Local Data</button>
   <button class="success" onclick="loadFromFirebase()">☁️ Load from Firebase</button>
-  <button class="warning" onclick="syncToFirebaseAll()">⬆️ Push Local to Firebase</button>
+  <button class="warning" onclick="syncToFirebaseAll()">⬆️ Merge Local with Firebase</button>
   <button class="danger" onclick="clearAll()">🗑️ Clear ALL localStorage</button>
   
   <h2>📊 Scores Data (by Tournament Round)</h2>
@@ -219,41 +219,100 @@
         return;
       }
       
-      if (!confirm('This will upload your local data to Firebase (cloud). Continue?')) {
+      if (!confirm('This will MERGE your local data with Firebase (keeping data from both). Continue?')) {
         return;
       }
       
       const statusEl = document.getElementById('firebase-status');
-      statusEl.textContent = 'Uploading to Firebase...';
+      statusEl.textContent = 'Merging with Firebase...';
       statusEl.className = 'status warning';
       
       try {
-        const scores = JSON.parse(localStorage.getItem('scores') || '{}');
-        const admittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
-        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-        const players = JSON.parse(localStorage.getItem('players') || '[]');
-        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
-        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        // Get local data
+        const localScores = JSON.parse(localStorage.getItem('scores') || '{}');
+        const localAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        const localTournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const localPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+        const localCourses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const localDraws = JSON.parse(localStorage.getItem('draws') || '{}');
         
-        console.log('Uploading scores:', Object.keys(scores));
-        console.log('Uploading admittedPlayers:', Object.keys(admittedPlayers));
+        // Get Firebase data
+        const fbScores = (await db.ref('scores').once('value')).val() || {};
+        const fbAdmitted = (await db.ref('admittedPlayers').once('value')).val() || {};
+        const fbTournaments = (await db.ref('tournaments').once('value')).val() || [];
+        const fbPlayers = (await db.ref('players').once('value')).val() || [];
+        const fbCourses = (await db.ref('courses').once('value')).val() || [];
+        const fbDraws = (await db.ref('draws').once('value')).val() || {};
         
-        await db.ref('scores').set(scores);
-        await db.ref('admittedPlayers').set(admittedPlayers);
-        await db.ref('tournaments').set(tournaments);
-        await db.ref('players').set(players);
-        await db.ref('courses').set(courses);
-        await db.ref('draws').set(draws);
+        // Merge scores (keep all rounds from both)
+        const mergedScores = { ...fbScores, ...localScores };
+        // For rounds that exist in both, keep the one with more players/data
+        for (const roundId in fbScores) {
+          if (localScores[roundId]) {
+            const fbPlayerCount = Object.keys(fbScores[roundId]).length;
+            const localPlayerCount = Object.keys(localScores[roundId]).length;
+            if (fbPlayerCount > localPlayerCount) {
+              mergedScores[roundId] = fbScores[roundId];
+            }
+          }
+        }
         
-        statusEl.textContent = '✓ Successfully uploaded to Firebase!';
+        // Merge admitted players (keep all rounds from both)
+        const mergedAdmitted = { ...fbAdmitted, ...localAdmitted };
+        
+        // Merge tournaments (combine unique by tournamentId)
+        const tournamentMap = {};
+        [...(Array.isArray(fbTournaments) ? fbTournaments : []), ...localTournaments].forEach(t => {
+          if (t && t.tournamentId) tournamentMap[t.tournamentId] = t;
+        });
+        const mergedTournaments = Object.values(tournamentMap);
+        
+        // Merge players (combine unique by reg)
+        const playerMap = {};
+        [...(Array.isArray(fbPlayers) ? fbPlayers : []), ...localPlayers].forEach(p => {
+          if (p && p.reg) playerMap[p.reg] = p;
+        });
+        const mergedPlayers = Object.values(playerMap);
+        
+        // Merge courses (combine unique by courseId)
+        const courseMap = {};
+        [...(Array.isArray(fbCourses) ? fbCourses : []), ...localCourses].forEach(c => {
+          if (c && c.courseId) courseMap[c.courseId] = c;
+        });
+        const mergedCourses = Object.values(courseMap);
+        
+        // Merge draws
+        const mergedDraws = { ...fbDraws, ...localDraws };
+        
+        console.log('Merged scores rounds:', Object.keys(mergedScores));
+        
+        // Upload merged data
+        await db.ref('scores').set(mergedScores);
+        await db.ref('admittedPlayers').set(mergedAdmitted);
+        await db.ref('tournaments').set(mergedTournaments);
+        await db.ref('players').set(mergedPlayers);
+        await db.ref('courses').set(mergedCourses);
+        await db.ref('draws').set(mergedDraws);
+        
+        // Also update localStorage with merged data
+        localStorage.setItem('scores', JSON.stringify(mergedScores));
+        localStorage.setItem('admittedPlayers', JSON.stringify(mergedAdmitted));
+        localStorage.setItem('tournaments', JSON.stringify(mergedTournaments));
+        localStorage.setItem('players', JSON.stringify(mergedPlayers));
+        localStorage.setItem('courses', JSON.stringify(mergedCourses));
+        localStorage.setItem('draws', JSON.stringify(mergedDraws));
+        
+        statusEl.textContent = '✓ Successfully merged with Firebase!';
         statusEl.className = 'status ok';
         
-        alert(`✓ Uploaded to Firebase:\n- ${Object.keys(scores).length} score rounds\n- ${Object.keys(admittedPlayers).length} admission rounds\n- ${tournaments.length} tournaments\n- ${players.length} players\n- ${courses.length} courses`);
+        alert(`✓ Merged with Firebase:\n- ${Object.keys(mergedScores).length} score rounds: ${Object.keys(mergedScores).join(', ')}\n- ${Object.keys(mergedAdmitted).length} admission rounds\n- ${mergedTournaments.length} tournaments\n- ${mergedPlayers.length} players\n- ${mergedCourses.length} courses`);
+        
+        loadData();
       } catch (e) {
-        statusEl.textContent = '✗ Upload failed: ' + e.message;
+        statusEl.textContent = '✗ Merge failed: ' + e.message;
         statusEl.className = 'status error';
-        alert('Error uploading to Firebase: ' + e.message);
-        console.error('Firebase upload error:', e);
+        alert('Error merging with Firebase: ' + e.message);
+        console.error('Firebase merge error:', e);
       }
     }
 

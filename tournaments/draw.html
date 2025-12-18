@@ -12,10 +12,9 @@
   
   <link rel="stylesheet" href="../styles.css">
   <style>
-    body{padding-top:70px}
     .container {
       max-width: 100%;
-      padding: 20px;
+      padding: 12px 20px;
     }
 
     .draw-container {
@@ -36,20 +35,6 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
-    }
-
-    .config-section {
-      background: white;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .config-section h3 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      font-size: 16px;
-      color: #333;
     }
 
     .form-group {
@@ -132,6 +117,15 @@
 
     .player-card.dragging {
       opacity: 0.5;
+    }
+
+    .player-card.pairing-card {
+      cursor: move;
+    }
+
+    .player-card.pairing-card:hover {
+      border-color: #7c3aed;
+      background: linear-gradient(135deg, #bae6fd 50%, #fbcfe8 50%);
     }
 
     .player-name {
@@ -479,7 +473,7 @@
     /* Action Buttons - Top Bar */
     .action-buttons-bar {
       background: #f8fafc;
-      padding: 12px 20px;
+      padding: 8px 20px;
       border-bottom: 1px solid #e2e8f0;
       display: flex;
       gap: 10px;
@@ -538,6 +532,30 @@
   </style>
 </head>
 <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        const uid = user.uid;
+        const params = new URLSearchParams(window.location.search);
+        const tournamentId = params.get('tournamentId');
+        try {
+          const raw = localStorage.getItem('tournaments');
+          const list = raw ? JSON.parse(raw) : [];
+          const t = list.find(x => x && x.tournamentId === tournamentId);
+          if (!t) return; // if not found, let page handle its own fallback
+          if (role !== 'admin' && t.createdBy && t.createdBy !== uid){
+            alert('You do not have access to this tournament.');
+            window.location.href = 'index.html';
+          }
+        } catch(e){}
+      })();
+    </script>
   <div class="top-nav">
     <h1>🏆 Draw</h1>
     <a href="index.html" class="btn-back-top">← Back</a>
@@ -609,11 +627,49 @@
   </div>
 
   <div class="container">
-    <div style="margin-bottom: 20px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <label for="round-select" style="margin-right: 10px; font-weight: 600;">Select Round:</label>
-      <select id="round-select" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-        <option value="">-- Select Round --</option>
-      </select>
+    <!-- Round Select and Starting Protocol - Horizontal Bar -->
+    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; background: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 12px;">
+      <!-- Round Select -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="round-select" style="font-weight: 600; white-space: nowrap;">Select Round:</label>
+        <select id="round-select" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd; min-width: 180px;">
+          <option value="">-- Select Round --</option>
+        </select>
+      </div>
+      
+      <!-- Starting Protocol - Horizontal -->
+      <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; border-left: 1px solid #e2e8f0; padding-left: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-weight: 500; font-size: 13px; white-space: nowrap;">Protocol:</label>
+          <select id="protocol-type" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px;">
+            <option value="single">1st Tee Start</option>
+            <option value="twotee">Two Tee Start</option>
+            <option value="shotgun">Shotgun</option>
+          </select>
+        </div>
+        <div id="alternate-tee-group" style="display: none; align-items: center; gap: 8px;">
+          <label style="font-weight: 500; font-size: 13px; white-space: nowrap;">Alt Tee:</label>
+          <input type="number" id="alternate-tee" value="10" min="1" max="18" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; width: 60px; font-size: 13px;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-weight: 500; font-size: 13px; white-space: nowrap;">Start:</label>
+          <input type="time" id="start-time" value="08:00" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-weight: 500; font-size: 13px; white-space: nowrap;">Interval:</label>
+          <input type="number" id="interval" value="10" min="1" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; width: 60px; font-size: 13px;">
+          <span style="font-size: 12px; color: #666;">min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-weight: 500; font-size: 13px; white-space: nowrap;">Group Size:</label>
+          <select id="group-size" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px;">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+          </select>
+        </div>
+        <button onclick="applyConfiguration()" style="padding: 6px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">Apply</button>
+      </div>
     </div>
 
     <div id="draw-content" style="display: none;">
@@ -628,44 +684,9 @@
           </div>
         </div>
 
-        <!-- Right Panel: Configuration and Players -->
+        <!-- Right Panel: Players -->
         <div class="right-panel">
-          <div class="config-section">
-            <h3>Starting Protocol</h3>
-            <div class="form-group">
-              <label>Protocol Type</label>
-              <select id="protocol-type">
-                <option value="single">1st Tee Start</option>
-                <option value="twotee">Two Tee Start (1st & 10th)</option>
-                <option value="shotgun">Shotgun</option>
-              </select>
-            </div>
-            <div class="form-group" id="alternate-tee-group" style="display: none;">
-              <label>Alternate Tee (e.g., 10, 11)</label>
-              <input type="number" id="alternate-tee" value="10" min="1" max="18">
-            </div>
-            <div class="form-group time-config">
-              <div>
-                <label>Start Time</label>
-                <input type="time" id="start-time" value="08:00">
-              </div>
-              <div>
-                <label>Interval (min)</label>
-                <input type="number" id="interval" value="10" min="1">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Group Size</label>
-              <select id="group-size">
-                <option value="2">2 Players</option>
-                <option value="3">3 Players</option>
-                <option value="4" selected>4 Players</option>
-              </select>
-            </div>
-            <button onclick="applyConfiguration()" style="width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Apply Configuration</button>
-          </div>
-
-          <div class="players-list">
+          <div class="players-list" style="position: sticky; top: 130px; max-height: calc(100vh - 150px); overflow-y: auto;">
             <h3>Available Players (<span id="player-count">0</span>)</h3>
             <div id="players-container"></div>
           </div>
@@ -681,9 +702,13 @@
   <script>
     let currentTournament = null;
     let currentRound = null;
+    let currentRoundData = null;
     let admittedPlayers = [];
     let groups = [];
     let draggedPlayer = null;
+    let isPairingMode = false; // True for fourball/foursomes match play
+    let pairings = []; // Pairings for the current team/round
+    let draggedPairing = null; // For dragging pairings instead of players
 
     // Format date as dd.mm.yyyy
     function formatDateDDMMYYYY(dateStr) {
@@ -818,7 +843,7 @@
         const alternateTeeGroup = document.getElementById('alternate-tee-group');
         
         if (e.target.value === 'twotee') {
-          alternateTeeGroup.style.display = 'block';
+          alternateTeeGroup.style.display = 'flex';
         } else {
           alternateTeeGroup.style.display = 'none';
         }
@@ -875,8 +900,8 @@
       const savedDraws = JSON.parse(localStorage.getItem('draws') || '{}');
       const savedDraw = savedDraws[roundId];
       
-      if (savedDraw) {
-        groups = savedDraw.groups || [];
+      if (savedDraw && savedDraw.groups && savedDraw.groups.length > 0) {
+        groups = savedDraw.groups;
         
         // Merge fresh admitted player data into saved groups
         // This ensures tee/category changes are reflected
@@ -899,11 +924,11 @@
         document.getElementById('group-size').value = savedDraw.groupSize || 4;
       } else {
         // Create default 20 groups
-        groups = [];
-        const protocol = 'single';
-        const startTime = '08:00';
-        const interval = 10;
+        const protocol = document.getElementById('protocol-type').value || 'single';
+        const startTime = document.getElementById('start-time').value || '08:00';
+        const interval = parseInt(document.getElementById('interval').value) || 10;
         
+        groups = [];
         for (let i = 0; i < 20; i++) {
           groups.push({
             groupId: `group-${Date.now()}-${i}`,
@@ -912,6 +937,73 @@
             tee: calculateTee(i, protocol)
           });
         }
+      }
+
+      // Detect if this round is fourball/foursomes match play
+      isPairingMode = false;
+      pairings = [];
+      currentRoundData = null;
+      
+      // Get round data to check match type
+      const roundIds = currentTournament.meta?.roundIds || [];
+      const roundIndex = roundIds.indexOf(roundId);
+      if (roundIndex >= 0 && currentTournament.meta?.roundsData) {
+        currentRoundData = currentTournament.meta.roundsData[roundIndex];
+      } else if (currentTournament.meta?.roundsData?.[0]) {
+        currentRoundData = currentTournament.meta.roundsData[0];
+      }
+      
+      console.log('Current round data:', currentRoundData);
+      
+      if (currentRoundData) {
+        const matchType = (currentRoundData.matchType || '').toLowerCase();
+        console.log('Match type:', matchType);
+        
+        if (matchType === 'fourball' || matchType === 'foursomes') {
+          isPairingMode = true;
+          console.log('Pairing mode enabled for', matchType);
+          
+          // Load teams to get team names
+          const teams = currentTournament.teams || [];
+          
+          // Load pairings from tournament.teamPairings[roundId]
+          if (currentTournament.teamPairings && currentTournament.teamPairings[roundId]) {
+            const teamPairingsData = currentTournament.teamPairings[roundId];
+            console.log('Team pairings data:', teamPairingsData);
+            
+            // Flatten all team pairings into a single array
+            // teamPairingsData is { teamIndex: [[player1, player2], [player3, player4]] }
+            Object.keys(teamPairingsData).forEach(teamIndex => {
+              const teamPairs = teamPairingsData[teamIndex];
+              const teamName = teams[parseInt(teamIndex)]?.name || `Team ${parseInt(teamIndex) + 1}`;
+              if (Array.isArray(teamPairs)) {
+                teamPairs.forEach((pair, pairIndex) => {
+                  if (pair && pair.length === 2) {
+                    pairings.push({
+                      pairingId: `pairing-${teamIndex}-${pairIndex}`,
+                      teamIndex: parseInt(teamIndex),
+                      teamName: teamName,
+                      players: pair
+                    });
+                  }
+                });
+              }
+            });
+            console.log('Loaded pairings:', pairings);
+          }
+          
+          // In pairing mode, force group size to 4 (2 pairs per group) and disable selection
+          document.getElementById('group-size').value = '4';
+          document.getElementById('group-size').disabled = true;
+          document.getElementById('modal-group-size').value = '4';
+          document.getElementById('modal-group-size').disabled = true;
+        }
+      }
+      
+      // Re-enable group size if not in pairing mode
+      if (!isPairingMode) {
+        document.getElementById('group-size').disabled = false;
+        document.getElementById('modal-group-size').disabled = false;
       }
 
       document.getElementById('draw-content').style.display = 'block';
@@ -1047,10 +1139,57 @@
       return rounded < 0 ? '+' + Math.abs(rounded) : rounded;
     }
 
-    // Render available players
+    // Render available players (or pairings in pairing mode)
     function renderPlayers() {
       const container = document.getElementById('players-container');
       const assignedRegs = new Set(groups.flatMap(g => g.players.map(p => p.reg)));
+      
+      // In pairing mode, show pairings instead of individual players
+      if (isPairingMode) {
+        // Filter out pairings where both players are already assigned
+        const availablePairings = pairings.filter(pairing => {
+          const player1Assigned = assignedRegs.has(pairing.players[0]?.playerId);
+          const player2Assigned = assignedRegs.has(pairing.players[1]?.playerId);
+          return !player1Assigned && !player2Assigned;
+        });
+        
+        document.getElementById('player-count').textContent = `${availablePairings.length} pairings`;
+        
+        if (availablePairings.length === 0) {
+          container.innerHTML = '<div class="empty-state">All pairings assigned</div>';
+          return;
+        }
+        
+        container.innerHTML = availablePairings.map(pairing => {
+          const p1 = pairing.players[0];
+          const p2 = pairing.players[1];
+          return `
+          <div class="player-card pairing-card" draggable="true" data-pairing-id="${pairing.pairingId}" style="background: linear-gradient(135deg, #e0f2fe 50%, #fce7f3 50%); border-left: 4px solid #7c3aed;">
+            <div style="font-size: 10px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🏷️ ${pairing.teamName}</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 10px; color: #0284c7;">👤</span>
+                <span class="player-name" style="margin: 0; font-size: 12px;">${p1?.name || 'Unknown'}</span>
+                <span style="font-size: 10px; color: #666;">HCP ${p1?.hcp || '-'}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 10px; color: #ec4899;">👤</span>
+                <span class="player-name" style="margin: 0; font-size: 12px;">${p2?.name || 'Unknown'}</span>
+                <span style="font-size: 10px; color: #666;">HCP ${p2?.hcp || '-'}</span>
+              </div>
+            </div>
+          </div>
+        `;}).join('');
+        
+        // Add drag event listeners for pairings
+        container.querySelectorAll('.pairing-card').forEach(card => {
+          card.addEventListener('dragstart', handlePairingDragStart);
+          card.addEventListener('dragend', handlePairingDragEnd);
+        });
+        return;
+      }
+      
+      // Normal mode - show individual players
       const availablePlayers = admittedPlayers.filter(p => !assignedRegs.has(p.reg));
       
       document.getElementById('player-count').textContent = availablePlayers.length;
@@ -1077,6 +1216,23 @@
       });
     }
 
+    // Drag handlers for pairings
+    function handlePairingDragStart(e) {
+      const pairingId = e.target.getAttribute('data-pairing-id') || e.target.closest('[data-pairing-id]')?.getAttribute('data-pairing-id');
+      draggedPairing = pairings.find(p => p.pairingId === pairingId);
+      draggedPlayer = null;
+      draggedFromGroupId = null;
+      
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('type', 'pairing');
+    }
+
+    function handlePairingDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedPairing = null;
+    }
+
     // Apply configuration and generate groups
     function applyConfiguration() {
       const groupSize = parseInt(document.getElementById('group-size').value);
@@ -1084,10 +1240,22 @@
       const startTime = document.getElementById('start-time').value;
       const interval = parseInt(document.getElementById('interval').value);
       
-      // Keep the same number of groups (20 by default) and update their times/tees
-      for (let i = 0; i < groups.length; i++) {
-        groups[i].time = calculateStartTime(i, protocol, startTime, interval);
-        groups[i].tee = calculateTee(i, protocol);
+      // If no groups exist, create 20 empty groups
+      if (groups.length === 0) {
+        for (let i = 0; i < 20; i++) {
+          groups.push({
+            groupId: `group-${Date.now()}-${i}`,
+            players: [],
+            time: calculateStartTime(i, protocol, startTime, interval),
+            tee: calculateTee(i, protocol)
+          });
+        }
+      } else {
+        // Keep the same number of groups and update their times/tees
+        for (let i = 0; i < groups.length; i++) {
+          groups[i].time = calculateStartTime(i, protocol, startTime, interval);
+          groups[i].tee = calculateTee(i, protocol);
+        }
       }
       
       renderGroups();
@@ -1125,6 +1293,63 @@
       return '1st Tee';
     }
 
+    // Render players in a group (handles both normal and pairing mode)
+    function renderGroupPlayers(group) {
+      if (group.players.length === 0) {
+        if (isPairingMode) {
+          return '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop pairings here<br><small>(2 pairings per group)</small></div>';
+        }
+        return '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop players here</div>';
+      }
+      
+      if (isPairingMode) {
+        // Group players by pairingId and render as pairs
+        const playersByPairing = {};
+        group.players.forEach(player => {
+          const pairingId = player.pairingId || 'unknown';
+          if (!playersByPairing[pairingId]) {
+            playersByPairing[pairingId] = { players: [], teamName: player.teamName };
+          }
+          playersByPairing[pairingId].players.push(player);
+        });
+        
+        return Object.entries(playersByPairing).map(([pairingId, data]) => `
+          <div class="group-pairing-card" style="background: linear-gradient(135deg, #e0f2fe 50%, #fce7f3 50%); border: 1px solid #ddd; border-left: 4px solid #7c3aed; border-radius: 4px; padding: 8px; margin-bottom: 6px; position: relative;">
+            <button class="remove-player" onclick="removePairingFromGroup('${group.groupId}', '${pairingId}')" style="display: block;">×</button>
+            <div style="font-size: 9px; font-weight: 600; color: #7c3aed; margin-bottom: 4px;">🏷️ ${data.teamName || 'Team'}</div>
+            ${data.players.map(player => `
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                <span style="font-weight: 600; font-size: 11px;">${player.firstName || ''} ${player.lastName || player.name || ''}</span>
+                <span style="font-size: 9px; color: #666;">HCP ${player.hcp || '-'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      }
+      
+      // Normal mode - render individual players
+      return group.players.map(player => {
+        const gender = (player.gender || '').toLowerCase();
+        const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
+        return `
+          <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
+            <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
+            <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
+            <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Remove a pairing (both players) from a group
+    function removePairingFromGroup(groupId, pairingId) {
+      const group = groups.find(g => g.groupId === groupId);
+      if (group) {
+        group.players = group.players.filter(p => p.pairingId !== pairingId);
+        renderGroups();
+      }
+    }
+
     // Render groups
     function renderGroups() {
       const container = document.getElementById('groups-container');
@@ -1157,24 +1382,14 @@
         const firstTeeGroups = displayGroups.filter(g => g.teeType === '1st');
         const altTeeGroups = displayGroups.filter(g => g.teeType === 'alt');
         
-        const groupsHTML = (groups) => groups.map((group, idx) => `
+        const groupsHTML = (groupsList) => groupsList.map((group, idx) => `
           <div class="group-box" data-group-id="${group.groupId}">
             <div class="group-header">
               <div class="group-title">Group ${idx + 1}</div>
               <div class="group-time">${group.time} - ${group.tee}</div>
             </div>
             <div class="group-players">
-              ${group.players.length === 0 ? '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop players here</div>' : ''}
-              ${group.players.map(player => {
-                const gender = (player.gender || '').toLowerCase();
-                const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
-                return `
-                <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
-                  <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
-                  <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
-                  <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
-                </div>
-              `;}).join('')}
+              ${renderGroupPlayers(group)}
             </div>
           </div>
         `).join('');
@@ -1204,17 +1419,7 @@
               <div class="group-time">${group.time} - ${group.tee}</div>
             </div>
             <div class="group-players">
-              ${group.players.length === 0 ? '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Drop players here</div>' : ''}
-              ${group.players.map(player => {
-                const gender = (player.gender || '').toLowerCase();
-                const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
-                return `
-                <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
-                  <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
-                  <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
-                  <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
-                </div>
-              `;}).join('')}
+              ${renderGroupPlayers(group)}
             </div>
           </div>
         `).join('');
@@ -1228,16 +1433,18 @@
         // Add click to select group
         box.addEventListener('click', (e) => {
           // Don't select if clicking on a player card or remove button
-          if (e.target.closest('.group-player-card') || e.target.closest('.remove-player')) return;
+          if (e.target.closest('.group-player-card') || e.target.closest('.group-pairing-card') || e.target.closest('.remove-player')) return;
           selectGroup(box.getAttribute('data-group-id'));
         });
       });
       
-      // Add drag listeners for players in groups
-      container.querySelectorAll('.group-player-card').forEach(card => {
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragend', handleDragEnd);
-      });
+      // Add drag listeners for players in groups (only in normal mode)
+      if (!isPairingMode) {
+        container.querySelectorAll('.group-player-card').forEach(card => {
+          card.addEventListener('dragstart', handleDragStart);
+          card.addEventListener('dragend', handleDragEnd);
+        });
+      }
       
       // Highlight selected group
       if (selectedGroupId) {
@@ -1284,6 +1491,54 @@
     function handleDrop(e) {
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
+      
+      // Handle pairing drop in pairing mode
+      if (isPairingMode && draggedPairing) {
+        const targetGroupBox = e.currentTarget.closest('.group-box') || e.currentTarget;
+        const targetGroupId = targetGroupBox.getAttribute('data-group-id');
+        const targetGroup = groups.find(g => g.groupId === targetGroupId);
+        
+        if (!targetGroup) return;
+        
+        // In pairing mode, each group holds 2 pairings (4 players)
+        // Check if group has space for 2 more players
+        if (targetGroup.players.length >= 4) {
+          alert('Group is full (max 2 pairings / 4 players)');
+          draggedPairing = null;
+          return;
+        }
+        
+        // Add both players from the pairing to the group
+        const p1 = draggedPairing.players[0];
+        const p2 = draggedPairing.players[1];
+        
+        if (p1) {
+          targetGroup.players.push({
+            reg: p1.playerId,
+            firstName: p1.name?.split(' ')[0] || '',
+            lastName: p1.name?.split(' ').slice(1).join(' ') || '',
+            name: p1.name,
+            hcp: p1.hcp,
+            pairingId: draggedPairing.pairingId,
+            teamName: draggedPairing.teamName
+          });
+        }
+        if (p2) {
+          targetGroup.players.push({
+            reg: p2.playerId,
+            firstName: p2.name?.split(' ')[0] || '',
+            lastName: p2.name?.split(' ').slice(1).join(' ') || '',
+            name: p2.name,
+            hcp: p2.hcp,
+            pairingId: draggedPairing.pairingId,
+            teamName: draggedPairing.teamName
+          });
+        }
+        
+        draggedPairing = null;
+        renderGroups();
+        return;
+      }
       
       if (!draggedPlayer) return;
       
@@ -1872,6 +2127,12 @@
       draws[currentRound] = draw;
       localStorage.setItem('draws', JSON.stringify(draws));
       
+      // Calculate and save match HCPs for match play formats
+      const matchType = (currentRoundData?.matchType || '').toLowerCase();
+      if (matchType === 'singles' || matchType === 'fourball' || matchType === 'foursomes') {
+        calculateAndSaveMatchHCPs(currentRound, draw.groups, matchType);
+      }
+      
       // Sync to Firebase
       if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
         syncToFirebase('draws', draws).then(() => {
@@ -1880,6 +2141,92 @@
       }
       
       alert('Draw saved successfully!');
+    }
+    
+    // Calculate and save match HCPs for all groups
+    function calculateAndSaveMatchHCPs(roundId, groups, matchType) {
+      const matchHCPData = JSON.parse(localStorage.getItem('matchHCPs') || '{}');
+      matchHCPData[roundId] = {};
+      
+      groups.forEach((group, groupIndex) => {
+        const players = group.players || [];
+        if (players.length < 2) return;
+        
+        // Calculate PHCP for each player
+        const playerPHCPs = {};
+        players.forEach(player => {
+          const pKey = player.playerId || player.reg;
+          const hcp = parseFloat(player.hcp); const phcp = isNaN(hcp) ? "-" : Math.round(hcp);
+          playerPHCPs[pKey] = phcp === '-' ? null : Math.round(parseFloat(phcp));
+        });
+        
+        if (matchType === 'singles') {
+          // Singles: pairs within group (1v2, 3v4)
+          const numMatches = Math.floor(players.length / 2);
+          for (let i = 0; i < numMatches; i++) {
+            const p1 = players[i * 2];
+            const p2 = players[i * 2 + 1];
+            if (!p1 || !p2) continue;
+            
+            const p1Key = p1.playerId || p1.reg;
+            const p2Key = p2.playerId || p2.reg;
+            const p1Phcp = playerPHCPs[p1Key];
+            const p2Phcp = playerPHCPs[p2Key];
+            
+            if (p1Phcp !== null && p2Phcp !== null) {
+              const lowestPhcp = Math.min(p1Phcp, p2Phcp);
+              matchHCPData[roundId][p1Key] = p1Phcp - lowestPhcp;
+              matchHCPData[roundId][p2Key] = p2Phcp - lowestPhcp;
+            }
+          }
+        } else if (matchType === 'fourball') {
+          // Fourball: all 4 players, lowest plays off 0
+          const validPhcps = Object.entries(playerPHCPs).filter(([k, v]) => v !== null);
+          if (validPhcps.length > 0) {
+            const lowestPhcp = Math.min(...validPhcps.map(([k, v]) => v));
+            validPhcps.forEach(([pKey, phcp]) => {
+              matchHCPData[roundId][pKey] = phcp - lowestPhcp;
+            });
+          }
+        } else if (matchType === 'foursomes') {
+          // Foursomes: Team PHCPs (average of pair)
+          if (players.length >= 4) {
+            const team1 = players.slice(0, 2);
+            const team2 = players.slice(2, 4);
+            
+            const team1Phcps = team1.map(p => playerPHCPs[p.playerId || p.reg]).filter(v => v !== null);
+            const team2Phcps = team2.map(p => playerPHCPs[p.playerId || p.reg]).filter(v => v !== null);
+            
+            if (team1Phcps.length > 0 && team2Phcps.length > 0) {
+              const team1Avg = team1Phcps.reduce((a, b) => a + b, 0) / team1Phcps.length;
+              const team2Avg = team2Phcps.reduce((a, b) => a + b, 0) / team2Phcps.length;
+              const lowestTeamPhcp = Math.min(team1Avg, team2Avg);
+              
+              // Store team match HCP for each player in the team
+              const team1MatchHCP = Math.round(team1Avg - lowestTeamPhcp);
+              const team2MatchHCP = Math.round(team2Avg - lowestTeamPhcp);
+              
+              team1.forEach(p => {
+                matchHCPData[roundId][p.playerId || p.reg] = team1MatchHCP;
+              });
+              team2.forEach(p => {
+                matchHCPData[roundId][p.playerId || p.reg] = team2MatchHCP;
+              });
+            }
+          }
+        }
+      });
+      
+      localStorage.setItem('matchHCPs', JSON.stringify(matchHCPData));
+      
+      // Sync to Firebase
+      if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+        syncToFirebase('matchHCPs', matchHCPData).then(() => {
+          console.log('✓ Match HCPs synced to Firebase');
+        }).catch(e => console.log('Firebase sync failed:', e));
+      }
+      
+      console.log('Match HCPs calculated and saved:', matchHCPData[roundId]);
     }
 
     // Initialize on load

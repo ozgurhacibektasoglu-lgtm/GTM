@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Registered Players</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: #f8fafc;
+      color: #0f172a;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .top-nav {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .top-nav h1 { 
+      margin: 0; 
+      color: white; 
+      font-size: 22px; 
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn-nav {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-nav:hover { background: rgba(255,255,255,0.3); }
+    
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Tournament Info */
+    .tournament-info {
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      border: 1px solid #c4b5fd;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .tournament-info h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #5b21b6;
+    }
+    
+    .tournament-info .meta {
+      color: #7c3aed;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 700;
+      color: #7c3aed;
+    }
+    
+    .stat-card .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+    
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .card-body {
+      padding: 20px;
+    }
+    
+    /* Search and Filters */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 10px 14px 10px 40px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .search-box .icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+    
+    .btn-danger {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    tr:hover {
+      background: #f8fafc;
+    }
+    
+    .player-name {
+      font-weight: 500;
+    }
+    
+    .player-reg {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .status-admitted {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-reserve {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    /* Registered by column */
+    .registered-by {
+      font-size: 12px;
+    }
+    
+    .registered-by .type {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+    
+    .type-player {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .type-club {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .type-admin {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+    
+    /* Actions */
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    
+    .action-btn.delete {
+      color: #dc2626;
+    }
+    
+    .action-btn.delete:hover {
+      background: #fee2e2;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+    
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      font-size: 18px;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+    }
+    
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    /* Player search in modal */
+    .player-search-results {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    
+    .player-search-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .player-search-item:last-child {
+      border-bottom: none;
+    }
+    
+    .player-search-item:hover {
+      background: #f8fafc;
+    }
+    
+    .player-search-item.selected {
+      background: #f5f3ff;
+      border-left: 3px solid #7c3aed;
+    }
+    
+    .player-search-item.registered {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .player-search-item .name {
+      font-weight: 500;
+    }
+    
+    .player-search-item .meta {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* Cut line */
+    .cut-line-row td {
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 600;
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      border-top: 2px solid #f59e0b;
+      border-bottom: 2px solid #f59e0b;
+    }
+    
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    
+    .loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Success message */
+    .success-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #059669;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 2000;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Gate: require authentication
+    (async function(){
+      const { user, role } = await window.Auth.requireAuth();
+      window.currentUserId = user.uid;
+      window.currentUserRole = role;
+    })();
+  </script>
+  
+  <div class="top-nav">
+    <h1>📋 Manage Registered Players</h1>
+    <div class="nav-buttons">
+      <a href="#" id="btn-config" class="btn-nav">⚙️ Configuration</a>
+      <a href="#" id="btn-list" class="btn-nav">📊 Public List</a>
+      <a href="index.html" class="btn-nav">← Back</a>
+    </div>
+  </div>
+  
+  <div class="container">
+    <!-- Tournament Info -->
+    <div class="tournament-info">
+      <div>
+        <h2 id="tournament-name">Loading...</h2>
+        <div class="meta" id="tournament-meta">-</div>
+      </div>
+      <div>
+        <span class="status-badge" id="round-badge">Round 1</span>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="number" id="stat-total">0</div>
+        <div class="label">Total Registered</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-admitted">0</div>
+        <div class="label">Admitted</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-reserve">0</div>
+        <div class="label">Reserve</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-capacity">72</div>
+        <div class="label">Capacity</div>
+      </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3>👥 Registered Players</h3>
+        <button class="btn btn-primary" onclick="openAddPlayerModal()">+ Add Player</button>
+      </div>
+      <div class="card-body">
+        <div class="toolbar">
+          <div class="search-box">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search by name or registration number..." />
+          </div>
+        </div>
+        
+        <!-- Loading -->
+        <div class="loading" id="loading-state">
+          <div class="spinner"></div>
+          <p>Loading registrations...</p>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-container hidden" id="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>HCP</th>
+                <th>Club</th>
+                <th>Status</th>
+                <th>Registered By</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="players-body">
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="empty-state">
+          <div class="icon">📋</div>
+          <h3>No Registered Players</h3>
+          <p>No players have registered for this tournament yet.</p>
+          <button class="btn btn-primary" style="margin-top: 16px;" onclick="openAddPlayerModal()">+ Add First Player</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Player Modal -->
+  <div class="modal hidden" id="add-player-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>➕ Add Player to Tournament</h3>
+        <button class="modal-close" onclick="closeAddPlayerModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="search-box" style="margin-bottom: 0;">
+          <span class="icon">🔍</span>
+          <input type="text" id="modal-search-input" placeholder="Search players by name or registration number..." />
+        </div>
+        <div class="player-search-results" id="modal-search-results">
+          <div style="padding: 40px; text-align: center; color: #64748b;">
+            Start typing to search for players...
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddPlayerModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-add-selected" onclick="addSelectedPlayer()" disabled>Add Selected Player</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script>
+    // URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+    const roundNum = parseInt(urlParams.get('r') || urlParams.get('round')) || 1;
+    
+    // State
+    let tournament = null;
+    let admissionsConfig = null;
+    let registrations = [];
+    let allPlayers = [];
+    let selectedPlayerForAdd = null;
+    
+    // Initialize Firebase
+    function initFirebaseApp() {
+      if (typeof firebase !== 'undefined' && !firebase.apps.length && window.firebaseConfig) {
+        firebase.initializeApp(window.firebaseConfig);
+      }
+    }
+    
+    // Show toast
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'success-toast';
+      toast.textContent = message;
+      if (type === 'error') {
+        toast.style.background = '#dc2626';
+      }
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // Load tournament
+    async function loadTournament() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`tournaments/${tournamentId}`).once('value');
+        tournament = snapshot.val();
+        
+        if (!tournament) {
+          document.getElementById('tournament-name').textContent = 'Tournament not found';
+          return false;
+        }
+        
+        document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+        document.getElementById('tournament-meta').textContent = `${tournament.date || tournament.startDate || '-'} • ${tournament.course || '-'}`;
+        document.getElementById('round-badge').textContent = `Round ${roundNum}`;
+        
+        // Setup nav links
+        document.getElementById('btn-config').href = `online_admissions_config.html?t=${tournamentId}`;
+        document.getElementById('btn-list').href = `online_admissions_list.html?t=${tournamentId}&r=${roundNum}`;
+        
+        return true;
+      } catch (e) {
+        console.error('Error loading tournament:', e);
+        return false;
+      }
+    }
+    
+    // Load admissions config
+    async function loadAdmissionsConfig() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/config`).once('value');
+        admissionsConfig = snapshot.val() || {};
+        document.getElementById('stat-capacity').textContent = admissionsConfig.maxPlayers || 72;
+        return true;
+      } catch (e) {
+        console.error('Error loading config:', e);
+        return false;
+      }
+    }
+    
+    // Load registrations
+    async function loadRegistrations() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).once('value');
+        const data = snapshot.val();
+        registrations = data ? Object.values(data) : [];
+        
+        // Sort by position
+        registrations.sort((a, b) => {
+          if (a.status === 'admitted' && b.status !== 'admitted') return -1;
+          if (a.status !== 'admitted' && b.status === 'admitted') return 1;
+          return (a.position || 0) - (b.position || 0);
+        });
+        
+        return true;
+      } catch (e) {
+        console.error('Error loading registrations:', e);
+        return false;
+      }
+    }
+    
+    // Load all players
+    async function loadAllPlayers() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref('players').once('value');
+        const data = snapshot.val();
+        allPlayers = data ? Object.values(data) : [];
+        return true;
+      } catch (e) {
+        console.error('Error loading players:', e);
+        return false;
+      }
+    }
+    
+    // Update stats
+    function updateStats() {
+      const admitted = registrations.filter(r => r.status === 'admitted').length;
+      const reserve = registrations.filter(r => r.status === 'reserve').length;
+      
+      document.getElementById('stat-total').textContent = registrations.length;
+      document.getElementById('stat-admitted').textContent = admitted;
+      document.getElementById('stat-reserve').textContent = reserve;
+    }
+    
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Format date
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Get registered by display
+    function getRegisteredByDisplay(reg) {
+      const type = reg.registeredByType || 'player';
+      const by = reg.registeredBy || reg.playerReg || '-';
+      
+      let typeClass = 'type-player';
+      let typeLabel = 'Player';
+      
+      if (type === 'club') {
+        typeClass = 'type-club';
+        typeLabel = 'Club';
+      } else if (type === 'admin') {
+        typeClass = 'type-admin';
+        typeLabel = 'Admin';
+      }
+      
+      return `<span class="type ${typeClass}">${typeLabel}</span> ${escapeHtml(by)}`;
+    }
+    
+    // Check if player is registered
+    function isPlayerRegistered(playerReg) {
+      return registrations.some(r => r.playerReg?.toUpperCase() === playerReg?.toUpperCase());
+    }
+    
+    // Render table
+    function renderTable(filter = '') {
+      const tbody = document.getElementById('players-body');
+      const loadingEl = document.getElementById('loading-state');
+      const tableEl = document.getElementById('table-container');
+      const emptyEl = document.getElementById('empty-state');
+      const filterLower = filter.toLowerCase();
+      
+      loadingEl.classList.add('hidden');
+      
+      if (registrations.length === 0) {
+        tableEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      
+      emptyEl.classList.add('hidden');
+      tableEl.classList.remove('hidden');
+      
+      let filteredRegs = registrations;
+      if (filter) {
+        filteredRegs = registrations.filter(r => {
+          const name = `${r.firstName || ''} ${r.lastName || ''}`.toLowerCase();
+          const reg = (r.playerReg || '').toLowerCase();
+          const club = (r.club || '').toLowerCase();
+          return name.includes(filterLower) || reg.includes(filterLower) || club.includes(filterLower);
+        });
+      }
+      
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      let html = '';
+      let cutLineInserted = false;
+      
+      filteredRegs.forEach((r, idx) => {
+        // Insert cut line between admitted and reserve
+        if (!cutLineInserted && r.status === 'reserve') {
+          html += `
+            <tr class="cut-line-row">
+              <td colspan="8">───── RESERVE LIST ─────</td>
+            </tr>
+          `;
+          cutLineInserted = true;
+        }
+        
+        const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+        const statusClass = r.status === 'admitted' ? 'status-admitted' : 'status-reserve';
+        const statusText = r.status === 'admitted' ? `Admitted` : `Reserve`;
+        
+        html += `
+          <tr>
+            <td><strong>${r.position || '-'}</strong></td>
+            <td>
+              <div class="player-name">${escapeHtml(name)}</div>
+              <div class="player-reg">${escapeHtml(r.playerReg)}</div>
+            </td>
+            <td>${r.handicap || '-'}</td>
+            <td>${escapeHtml(r.club) || '-'}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td class="registered-by">${getRegisteredByDisplay(r)}</td>
+            <td style="font-size: 12px; color: #64748b;">${formatDate(r.registeredAt)}</td>
+            <td>
+              <button class="action-btn delete" onclick="removePlayer('${escapeHtml(r.registrationId)}', '${escapeHtml(name)}')" title="Remove player">
+                🗑️ Remove
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">No players match your search</td></tr>';
+    }
+    
+    // Remove player
+    async function removePlayer(registrationId, playerName) {
+      if (!confirm(`Are you sure you want to remove ${playerName} from the tournament?`)) {
+        return;
+      }
+      
+      try {
+        const index = registrations.findIndex(r => r.registrationId === registrationId);
+        if (index === -1) {
+          showToast('Registration not found', 'error');
+          return;
+        }
+        
+        registrations.splice(index, 1);
+        
+        // Reorder
+        reorderRegistrations();
+        
+        // Save to Firebase
+        await saveRegistrations();
+        
+        updateStats();
+        renderTable(document.getElementById('search-input').value);
+        showToast(`${playerName} has been removed`);
+        
+      } catch (e) {
+        console.error('Error removing player:', e);
+        showToast('Failed to remove player', 'error');
+      }
+    }
+    
+    // Reorder registrations
+    function reorderRegistrations() {
+      const sortMethod = admissionsConfig?.sortMethod || 'registration_order';
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      
+      if (sortMethod === 'handicap') {
+        registrations.sort((a, b) => {
+          const hcpA = parseFloat(a.handicap) || 999;
+          const hcpB = parseFloat(b.handicap) || 999;
+          if (hcpA !== hcpB) return hcpA - hcpB;
+          return new Date(a.registeredAt) - new Date(b.registeredAt);
+        });
+      } else {
+        registrations.sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+      }
+      
+      let admittedCount = 0;
+      let reserveCount = 0;
+      
+      registrations.forEach(r => {
+        if (admittedCount < maxPlayers) {
+          r.status = 'admitted';
+          admittedCount++;
+          r.position = admittedCount;
+        } else {
+          r.status = 'reserve';
+          reserveCount++;
+          r.position = reserveCount;
+        }
+      });
+    }
+    
+    // Save registrations to Firebase
+    async function saveRegistrations() {
+      const db = firebase.database();
+      const regsObj = {};
+      registrations.forEach(r => regsObj[r.registrationId] = r);
+      await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+    }
+    
+    // Open add player modal
+    function openAddPlayerModal() {
+      document.getElementById('add-player-modal').classList.remove('hidden');
+      document.getElementById('modal-search-input').value = '';
+      document.getElementById('modal-search-input').focus();
+      selectedPlayerForAdd = null;
+      document.getElementById('btn-add-selected').disabled = true;
+      renderModalSearchResults('');
+    }
+    
+    // Close add player modal
+    function closeAddPlayerModal() {
+      document.getElementById('add-player-modal').classList.add('hidden');
+    }
+    
+    // Render modal search results
+    function renderModalSearchResults(filter) {
+      const container = document.getElementById('modal-search-results');
+      const filterLower = filter.toLowerCase();
+      
+      if (!filter || filter.length < 2) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;">Type at least 2 characters to search...</div>';
+        return;
+      }
+      
+      const filtered = allPlayers.filter(p => {
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+        const reg = (p.reg || p.id || '').toLowerCase();
+        return name.includes(filterLower) || reg.includes(filterLower);
+      }).slice(0, 50);
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;">No players found</div>';
+        return;
+      }
+      
+      container.innerHTML = filtered.map(p => {
+        const reg = p.reg || p.id || '';
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
+        const isReg = isPlayerRegistered(reg);
+        const isSelected = selectedPlayerForAdd?.reg === reg;
+        
+        return `
+          <div class="player-search-item ${isReg ? 'registered' : ''} ${isSelected ? 'selected' : ''}" 
+               onclick="${isReg ? '' : `selectPlayerForAdd('${escapeHtml(reg)}')`}">
+            <div class="name">${escapeHtml(name)} ${isReg ? '<span style="color: #64748b;">(Already registered)</span>' : ''}</div>
+            <div class="meta">${escapeHtml(reg)} • HCP: ${p.hcp || '-'} • ${p.homeClub || p.club || '-'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Select player for adding
+    function selectPlayerForAdd(reg) {
+      const player = allPlayers.find(p => (p.reg || p.id) === reg);
+      if (!player) return;
+      
+      selectedPlayerForAdd = player;
+      document.getElementById('btn-add-selected').disabled = false;
+      renderModalSearchResults(document.getElementById('modal-search-input').value);
+    }
+    
+    // Add selected player
+    async function addSelectedPlayer() {
+      if (!selectedPlayerForAdd) return;
+      
+      const player = selectedPlayerForAdd;
+      const reg = player.reg || player.id || '';
+      
+      if (isPlayerRegistered(reg)) {
+        showToast('Player is already registered', 'error');
+        return;
+      }
+      
+      try {
+        const maxPlayers = admissionsConfig?.maxPlayers || 72;
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+        const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+        
+        const registration = {
+          registrationId: 'REG-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          playerId: player.playerId || reg,
+          playerReg: reg.toUpperCase(),
+          firstName: player.firstName || '',
+          lastName: player.lastName || '',
+          handicap: player.hcp || player.handicap || null,
+          club: player.homeClub || player.club || '',
+          gender: player.gender || '',
+          email: player.email || '',
+          status: status,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          registeredBy: 'Admin',
+          registeredByType: 'admin',
+          tournamentId: tournamentId,
+          round: roundNum
+        };
+        
+        registrations.push(registration);
+        reorderRegistrations();
+        await saveRegistrations();
+        
+        const name = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+        showToast(`${name} has been added to the tournament`);
+        
+        closeAddPlayerModal();
+        updateStats();
+        renderTable(document.getElementById('search-input').value);
+        
+      } catch (e) {
+        console.error('Error adding player:', e);
+        showToast('Failed to add player', 'error');
+      }
+    }
+    
+    // Initialize
+    async function init() {
+      initFirebaseApp();
+      
+      if (!tournamentId) {
+        document.getElementById('loading-state').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>No Tournament ID</h3><p>Please provide a tournament ID in the URL.</p></div>';
+        return;
+      }
+      
+      await loadTournament();
+      await loadAdmissionsConfig();
+      await loadRegistrations();
+      await loadAllPlayers();
+      
+      updateStats();
+      renderTable();
+      
+      // Search input
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        renderTable(e.target.value);
+      });
+      
+      // Modal search input
+      document.getElementById('modal-search-input').addEventListener('input', (e) => {
+        selectedPlayerForAdd = null;
+        document.getElementById('btn-add-selected').disabled = true;
+        renderModalSearchResults(e.target.value);
+      });
+    }
+    
+    // Global functions
+    window.openAddPlayerModal = openAddPlayerModal;
+    window.closeAddPlayerModal = closeAddPlayerModal;
+    window.selectPlayerForAdd = selectPlayerForAdd;
+    window.addSelectedPlayer = addSelectedPlayer;
+    window.removePlayer = removePlayer;
+    
+    // Start
+    init();
+  </script>
+</body>
+</html>

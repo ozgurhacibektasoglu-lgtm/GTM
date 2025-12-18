@@ -18,9 +18,36 @@
       .option-icon { font-size: 48px; margin-bottom: 16px; }
       .option-title { font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
       .option-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
+      
+      /* Match Play specific styles */
+      .match-play-badge { display: inline-block; background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        const uid = user.uid;
+        const params = new URLSearchParams(window.location.search);
+        const tournamentId = params.get('tournamentId');
+        try {
+          const raw = localStorage.getItem('tournaments');
+          const list = raw ? JSON.parse(raw) : [];
+          const t = list.find(x => x && x.tournamentId === tournamentId);
+          if (!t) return;
+          if (role !== 'admin' && t.createdBy && t.createdBy !== uid){
+            alert('You do not have access to this tournament.');
+            window.location.href = 'index.html';
+          }
+        } catch(e){}
+      })();
+    </script>
     <div class="top-nav">
       <h1>🏆 Scoring Mode</h1>
       <a href="index.html" class="btn-back-top">← Back</a>
@@ -29,9 +56,10 @@
     <div class="modal-overlay">
       <div class="modal-content">
         <h2 class="modal-title">Score Entry Method</h2>
-        <p class="modal-subtitle">Choose how you'd like to enter scores for this round</p>
+        <p class="modal-subtitle" id="modal-subtitle">Choose how you'd like to enter scores for this round</p>
         
-        <div class="options-grid">
+        <!-- Stroke Play Options -->
+        <div class="options-grid" id="stroke-play-options">
           <div class="option-card" id="option-by-player">
             <div class="option-icon">👤</div>
             <div class="option-title">By Player</div>
@@ -44,21 +72,76 @@
             <div class="option-desc">Enter scores for entire groups at once. Best for group check-ins.</div>
           </div>
         </div>
+        
+        <!-- Match Play Options -->
+        <div class="options-grid" id="match-play-options" style="display: none;">
+          <div class="option-card" id="option-match-score">
+            <div class="option-icon">🎯</div>
+            <div class="option-title">Match Score</div>
+            <div class="option-desc">Enter final match results (e.g., 2UP, 3&2). Best for quick result entry.</div>
+          </div>
+          
+          <div class="option-card" id="option-hole-by-hole">
+            <div class="option-icon">📋</div>
+            <div class="option-title">Hole by Hole</div>
+            <div class="option-desc">Enter individual hole scores. Best for detailed scoring and live updates.</div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
 
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
       
-      // Handle By Player option
+      // Get tournament to check type
+      function getTournament() {
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          return tournaments.find(t => t.tournamentId === tournamentId);
+        } catch (err) {
+          console.error('Failed to get tournament:', err);
+          return null;
+        }
+      }
+      
+      // Initialize
+      const tournament = getTournament();
+      const tournamentType = (tournament?.type || '').toLowerCase();
+      const isMatchPlay = tournamentType.includes('match');
+      
+      console.log('Tournament:', tournament?.name, '| Type:', tournament?.type, '| isMatchPlay:', isMatchPlay);
+      
+      if (isMatchPlay) {
+        // Show match play options
+        document.getElementById('stroke-play-options').style.display = 'none';
+        document.getElementById('match-play-options').style.display = 'grid';
+        document.getElementById('modal-subtitle').textContent = 'Choose how you\'d like to enter match play scores';
+      }
+      
+      // Handle Stroke Play: By Player option
       document.getElementById('option-by-player').addEventListener('click', () => {
         window.location.href = `scores.html?tournamentId=${tournamentId}`;
       });
       
-      // Handle By Flight option
+      // Handle Stroke Play: By Flight option
       document.getElementById('option-by-flight').addEventListener('click', () => {
         window.location.href = `scores_flight.html?tournamentId=${tournamentId}`;
+      });
+      
+      // Handle Match Play: Match Score option
+      document.getElementById('option-match-score').addEventListener('click', () => {
+        window.location.href = `scores.html?tournamentId=${tournamentId}&mode=match-score`;
+      });
+      
+      // Handle Match Play: Hole by Hole option
+      document.getElementById('option-hole-by-hole').addEventListener('click', () => {
+        window.location.href = `scores.html?tournamentId=${tournamentId}&mode=hole-by-hole`;
       });
     </script>
   </body>

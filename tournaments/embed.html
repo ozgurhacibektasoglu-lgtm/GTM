@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tournaments</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: #ffffff;
+      color: #0f172a;
+      padding: 16px;
+    }
+    
+    /* Year Filter */
+    .year-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .year-filter label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 14px;
+    }
+    
+    .year-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    
+    .year-tab {
+      padding: 8px 16px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #475569;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .year-tab:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    
+    .year-tab.active {
+      background: #0b6efd;
+      color: white;
+      border-color: #0b6efd;
+    }
+    
+    /* Table Styles */
+    .table-wrapper {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e2e8f0;
+      color: #1e293b;
+      white-space: nowrap;
+    }
+    
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+    
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+
+    .tournament-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-stroke { background: #dbeafe; color: #1e40af; }
+    .badge-stableford { background: #d1fae5; color: #065f46; }
+    .badge-matchplay { background: #fef3c7; color: #92400e; }
+    .badge-default { background: #f1f5f9; color: #475569; }
+
+    /* Row Action Buttons */
+    .row-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-info {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #0ea5e9, #0284c7);
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .btn-info:hover {
+      background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    }
+
+    .btn-register {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .btn-register:hover {
+      background: linear-gradient(180deg, #16a34a, #15803d);
+    }
+    .btn-register.disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Loading spinner */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #0b6efd;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      th, td { padding: 10px 12px; font-size: 13px; }
+      .year-tab { padding: 6px 12px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Year Filter -->
+  <div class="year-filter">
+    <label>Year:</label>
+    <div class="year-tabs" id="yearTabs">
+      <!-- Years will be populated dynamically -->
+    </div>
+  </div>
+  
+  <!-- Tournaments Table -->
+  <div class="table-wrapper">
+    <table id="tournamentsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Tournament Name</th>
+          <th>Rounds</th>
+          <th>Course</th>
+          <th>Type</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tournamentsBody">
+        <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    // Firebase config - embedded directly for cross-origin iframe support
+    // This avoids issues with loading external scripts in iframes
+    const firebaseConfig = {
+      apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+      authDomain: "gtm-management-6350e.firebaseapp.com",
+      databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com/",
+      projectId: "gtm-management-6350e",
+      storageBucket: "gtm-management-6350e.firebasestorage.app",
+      messagingSenderId: "461806742170",
+      appId: "1:461806742170:web:9a2af43d50c0a26718cd23",
+      measurementId: "G-7LDECSVCGD"
+    };
+
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const clubId = urlParams.get('club');
+    
+    // Get base URL for links
+    // Auto-detect: use current origin if running locally, or the deployed URL
+    function getBaseUrl() {
+      const currentOrigin = window.location.origin;
+      // If running locally (file://, localhost, or 127.0.0.1), use current origin
+      if (currentOrigin.startsWith('file://') || 
+          currentOrigin.includes('localhost') || 
+          currentOrigin.includes('127.0.0.1')) {
+        // For local file://, we need to construct path differently
+        if (currentOrigin.startsWith('file://')) {
+          // Get the directory path from current location
+          const pathParts = window.location.pathname.split('/');
+          pathParts.pop(); // Remove current filename
+          pathParts.pop(); // Remove 'tournaments' folder
+          return 'file://' + pathParts.join('/');
+        }
+        return currentOrigin;
+      }
+      // Check for URL parameter override
+      const urlOverride = urlParams.get('base');
+      if (urlOverride) return urlOverride;
+      // Default to current origin (works when deployed)
+      return currentOrigin;
+    }
+    const baseUrl = getBaseUrl();
+    
+    let allTournaments = [];
+    let allCourses = [];
+    let onlineAdmissionsData = {};
+    let selectedYear = new Date().getFullYear();
+    let db = null;
+    
+    // Format date as dd.mm.yyyy
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      try {
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+      } catch (e) {
+        return dateStr;
+      }
+    }
+    
+    // Get year from date string
+    function getYear(dateStr) {
+      if (!dateStr) return null;
+      try {
+        return new Date(dateStr).getFullYear();
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Get tournament type badge
+    function getTypeBadge(type) {
+      if (!type) return '<span class="badge badge-default">-</span>';
+      const typeLower = type.toLowerCase();
+      if (typeLower.includes('stroke')) {
+        return '<span class="badge badge-stroke">Stroke Play</span>';
+      } else if (typeLower.includes('stableford')) {
+        return '<span class="badge badge-stableford">Stableford</span>';
+      } else if (typeLower.includes('match')) {
+        return '<span class="badge badge-matchplay">Match Play</span>';
+      }
+      return `<span class="badge badge-default">${type}</span>`;
+    }
+    
+    // Get rounds count from tournament
+    function getRounds(t) {
+      if (t.meta && t.meta.rounds) return t.meta.rounds;
+      if (t.meta && Array.isArray(t.meta.roundsData)) return t.meta.roundsData.length;
+      if (t.rounds) return t.rounds;
+      if (t.numberOfRounds) return t.numberOfRounds;
+      return '-';
+    }
+    
+    // Get course name from ID using Firebase-loaded courses
+    function getCourseName(courseId) {
+      if (!courseId) return null;
+      const course = allCourses.find(c => 
+        c.courseId === courseId || 
+        c.fullName === courseId || 
+        c.name === courseId
+      );
+      return course?.shortName || course?.fullName || course?.name || courseId;
+    }
+    
+    // Get courses from tournament
+    function getCourses(t) {
+      // Try to get from roundsData
+      if (t.meta && Array.isArray(t.meta.roundsData)) {
+        const courses = t.meta.roundsData.map(r => r.course).filter(Boolean);
+        if (courses.length > 0) {
+          // Get unique courses and map to names
+          const unique = [...new Set(courses)];
+          const names = unique.map(id => getCourseName(id));
+          return names.join(', ');
+        }
+      }
+      // Fallback to other fields
+      if (t.courses) return getCourseName(t.courses);
+      if (t.courseName) return t.courseName;
+      return '-';
+    }
+    
+    // Get unique years from tournaments
+    function getAvailableYears(tournaments) {
+      const years = new Set();
+      const currentYear = new Date().getFullYear();
+      years.add(currentYear); // Always include current year
+      
+      tournaments.forEach(t => {
+        const year = getYear(t.date || t.startDate);
+        if (year) years.add(year);
+      });
+      
+      return Array.from(years).sort((a, b) => b - a); // Descending order
+    }
+    
+    // Render year tabs
+    function renderYearTabs(years) {
+      const container = document.getElementById('yearTabs');
+      container.innerHTML = '';
+      
+      years.forEach(year => {
+        const tab = document.createElement('button');
+        tab.className = 'year-tab' + (year === selectedYear ? ' active' : '');
+        tab.textContent = year;
+        tab.addEventListener('click', () => {
+          selectedYear = year;
+          document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          renderTournaments();
+        });
+        container.appendChild(tab);
+      });
+    }
+    
+    // Render tournaments table
+    function renderTournaments() {
+      const tbody = document.getElementById('tournamentsBody');
+      
+      // Filter by year
+      const filtered = allTournaments.filter(t => {
+        const year = getYear(t.date || t.startDate);
+        return year === selectedYear;
+      });
+      
+      // Sort by date descending
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.date || a.startDate || 0);
+        const dateB = new Date(b.date || b.startDate || 0);
+        return dateB - dateA;
+      });
+      
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data">No tournaments found for ' + selectedYear + '</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filtered.map(t => {
+        // Check online admissions status
+        const registerBtn = getRegisterButton(t);
+        
+        // Build base path for links
+        const basePath = baseUrl + '/tournaments/';
+        
+        return `
+          <tr>
+            <td>${formatDate(t.date || t.startDate)}</td>
+            <td class="tournament-name">${t.name || '-'}</td>
+            <td>${getRounds(t)}</td>
+            <td>${getCourses(t)}</td>
+            <td>${getTypeBadge(t.type || t.tournamentType)}</td>
+            <td class="row-actions">
+              <a href="${basePath}info.html?tournamentId=${t.tournamentId || ''}&mode=pdfonly" target="_blank" class="btn-info">Info</a>
+              ${registerBtn}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    // Get register button based on admissions config from Firebase
+    function getRegisterButton(t) {
+      const tournamentId = t.tournamentId;
+      
+      // Check onlineAdmissions data loaded from Firebase
+      const admissionsConfig = onlineAdmissionsData[tournamentId];
+      
+      // Find active round config
+      let activeConfig = null;
+      if (admissionsConfig) {
+        for (const key of Object.keys(admissionsConfig)) {
+          const config = admissionsConfig[key]?.config;
+          if (config?.isActive) {
+            activeConfig = config;
+            break;
+          }
+        }
+      }
+      
+      // Also check tournament object itself
+      if (!activeConfig && t.onlineAdmissions) {
+        for (const key of Object.keys(t.onlineAdmissions)) {
+          if (t.onlineAdmissions[key]?.isActive) {
+            activeConfig = t.onlineAdmissions[key];
+            break;
+          }
+        }
+      }
+      
+      if (!activeConfig) {
+        return `<span class="btn-register disabled" title="Online registration not available">Register</span>`;
+      }
+      
+      return getRegisterButtonFromConfig(t, activeConfig);
+    }
+    
+    // Generate button from config
+    function getRegisterButtonFromConfig(t, activeConfig) {
+      const now = new Date();
+      let isInPeriod = true;
+      let statusText = '';
+      
+      if (activeConfig) {
+        const startDate = activeConfig.startDate ? new Date(activeConfig.startDate) : null;
+        const endDate = activeConfig.endDate ? new Date(activeConfig.endDate) : null;
+        
+        if (startDate && now < startDate) {
+          isInPeriod = false;
+          statusText = 'Not started';
+        } else if (endDate && now > endDate) {
+          isInPeriod = false;
+          statusText = 'Closed';
+        }
+      }
+      
+      // Build link URL - always point to the GTM app
+      const basePath = baseUrl + '/tournaments/';
+      const listUrl = `${basePath}online_admissions_list.html?t=${t.tournamentId || ''}&r=1`;
+      
+      if (isInPeriod) {
+        return `<a href="${listUrl}" target="_blank" class="btn-register">Register</a>`;
+      } else {
+        return `<a href="${listUrl}" target="_blank" class="btn-register disabled" title="${statusText}">${statusText || 'Register'}</a>`;
+      }
+    }
+    
+    // Load all data from Firebase (no localStorage - iframe compatible)
+    async function loadData() {
+      try {
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.database();
+        
+        // Load tournaments, courses, and online admissions in parallel
+        const [tournamentsSnapshot, coursesSnapshot, admissionsSnapshot] = await Promise.all([
+          db.ref('tournaments').once('value'),
+          db.ref('courses').once('value'),
+          db.ref('onlineAdmissions').once('value')
+        ]);
+        
+        // Process tournaments
+        const tournamentsData = tournamentsSnapshot.val();
+        if (tournamentsData) {
+          if (Array.isArray(tournamentsData)) {
+            allTournaments = tournamentsData.filter(t => t !== null);
+          } else {
+            allTournaments = Object.values(tournamentsData).filter(t => t !== null);
+          }
+          
+          // Filter by club if specified
+          if (clubId) {
+            allTournaments = allTournaments.filter(t => t.createdBy === clubId || t.clubId === clubId);
+          }
+        }
+        
+        // Process courses
+        const coursesData = coursesSnapshot.val();
+        if (coursesData) {
+          if (Array.isArray(coursesData)) {
+            allCourses = coursesData.filter(c => c !== null);
+          } else {
+            allCourses = Object.values(coursesData).filter(c => c !== null);
+          }
+        }
+        
+        // Process online admissions config
+        const admissionsData = admissionsSnapshot.val();
+        if (admissionsData) {
+          onlineAdmissionsData = admissionsData;
+        }
+        
+        // Render UI
+        const years = getAvailableYears(allTournaments);
+        renderYearTabs(years);
+        renderTournaments();
+        
+      } catch (error) {
+        console.error('Error loading data from Firebase:', error);
+        document.getElementById('tournamentsBody').innerHTML = 
+          '<tr><td colspan="6" class="no-data">Error loading tournaments. Please try again later.</td></tr>';
+      }
+    }
+    
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>

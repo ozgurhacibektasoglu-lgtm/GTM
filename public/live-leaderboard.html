@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- Real-time updates via Firebase - no page refresh needed -->
+    <title>Live Leaderboard - GTM</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        min-height: 100vh;
+        color: white;
+      }
+      
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        padding: 20px 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+      }
+      
+      .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .tournament-name {
+        font-size: 24px;
+        font-weight: 800;
+      }
+      
+      .tournament-info {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 4px;
+      }
+      
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(239, 68, 68, 0.9);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        animation: pulse 2s infinite;
+      }
+      
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        animation: blink 1s infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+      }
+      
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      
+      /* Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      /* Tournament Selector */
+      .tournament-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .tournament-card {
+        background: rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+      }
+      
+      .tournament-card:hover {
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(255,255,255,0.2);
+      }
+      
+      .tournament-card.active {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+      }
+      
+      .tournament-card h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      
+      .tournament-card .date {
+        font-size: 13px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      /* Stats */
+      .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      
+      .stat-card {
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+      }
+      
+      .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #10b981;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+      
+      /* Leaderboard */
+      .leaderboard {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      
+      .leaderboard-header {
+        display: grid;
+        grid-template-columns: 60px 1fr 80px 60px 70px;
+        padding: 12px 16px;
+        background: rgba(0,0,0,0.3);
+        font-size: 11px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+      }
+      
+      .leaderboard-row {
+        display: grid;
+        grid-template-columns: 60px 1fr 80px 60px 70px;
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        align-items: center;
+        transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+      }
+      
+      .leaderboard-row:last-child { border-bottom: none; }
+      
+      .leaderboard-row.highlight {
+        animation: rowHighlight 2s ease-out;
+      }
+      
+      @keyframes rowHighlight {
+        0% { background: rgba(16, 185, 129, 0.3); transform: scale(1.01); }
+        100% { background: transparent; transform: scale(1); }
+      }
+      
+      .score {
+        transition: transform 0.3s ease;
+      }
+      
+      .position {
+        font-size: 18px;
+        font-weight: 800;
+      }
+      
+      .position.top-3 { color: #fbbf24; }
+      
+      .player-info {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .player-name {
+        font-weight: 600;
+        font-size: 15px;
+      }
+      
+      .player-club {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .score {
+        font-size: 18px;
+        font-weight: 700;
+        text-align: center;
+      }
+      
+      .score.under { color: #ef4444; }
+      .score.over { color: #94a3b8; }
+      
+      .thru {
+        text-align: center;
+        font-size: 13px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .thru.finished {
+        color: #10b981;
+        font-weight: 600;
+      }
+      
+      .gross {
+        text-align: center;
+        font-size: 14px;
+      }
+      
+      /* Loading */
+      .loading {
+        text-align: center;
+        padding: 60px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: #10b981;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+      
+      /* Footer */
+      .footer {
+        text-align: center;
+        padding: 20px;
+        font-size: 11px;
+        color: rgba(255,255,255,0.3);
+      }
+      
+      /* Responsive */
+      @media (max-width: 600px) {
+        .header-content { flex-direction: column; gap: 12px; text-align: center; }
+        .stats-bar { grid-template-columns: repeat(2, 1fr); }
+        .leaderboard-header, .leaderboard-row { grid-template-columns: 50px 1fr 70px 50px; }
+        .leaderboard-header > *:last-child, .leaderboard-row > *:last-child { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <div>
+          <div class="tournament-name" id="tournament-name">Live Leaderboard</div>
+          <div class="tournament-info" id="tournament-info">Select a tournament to view live scores</div>
+        </div>
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          LIVE
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Tournament List -->
+      <div class="tournament-list" id="tournament-list"></div>
+
+      <!-- Stats -->
+      <div class="stats-bar" id="stats-bar" style="display: none;">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-leader">-</div>
+          <div class="stat-label">Leader</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-players">0</div>
+          <div class="stat-label">Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-playing">0</div>
+          <div class="stat-label">On Course</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-finished">0</div>
+          <div class="stat-label">Finished</div>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="leaderboard" id="leaderboard" style="display: none;">
+        <div class="leaderboard-header">
+          <div>Pos</div>
+          <div>Player</div>
+          <div>To Par</div>
+          <div>Thru</div>
+          <div>Gross</div>
+        </div>
+        <div id="leaderboard-body"></div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Loading tournaments...</div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-state-icon">⛳</div>
+        <div>No live scores available</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Powered by GTM - Golf Tournament Management • Updates in real-time
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+    <script>
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+        authDomain: "gtm-management-6350e.firebaseapp.com",
+        databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com/",
+        projectId: "gtm-management-6350e",
+        storageBucket: "gtm-management-6350e.firebasestorage.app",
+        messagingSenderId: "461806742170",
+        appId: "1:461806742170:web:9a2af43d50c0a26718cd23"
+      };
+
+      let db = null;
+      let currentTournament = null;
+      let currentRoundId = null;
+      let liveScores = {};
+      let courses = [];
+      let admittedPlayers = [];
+      let firebaseListener = null;
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        try {
+          firebase.initializeApp(firebaseConfig);
+          db = firebase.database();
+        } catch (e) {
+          console.error('Firebase init error:', e);
+        }
+
+        // Check URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        const roundId = urlParams.get('roundId');
+
+        if (tournamentId) {
+          await loadTournament(tournamentId, roundId);
+        } else {
+          await loadTournamentList();
+        }
+      });
+
+      // Load tournament list
+      async function loadTournamentList() {
+        try {
+          const snapshot = await db.ref('tournaments').once('value');
+          const data = snapshot.val();
+          
+          if (!data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'block';
+            return;
+          }
+
+          const tournaments = Object.values(data)
+            .filter(t => {
+              // Show tournaments from last 30 days
+              if (!t.date) return true;
+              const daysDiff = (new Date() - new Date(t.date)) / (1000 * 60 * 60 * 24);
+              return daysDiff < 30;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+          if (tournaments.length === 0) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'block';
+            return;
+          }
+
+          const container = document.getElementById('tournament-list');
+          container.innerHTML = tournaments.map(t => `
+            <div class="tournament-card" onclick="loadTournament('${t.tournamentId}')">
+              <h3>${t.name}</h3>
+              <div class="date">${t.date || 'Date TBA'} • ${t.meta?.roundIds?.length || 1} round(s)</div>
+            </div>
+          `).join('');
+
+          document.getElementById('loading').style.display = 'none';
+
+        } catch (error) {
+          console.error('Error loading tournaments:', error);
+          document.getElementById('loading').innerHTML = 'Error loading tournaments';
+        }
+      }
+
+      // Load tournament
+      async function loadTournament(tournamentId, roundId) {
+        document.getElementById('tournament-list').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+
+        try {
+          // Load tournament
+          const tSnapshot = await db.ref(`tournaments/${tournamentId}`).once('value');
+          currentTournament = tSnapshot.val();
+
+          if (!currentTournament) {
+            throw new Error('Tournament not found');
+          }
+
+          // Get round ID - use URL param if provided, otherwise first round
+          const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
+          currentRoundId = roundId || roundIds[0]; // Default to FIRST round
+          
+          // Determine round number for display
+          const roundNum = roundIds.indexOf(currentRoundId) + 1;
+
+          // Update header
+          document.getElementById('tournament-name').textContent = currentTournament.name;
+          document.getElementById('tournament-info').textContent = `${currentTournament.date || ''} • Round ${roundNum > 0 ? roundNum : 1}`;
+
+          // Load courses
+          const cSnapshot = await db.ref('courses').once('value');
+          courses = Object.values(cSnapshot.val() || {});
+
+          // Load admitted players
+          const aSnapshot = await db.ref(`admittedPlayers/${currentRoundId}`).once('value');
+          admittedPlayers = aSnapshot.val() || [];
+
+          // Load scores
+          await loadScores();
+
+          // Setup listener
+          setupListener();
+
+          // Show UI
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('stats-bar').style.display = 'grid';
+          document.getElementById('leaderboard').style.display = 'block';
+
+          renderLeaderboard();
+
+        } catch (error) {
+          console.error('Error:', error);
+          document.getElementById('loading').innerHTML = `Error: ${error.message}`;
+        }
+      }
+
+      // Load scores
+      async function loadScores() {
+        try {
+          let snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
+          liveScores = snapshot.val() || {};
+
+          // Also check regular scores
+          snapshot = await db.ref(`scores/${currentRoundId}`).once('value');
+          const regular = snapshot.val() || {};
+
+          for (const key in regular) {
+            if (!liveScores[key]) liveScores[key] = regular[key];
+          }
+        } catch (e) {
+          console.error('Error loading scores:', e);
+        }
+      }
+
+      // Setup listener
+      function setupListener() {
+        if (firebaseListener) firebaseListener();
+
+        const ref = db.ref(`liveScores/${currentRoundId}`);
+        firebaseListener = ref.on('value', (snapshot) => {
+          liveScores = snapshot.val() || {};
+          renderLeaderboard();
+        });
+      }
+
+      // Get course pars array (handles different data formats)
+      function getCoursePars() {
+        const defaultPars = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5];
+        
+        const courseId = currentTournament?.meta?.courses?.[0];
+        const course = courses.find(c => c.id === courseId || c.name === courseId || c.courseId === courseId);
+        
+        if (!course) return defaultPars;
+        
+        // Check if course has pars array (new format)
+        if (course.pars && Array.isArray(course.pars)) {
+          return course.pars;
+        }
+        
+        // Check if course has holes array (old format)
+        if (course.holes && Array.isArray(course.holes)) {
+          return course.holes.map(h => h.par || 4);
+        }
+        
+        return defaultPars;
+      }
+
+      // Calculate score
+      function calcScore(playerKey) {
+        const data = liveScores[playerKey];
+        if (!data || !data.holes) return { gross: 0, toPar: 0, thru: 0 };
+
+        const coursePars = getCoursePars();
+
+        let gross = 0, par = 0, thru = 0;
+
+        for (let i = 0; i < 18; i++) {
+          if (data.holes[i] && data.holes[i] !== '') {
+            gross += parseInt(data.holes[i]);
+            par += coursePars[i];
+            thru = i + 1;
+          }
+        }
+
+        return { gross, toPar: gross - par, thru };
+      }
+
+      // Render leaderboard
+      function renderLeaderboard() {
+        const playerKeys = new Set([
+          ...Object.keys(liveScores),
+          ...admittedPlayers.map(p => p.reg || `${p.firstName}-${p.lastName}`)
+        ]);
+
+        let players = [];
+
+        playerKeys.forEach(key => {
+          const score = calcScore(key);
+          const info = admittedPlayers.find(p => (p.reg || `${p.firstName}-${p.lastName}`) === key) || {
+            firstName: key.split('-')[0] || 'Unknown',
+            lastName: key.split('-')[1] || ''
+          };
+
+          players.push({ key, ...info, ...score });
+        });
+
+        // Sort
+        players.sort((a, b) => {
+          if (a.thru === 0) return 1;
+          if (b.thru === 0) return -1;
+          if (a.toPar !== b.toPar) return a.toPar - b.toPar;
+          return b.thru - a.thru;
+        });
+
+        // Assign positions
+        let pos = 1, prevScore = null;
+        players.forEach((p, i) => {
+          if (p.thru === 0) {
+            p.position = '-';
+          } else if (p.toPar === prevScore) {
+            p.position = players[i - 1].position;
+          } else {
+            p.position = pos;
+            prevScore = p.toPar;
+          }
+          pos = i + 2;
+        });
+
+        // Check for data
+        const withScores = players.filter(p => p.thru > 0);
+
+        if (withScores.length === 0) {
+          document.getElementById('leaderboard').style.display = 'none';
+          document.getElementById('stats-bar').style.display = 'none';
+          document.getElementById('empty-state').style.display = 'block';
+          return;
+        }
+
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('leaderboard').style.display = 'block';
+        document.getElementById('stats-bar').style.display = 'grid';
+
+        // Update stats
+        const finished = players.filter(p => p.thru === 18).length;
+        const playing = withScores.length - finished;
+        const leader = withScores[0];
+        const leaderScore = leader.toPar === 0 ? 'E' : (leader.toPar > 0 ? `+${leader.toPar}` : leader.toPar);
+
+        document.getElementById('stat-leader').textContent = leaderScore;
+        document.getElementById('stat-players').textContent = players.length;
+        document.getElementById('stat-playing').textContent = playing;
+        document.getElementById('stat-finished').textContent = finished;
+
+        // Smart DOM update - update individual rows
+        const body = document.getElementById('leaderboard-body');
+        const existingRows = body.querySelectorAll('.leaderboard-row[data-player-key]');
+        const existingRowMap = {};
+        existingRows.forEach(row => {
+          existingRowMap[row.dataset.playerKey] = row;
+        });
+
+        // Track current players
+        const currentPlayerKeys = new Set(players.map(p => p.key));
+
+        // Remove rows no longer in list
+        existingRows.forEach(row => {
+          if (!currentPlayerKeys.has(row.dataset.playerKey)) {
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(-20px)';
+            setTimeout(() => row.remove(), 300);
+          }
+        });
+
+        // Update or create rows
+        players.forEach((p, index) => {
+          const toParStr = p.thru === 0 ? '-' : (p.toPar === 0 ? 'E' : (p.toPar > 0 ? `+${p.toPar}` : p.toPar));
+          const scoreClass = p.toPar < 0 ? 'under' : (p.toPar > 0 ? 'over' : '');
+          
+          const existingRow = existingRowMap[p.key];
+
+          if (existingRow) {
+            // Update existing row
+            const posEl = existingRow.querySelector('.position');
+            const scoreEl = existingRow.querySelector('.score');
+            const thruEl = existingRow.querySelector('.thru');
+            const grossEl = existingRow.querySelector('.gross');
+
+            if (posEl) {
+              posEl.textContent = p.position;
+              posEl.className = `position ${p.position <= 3 ? 'top-3' : ''}`;
+            }
+
+            if (scoreEl) {
+              const newScore = toParStr;
+              if (scoreEl.textContent !== newScore) {
+                scoreEl.textContent = newScore;
+                scoreEl.className = `score ${scoreClass}`;
+                scoreEl.style.transform = 'scale(1.2)';
+                setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 300);
+              }
+            }
+
+            if (thruEl) {
+              thruEl.textContent = p.thru === 0 ? '-' : (p.thru === 18 ? 'F' : p.thru);
+              thruEl.className = `thru ${p.thru === 18 ? 'finished' : ''}`;
+            }
+
+            if (grossEl) {
+              grossEl.textContent = p.gross || '-';
+            }
+
+            // Move to correct position
+            const currentIndex = Array.from(body.children).indexOf(existingRow);
+            if (currentIndex !== index) {
+              const targetRow = body.children[index];
+              if (targetRow && targetRow !== existingRow) {
+                body.insertBefore(existingRow, targetRow);
+              } else if (index >= body.children.length) {
+                body.appendChild(existingRow);
+              }
+            }
+          } else {
+            // Create new row
+            const newRow = document.createElement('div');
+            newRow.className = 'leaderboard-row';
+            newRow.dataset.playerKey = p.key;
+            newRow.style.opacity = '0';
+            newRow.style.transform = 'translateX(20px)';
+            newRow.innerHTML = `
+              <div class="position ${p.position <= 3 ? 'top-3' : ''}">${p.position}</div>
+              <div class="player-info">
+                <div class="player-name">${p.firstName} ${p.lastName}</div>
+                <div class="player-club">${p.club || p.homeClub || '-'}</div>
+              </div>
+              <div class="score ${scoreClass}">${toParStr}</div>
+              <div class="thru ${p.thru === 18 ? 'finished' : ''}">${p.thru === 0 ? '-' : (p.thru === 18 ? 'F' : p.thru)}</div>
+              <div class="gross">${p.gross || '-'}</div>
+            `;
+
+            const targetRow = body.children[index];
+            if (targetRow) {
+              body.insertBefore(newRow, targetRow);
+            } else {
+              body.appendChild(newRow);
+            }
+
+            // Animate in
+            requestAnimationFrame(() => {
+              newRow.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+              newRow.style.opacity = '1';
+              newRow.style.transform = 'translateX(0)';
+            });
+          }
+        });
+      }
+
+      // Cleanup
+      window.addEventListener('beforeunload', () => {
+        if (firebaseListener && db) {
+          db.ref(`liveScores/${currentRoundId}`).off('value', firebaseListener);
+        }
+      });
+    </script>
+  </body>
+</html>

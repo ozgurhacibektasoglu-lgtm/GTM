@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admitted Players List</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: #f8fafc;
+      color: #0f172a;
+      min-height: 100vh;
+    }
+    
+    /* Utility classes */
+    .hidden { display: none !important; }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+      padding: 20px 24px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .header .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* Round Tabs */
+    .round-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 16px 24px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    
+    .round-tab {
+      padding: 8px 20px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #475569;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .round-tab:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    
+    .round-tab.active {
+      background: #0b6efd;
+      color: white;
+      border-color: #0b6efd;
+    }
+    
+    /* Container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Stats Cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    
+    .stat-card .label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .stat-card.admitted .value { color: #16a34a; }
+    .stat-card.reserve .value { color: #f59e0b; }
+    
+    /* Cut Line */
+    .cut-line {
+      padding: 6px 0;
+      background: linear-gradient(90deg, #fef3c7, #fef3c7);
+      color: #92400e;
+      font-weight: 600;
+      font-size: 12px;
+      text-align: center;
+      border-top: 2px solid #f59e0b;
+      border-bottom: 2px solid #f59e0b;
+    }
+    
+    /* Table */
+    .table-wrapper {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 2px solid #e2e8f0;
+      color: #1e293b;
+      white-space: nowrap;
+    }
+    
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+    
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+    
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tbody tr.reserve-player {
+      background: #fffbeb;
+    }
+    
+    tbody tr.reserve-player:hover {
+      background: #fef3c7;
+    }
+    
+    .order-num {
+      font-weight: 700;
+      color: #0b6efd;
+      min-width: 40px;
+    }
+    
+    .reserve-player .order-num {
+      color: #f59e0b;
+    }
+    
+    .reg-no {
+      font-family: monospace;
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .player-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .player-club {
+      color: #64748b;
+    }
+    
+    .hcp {
+      font-weight: 500;
+      text-align: center;
+    }
+    
+    .reg-date {
+      font-size: 13px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+    
+    .no-data .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .no-data p {
+      font-size: 16px;
+    }
+    
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-badge.active {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    
+    .status-badge.closed {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .status-badge.scheduled {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+    
+    /* Register Button */
+    .register-section {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    
+    .register-section p {
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+    
+    .btn-register {
+      display: inline-block;
+      padding: 12px 32px;
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-register:hover {
+      background: linear-gradient(180deg, #16a34a, #15803d);
+      transform: translateY(-1px);
+    }
+    
+    .btn-register.disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-register.cancel {
+      background: linear-gradient(180deg, #ef4444, #dc2626);
+    }
+    
+    .btn-register.cancel:hover {
+      background: linear-gradient(180deg, #dc2626, #b91c1c);
+    }
+    
+    .btn-register.registered {
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      cursor: default;
+      transform: none;
+    }
+    
+    .btn-register.registered:hover {
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      transform: none;
+    }
+    
+    .btn-register-another {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(180deg, #8b5cf6, #7c3aed);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-register-another:hover {
+      background: linear-gradient(180deg, #7c3aed, #6d28d9);
+      transform: translateY(-1px);
+    }
+    
+    .btn-logout {
+      padding: 10px 20px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .btn-logout:hover {
+      background: #e2e8f0;
+    }
+    
+    .register-buttons {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .logged-in-as {
+      font-size: 13px;
+      color: #64748b;
+      margin-right: 8px;
+    }
+    
+    .logged-in-as strong {
+      color: #0f172a;
+    }
+    
+    /* Cancel Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 450px;
+      max-height: 80vh;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      font-size: 18px;
+      color: #1e293b;
+      margin: 0;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      padding: 0;
+      line-height: 1;
+    }
+    
+    .modal-close:hover {
+      color: #1e293b;
+    }
+    
+    .modal-body {
+      padding: 20px 24px;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+    
+    .modal-body p {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+    
+    .cancel-player-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .cancel-player-item:hover {
+      background: #fee2e2;
+      border-color: #fecaca;
+    }
+    
+    .cancel-player-item.selected {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+    
+    .cancel-player-item .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    
+    .cancel-player-item.selected .checkbox {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: white;
+    }
+    
+    .cancel-player-item .player-info {
+      flex: 1;
+    }
+    
+    .cancel-player-item .player-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 14px;
+    }
+    
+    .cancel-player-item .player-name .you-badge {
+      background: #dbeafe;
+      color: #2563eb;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+    
+    .cancel-player-item .player-details {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    .modal-footer .btn-modal {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-footer .btn-modal-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .modal-footer .btn-modal-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    .modal-footer .btn-modal-danger {
+      background: #ef4444;
+      color: white;
+      border: none;
+    }
+    
+    .modal-footer .btn-modal-danger:hover {
+      background: #dc2626;
+    }
+    
+    .modal-footer .btn-modal-danger:disabled {
+      background: #fca5a5;
+      cursor: not-allowed;
+    }
+    
+    .no-cancellable {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { padding: 16px; }
+      th, td { padding: 10px 12px; font-size: 13px; }
+      .header { padding: 16px; }
+      .header h1 { font-size: 18px; }
+      .reg-no { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1 id="tournament-name">Loading...</h1>
+    <div class="subtitle" id="tournament-info"></div>
+  </div>
+  
+  <!-- Round Tabs -->
+  <div class="round-tabs" id="round-tabs">
+    <!-- Round tabs will be populated dynamically -->
+  </div>
+  
+  <div class="container">
+    <!-- Registration Status -->
+    <div class="register-section" id="register-section">
+      <p>Registration Status: <span class="status-badge" id="status-badge">Loading...</span></p>
+      <div class="register-buttons">
+        <span class="logged-in-as hidden" id="logged-in-as">Logged in as: <strong id="logged-in-name">-</strong></span>
+        <a href="../auth/player-login.html" id="btn-register" class="btn-register disabled">👤 Player Registration</a>
+        <a href="#" id="btn-register-another" class="btn-register-another hidden">👥 Register Another Player</a>
+        <a href="#" id="btn-club-register" class="btn-register-another hidden" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">🏢 Club Registration</a>
+        <button class="btn-logout hidden" id="btn-logout">Logout</button>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card admitted">
+        <div class="label">Admitted</div>
+        <div class="value" id="stat-admitted">0</div>
+      </div>
+      <div class="stat-card reserve">
+        <div class="label">Below Cut Line</div>
+        <div class="value" id="stat-reserve">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Capacity</div>
+        <div class="value" id="stat-capacity">-</div>
+      </div>
+    </div>
+    
+    <!-- Players Table -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 60px;">Order</th>
+            <th style="width: 120px;">Reg No</th>
+            <th>Name</th>
+            <th>Club</th>
+            <th style="width: 80px; text-align: center;">HCP</th>
+            <th style="width: 150px;">Registration Date</th>
+          </tr>
+        </thead>
+        <tbody id="players-body">
+          <tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>Loading players...</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Cancel Registration Modal -->
+  <div class="modal-overlay hidden" id="cancel-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Cancel Registration</h3>
+        <button class="modal-close" onclick="closeCancelModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Select the registration(s) you want to cancel:</p>
+        <div id="cancel-players-list">
+          <!-- Will be populated dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal btn-modal-secondary" onclick="closeCancelModal()">Close</button>
+        <button class="btn-modal btn-modal-danger" id="btn-confirm-cancel" onclick="confirmCancelRegistrations()" disabled>Cancel Selected</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Get tournament ID and round from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+    let selectedRound = parseInt(urlParams.get('r') || urlParams.get('round')) || 1;
+    
+    let tournament = null;
+    let admissionsConfig = null;
+    let registrations = [];
+    let totalRounds = 1;
+    
+    // Format date/time
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '-';
+      try {
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${mins}`;
+      } catch (e) {
+        return dateStr;
+      }
+    }
+    
+    // Format date only
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      try {
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+      } catch (e) {
+        return dateStr;
+      }
+    }
+    
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize
+    async function init() {
+      if (!tournamentId) {
+        document.getElementById('tournament-name').textContent = 'Tournament not found';
+        document.getElementById('players-body').innerHTML = 
+          '<tr><td colspan="6" class="no-data"><div class="icon">❌</div><p>No tournament ID provided</p></td></tr>';
+        return;
+      }
+      
+      await loadTournament();
+      await loadAdmissionsConfig();
+      await loadRegistrations();
+      
+      setupRoundTabs();
+      updateStatus();
+      renderPlayers();
+    }
+    
+    // Load tournament data
+    async function loadTournament() {
+      try {
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`tournaments/${tournamentId}`).once('value');
+          tournament = snapshot.val();
+        }
+        
+        // Fallback to localStorage
+        if (!tournament) {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          tournament = tournaments.find(t => t.tournamentId === tournamentId);
+        }
+        
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+          document.getElementById('tournament-info').textContent = formatDate(tournament.date || tournament.startDate);
+          
+          // Get total rounds
+          if (tournament.meta?.rounds) {
+            totalRounds = tournament.meta.rounds;
+          } else if (tournament.numberOfRounds) {
+            totalRounds = tournament.numberOfRounds;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading tournament:', e);
+      }
+    }
+    
+    // Load admissions config
+    async function loadAdmissionsConfig() {
+      try {
+        const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
+        
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${selectedRound}/config`).once('value');
+          admissionsConfig = snapshot.val();
+        }
+        
+        // Fallback to localStorage
+        if (!admissionsConfig) {
+          admissionsConfig = JSON.parse(localStorage.getItem(configKey) || 'null');
+        }
+      } catch (e) {
+        console.error('Error loading admissions config:', e);
+        // Fallback to localStorage on error
+        const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
+        admissionsConfig = JSON.parse(localStorage.getItem(configKey) || 'null');
+      }
+    }
+    
+    // Load registrations
+    async function loadRegistrations() {
+      try {
+        const regKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+        
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${selectedRound}/registrations`).once('value');
+          const data = snapshot.val();
+          if (data) {
+            registrations = Object.values(data);
+          }
+        }
+        
+        // Fallback/merge with localStorage
+        if (registrations.length === 0) {
+          registrations = JSON.parse(localStorage.getItem(regKey) || '[]');
+        }
+        
+        // Sort by configured method
+        sortRegistrations();
+        
+      } catch (e) {
+        console.error('Error loading registrations:', e);
+        // Fallback to localStorage on error
+        const regKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+        registrations = JSON.parse(localStorage.getItem(regKey) || '[]');
+        sortRegistrations();
+      }
+    }
+    
+    // Sort registrations based on config
+    function sortRegistrations() {
+      const sortMethod = admissionsConfig?.sortMethod || 'registration_order';
+      
+      if (sortMethod === 'handicap') {
+        // Sort by HCP (low to high), with registration time as tiebreaker
+        registrations.sort((a, b) => {
+          const hcpA = parseFloat(a.handicap) || 999;
+          const hcpB = parseFloat(b.handicap) || 999;
+          if (hcpA !== hcpB) {
+            return hcpA - hcpB;
+          }
+          return new Date(a.registeredAt) - new Date(b.registeredAt);
+        });
+      } else {
+        // Default: registration order
+        registrations.sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+      }
+      
+      // Update statuses and positions
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      let admittedCount = 0;
+      let reserveCount = 0;
+      
+      registrations.forEach(r => {
+        if (admittedCount < maxPlayers) {
+          r.status = 'admitted';
+          admittedCount++;
+          r.position = admittedCount;
+        } else {
+          r.status = 'reserve';
+          reserveCount++;
+          r.position = reserveCount;
+        }
+      });
+    }
+    
+    // Setup round tabs
+    function setupRoundTabs() {
+      const container = document.getElementById('round-tabs');
+      container.innerHTML = '';
+      
+      for (let i = 1; i <= totalRounds; i++) {
+        const tab = document.createElement('button');
+        tab.className = 'round-tab' + (i === selectedRound ? ' active' : '');
+        tab.textContent = `Round ${i}`;
+        tab.addEventListener('click', () => selectRound(i));
+        container.appendChild(tab);
+      }
+    }
+    
+    // Select round
+    function selectRound(roundNum) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('r', roundNum);
+      window.location.href = url.toString();
+    }
+    
+    // Update registration status
+    function updateStatus() {
+      const badge = document.getElementById('status-badge');
+      const btn = document.getElementById('btn-register');
+      const clubBtn = document.getElementById('btn-club-register');
+      const now = new Date();
+      
+      // Hide buttons by default
+      clubBtn.classList.add('hidden');
+      btn.classList.add('hidden');
+      
+      if (!admissionsConfig || !admissionsConfig.isActive) {
+        badge.textContent = 'Closed';
+        badge.className = 'status-badge closed';
+        btn.classList.add('disabled');
+        btn.removeAttribute('href');
+        return;
+      }
+      
+      const startDate = admissionsConfig.startDate ? new Date(admissionsConfig.startDate) : null;
+      const endDate = admissionsConfig.endDate ? new Date(admissionsConfig.endDate) : null;
+      
+      // Check date restrictions first
+      if (startDate && now < startDate) {
+        badge.textContent = 'Opens ' + formatDateTime(admissionsConfig.startDate);
+        badge.className = 'status-badge scheduled';
+        btn.classList.add('disabled');
+        btn.removeAttribute('href');
+        return;
+      }
+      
+      if (endDate && now > endDate) {
+        badge.textContent = 'Closed';
+        badge.className = 'status-badge closed';
+        btn.classList.add('disabled');
+        btn.removeAttribute('href');
+        return;
+      }
+      
+      // Registration is open - determine which buttons to show
+      badge.textContent = 'Open';
+      badge.className = 'status-badge active';
+      
+      // Always show club registration button when open
+      clubBtn.classList.remove('hidden');
+      clubBtn.href = `../auth/club-register-login.html?t=${tournamentId}&r=${selectedRound}`;
+      
+      // Check if clubs-only mode
+      if (admissionsConfig.requireLogin === true) {
+        // Clubs only - hide player button, update badge
+        badge.textContent = 'Club Registration Only';
+        badge.className = 'status-badge scheduled';
+        btn.classList.add('hidden');
+      } else {
+        // Both allowed - show player button too (default to login page, auth state will update if logged in)
+        const fullRegisterUrl = window.location.href.replace('online_admissions_list.html', 'online_register.html').split('?')[0] + `?t=${tournamentId}&r=${selectedRound}`;
+        const returnUrl = encodeURIComponent(fullRegisterUrl);
+        btn.classList.remove('hidden');
+        btn.classList.remove('disabled');
+        btn.href = `../auth/player-login.html?return=${returnUrl}`;
+      }
+    }
+    
+    // Update button URL based on auth state and registration status
+    let currentPlayerRegNumber = null; // Store for modal use
+    
+    function updateButtonForAuthState(isLoggedIn, playerRegNumber = null) {
+      const btn = document.getElementById('btn-register');
+      const btnRegisterAnother = document.getElementById('btn-register-another');
+      
+      currentPlayerRegNumber = playerRegNumber; // Store for modal
+      
+      // If clubs-only mode, player button should stay hidden
+      if (admissionsConfig?.requireLogin === true) {
+        btn.classList.add('hidden');
+        return;
+      }
+      
+      if (btn.classList.contains('disabled')) return; // Don't update if registration is closed
+      
+      const registerUrl = `online_register.html?t=${tournamentId}&r=${selectedRound}`;
+      const fullRegisterUrl = window.location.href.replace('online_admissions_list.html', 'online_register.html').split('?')[0] + `?t=${tournamentId}&r=${selectedRound}`;
+      
+      // Hide register another button by default
+      btnRegisterAnother.classList.add('hidden');
+      
+      if (isLoggedIn) {
+        // Check if player is already registered
+        const isRegistered = playerRegNumber && registrations.some(r => r.playerReg?.toUpperCase() === playerRegNumber?.toUpperCase());
+        
+        if (isRegistered) {
+          // Show "Register Another Player" button if allowed in config
+          if (admissionsConfig?.allowAdmitOthers !== false) {
+            btnRegisterAnother.classList.remove('hidden');
+            btnRegisterAnother.href = `online_register.html?t=${tournamentId}&r=${selectedRound}&admitOther=1`;
+          }
+          
+          // Check if cancellation deadline has passed
+          let canCancel = admissionsConfig?.allowCancel !== false;
+          if (canCancel && admissionsConfig?.cancelDeadline && tournament) {
+            const tournamentDate = tournament.date || tournament.startDate;
+            if (tournamentDate) {
+              const deadline = new Date(tournamentDate);
+              deadline.setHours(deadline.getHours() - admissionsConfig.cancelDeadline);
+              if (new Date() > deadline) {
+                canCancel = false;
+              }
+            }
+          }
+          
+          if (canCancel) {
+            // Already registered - show cancel button that opens modal
+            btn.href = '#';
+            btn.textContent = 'Cancel Registration';
+            btn.classList.add('cancel');
+            btn.classList.remove('disabled', 'hidden');
+            btn.onclick = (e) => {
+              e.preventDefault();
+              openCancelModal(playerRegNumber);
+            };
+          } else {
+            // Cancellation deadline passed - show disabled state
+            btn.href = '#';
+            btn.textContent = '✓ Registered';
+            btn.classList.remove('cancel', 'hidden');
+            btn.classList.add('registered');
+            btn.onclick = (e) => e.preventDefault();
+          }
+        } else {
+          // Not registered - show register button
+          btn.href = registerUrl;
+          btn.textContent = '👤 Register';
+          btn.classList.remove('cancel', 'registered', 'hidden');
+          btn.onclick = null;
+        }
+      } else {
+        // Not logged in - go to login page with return URL to register page
+        const returnUrl = encodeURIComponent(fullRegisterUrl);
+        btn.href = `../auth/player-login.html?return=${returnUrl}`;
+        btn.textContent = '👤 Player Registration';
+        btn.classList.remove('cancel', 'hidden');
+        btn.onclick = null;
+        console.log('Login URL:', btn.href);
+      }
+    }
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Modal state
+    let selectedForCancellation = new Set();
+    
+    // Open cancel modal
+    function openCancelModal(playerRegNumber) {
+      const modal = document.getElementById('cancel-modal');
+      const listContainer = document.getElementById('cancel-players-list');
+      
+      // Find cancellable registrations:
+      // 1. The player's own registration
+      // 2. Registrations made by this player
+      const cancellableRegs = registrations.filter(r => 
+        r.playerReg === playerRegNumber || 
+        (r.registeredBy && r.registeredBy.toUpperCase() === playerRegNumber.toUpperCase())
+      );
+      
+      if (cancellableRegs.length === 0) {
+        listContainer.innerHTML = '<div class="no-cancellable">No registrations found to cancel.</div>';
+      } else {
+        listContainer.innerHTML = cancellableRegs.map(r => {
+          const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+          const isOwnRegistration = r.playerReg === playerRegNumber;
+          const status = r.status === 'admitted' ? `Admitted #${r.position}` : `Reserve #${r.position}`;
+          
+          return `
+            <div class="cancel-player-item" data-reg="${escapeHtml(r.playerReg)}" onclick="toggleCancelSelection('${escapeHtml(r.playerReg)}')">
+              <div class="checkbox">✓</div>
+              <div class="player-info">
+                <div class="player-name">
+                  ${escapeHtml(name)}
+                  ${isOwnRegistration ? '<span class="you-badge">YOU</span>' : ''}
+                </div>
+                <div class="player-details">${escapeHtml(r.playerReg)} • HCP: ${r.handicap || '-'} • ${status}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      // Reset selection
+      selectedForCancellation.clear();
+      updateCancelButton();
+      
+      modal.classList.remove('hidden');
+    }
+    
+    // Close cancel modal
+    function closeCancelModal() {
+      document.getElementById('cancel-modal').classList.add('hidden');
+      selectedForCancellation.clear();
+    }
+    
+    // Toggle selection for cancellation
+    function toggleCancelSelection(playerReg) {
+      const item = document.querySelector(`.cancel-player-item[data-reg="${playerReg}"]`);
+      
+      if (selectedForCancellation.has(playerReg)) {
+        selectedForCancellation.delete(playerReg);
+        item.classList.remove('selected');
+      } else {
+        selectedForCancellation.add(playerReg);
+        item.classList.add('selected');
+      }
+      
+      updateCancelButton();
+    }
+    
+    // Update cancel button state
+    function updateCancelButton() {
+      const btn = document.getElementById('btn-confirm-cancel');
+      const count = selectedForCancellation.size;
+      
+      btn.disabled = count === 0;
+      btn.textContent = count === 0 ? 'Cancel Selected' : `Cancel ${count} Registration${count > 1 ? 's' : ''}`;
+    }
+    
+    // Confirm and execute cancellations
+    async function confirmCancelRegistrations() {
+      if (selectedForCancellation.size === 0) return;
+      
+      const count = selectedForCancellation.size;
+      if (!confirm(`Are you sure you want to cancel ${count} registration${count > 1 ? 's' : ''}?`)) {
+        return;
+      }
+      
+      const btn = document.getElementById('btn-confirm-cancel');
+      btn.disabled = true;
+      btn.textContent = 'Cancelling...';
+      
+      try {
+        // Remove selected registrations
+        const toRemove = Array.from(selectedForCancellation);
+        registrations = registrations.filter(r => !toRemove.includes(r.playerReg));
+        
+        // Update localStorage
+        const regKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        // Sync with Firebase
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          try {
+            const db = firebase.database();
+            const regObj = {};
+            registrations.forEach(r => {
+              regObj[r.registrationId] = r;
+            });
+            await db.ref(`onlineAdmissions/${tournamentId}/round${selectedRound}/registrations`).set(regObj);
+          } catch (fbErr) {
+            console.warn('Firebase sync error:', fbErr);
+          }
+        }
+        
+        // Close modal and reload
+        closeCancelModal();
+        alert(`${count} registration${count > 1 ? 's' : ''} cancelled successfully.`);
+        location.reload();
+      } catch (error) {
+        console.error('Error cancelling registrations:', error);
+        alert('Failed to cancel registrations. Please try again.');
+        btn.disabled = false;
+        btn.textContent = `Cancel ${count} Registration${count > 1 ? 's' : ''}`;
+      }
+    }
+    
+    // Render players table
+    function renderPlayers() {
+      const tbody = document.getElementById('players-body');
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      const cutLineText = admissionsConfig?.cutLineText || '───── RESERVE LIST ─────';
+      
+      // Update stats
+      const admitted = registrations.filter(r => r.status === 'admitted').length;
+      const reserve = registrations.filter(r => r.status === 'reserve').length;
+      
+      document.getElementById('stat-admitted').textContent = admitted;
+      document.getElementById('stat-reserve').textContent = reserve;
+      document.getElementById('stat-capacity').textContent = maxPlayers;
+      
+      if (registrations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>No players registered yet</p></td></tr>';
+        return;
+      }
+      
+      let html = '';
+      let cutLineAdded = false;
+      
+      registrations.forEach((r, index) => {
+        // Add cut line before first reserve player
+        if (r.status === 'reserve' && !cutLineAdded) {
+          html += `
+            <tr>
+              <td colspan="6" class="cut-line">${escapeHtml(cutLineText)}</td>
+            </tr>
+          `;
+          cutLineAdded = true;
+        }
+        
+        const isReserve = r.status === 'reserve';
+        const orderDisplay = isReserve ? `R${r.position}` : r.position;
+        const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+        
+        html += `
+          <tr class="${isReserve ? 'reserve-player' : ''}">
+            <td class="order-num">${orderDisplay}</td>
+            <td class="reg-no">${escapeHtml(r.playerReg || '-')}</td>
+            <td class="player-name">${escapeHtml(name)}</td>
+            <td class="player-club">${escapeHtml(r.club || '-')}</td>
+            <td class="hcp">${r.handicap !== undefined && r.handicap !== null ? r.handicap : '-'}</td>
+            <td class="reg-date">${formatDateTime(r.registeredAt)}</td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = html;
+    }
+    
+    // Initialize Firebase
+    function initFirebaseApp() {
+      try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+          firebase.initializeApp(window.firebaseConfig);
+        }
+      } catch (e) {
+        console.warn('Firebase init error:', e);
+      }
+    }
+    
+    // Check auth state and update buttons
+    function checkAuthState() {
+      if (typeof window.Auth === 'undefined') {
+        setTimeout(checkAuthState, 100);
+        return;
+      }
+      
+      window.Auth.onAuthStateChanged(async (user) => {
+        const btn = document.getElementById('btn-register');
+        const clubBtn = document.getElementById('btn-club-register');
+        const logoutBtn = document.getElementById('btn-logout');
+        const loggedInAs = document.getElementById('logged-in-as');
+        const loggedInName = document.getElementById('logged-in-name');
+        
+        if (user) {
+          // User is logged in
+          const profile = await window.Auth.getUserProfile();
+          if (profile && profile.playerRegNumber) {
+            loggedInName.textContent = `${profile.firstName || ''} (${profile.playerRegNumber})`;
+            loggedInAs.classList.remove('hidden');
+            logoutBtn.classList.remove('hidden');
+            // Hide club registration button for logged-in players
+            clubBtn.classList.add('hidden');
+            updateButtonForAuthState(true, profile.playerRegNumber);
+          }
+        } else {
+          // Not logged in
+          loggedInAs.classList.add('hidden');
+          logoutBtn.classList.add('hidden');
+          // Show club registration button when not logged in (if registration is open)
+          if (!btn.classList.contains('disabled')) {
+            clubBtn.classList.remove('hidden');
+          }
+          updateButtonForAuthState(false);
+        }
+      });
+      
+      // Logout button handler
+      document.getElementById('btn-logout').addEventListener('click', async () => {
+        await window.Auth.signOut();
+        location.reload();
+      });
+    }
+    
+    // Start
+    initFirebaseApp();
+    init().then(() => {
+      // Check auth state after init completes so button is enabled
+      checkAuthState();
+    });
+  </script>
+</body>
+</html>

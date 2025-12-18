@@ -101,9 +101,135 @@
         padding: 40px; 
         font-size: 14px;
       }
+      
+      /* Match Play Results Styles */
+      .match-result-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #e2e8f0;
+      }
+      .match-result-card.completed {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        border-color: #86efac;
+      }
+      .match-result-card.tied {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border-color: #fcd34d;
+      }
+      .match-team-result {
+        flex: 1;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .match-team-result.winner {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        border: 2px solid #22c55e;
+      }
+      .match-team-result.loser {
+        background: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        opacity: 0.8;
+      }
+      .match-team-result.tied {
+        background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+        border: 2px solid #facc15;
+      }
+      .match-team-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #dc2626;
+        margin-bottom: 4px;
+      }
+      .match-player-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .match-score-display {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        min-width: 50px;
+        text-align: center;
+      }
+      .match-vs-display {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        padding: 0 8px;
+      }
+      .match-status-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+      }
+      .match-status-badge.pending { background: #f1f5f9; color: #64748b; }
+      .match-status-badge.completed { background: #dcfce7; color: #16a34a; }
+      .match-status-badge.tied { background: #fef3c7; color: #d97706; }
+      
+      /* Team Standings Table */
+      .standings-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      .standings-table th {
+        background: #f8fafc;
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      .standings-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .standings-table tr:hover {
+        background: #f8fafc;
+      }
+      .standings-rank {
+        font-weight: 700;
+        color: #1e293b;
+        width: 50px;
+      }
+      .standings-rank.gold { color: #f59e0b; }
+      .standings-rank.silver { color: #94a3b8; }
+      .standings-rank.bronze { color: #cd7c32; }
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        const uid = user.uid;
+        const params = new URLSearchParams(window.location.search);
+        const tournamentId = params.get('tournamentId');
+        try {
+          const raw = localStorage.getItem('tournaments');
+          const list = raw ? JSON.parse(raw) : [];
+          const t = list.find(x => x && x.tournamentId === tournamentId);
+          if (!t) return;
+          if (role !== 'admin' && t.createdBy && t.createdBy !== uid){
+            alert('You do not have access to this tournament.');
+            window.location.href = 'index.html';
+          }
+        } catch(e){}
+      })();
+    </script>
     <div class="top-nav">
       <h1>🏆 Results</h1>
       <a href="index.html" class="btn-back-top">← Back</a>
@@ -114,7 +240,8 @@
         <p class="lead" id="tournament-name">Configure result displays</p>
       </header>
 
-      <div class="card">
+      <!-- Stroke Play Results Section -->
+      <div class="card" id="stroke-play-section">
         <h2>Category Results Configuration</h2>
         <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
           <button class="btn" style="background: linear-gradient(180deg, #f59e0b, #d97706);" onclick="openWinnersList()">🏆 Winners List</button>
@@ -122,6 +249,28 @@
         </div>
         <div id="categories-list">
           <div class="empty-state">Loading categories...</div>
+        </div>
+      </div>
+
+      <!-- Match Play Results Section -->
+      <div class="card" id="match-play-section" style="display: none;">
+        <h2>🎯 Match Play Results</h2>
+        <p style="color: #64748b; margin-bottom: 20px;">Team standings and match results aggregated across all rounds played.</p>
+        
+        <!-- Team Standings at the top -->
+        <div style="margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #1e293b;">🏆 Team Standings</h3>
+          <div id="team-standings-container">
+            <div class="empty-state">Loading team standings...</div>
+          </div>
+        </div>
+
+        <!-- Match Results by Round -->
+        <div style="padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #1e293b;">📋 Match Results</h3>
+          <div id="match-results-container">
+            <div class="empty-state">Loading match results...</div>
+          </div>
         </div>
       </div>
     </main>
@@ -140,6 +289,47 @@
         window.location.href = 'index.html';
       }
 
+      // Load data from Firebase first
+      async function loadFromFirebase() {
+        if (typeof initFirebase !== 'undefined') {
+          initFirebase();
+        }
+        
+        if (typeof syncFromFirebase !== 'undefined' && syncEnabled) {
+          try {
+            // Load tournaments
+            const tournamentsData = await syncFromFirebase('tournaments');
+            if (tournamentsData) {
+              // Convert from object format to array if needed
+              let tournamentsArray;
+              if (Array.isArray(tournamentsData)) {
+                tournamentsArray = tournamentsData.filter(t => t !== null);
+              } else {
+                tournamentsArray = Object.values(tournamentsData).filter(t => t !== null);
+              }
+              localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
+              console.log('✓ Tournaments loaded from Firebase:', tournamentsArray.length);
+            }
+            
+            // Load admitted players
+            const admittedData = await syncFromFirebase('admittedPlayers');
+            if (admittedData) {
+              localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
+              console.log('✓ Admitted players loaded from Firebase');
+            }
+            
+            // Load scores
+            const scoresData = await syncFromFirebase('scores');
+            if (scoresData) {
+              localStorage.setItem('scores', JSON.stringify(scoresData));
+              console.log('✓ Scores loaded from Firebase');
+            }
+          } catch(e) {
+            console.log('Firebase load error:', e);
+          }
+        }
+      }
+
       function getTournaments() {
         try {
           const raw = localStorage.getItem('tournaments');
@@ -147,6 +337,14 @@
         } catch (err) {
           console.error('Failed to parse tournaments', err);
           return [];
+        }
+      }
+      
+      function saveTournaments(list) {
+        localStorage.setItem('tournaments', JSON.stringify(list || []));
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+          syncToFirebase('tournaments', list || []);
         }
       }
 
@@ -158,6 +356,101 @@
       function getCategories() {
         const tournament = getTournament();
         return tournament?.categories || [];
+      }
+      
+      // Ensure a default category exists for team/match play tournaments
+      // Ensure Team category exists for team tournaments
+      function ensureTeamCategoryExists() {
+        const tournament = getTournament();
+        if (!tournament) return;
+        
+        // Check if this is a team tournament
+        const isTeamTournament = tournament.meta?.teamsTournament === 'yes';
+        if (!isTeamTournament) return;
+        
+        // Check if Team category already exists
+        const categories = tournament.categories || [];
+        const hasTeamCategory = categories.some(cat => cat.code === 'TEAM' || cat.name?.toLowerCase() === 'team');
+        if (hasTeamCategory) {
+          console.log('Team category already exists');
+          return;
+        }
+        
+        console.log('Creating Team category for team tournament');
+        
+        // Get default tees from tournament definition
+        const roundData = tournament.meta?.roundsData?.[0];
+        const defaultTeeMen = roundData?.teeMen || '';
+        const defaultTeeWomen = roundData?.teeWomen || '';
+        
+        // Create Team category
+        const teamCategory = {
+          name: 'Team',
+          code: 'TEAM',
+          shortName: 'Team',
+          gender: '',
+          tournamentType: 'Stableford Net',
+          playsFromMen: defaultTeeMen,
+          playsFromWomen: defaultTeeWomen,
+          isResultOnly: false
+        };
+        
+        // Add to beginning of categories
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        if (index !== -1) {
+          if (!tournaments[index].categories) {
+            tournaments[index].categories = [];
+          }
+          tournaments[index].categories.unshift(teamCategory);
+          saveTournaments(tournaments);
+          console.log('✓ Team category created for team tournament');
+        }
+      }
+      
+      function ensureDefaultCategory() {
+        const tournament = getTournament();
+        if (!tournament) return;
+        
+        // First ensure Team category for team tournaments
+        ensureTeamCategoryExists();
+        
+        // Check if categories already exist
+        if (tournament.categories && tournament.categories.length > 0) return;
+        
+        // Check if this is a team or match play tournament
+        const isTeamTournament = tournament.meta?.teamsTournament === 'yes';
+        const isMatchPlay = (tournament.type || '').toLowerCase().includes('match');
+        
+        if (!isTeamTournament && !isMatchPlay) return;
+        
+        console.log('Creating default category for team/match play tournament');
+        
+        // Get default tees from tournament definition
+        const roundData = tournament.meta?.roundsData?.[0];
+        const defaultTeeMen = roundData?.teeMen || '';
+        const defaultTeeWomen = roundData?.teeWomen || '';
+        
+        // Create default category
+        const defaultCategory = {
+          name: isMatchPlay ? 'Match Play' : 'Team',
+          code: isMatchPlay ? 'MATCH' : 'TEAM',
+          shortName: isMatchPlay ? 'Match' : 'Team',
+          gender: '',
+          tournamentType: isMatchPlay ? 'Match Play' : 'Stableford Net',
+          playsFromMen: defaultTeeMen,
+          playsFromWomen: defaultTeeWomen,
+          isResultOnly: false
+        };
+        
+        // Save category to tournament
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        if (index !== -1) {
+          tournaments[index].categories = [defaultCategory];
+          saveTournaments(tournaments);
+          console.log('✓ Default category created:', defaultCategory.name);
+        }
       }
 
       function getCategoryPreferences(categoryCode) {
@@ -178,13 +471,461 @@
         }
       }
 
+      // Check if tournament is match play
+      function isMatchPlayTournament() {
+        const tournament = getTournament();
+        return (tournament?.type || '').toLowerCase().includes('match');
+      }
+
+      // Get draw data for a round
+      function getDrawData(roundId) {
+        try {
+          const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+          return draws[roundId] || null;
+        } catch (err) {
+          console.error('Failed to parse draw data', err);
+          return null;
+        }
+      }
+
+      // Get match scores data
+      function getMatchScoresData() {
+        try {
+          const data = JSON.parse(localStorage.getItem('matchScores') || '{}');
+          return data;
+        } catch (err) {
+          console.error('Failed to parse match scores', err);
+          return {};
+        }
+      }
+
+      // Initialize match play results UI - loads ALL rounds
+      function initMatchPlayResults() {
+        const tournament = getTournament();
+        if (!tournament) return;
+
+        // Load all match results from all rounds
+        loadAllMatchResults();
+      }
+
+      // Format date for display
+      function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+
+      // Load and aggregate match results from ALL rounds
+      function loadAllMatchResults() {
+        const tournament = getTournament();
+        if (!tournament) return;
+
+        const roundIds = tournament.meta?.roundIds || [tournament.tournamentId + '-1'];
+        const roundsData = tournament.meta?.roundsData || [];
+        const allMatchScores = getMatchScoresData();
+        
+        // Build player-to-team lookup from teamsByRound
+        const playerTeamLookup = {}; // { roundIndex: { playerReg: teamName } }
+        const teamsByRound = tournament.teamsByRound || {};
+        const legacyTeams = tournament.teams || [];
+        
+        // Build lookup for each round
+        // First, build a complete lookup from all available team data
+        const allPlayerTeams = {}; // { playerReg: teamName } - master lookup from all rounds
+        
+        // Collect all player-team mappings from all available sources
+        const allTeamSources = [];
+        if (Array.isArray(teamsByRound)) {
+          teamsByRound.forEach(teams => { if (teams) allTeamSources.push(teams); });
+        } else {
+          Object.values(teamsByRound).forEach(teams => { if (teams) allTeamSources.push(teams); });
+        }
+        if (legacyTeams.length > 0) allTeamSources.push(legacyTeams);
+        
+        // Build master lookup from all sources
+        allTeamSources.forEach(teamsList => {
+          if (!teamsList) return;
+          teamsList.forEach(team => {
+            const teamName = team.name || '';
+            (team.players || []).forEach(player => {
+              const playerReg = typeof player === 'string' ? player : (player?.reg || '');
+              if (playerReg && teamName) {
+                // Only set if not already set (prefer earlier/more specific data)
+                if (!allPlayerTeams[playerReg]) {
+                  allPlayerTeams[playerReg] = teamName;
+                }
+              }
+            });
+          });
+        });
+        
+        console.log('Master player-team lookup entries:', Object.keys(allPlayerTeams).length);
+        
+        // Now build per-round lookups, falling back to master lookup
+        roundIds.forEach((roundId, roundIndex) => {
+          playerTeamLookup[roundIndex] = {};
+          
+          // Try to get round-specific teams
+          let roundTeams = null;
+          if (Array.isArray(teamsByRound)) {
+            roundTeams = teamsByRound[roundIndex];
+          } else {
+            roundTeams = teamsByRound[roundIndex] || teamsByRound[String(roundIndex)];
+          }
+          
+          if (roundTeams && roundTeams.length > 0) {
+            // Use round-specific teams
+            roundTeams.forEach(team => {
+              const teamName = team.name || '';
+              (team.players || []).forEach(player => {
+                const playerReg = typeof player === 'string' ? player : (player?.reg || '');
+                if (playerReg) {
+                  playerTeamLookup[roundIndex][playerReg] = teamName;
+                }
+              });
+            });
+          } else {
+            // Fallback: use master lookup for this round
+            playerTeamLookup[roundIndex] = { ...allPlayerTeams };
+          }
+        });
+        
+        console.log('playerTeamLookup:', playerTeamLookup);
+        
+        const standingsContainer = document.getElementById('team-standings-container');
+        const resultsContainer = document.getElementById('match-results-container');
+        
+        // Aggregate all match results across all rounds
+        const allMatchResults = [];
+        let resultsHtml = '';
+        
+        roundIds.forEach((roundId, roundIndex) => {
+          const drawData = getDrawData(roundId);
+          const matchScores = allMatchScores[roundId] || {};
+          const roundPlayerTeams = playerTeamLookup[roundIndex] || {};
+          
+          if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+            return; // Skip rounds with no draw
+          }
+
+          // Get round info and match type
+          const roundDate = roundsData[roundIndex]?.date ? formatDateForDisplay(roundsData[roundIndex].date) : '';
+          const roundLabel = `Round ${roundIndex + 1}${roundDate ? ' - ' + roundDate : ''}`;
+          const matchType = (roundsData[roundIndex]?.matchType || '').toLowerCase();
+          
+          // Collect matches for this round
+          const roundMatches = [];
+          
+          drawData.groups.forEach((group, groupIndex) => {
+            const players = group.players || [];
+            if (players.length < 2) return;
+
+            // For SINGLES: Each group can have multiple individual matches (1v2, 3v4)
+            // For FOURBALL/FOURSOMES: Group is one match (pair vs pair)
+            if (matchType === 'singles' || matchType === '') {
+              // Singles: Create separate matches for each pair of players
+              const numMatches = Math.floor(players.length / 2);
+              
+              for (let i = 0; i < numMatches; i++) {
+                const player1 = players[i * 2];
+                const player2 = players[i * 2 + 1];
+                
+                if (!player1 || !player2) continue;
+                
+                const matchKey = `match_${groupIndex}_${i}`;
+                const score = matchScores[matchKey] || { left: '', right: '' };
+                
+                // Determine match status and winner
+                const leftScore = score.left !== '' ? parseInt(score.left) : null;
+                const rightScore = score.right !== '' ? parseInt(score.right) : null;
+                
+                let matchStatus = 'pending';
+                let leftClass = '';
+                let rightClass = '';
+                
+                if (leftScore !== null && rightScore !== null) {
+                  if (leftScore === 0 && rightScore === 0) {
+                    matchStatus = 'tied';
+                    leftClass = 'tied';
+                    rightClass = 'tied';
+                  } else if (leftScore > rightScore) {
+                    matchStatus = 'completed';
+                    leftClass = 'winner';
+                    rightClass = 'loser';
+                  } else {
+                    matchStatus = 'completed';
+                    leftClass = 'loser';
+                    rightClass = 'winner';
+                  }
+                }
+
+                // For singles, look up player's team from teamsByRound
+                // Fallback to player's own teamName/team property if not found
+                const leftTeamName = roundPlayerTeams[player1.reg] || player1.teamName || player1.team || '';
+                const rightTeamName = roundPlayerTeams[player2.reg] || player2.teamName || player2.team || '';
+
+                // Store result for standings calculation
+                allMatchResults.push({
+                  roundIndex: roundIndex,
+                  matchType: 'singles',
+                  leftTeam: leftTeamName,
+                  rightTeam: rightTeamName,
+                  leftPlayer: player1,
+                  rightPlayer: player2,
+                  leftScore: leftScore,
+                  rightScore: rightScore,
+                  status: matchStatus
+                });
+
+                roundMatches.push({
+                  matchType: 'singles',
+                  leftPlayers: [player1],
+                  rightPlayers: [player2],
+                  leftTeamName,
+                  rightTeamName,
+                  leftScore,
+                  rightScore,
+                  leftClass,
+                  rightClass,
+                  matchStatus
+                });
+              }
+            } else {
+              // Fourball/Foursomes: Group is one match with pairs
+              const matchKey = `match_${groupIndex}`;
+              const score = matchScores[matchKey] || { left: '', right: '' };
+              
+              // Determine match status and winner
+              const leftScore = score.left !== '' ? parseInt(score.left) : null;
+              const rightScore = score.right !== '' ? parseInt(score.right) : null;
+              
+              let matchStatus = 'pending';
+              let leftClass = '';
+              let rightClass = '';
+              
+              if (leftScore !== null && rightScore !== null) {
+                if (leftScore === 0 && rightScore === 0) {
+                  matchStatus = 'tied';
+                  leftClass = 'tied';
+                  rightClass = 'tied';
+                } else if (leftScore > rightScore) {
+                  matchStatus = 'completed';
+                  leftClass = 'winner';
+                  rightClass = 'loser';
+                } else {
+                  matchStatus = 'completed';
+                  leftClass = 'loser';
+                  rightClass = 'winner';
+                }
+              }
+
+              // Split players into teams
+              const leftPlayers = players.slice(0, 2);
+              const rightPlayers = players.slice(2, 4);
+              
+              // Look up team names from teamsByRound, fallback to player properties
+              const leftTeamName = (leftPlayers[0]?.reg && roundPlayerTeams[leftPlayers[0].reg]) || leftPlayers[0]?.teamName || leftPlayers[0]?.team || '';
+              const rightTeamName = (rightPlayers[0]?.reg && roundPlayerTeams[rightPlayers[0].reg]) || rightPlayers[0]?.teamName || rightPlayers[0]?.team || '';
+
+              // Store result for standings calculation
+              allMatchResults.push({
+                roundIndex: roundIndex,
+                matchType: matchType,
+                leftTeam: leftTeamName,
+                rightTeam: rightTeamName,
+                leftScore: leftScore,
+                rightScore: rightScore,
+                status: matchStatus
+              });
+
+              roundMatches.push({
+                matchType: matchType,
+                leftPlayers,
+                rightPlayers,
+                leftTeamName,
+                rightTeamName,
+                leftScore,
+                rightScore,
+                leftClass,
+                rightClass,
+                matchStatus
+              });
+            }
+          });
+
+          // Only show round header if there are matches
+          if (roundMatches.length > 0) {
+            resultsHtml += `<div style="margin-bottom: 24px;">
+              <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #475569; padding: 8px 12px; background: #f1f5f9; border-radius: 6px;">
+                📅 ${roundLabel}
+              </h4>`;
+            
+            roundMatches.forEach(match => {
+              // For singles, don't show team name with folder icon
+              const showTeamName = match.matchType !== 'singles';
+              
+              resultsHtml += `
+                <div class="match-result-card ${match.matchStatus}">
+                  <!-- Left Side -->
+                  <div class="match-team-result ${match.leftClass}">
+                    ${showTeamName && match.leftTeamName ? `<div class="match-team-name">📁 ${match.leftTeamName}</div>` : ''}
+                    ${match.leftPlayers.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('')}
+                  </div>
+
+                  <!-- Scores -->
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <div class="match-score-display">${match.leftScore !== null ? match.leftScore : '-'}</div>
+                    <div class="match-vs-display">VS</div>
+                    <div class="match-score-display">${match.rightScore !== null ? match.rightScore : '-'}</div>
+                  </div>
+
+                  <!-- Right Side -->
+                  <div class="match-team-result ${match.rightClass}">
+                    ${showTeamName && match.rightTeamName ? `<div class="match-team-name">📁 ${match.rightTeamName}</div>` : ''}
+                    ${match.rightPlayers.length > 0 ? match.rightPlayers.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('') : '<div class="match-player-name" style="color: #94a3b8;">No opponent</div>'}
+                  </div>
+
+                  <!-- Status Badge -->
+                  <div class="match-status-badge ${match.matchStatus}">
+                    ${match.matchStatus === 'pending' ? '⏳ Pending' : match.matchStatus === 'tied' ? '🤝 Tied' : '✓ Complete'}
+                  </div>
+                </div>
+              `;
+            });
+            
+            resultsHtml += '</div>';
+          }
+        });
+
+        // Display results
+        resultsContainer.innerHTML = resultsHtml || '<div class="empty-state">No match results found. Create draws and enter match scores first.</div>';
+        
+        // Calculate and display team standings
+        calculateTeamStandings(allMatchResults);
+      }
+
+      // Calculate and display team standings with score differential as untie criteria
+      function calculateTeamStandings(matchResults) {
+        const container = document.getElementById('team-standings-container');
+        
+        // Aggregate team stats
+        const teamStats = {};
+        
+        matchResults.forEach((match, idx) => {
+          // Skip matches where either team is empty (can't attribute to standings)
+          if (!match.leftTeam || !match.rightTeam) {
+            return;
+          }
+          
+          // Initialize teams if not exists
+          if (!teamStats[match.leftTeam]) {
+            teamStats[match.leftTeam] = { wins: 0, losses: 0, ties: 0, points: 0, matchesPlayed: 0, scoreDiff: 0 };
+          }
+          if (!teamStats[match.rightTeam]) {
+            teamStats[match.rightTeam] = { wins: 0, losses: 0, ties: 0, points: 0, matchesPlayed: 0, scoreDiff: 0 };
+          }
+          
+          if (match.status === 'pending') return;
+          
+          // Update stats based on result
+          teamStats[match.leftTeam].matchesPlayed++;
+          teamStats[match.rightTeam].matchesPlayed++;
+          
+          // Calculate score differential (winning margin)
+          const leftScore = match.leftScore || 0;
+          const rightScore = match.rightScore || 0;
+          
+          if (match.status === 'tied') {
+            teamStats[match.leftTeam].ties++; teamStats[match.leftTeam].points += 0.5;
+            teamStats[match.rightTeam].ties++; teamStats[match.rightTeam].points += 0.5;
+            // No score differential for ties
+          } else if (leftScore > rightScore) {
+            // Left team wins
+            teamStats[match.leftTeam].wins++; 
+            teamStats[match.leftTeam].points += 1;
+            teamStats[match.leftTeam].scoreDiff += leftScore; // Add winning margin
+            teamStats[match.rightTeam].losses++;
+            teamStats[match.rightTeam].scoreDiff -= leftScore; // Subtract opponent's winning margin
+          } else {
+            // Right team wins
+            teamStats[match.rightTeam].wins++; 
+            teamStats[match.rightTeam].points += 1;
+            teamStats[match.rightTeam].scoreDiff += rightScore; // Add winning margin
+            teamStats[match.leftTeam].losses++;
+            teamStats[match.leftTeam].scoreDiff -= rightScore; // Subtract opponent's winning margin
+          }
+        });
+
+        // Convert to array and sort by points, then by score differential (untie criteria)
+        const standings = Object.entries(teamStats)
+          .map(([team, stats]) => ({ team, ...stats }))
+          .filter(t => t.team) // Filter out empty team names
+          .sort((a, b) => {
+            // Primary: Points (descending)
+            if (b.points !== a.points) return b.points - a.points;
+            // Secondary (untie criteria): Score differential (descending)
+            if (b.scoreDiff !== a.scoreDiff) return b.scoreDiff - a.scoreDiff;
+            // Tertiary: Wins (descending)
+            return b.wins - a.wins;
+          });
+
+        if (standings.length === 0) {
+          container.innerHTML = '<div class="empty-state">No team data available. Teams are assigned when creating the draw.</div>';
+          return;
+        }
+
+        let html = `
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Team</th>
+                <th style="text-align: center;">Played</th>
+                <th style="text-align: center;">Won</th>
+                <th style="text-align: center;">Lost</th>
+                <th style="text-align: center;">Tied</th>
+                <th style="text-align: center;">Points</th>
+                <th style="text-align: center;" title="Score Differential (Untie Criteria)">+/-</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        standings.forEach((team, idx) => {
+          const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
+          const diffDisplay = team.scoreDiff > 0 ? `+${team.scoreDiff}` : team.scoreDiff;
+          const diffColor = team.scoreDiff > 0 ? '#16a34a' : team.scoreDiff < 0 ? '#dc2626' : '#64748b';
+          
+          html += `
+            <tr>
+              <td class="standings-rank ${rankClass}">${idx + 1}</td>
+              <td style="font-weight: 600;">${team.team}</td>
+              <td style="text-align: center;">${team.matchesPlayed}</td>
+              <td style="text-align: center; color: #16a34a; font-weight: 600;">${team.wins}</td>
+              <td style="text-align: center; color: #dc2626;">${team.losses}</td>
+              <td style="text-align: center; color: #d97706;">${team.ties}</td>
+              <td style="text-align: center; font-weight: 700; font-size: 16px;">${team.points}</td>
+              <td style="text-align: center; font-weight: 600; color: ${diffColor};">${diffDisplay}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        html += '<p style="margin-top: 12px; font-size: 12px; color: #64748b;">* +/- = Score Differential (sum of winning margins). Used as untie criteria when points are equal.</p>';
+        container.innerHTML = html;
+      }
+
       function loadCategories() {
         const tournament = getTournament();
+        console.log('loadCategories - tournament:', tournament);
+        console.log('loadCategories - tournament.categories:', tournament?.categories);
+        
         if (tournament) {
           document.getElementById('tournament-name').textContent = tournament.name || 'Tournament Results';
         }
 
         const categories = getCategories();
+        console.log('loadCategories - categories:', categories);
         const container = document.getElementById('categories-list');
 
         if (categories.length === 0) {
@@ -312,7 +1053,15 @@
         const incompleteDetails = [];
         
         categories.forEach(category => {
+          const tournament = getTournament();
+          const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
+          const isTeamCategory = category.code === 'TEAM';
+          
           const players = getAdmittedPlayers().filter(player => {
+            // In team tournaments, all players belong to TEAM category
+            if (isTeamTournament && isTeamCategory) {
+              return true;
+            }
             if (player.categories && Array.isArray(player.categories)) {
               return player.categories.includes(category.code);
             }
@@ -461,8 +1210,8 @@
       }
 
       function openUntieCriteria(categoryCode) {
-        if (categoryCode === 'TEAM') {
-          window.location.href = `untie_criteria.html?tournamentId=${tournamentId}&categoryCode=TEAM`;
+        if (categoryCode === 'TEAM' || categoryCode === 'MATCH') {
+          window.location.href = `untie_criteria.html?tournamentId=${tournamentId}&categoryCode=${categoryCode}`;
         } else {
           window.location.href = `untie_criteria.html?tournamentId=${tournamentId}`;
         }
@@ -472,8 +1221,50 @@
         window.location.href = `play_off.html?tournamentId=${tournamentId}`;
       }
 
-      // Load categories on page load
-      loadCategories();
+      // Initialize page - load from Firebase first, then setup UI
+      async function init() {
+        await loadFromFirebase();
+        
+        // Also load draws and match scores for match play
+        if (typeof syncFromFirebase !== 'undefined' && syncEnabled) {
+          try {
+            const drawsData = await syncFromFirebase('draws');
+            if (drawsData) {
+              localStorage.setItem('draws', JSON.stringify(drawsData));
+              console.log('✓ Draws loaded from Firebase');
+            }
+            const matchScoresData = await syncFromFirebase('matchScores');
+            if (matchScoresData) {
+              localStorage.setItem('matchScores', JSON.stringify(matchScoresData));
+              console.log('✓ Match scores loaded from Firebase');
+            }
+          } catch(e) {
+            console.log('Firebase load error:', e);
+          }
+        }
+        
+        const tournament = getTournament();
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = tournament.name || 'Tournament Results';
+        }
+        
+        // Show appropriate section based on tournament type
+        if (isMatchPlayTournament()) {
+          // Show match play results section
+          document.getElementById('stroke-play-section').style.display = 'none';
+          document.getElementById('match-play-section').style.display = 'block';
+          initMatchPlayResults();
+        } else {
+          // Show stroke play categories section
+          document.getElementById('stroke-play-section').style.display = 'block';
+          document.getElementById('match-play-section').style.display = 'none';
+          ensureDefaultCategory();
+          loadCategories();
+        }
+      }
+
+      // Load on page load
+      init();
     </script>
   </body>
 </html>

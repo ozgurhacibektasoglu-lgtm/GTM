@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Tournaments</title>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="../firebase-config.js"></script>
-    
     <link rel="stylesheet" href="../styles.css">
     <style>
       body { margin: 0; padding: 0; }
@@ -96,9 +91,69 @@
       .modal-buttons button{padding:10px 20px;border-radius:8px;border:0;cursor:pointer;font-size:14px}
       .modal-buttons .btn-primary{background:linear-gradient(180deg,var(--accent),#0a58d1);color:white}
       .modal-buttons .btn-secondary{background:white;border:1px solid #e6e9ef;color:#333}
+      
+      /* Year Filter */
+      .year-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+      .year-filter label { font-weight: 600; color: #475569; font-size: 14px; }
+      .year-select { padding: 8px 32px 8px 12px; border: 1px solid #e2e8f0; background: #fff; color: #1e293b; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; min-width: 100px; }
+      .year-select:hover { border-color: #cbd5e1; }
+      .year-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(11, 110, 253, 0.1); }
+      
+      /* Row Action Buttons */
+      .row-actions { display: flex; gap: 6px; }
+      .btn-row { padding: 6px 10px; font-size: 12px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+      .btn-info { background: linear-gradient(180deg, #0ea5e9, #0284c7); color: white; }
+      .btn-info:hover { background: linear-gradient(180deg, #38bdf8, #0ea5e9); }
+      .btn-admission { background: linear-gradient(180deg, #22c55e, #16a34a); color: white; }
+      .btn-admission:hover { background: linear-gradient(180deg, #4ade80, #22c55e); }
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      // Gate: require authentication; expose current user id and role
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        window.currentUserId = user.uid;
+        window.currentUserRole = role;
+        try {
+          const profile = await window.Auth.getUserProfile();
+          const loginName = profile?.loginName || 'User';
+          const topNav = document.querySelector('.top-nav');
+          if (topNav){
+            const wrap = document.createElement('div');
+            wrap.style.display = 'flex';
+            wrap.style.alignItems = 'center';
+            wrap.style.gap = '12px';
+            wrap.style.color = '#fff';
+            const badge = document.createElement('span');
+            badge.style.fontSize = '12px';
+            badge.style.background = 'rgba(255,255,255,0.15)';
+            badge.style.padding = '6px 10px';
+            badge.style.borderRadius = '999px';
+            badge.textContent = `${loginName} • ${role}`;
+            const back = document.createElement('a');
+            back.href = '../index.html';
+            back.className = 'btn-back-top';
+            back.textContent = '← Back';
+            wrap.appendChild(badge);
+            wrap.appendChild(back);
+            // Replace existing back button if present
+            const existingBack = topNav.querySelector('.btn-back-top');
+            if (existingBack){
+              existingBack.replaceWith(wrap);
+            } else {
+              topNav.appendChild(wrap);
+            }
+          }
+        } catch(e){}
+      })();
+    </script>
     <!-- Top Navigation -->
     <div class="top-nav">
       <h1>🏆 Tournaments</h1>
@@ -122,10 +177,10 @@
         <div class="button-row">
           <button class="btn" id="btn-modify-tournament">Modify Tournament</button>
           <button class="btn" id="btn-define-teams">Define Teams</button>
-          <button class="btn" style="visibility: hidden;"></button>
-          <button class="btn" style="visibility: hidden;"></button>
-          <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #dc2626, #991b1b);">Delete Tournament</button>
-          <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export Data</button>
+          <button class="btn" id="btn-live-scoring" style="background: linear-gradient(180deg, #059669, #047857);">📱 Live Scoring</button>
+          <button class="btn" id="btn-live-leaderboard" style="background: linear-gradient(180deg, #dc2626, #991b1b);">📊 Live Leaderboard</button>
+          <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #64748b, #475569);">Delete Tournament</button>
+          <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #3b82f6, #2563eb);">📤 Export Data</button>
           <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
         </div>
       </div>
@@ -138,17 +193,40 @@
         <p>This is a multi-day tournament. Please select which round you want to manage admissions for:</p>
         <label for="modal-round-select">Round:</label>
         <select id="modal-round-select">
+        </select>
+        <div class="modal-buttons">
+          <button class="btn-secondary" id="modal-cancel">Cancel</button>
+          <button class="btn-primary" id="modal-confirm">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pairings Round Selection Modal -->
+    <div id="pairings-round-modal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Select Round for Pairings</h2>
+        <p>Select which fourball/foursome round you want to manage pairings for:</p>
+        <label for="pairings-round-select">Round:</label>
+        <select id="pairings-round-select">
           <!-- Populated dynamically -->
         </select>
         <div class="modal-buttons">
-          <button class="btn-secondary" onclick="closeRoundModal()">Cancel</button>
-          <button class="btn-primary" onclick="confirmRoundSelection()">Continue</button>
+          <button class="btn-secondary" id="pairings-modal-cancel">Cancel</button>
+          <button class="btn-primary" id="pairings-modal-confirm">Continue</button>
         </div>
       </div>
     </div>
     
     <main class="tournaments-container">
       <p class="lead" style="margin-top: 0;">Manage tournament information, admissions, draws, and results.</p>
+
+      <!-- Year Filter -->
+      <div class="year-filter">
+        <label for="yearSelect">Year:</label>
+        <select class="year-select" id="yearSelect">
+          <!-- Years will be populated dynamically -->
+        </select>
+      </div>
 
       <div class="table-wrapper">
         <table id="tournaments-table">
@@ -160,6 +238,7 @@
                 <th data-key="rounds">Rounds <span class="sort-indicator"></span></th>
                 <th data-key="courses">Courses <span class="sort-indicator"></span></th>
                 <th data-key="type">Tournament Type <span class="sort-indicator"></span></th>
+                <th style="width: 180px;">Actions</th>
               </tr>
           </thead>
           <tbody id="tournaments-body">
@@ -208,6 +287,58 @@
 
       let selectedTournamentIndex = null;
       let selectedTournamentOrigIndex = null;
+      let selectedYear = new Date().getFullYear(); // Default to current year
+
+      // Get year from date string
+      function getYear(dateStr) {
+        if (!dateStr) return null;
+        try {
+          return new Date(dateStr).getFullYear();
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Render year dropdown
+      function renderYearTabs(tournaments) {
+        const select = document.getElementById('yearSelect');
+        const currentYear = new Date().getFullYear();
+        
+        // Get unique years from tournaments
+        const years = new Set();
+        years.add(currentYear); // Always include current year
+        
+        tournaments.forEach(t => {
+          const year = getYear(t.date);
+          if (year) years.add(year);
+        });
+        
+        const sortedYears = Array.from(years).sort((a, b) => b - a); // Descending
+        
+        // Only update if the options have changed
+        const currentOptions = Array.from(select.options).map(o => o.value);
+        const newOptions = sortedYears.map(y => String(y));
+        
+        if (JSON.stringify(currentOptions) !== JSON.stringify(newOptions)) {
+          select.innerHTML = '';
+          sortedYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            if (year === selectedYear) option.selected = true;
+            select.appendChild(option);
+          });
+        }
+        
+        // Add change listener (only once)
+        if (!select.hasAttribute('data-listener')) {
+          select.setAttribute('data-listener', 'true');
+          select.addEventListener('change', (e) => {
+            selectedYear = parseInt(e.target.value, 10);
+            loadTournaments();
+          });
+        }
+      }
 
       // Format date as dd.mm.yyyy
       function formatDateDDMMYYYY(dateStr) {
@@ -225,7 +356,30 @@
         const tbody = document.getElementById('tournaments-body');
         tbody.innerHTML = '';
 
-        const tournaments = getTournaments();
+        let tournaments = getTournaments();
+        
+        // Filter by owner for non-admin users
+        try {
+          const role = window.currentUserRole;
+          const uid = window.currentUserId;
+          
+          if (role !== 'admin') {
+            // Show only tournaments created by this user
+            // Hide old tournaments without createdBy field (they belong to admin or pre-auth era)
+            tournaments = (tournaments || []).filter(t => t && t.createdBy && (t.createdBy === uid));
+          }
+        } catch(e) {
+          console.error('Error filtering tournaments:', e);
+        }
+
+        // Generate year tabs from all tournaments (before year filtering)
+        renderYearTabs(tournaments);
+
+        // Filter by selected year
+        tournaments = tournaments.filter(t => {
+          const year = getYear(t.date);
+          return year === selectedYear;
+        });
 
         // attach original index so we can map back to storage after sorting
         const augmented = tournaments.map((t, idx) => Object.assign({ _origIndex: idx }, t));
@@ -265,20 +419,23 @@
 
         if (tournaments.length === 0) {
           const row = tbody.insertRow();
-          row.innerHTML = '<td colspan="6" style="text-align: center; color: #6b7280;">No tournaments yet. Click "New Tournament" to create one.</td>';
+          row.innerHTML = '<td colspan="7" style="text-align: center; color: #6b7280;">No tournaments to display. Create a new one or contact admin.</td>';
           return;
         }
 
         augmented.forEach((t, index) => {
           const row = tbody.insertRow();
+          // Display simplified ID: remove user prefix (e.g., "KLA-T0001" -> "T0001")
           const tournamentId = t.tournamentId || '-';
+          const displayId = tournamentId.includes('-') ? tournamentId.split('-')[1] : tournamentId;
           const roundsCount = (t.meta && t.meta.rounds) ? parseInt(t.meta.rounds,10) : (t.meta && Array.isArray(t.meta.roundsData) ? t.meta.roundsData.length : 1);
           const displayDate = formatTournamentDate(t);
           const coursesDisplay = buildCoursesDisplay(t);
           const displayType = formatTournamentType(t);
-          row.innerHTML = `<td>${escapeHtml(tournamentId)}</td><td>${displayDate}</td><td>${escapeHtml(t.name)}</td><td>${roundsCount}</td><td>${escapeHtml(coursesDisplay)}</td><td>${escapeHtml(displayType)}</td>`;
+          row.innerHTML = `<td>${escapeHtml(displayId)}</td><td>${displayDate}</td><td>${escapeHtml(t.name)}</td><td>${roundsCount}</td><td>${escapeHtml(coursesDisplay)}</td><td>${escapeHtml(displayType)}</td><td class="row-actions"><button class="btn-row btn-info" onclick="openTourInfo(event, '${escapeHtml(t.tournamentId)}')">Tour. Info</button><button class="btn-row btn-admission" onclick="openOnlineAdmissions(event, '${escapeHtml(t.tournamentId)}')">Online Admissions</button></td>`;
           row.dataset.index = index;
           row.dataset.origIndex = t._origIndex;
+          row.dataset.tournamentId = t.tournamentId; // Store actual tournament ID
           row.addEventListener('click', () => selectTournament(index, row));
         });
       }
@@ -383,21 +540,38 @@
         });
       }
 
+      let selectedTournamentId = null; // Store the actual tournament ID instead of index
+      
+      // Handler for Tour. Info button
+      function openTourInfo(event, tournamentId) {
+        event.stopPropagation(); // Prevent row selection
+        // Navigate to tournament info page for PDF upload/view
+        window.location.href = `info.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      }
+      
+      // Handler for Online Admissions button
+      function openOnlineAdmissions(event, tournamentId) {
+        event.stopPropagation(); // Prevent row selection
+        // Navigate to online admissions configuration page
+        window.location.href = `online_admissions_config.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+      }
+      
       function selectTournament(index, row) {
         // Remove previous selection
         document.querySelectorAll('#tournaments-body tr').forEach(r => r.classList.remove('selected'));
         // Add selection to clicked row
         row.classList.add('selected');
         selectedTournamentIndex = index;
+        // Store the tournament ID from the row
+        selectedTournamentId = row.dataset.tournamentId;
         // also store the original storage index for reliable lookup
         selectedTournamentOrigIndex = parseInt(row.dataset.origIndex, 10);
         
         // Save selected tournament ID to localStorage
-        const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
-        if (selected) {
-          localStorage.setItem('lastSelectedTournamentId', selected.tournamentId);
-        }
+        localStorage.setItem('lastSelectedTournamentId', selectedTournamentId);
+        
+        // Show/hide Pairings button based on fourball/foursome rounds
+        updatePairingsButtonVisibility();
       }
 
       function restoreLastSelection() {
@@ -450,20 +624,19 @@
 
       // Button event listeners
       document.getElementById('btn-new-tournament').addEventListener('click', () => {
-        // Navigate to type selection page
-        window.location.href = 'new.html';
+        // Go straight to tournament definition; type can be switched there
+        window.location.href = 'stroke.html';
       });
 
       document.getElementById('btn-modify-tournament').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
+        if (!selectedTournamentId) {
           alert('Please select a tournament from the table above.');
           return;
         }
         const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
-        if (!selected) { alert('Selected tournament not found.'); return; }
-        const page = selected.type && selected.type.toLowerCase().includes('stroke') ? 'stroke.html' : 'match.html';
-        window.location.href = `${page}?edit=${selectedTournamentOrigIndex}`;
+        const actualIndex = list.findIndex(t => t.tournamentId === selectedTournamentId);
+        if (actualIndex === -1) { alert('Selected tournament not found.'); return; }
+        window.location.href = `stroke.html?edit=${actualIndex}`;
       });
 
       let selectedTournamentForModal = null;
@@ -481,12 +654,12 @@
       }
 
       document.getElementById('btn-admissions').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
+        if (!selectedTournamentId) {
           alert('Please select a tournament from the table above.');
           return;
         }
         const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
+        const selected = list.find(t => t.tournamentId === selectedTournamentId);
         if (!selected) {
           alert('Selected tournament not found.');
           return;
@@ -539,12 +712,12 @@
       });
 
       document.getElementById('btn-define-teams').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
+        if (!selectedTournamentId) {
           alert('Please select a tournament from the table above.');
           return;
         }
         const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
+        const selected = list.find(t => t.tournamentId === selectedTournamentId);
         if (!selected) {
           alert('Selected tournament not found.');
           return;
@@ -560,37 +733,161 @@
         window.location.href = `teams.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
       });
 
-      document.getElementById('btn-draw').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) { alert('Please select a tournament from the table above.'); return; }
-        const list = getTournaments(); const selected = list[selectedTournamentOrigIndex]; if (!selected) { alert('Selected tournament not found.'); return; }
-        window.location.href = `draw.html?tournamentId=${selected.tournamentId}`;
-      });
+      // Function to check if tournament has fourball/foursome rounds
+      function hasFourballFoursomeRounds(tournament) {
+        if (!tournament || !tournament.meta || !tournament.meta.roundsData) {
+          return false;
+        }
+        return tournament.meta.roundsData.some(round => 
+          round.matchType === 'fourball' || round.matchType === 'foursomes'
+        );
+      }
 
-      document.getElementById('btn-categories').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) { alert('Please select a tournament from the table above.'); return; }
-        const list = getTournaments(); const selected = list[selectedTournamentOrigIndex]; if (!selected) { alert('Selected tournament not found.'); return; }
-        window.location.href = `categories.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
-      });
+      // Function to get fourball/foursome rounds
+      function getFourballFoursomeRounds(tournament) {
+        if (!tournament || !tournament.meta || !tournament.meta.roundsData) {
+          return [];
+        }
+        return tournament.meta.roundsData
+          .map((round, index) => ({ ...round, roundNumber: index + 1 }))
+          .filter(round => round.matchType === 'fourball' || round.matchType === 'foursomes');
+      }
 
-      document.getElementById('btn-scores').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) { alert('Please select a tournament from the table above.'); return; }
-        const list = getTournaments(); const selected = list[selectedTournamentOrigIndex]; if (!selected) { alert('Selected tournament not found.'); return; }
-        window.location.href = `scores_mode.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
-      });
+      // Function to update Pairings button visibility
+      function updatePairingsButtonVisibility() {
+        const pairingsBtn = document.getElementById('btn-pairings');
+        if (!pairingsBtn) return;
+        
+        if (!selectedTournamentId) {
+          pairingsBtn.style.display = 'none';
+          return;
+        }
+        
+        const list = getTournaments();
+        const selected = list.find(t => t.tournamentId === selectedTournamentId);
+        
+        if (selected && hasFourballFoursomeRounds(selected)) {
+          pairingsBtn.style.display = '';
+        } else {
+          pairingsBtn.style.display = 'none';
+        }
+      }
 
-      document.getElementById('btn-results').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) { alert('Please select a tournament from the table above.'); return; }
-        const list = getTournaments(); const selected = list[selectedTournamentOrigIndex]; if (!selected) { alert('Selected tournament not found.'); return; }
-        window.location.href = `results.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
-      });
-
-      document.getElementById('btn-documents').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
+      // Pairings button click handler (only if button exists)
+      const pairingsBtn = document.getElementById('btn-pairings');
+      if (pairingsBtn) {
+        pairingsBtn.addEventListener('click', () => {
+        if (!selectedTournamentId) {
           alert('Please select a tournament from the table above.');
           return;
         }
         const list = getTournaments();
-        const selected = list[selectedTournamentOrigIndex];
+        const selected = list.find(t => t.tournamentId === selectedTournamentId);
+        if (!selected) {
+          alert('Selected tournament not found.');
+          return;
+        }
+
+        const pairingRounds = getFourballFoursomeRounds(selected);
+        if (pairingRounds.length === 0) {
+          alert('This tournament has no fourball or foursome rounds.');
+          return;
+        }
+
+        if (pairingRounds.length === 1) {
+          // Direct navigation if only one round
+          const roundId = `${selected.tournamentId}-${pairingRounds[0].roundNumber}`;
+          window.location.href = `pairings.html?roundId=${encodeURIComponent(roundId)}`;
+        } else {
+          // Show modal to select round
+          const modal = document.getElementById('pairings-round-modal');
+          const select = document.getElementById('pairings-round-select');
+          select.innerHTML = '';
+          
+          pairingRounds.forEach(round => {
+            const option = document.createElement('option');
+            const roundId = `${selected.tournamentId}-${round.roundNumber}`;
+            option.value = roundId;
+            option.textContent = `Round ${round.roundNumber} - ${round.matchType.charAt(0).toUpperCase() + round.matchType.slice(1)}`;
+            select.appendChild(option);
+          });
+          
+          modal.classList.add('active');
+        }
+        });
+      }
+
+      // Pairings modal handlers
+      const pairingsModalCancel = document.getElementById('pairings-modal-cancel');
+      if (pairingsModalCancel) {
+        pairingsModalCancel.addEventListener('click', () => {
+          document.getElementById('pairings-round-modal').classList.remove('active');
+        });
+      }
+
+      const pairingsModalConfirm = document.getElementById('pairings-modal-confirm');
+      if (pairingsModalConfirm) {
+        pairingsModalConfirm.addEventListener('click', () => {
+          const select = document.getElementById('pairings-round-select');
+          const roundId = select.value;
+          if (roundId) {
+            window.location.href = `pairings.html?roundId=${encodeURIComponent(roundId)}`;
+          }
+        });
+      }
+
+      // Admissions round selection modal handlers
+      document.getElementById('modal-cancel').addEventListener('click', () => {
+        closeRoundModal();
+      });
+
+      document.getElementById('modal-confirm').addEventListener('click', () => {
+        confirmRoundSelection();
+      });
+
+      document.getElementById('btn-draw').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.location.href = `draw.html?tournamentId=${selected.tournamentId}`;
+      });
+
+      document.getElementById('btn-categories').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.location.href = `categories.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
+      });
+
+      document.getElementById('btn-scores').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.location.href = `scores_mode.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
+      });
+
+      document.getElementById('btn-live-scoring').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.location.href = `live_scoring_settings.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
+      });
+
+      document.getElementById('btn-live-leaderboard').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.open(`live_leaderboard.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`, '_blank');
+      });
+
+      document.getElementById('btn-results').addEventListener('click', () => {
+        if (!selectedTournamentId) { alert('Please select a tournament from the table above.'); return; }
+        const list = getTournaments(); const selected = list.find(t => t.tournamentId === selectedTournamentId); if (!selected) { alert('Selected tournament not found.'); return; }
+        window.location.href = `results.html?tournamentId=${encodeURIComponent(selected.tournamentId)}`;
+      });
+
+      document.getElementById('btn-documents').addEventListener('click', () => {
+        if (!selectedTournamentId) {
+          alert('Please select a tournament from the table above.');
+          return;
+        }
+        const list = getTournaments();
+        const selected = list.find(t => t.tournamentId === selectedTournamentId);
         if (!selected) {
           alert('Selected tournament not found.');
           return;
@@ -645,13 +942,18 @@
       }
 
       document.getElementById('btn-delete-tournament').addEventListener('click', () => {
-        if (selectedTournamentOrigIndex === null) {
+        if (!selectedTournamentId) {
           alert('Please select a tournament from the table above.');
           return;
         }
 
         const tournaments = getTournaments();
-        const selected = tournaments[selectedTournamentOrigIndex];
+        const actualIndex = tournaments.findIndex(t => t.tournamentId === selectedTournamentId);
+        if (actualIndex === -1) {
+          alert('Selected tournament not found.');
+          return;
+        }
+        const selected = tournaments[actualIndex];
         
         if (!selected) {
           alert('Selected tournament not found.');
@@ -661,46 +963,107 @@
         // Check if tournament has admitted players
         const admittedPlayersData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
         let hasAdmittedPlayers = false;
+        let admittedRoundIds = [];
         
         if (selected.meta && selected.meta.roundIds) {
           selected.meta.roundIds.forEach(roundId => {
             if (admittedPlayersData[roundId] && admittedPlayersData[roundId].length > 0) {
               hasAdmittedPlayers = true;
+              admittedRoundIds.push(roundId);
             }
           });
-        }
-
-        if (hasAdmittedPlayers) {
-          alert('Cannot delete tournament!\n\nThis tournament has admitted players.\n\nPlease remove all players from the tournament before deleting.');
-          return;
         }
 
         // Check if tournament has scores
         const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
         let hasScores = false;
+        let scoresRoundIds = [];
         
         if (selected.meta && selected.meta.roundIds) {
           selected.meta.roundIds.forEach(roundId => {
             if (scoresData[roundId] && Object.keys(scoresData[roundId]).length > 0) {
               hasScores = true;
+              scoresRoundIds.push(roundId);
             }
           });
         }
 
-        if (hasScores) {
-          alert('Cannot delete tournament!\n\nThis tournament has scores entered for players.\n\nPlease clear all scores before deleting.');
-          return;
+        // Check if tournament has draws
+        const drawsData = JSON.parse(localStorage.getItem('draws') || '{}');
+        let hasDraws = false;
+        let drawsRoundIds = [];
+        
+        if (selected.meta && selected.meta.roundIds) {
+          selected.meta.roundIds.forEach(roundId => {
+            if (drawsData[roundId]) {
+              hasDraws = true;
+              drawsRoundIds.push(roundId);
+            }
+          });
         }
 
-        // Confirm deletion
-        const confirmMessage = `Are you sure you want to delete this tournament?\n\nTournament: ${selected.name}\nID: ${selected.tournamentId}\n\nThis action cannot be undone.`;
-        
-        if (!confirm(confirmMessage)) {
-          return;
+        // If has data, ask to clean up
+        if (hasAdmittedPlayers || hasScores || hasDraws) {
+          let dataList = [];
+          if (hasAdmittedPlayers) dataList.push(`• Admitted players (${admittedRoundIds.join(', ')})`);
+          if (hasScores) dataList.push(`• Scores (${scoresRoundIds.join(', ')})`);
+          if (hasDraws) dataList.push(`• Draws (${drawsRoundIds.join(', ')})`);
+          
+          const cleanupConfirm = confirm(
+            `This tournament has associated data:\n\n${dataList.join('\n')}\n\n` +
+            `Do you want to DELETE all this data and the tournament?\n\n` +
+            `Click OK to delete everything, or Cancel to abort.`
+          );
+          
+          if (!cleanupConfirm) {
+            return;
+          }
+          
+          // Clean up admitted players
+          if (hasAdmittedPlayers) {
+            admittedRoundIds.forEach(roundId => {
+              delete admittedPlayersData[roundId];
+            });
+            localStorage.setItem('admittedPlayers', JSON.stringify(admittedPlayersData));
+            if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+              syncToFirebase('admittedPlayers', admittedPlayersData);
+            }
+          }
+          
+          // Clean up scores
+          if (hasScores) {
+            scoresRoundIds.forEach(roundId => {
+              delete scoresData[roundId];
+            });
+            localStorage.setItem('scores', JSON.stringify(scoresData));
+            if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+              syncToFirebase('scores', scoresData);
+            }
+          }
+          
+          // Clean up draws
+          if (hasDraws) {
+            drawsRoundIds.forEach(roundId => {
+              delete drawsData[roundId];
+            });
+            localStorage.setItem('draws', JSON.stringify(drawsData));
+            if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+              syncToFirebase('draws', drawsData);
+            }
+          }
+        } else {
+          // No associated data, just confirm deletion
+          const tournamentId = selected.tournamentId || '-';
+          const displayId = tournamentId.includes('-') ? tournamentId.split('-')[1] : tournamentId;
+          const confirmMessage = `Are you sure you want to delete this tournament?\n\nTournament: ${selected.name}\nID: ${displayId}\n\nThis action cannot be undone.`;
+          
+          if (!confirm(confirmMessage)) {
+            return;
+          }
         }
 
         // Delete tournament
-        tournaments.splice(selectedTournamentOrigIndex, 1);
+        tournaments.splice(actualIndex, 1);
         localStorage.setItem('tournaments', JSON.stringify(tournaments));
         
         // Sync deletion to Firebase

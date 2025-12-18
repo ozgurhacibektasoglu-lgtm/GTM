@@ -33,6 +33,15 @@
       
       <form id="match-form">
         <div class="field">
+          <label for="tournament-type">Tournament Type</label>
+          <select id="tournament-type" name="tournamentType" required>
+            <option value="match" selected>Match Play</option>
+            <option value="stroke">Stroke Play</option>
+          </select>
+          <p class="help-text">Switch to Stroke Play to use the stroke play setup.</p>
+        </div>
+
+        <div class="field">
           <label for="tournament-name">Tournament Name</label>
           <input id="tournament-name" name="name" type="text" required placeholder="e.g. Club Championship Match Play">
         </div>
@@ -140,6 +149,29 @@
       const params = new URLSearchParams(window.location.search);
       const editIndexParam = params.get('edit');
       const isEdit = editIndexParam !== null;
+      const typeSelect = document.getElementById('tournament-type');
+
+      function handleTypeChange() {
+        if (!typeSelect) return;
+        if (typeSelect.value === 'stroke') {
+          const target = isEdit ? `stroke.html?edit=${editIndexParam}` : 'stroke.html';
+          window.location.href = target;
+        }
+      }
+
+      function applyTypeFromData(existingType) {
+        if (!typeSelect) return;
+        const isStroke = existingType && existingType.toLowerCase().includes('stroke');
+        typeSelect.value = isStroke ? 'stroke' : 'match';
+        if (isStroke) {
+          // Redirect to stroke play form to edit with the correct fields
+          handleTypeChange();
+        }
+      }
+
+      if (typeSelect) {
+        typeSelect.addEventListener('change', handleTypeChange);
+      }
 
       // Update form based on match type selection
       function updateMatchTypeHelp() {
@@ -204,7 +236,10 @@
         const tournaments = getTournaments();
         const tournament = tournaments[editIndex];
         
-        if (tournament && tournament.type === 'match') {
+        if (tournament) {
+          applyTypeFromData(tournament.type);
+          if (typeSelect && typeSelect.value === 'stroke') return;
+
           document.getElementById('tournament-name').value = tournament.name || '';
           if (tournament.date) {
             document.getElementById('start-date').value = tournament.date.split('T')[0];

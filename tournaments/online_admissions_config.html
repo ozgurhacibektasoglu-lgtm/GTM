@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Online Admissions Configuration</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { margin: 0; padding: 0; background: #f8fafc; }
+      
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .top-nav h1 { margin: 0; color: white; font-size: 24px; font-weight: 700; }
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-back-top:hover { background: rgba(255,255,255,0.3); }
+      
+      .container { max-width: 900px; margin: 24px auto; padding: 24px; }
+      
+      .config-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      
+      .config-card h2 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .config-card h2 .icon {
+        font-size: 22px;
+      }
+      
+      .tournament-info {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #93c5fd;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+      }
+      
+      .tournament-info h3 {
+        margin: 0;
+        font-size: 20px;
+        color: #1e40af;
+      }
+      
+      .tournament-info p {
+        margin: 8px 0 0;
+        color: #3b82f6;
+        font-size: 14px;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.2s;
+        box-sizing: border-box;
+      }
+      
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #0b6efd;
+        box-shadow: 0 0 0 3px rgba(11, 110, 253, 0.1);
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+      
+      .form-row-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      
+      .hint {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
+      /* Toggle Switch */
+      .toggle-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 12px;
+      }
+      
+      .toggle-group label {
+        margin: 0;
+        font-weight: 500;
+        color: #1e293b;
+      }
+      
+      .toggle-switch {
+        position: relative;
+        width: 52px;
+        height: 28px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 28px;
+      }
+      
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      
+      .toggle-switch input:checked + .toggle-slider {
+        background-color: #22c55e;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+      }
+      
+      /* Priority Options */
+      .priority-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .priority-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: grab;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+      
+      .priority-item:hover {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+      }
+      
+      .priority-item.dragging {
+        opacity: 0.5;
+        border-color: #0b6efd;
+      }
+      
+      .priority-item .drag-handle {
+        color: #94a3b8;
+        cursor: grab;
+      }
+      
+      .priority-item .priority-number {
+        width: 24px;
+        height: 24px;
+        background: #0b6efd;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .priority-item label {
+        flex: 1;
+        margin: 0;
+        font-weight: 500;
+        color: #1e293b;
+      }
+      
+      .priority-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      
+      /* Player Selection */
+      .selected-players-section {
+        display: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+      }
+      
+      .selected-players-section.active {
+        display: block;
+      }
+      
+      .player-search {
+        position: relative;
+        margin-bottom: 12px;
+      }
+      
+      .player-search input {
+        padding-left: 40px;
+      }
+      
+      .player-search .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+      }
+      
+      .player-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+      }
+      
+      .player-list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .player-list-item:last-child {
+        border-bottom: none;
+      }
+      
+      .player-list-item:hover {
+        background: #f8fafc;
+      }
+      
+      .player-list-item.selected {
+        background: #dbeafe;
+      }
+      
+      .selected-players-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      
+      .player-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      
+      .player-tag .remove-tag {
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+      }
+      
+      .player-tag .remove-tag:hover {
+        color: #dc2626;
+      }
+      
+      /* Status Badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .status-badge.active {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      .status-badge.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      .status-badge.scheduled {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      /* Action Buttons */
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #e2e8f0;
+      }
+      
+      .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(180deg, #22c55e, #16a34a);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      }
+      
+      .btn-secondary {
+        background: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+      }
+      
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      
+      .btn-danger {
+        background: linear-gradient(180deg, #ef4444, #dc2626);
+        color: white;
+      }
+      
+      .btn-danger:hover {
+        background: linear-gradient(180deg, #dc2626, #b91c1c);
+      }
+      
+      .btn-info {
+        background: linear-gradient(180deg, #0ea5e9, #0284c7);
+        color: white;
+      }
+      
+      .btn-info:hover {
+        background: linear-gradient(180deg, #0284c7, #0369a1);
+      }
+      
+      /* Public Link Display */
+      .public-link-section {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 10px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+      
+      .public-link-section h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        color: #166534;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .link-input-group {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .link-input-group input {
+        flex: 1;
+        background: white;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      
+      .btn-copy {
+        padding: 12px 16px;
+        background: #22c55e;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      
+      .btn-copy:hover {
+        background: #16a34a;
+      }
+      
+      /* Round selector for multi-day */
+      .round-config {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .round-config h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        color: #475569;
+      }
+      
+      .round-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      
+      .round-tab {
+        padding: 8px 16px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      
+      .round-tab:hover {
+        border-color: #0b6efd;
+      }
+      
+      .round-tab.active {
+        background: #0b6efd;
+        color: white;
+        border-color: #0b6efd;
+      }
+      
+      /* Stats Cards */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
+      
+      .stat-card .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0b6efd;
+      }
+      
+      .stat-card .stat-label {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+      }
+      
+      @media (max-width: 768px) {
+        .form-row, .form-row-3 {
+          grid-template-columns: 1fr;
+        }
+        
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .action-buttons {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Gate: require authentication
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        window.currentUserId = user.uid;
+        window.currentUserRole = role;
+      })();
+    </script>
+    
+    <div class="top-nav">
+      <h1>⚙️ Online Admissions Configuration</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
+    
+    <main class="container">
+      <!-- Tournament Info -->
+      <div class="tournament-info" id="tournament-info">
+        <h3 id="tournament-name">Loading tournament...</h3>
+        <p id="tournament-details"></p>
+      </div>
+      
+      <!-- Current Status -->
+      <div class="config-card">
+        <h2><span class="icon">📊</span> Current Status</h2>
+        <div style="margin-bottom: 16px;">
+          <a href="#" id="btn-manage-players" class="btn-action" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+            📋 View Registered Players
+          </a>
+        </div>
+        <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-registered">0</div>
+            <div class="stat-label">Admitted</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-reserve">0</div>
+            <div class="stat-label">Reserve</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-status">
+              <span class="status-badge inactive">Inactive</span>
+            </div>
+            <div class="stat-label">Status</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Round Selection for Multi-day -->
+      <div class="config-card" id="round-selection-card" style="display: none;">
+        <h2><span class="icon">📅</span> Round Configuration</h2>
+        <div class="round-config">
+          <h4>Configure admissions for each round:</h4>
+          <div class="round-tabs" id="round-tabs">
+            <!-- Rounds will be populated dynamically -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Timing Configuration -->
+      <div class="config-card">
+        <h2><span class="icon">⏰</span> Registration Period</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start-date">Start Date & Time</label>
+            <input type="datetime-local" id="start-date" />
+            <p class="hint">When registration opens for players</p>
+          </div>
+          <div class="form-group">
+            <label for="end-date">End Date & Time</label>
+            <input type="datetime-local" id="end-date" />
+            <p class="hint">When registration closes</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Capacity Configuration -->
+      <div class="config-card">
+        <h2><span class="icon">👥</span> Player Capacity</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="max-players">Number of Players</label>
+            <input type="number" id="max-players" min="1" value="72" />
+            <p class="hint">Players allowed on the field (players beyond this go to reserve)</p>
+          </div>
+          <div class="form-group">
+            <label for="cut-line-text">Text for Cut Line</label>
+            <input type="text" id="cut-line-text" value="───── RESERVE LIST ─────" placeholder="e.g., RESERVE LIST" />
+            <p class="hint">This line will appear between admitted and reserve players</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Sorting Configuration -->
+      <div class="config-card">
+        <h2><span class="icon">📋</span> Player Sorting</h2>
+        <div class="form-group">
+          <label for="sort-method">Sort admitted players by:</label>
+          <select id="sort-method">
+            <option value="registration_order">Registration Order</option>
+            <option value="handicap">HCP</option>
+          </select>
+          <p class="hint">HCP sorts low to high. If players have the same handicap, earlier registration wins.</p>
+        </div>
+      </div>
+      
+      <!-- Admission Criteria (from Admissions page) -->
+      <div class="config-card">
+        <h2><span class="icon">🎯</span> Admission Criteria</h2>
+        <p class="hint" style="margin-bottom: 16px;">These criteria are loaded from the Admissions page. Players not meeting these criteria will not be able to register.</p>
+        
+        <div id="criteria-display">
+          <div class="criteria-summary" id="criteria-summary" style="background: #f8fafc; border-radius: 8px; padding: 16px;">
+            <p style="color: #64748b; text-align: center;">Loading criteria...</p>
+          </div>
+        </div>
+        
+        <div style="margin-top: 16px; display: flex; gap: 12px; align-items: center;">
+          <a href="admissions.html?tournamentId=" id="edit-criteria-link" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            ✏️ Edit Criteria in Admissions
+          </a>
+          <button class="btn btn-secondary" onclick="refreshCriteria()" style="display: inline-flex; align-items: center; gap: 6px;">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+      
+      <!-- Priority Options -->
+      <div class="config-card">
+        <h2><span class="icon">⭐</span> Priority Settings</h2>
+        <p class="hint" style="margin-bottom: 16px;">Enable priorities to give certain players preference. Higher priorities get placed first.</p>
+        
+        <div class="toggle-group">
+          <label>Priority 1: Club Members</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="priority-members" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-group">
+          <label>Priority 2: Selected Players (VIP List)</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="priority-selected" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <!-- VIP Player Selection -->
+        <div class="selected-players-section" id="vip-players-section">
+          <h4 style="font-size: 14px; color: #475569; margin-bottom: 12px;">Select VIP Players:</h4>
+          <div class="player-search">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="vip-search" placeholder="Search players..." />
+          </div>
+          <div class="player-list" id="vip-player-list">
+            <!-- Players will be populated dynamically -->
+          </div>
+          <div class="selected-players-tags" id="vip-tags">
+            <!-- Selected player tags -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional Options -->
+      <div class="config-card">
+        <h2><span class="icon">🔧</span> Additional Options</h2>
+        
+        <div class="toggle-group">
+          <label>Only Clubs Can Register Players</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="require-login" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-group">
+          <label>Allow Players to Admit Other Players</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="allow-admit-others" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-group">
+          <label>Send Email Confirmation</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="send-email" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-group">
+          <label>Allow Cancellation by Player</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="allow-cancel" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="cancel-deadline">Cancellation Deadline (hours before tournament)</label>
+          <input type="number" id="cancel-deadline" min="0" value="24" />
+          <p class="hint">Players cannot cancel after this deadline</p>
+        </div>
+      </div>
+      
+      <!-- Public Link -->
+      <div class="config-card" id="public-link-card" style="display: none;">
+        <h2><span class="icon">🔗</span> Public Registration Link</h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">Share this link with players to register for the tournament:</p>
+        
+        <div class="link-input-group">
+          <input type="text" id="public-link" readonly />
+          <button class="btn-copy" onclick="copyPublicLink()">📋 Copy Link</button>
+        </div>
+        
+        <div style="margin-top: 12px;">
+          <a id="preview-link" href="#" target="_blank" class="btn btn-info" style="display: inline-block; text-decoration: none;">
+            👁️ Preview Registration Page
+          </a>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'">Cancel</button>
+        <button class="btn btn-danger" id="btn-deactivate" onclick="deactivateAdmissions()" style="display: none;">Deactivate Admissions</button>
+        <button class="btn btn-primary" onclick="saveConfiguration()">💾 Save & Activate</button>
+      </div>
+    </main>
+    
+    <script>
+      // Get tournament ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      const selectedRound = urlParams.get('round') || '1';
+      
+      let tournament = null;
+      let allPlayers = [];
+      let selectedVipPlayers = [];
+      let currentConfig = null;
+      
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        if (!tournamentId) {
+          alert('No tournament selected');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        await loadTournament();
+        await loadPlayers();
+        loadAdmissionCriteria();
+        loadExistingConfig();
+        setupEventListeners();
+      });
+      
+      // Load tournament data
+      async function loadTournament() {
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          tournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (!tournament) {
+            alert('Tournament not found');
+            window.location.href = 'index.html';
+            return;
+          }
+          
+          // Display tournament info
+          document.getElementById('tournament-name').textContent = tournament.name || 'Unnamed Tournament';
+          
+          const details = [];
+          if (tournament.date) {
+            details.push(`Date: ${formatDate(tournament.date)}`);
+          }
+          if (tournament.meta?.roundsData?.length > 1) {
+            details.push(`Rounds: ${tournament.meta.roundsData.length}`);
+          }
+          if (tournament.type) {
+            details.push(`Type: ${tournament.type}`);
+          }
+          document.getElementById('tournament-details').textContent = details.join(' | ');
+          
+          // Update edit criteria link
+          document.getElementById('edit-criteria-link').href = `admissions.html?tournamentId=${encodeURIComponent(tournamentId)}`;
+          
+          // Update manage players link
+          document.getElementById('btn-manage-players').href = `online_admissions_manage.html?t=${encodeURIComponent(tournamentId)}&r=${selectedRound}`;
+          
+          // Setup round tabs for multi-day tournaments
+          setupRoundTabs();
+          
+        } catch (e) {
+          console.error('Error loading tournament:', e);
+        }
+      }
+      
+      // Setup round tabs for multi-day tournaments
+      function setupRoundTabs() {
+        const roundsData = tournament.meta?.roundsData || [];
+        
+        if (roundsData.length > 1) {
+          document.getElementById('round-selection-card').style.display = 'block';
+          const tabsContainer = document.getElementById('round-tabs');
+          tabsContainer.innerHTML = '';
+          
+          roundsData.forEach((round, index) => {
+            const tab = document.createElement('button');
+            tab.className = 'round-tab' + (index + 1 === parseInt(selectedRound) ? ' active' : '');
+            tab.textContent = `Round ${index + 1}${round.date ? ' - ' + formatDate(round.date) : ''}`;
+            tab.onclick = () => selectRound(index + 1);
+            tabsContainer.appendChild(tab);
+          });
+        }
+      }
+      
+      // Select round
+      function selectRound(roundNum) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('round', roundNum);
+        window.location.href = url.toString();
+      }
+      
+      // Load admission criteria from localStorage (set in admissions.html)
+      function loadAdmissionCriteria() {
+        try {
+          const raw = localStorage.getItem('admissionCriteria');
+          const allCriteria = raw ? JSON.parse(raw) : {};
+          const criteria = allCriteria[tournamentId] || null;
+          
+          renderCriteriaSummary(criteria);
+        } catch (e) {
+          console.error('Error loading admission criteria:', e);
+          renderCriteriaSummary(null);
+        }
+      }
+      
+      // Refresh criteria (button handler)
+      function refreshCriteria() {
+        loadAdmissionCriteria();
+      }
+      
+      // Render criteria summary display
+      function renderCriteriaSummary(criteria) {
+        const container = document.getElementById('criteria-summary');
+        
+        if (!criteria) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+              <p style="color: #64748b; margin-bottom: 12px;">No admission criteria configured for this tournament.</p>
+              <p style="font-size: 13px; color: #94a3b8;">Go to the Admissions page to set up criteria like handicap limits, age range, and gender restrictions.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        const items = [];
+        
+        // HCP Men
+        if (criteria.hcpMen && criteria.hcpMen !== 'NA') {
+          const hcpLabel = getHcpLabel(criteria.hcpMen, criteria.hcpMenValue);
+          items.push({ icon: '👨', label: 'HCP Men', value: hcpLabel });
+        }
+        
+        // HCP Women
+        if (criteria.hcpWomen && criteria.hcpWomen !== 'NA') {
+          const hcpLabel = getHcpLabel(criteria.hcpWomen, criteria.hcpWomenValue);
+          items.push({ icon: '👩', label: 'HCP Women', value: hcpLabel });
+        }
+        
+        // Age Range
+        if (criteria.ageMin || criteria.ageMax) {
+          let ageValue = '';
+          if (criteria.ageMin && criteria.ageMax) {
+            ageValue = `${criteria.ageMin} - ${criteria.ageMax} years`;
+          } else if (criteria.ageMin) {
+            ageValue = `Min ${criteria.ageMin} years`;
+          } else {
+            ageValue = `Max ${criteria.ageMax} years`;
+          }
+          items.push({ icon: '🎂', label: 'Age Range', value: ageValue });
+        }
+        
+        // Gender
+        if (criteria.gender && criteria.gender !== 'both') {
+          const genderValue = criteria.gender === 'M' ? 'Men Only' : 'Women Only';
+          items.push({ icon: '⚧', label: 'Gender', value: genderValue });
+        }
+        
+        // Members Only
+        if (criteria.membersOnly === 'yes') {
+          items.push({ icon: '🏠', label: 'Membership', value: 'Members Only' });
+        }
+        
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 16px;">
+              <p style="color: #22c55e; font-weight: 600;">✅ No restrictions - All players can register</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+            ${items.map(item => `
+              <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <span style="font-size: 20px;">${item.icon}</span>
+                <div>
+                  <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">${item.label}</div>
+                  <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${item.value}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      // Helper to get HCP label text
+      function getHcpLabel(type, value) {
+        const val = value || '?';
+        switch (type) {
+          case 'Limit Playing': return `Max PHCP: ${val}`;
+          case 'Limit WHS': return `Max WHS: ${val}`;
+          case 'Adjust Playing': return `Adjust PHCP to: ${val}`;
+          case 'Adjust WHS': return `Adjust WHS to: ${val}`;
+          default: return type;
+        }
+      }
+      
+      // Load players for VIP selection (only online registered players)
+      async function loadPlayers() {
+        try {
+          // Load online registrations for this tournament/round
+          const regKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+          const registrations = JSON.parse(localStorage.getItem(regKey) || '[]');
+          
+          // Map registrations to player-like objects and sort alphabetically
+          allPlayers = registrations.map(r => ({
+            playerId: r.playerId || r.registrationId,
+            firstName: r.firstName,
+            lastName: r.lastName,
+            handicap: r.handicap,
+            registrationId: r.registrationId
+          })).sort((a, b) => {
+            const nameA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+            const nameB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          
+          renderPlayerList();
+        } catch (e) {
+          console.error('Error loading players:', e);
+        }
+      }
+      
+      // Render player list for VIP selection
+      function renderPlayerList(filter = '') {
+        const list = document.getElementById('vip-player-list');
+        const filteredPlayers = allPlayers.filter(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+          return name.includes(filter.toLowerCase());
+        }).slice(0, 50); // Limit to 50 results
+        
+        if (allPlayers.length === 0) {
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No online registrations yet for this tournament.</div>';
+          return;
+        }
+        
+        if (filteredPlayers.length === 0) {
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No matching players found</div>';
+          return;
+        }
+        
+        list.innerHTML = filteredPlayers.map(p => {
+          const isSelected = selectedVipPlayers.some(vip => vip.playerId === p.playerId);
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
+          return `
+            <div class="player-list-item ${isSelected ? 'selected' : ''}" data-player-id="${p.playerId}" onclick="toggleVipPlayer('${p.playerId}')">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleVipPlayer('${p.playerId}')" />
+              <span>${escapeHtml(name)}</span>
+              <span style="color: #64748b; font-size: 12px;">HCP: ${p.handicap || '-'}</span>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      // Toggle VIP player selection
+      function toggleVipPlayer(playerId) {
+        const player = allPlayers.find(p => p.playerId === playerId);
+        if (!player) return;
+        
+        const index = selectedVipPlayers.findIndex(vip => vip.playerId === playerId);
+        if (index >= 0) {
+          selectedVipPlayers.splice(index, 1);
+        } else {
+          selectedVipPlayers.push(player);
+        }
+        
+        renderPlayerList(document.getElementById('vip-search').value);
+        renderVipTags();
+      }
+      
+      // Render VIP player tags
+      function renderVipTags() {
+        const container = document.getElementById('vip-tags');
+        if (selectedVipPlayers.length === 0) {
+          container.innerHTML = '<span style="color: #64748b; font-size: 13px;">No VIP players selected</span>';
+          return;
+        }
+        
+        container.innerHTML = selectedVipPlayers.map(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
+          return `
+            <span class="player-tag">
+              ${escapeHtml(name)}
+              <span class="remove-tag" onclick="toggleVipPlayer('${p.playerId}')">&times;</span>
+            </span>
+          `;
+        }).join('');
+      }
+      
+      // Load existing configuration
+      function loadExistingConfig() {
+        const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
+        const saved = localStorage.getItem(configKey);
+        
+        if (saved) {
+          try {
+            currentConfig = JSON.parse(saved);
+            
+            // Populate form fields
+            if (currentConfig.startDate) document.getElementById('start-date').value = currentConfig.startDate;
+            if (currentConfig.endDate) document.getElementById('end-date').value = currentConfig.endDate;
+            if (currentConfig.maxPlayers) document.getElementById('max-players').value = currentConfig.maxPlayers;
+            if (currentConfig.cutLineText) document.getElementById('cut-line-text').value = currentConfig.cutLineText;
+            if (currentConfig.sortMethod) document.getElementById('sort-method').value = currentConfig.sortMethod;
+            if (currentConfig.cancelDeadline) document.getElementById('cancel-deadline').value = currentConfig.cancelDeadline;
+            
+            // Toggles
+            document.getElementById('priority-members').checked = currentConfig.priorityMembers === true;
+            document.getElementById('priority-selected').checked = currentConfig.prioritySelected === true;
+            document.getElementById('require-login').checked = currentConfig.requireLogin === true;
+            document.getElementById('allow-admit-others').checked = currentConfig.allowAdmitOthers !== false;
+            document.getElementById('send-email').checked = currentConfig.sendEmail === true;
+            document.getElementById('allow-cancel').checked = currentConfig.allowCancel !== false;
+            
+            // VIP players
+            if (currentConfig.vipPlayers) {
+              selectedVipPlayers = currentConfig.vipPlayers;
+              renderVipTags();
+            }
+            
+            // Show VIP section if priority-selected is enabled
+            updateVipSectionVisibility();
+            
+            // Update status display
+            updateStatusDisplay(currentConfig);
+            
+            // Show public link if active
+            if (currentConfig.isActive) {
+              showPublicLink();
+              document.getElementById('btn-deactivate').style.display = 'inline-block';
+            }
+            
+          } catch (e) {
+            console.error('Error loading config:', e);
+          }
+        }
+        
+        // Load registration stats
+        loadRegistrationStats();
+      }
+      
+      // Load registration stats
+      function loadRegistrationStats() {
+        const registrationsKey = `onlineRegistrations_${tournamentId}_round${selectedRound}`;
+        const registrations = JSON.parse(localStorage.getItem(registrationsKey) || '[]');
+        
+        const maxPlayers = parseInt(document.getElementById('max-players').value) || 72;
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const reserve = registrations.filter(r => r.status === 'reserve').length;
+        
+        document.getElementById('stat-registered').textContent = admitted;
+        document.getElementById('stat-reserve').textContent = reserve;
+      }
+      
+      // Update status display
+      function updateStatusDisplay(config) {
+        const statusEl = document.getElementById('stat-status');
+        const now = new Date();
+        const startDate = config.startDate ? new Date(config.startDate) : null;
+        const endDate = config.endDate ? new Date(config.endDate) : null;
+        
+        if (!config.isActive) {
+          statusEl.innerHTML = '<span class="status-badge inactive">Inactive</span>';
+        } else if (startDate && now < startDate) {
+          statusEl.innerHTML = '<span class="status-badge scheduled">Scheduled</span>';
+        } else if (endDate && now > endDate) {
+          statusEl.innerHTML = '<span class="status-badge inactive">Closed</span>';
+        } else {
+          statusEl.innerHTML = '<span class="status-badge active">Active</span>';
+        }
+      }
+      
+      // Setup event listeners
+      function setupEventListeners() {
+        // VIP search
+        document.getElementById('vip-search').addEventListener('input', (e) => {
+          renderPlayerList(e.target.value);
+        });
+        
+        // Priority selected toggle
+        document.getElementById('priority-selected').addEventListener('change', updateVipSectionVisibility);
+        
+        // Update capacity stats when changed
+        document.getElementById('max-players').addEventListener('change', loadRegistrationStats);
+        
+        // Mutually exclusive: Only Clubs Can Register vs Allow Players to Admit Others
+        document.getElementById('require-login').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            document.getElementById('allow-admit-others').checked = false;
+          }
+        });
+        
+        document.getElementById('allow-admit-others').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            document.getElementById('require-login').checked = false;
+          }
+        });
+      }
+      
+      // Update VIP section visibility
+      function updateVipSectionVisibility() {
+        const section = document.getElementById('vip-players-section');
+        const isEnabled = document.getElementById('priority-selected').checked;
+        section.classList.toggle('active', isEnabled);
+      }
+      
+      // Save configuration
+      function saveConfiguration() {
+        // Get admission criteria from localStorage
+        let admissionCriteria = null;
+        try {
+          const raw = localStorage.getItem('admissionCriteria');
+          const allCriteria = raw ? JSON.parse(raw) : {};
+          admissionCriteria = allCriteria[tournamentId] || null;
+        } catch (e) {
+          console.warn('Could not load admission criteria:', e);
+        }
+        
+        const config = {
+          tournamentId: tournamentId,
+          round: selectedRound,
+          startDate: document.getElementById('start-date').value,
+          endDate: document.getElementById('end-date').value,
+          maxPlayers: parseInt(document.getElementById('max-players').value) || 72,
+          cutLineText: document.getElementById('cut-line-text').value || '───── RESERVE LIST ─────',
+          sortMethod: document.getElementById('sort-method').value,
+          priorityMembers: document.getElementById('priority-members').checked,
+          prioritySelected: document.getElementById('priority-selected').checked,
+          vipPlayers: selectedVipPlayers,
+          requireLogin: document.getElementById('require-login').checked,
+          allowAdmitOthers: document.getElementById('allow-admit-others').checked,
+          sendEmail: document.getElementById('send-email').checked,
+          allowCancel: document.getElementById('allow-cancel').checked,
+          cancelDeadline: parseInt(document.getElementById('cancel-deadline').value) || 24,
+          admissionCriteria: admissionCriteria,  // Include criteria in config
+          isActive: true,
+          createdAt: currentConfig?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Validate dates
+        if (!config.startDate || !config.endDate) {
+          alert('Please set both start and end dates for registration');
+          return;
+        }
+        
+        if (new Date(config.startDate) >= new Date(config.endDate)) {
+          alert('End date must be after start date');
+          return;
+        }
+        
+        // Save to localStorage
+        const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
+        localStorage.setItem(configKey, JSON.stringify(config));
+        
+        // Also save a reference in the tournament
+        updateTournamentWithAdmissionsConfig(config);
+        
+        // Sync to Firebase
+        syncConfigToFirebase(config);
+        
+        // Show success and public link
+        currentConfig = config;
+        showPublicLink();
+        document.getElementById('btn-deactivate').style.display = 'inline-block';
+        updateStatusDisplay(config);
+        
+        alert('✅ Online admissions activated successfully!');
+      }
+      
+      // Update tournament with admissions config reference
+      function updateTournamentWithAdmissionsConfig(config) {
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (index >= 0) {
+            if (!tournaments[index].onlineAdmissions) {
+              tournaments[index].onlineAdmissions = {};
+            }
+            tournaments[index].onlineAdmissions[`round${selectedRound}`] = {
+              isActive: config.isActive,
+              startDate: config.startDate,
+              endDate: config.endDate,
+              maxPlayers: config.maxPlayers
+            };
+            
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            
+            // Also sync tournament to Firebase
+            syncTournamentToFirebase(tournaments[index]);
+          }
+        } catch (e) {
+          console.error('Error updating tournament:', e);
+        }
+      }
+      
+      // Sync tournament to Firebase
+      async function syncTournamentToFirebase(tournament) {
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            // Save tournament with tournamentId as key
+            await db.ref(`tournaments/${tournament.tournamentId}`).set(tournament);
+            console.log('✓ Tournament synced to Firebase:', tournament.tournamentId);
+          }
+        } catch (e) {
+          console.warn('Tournament Firebase sync failed:', e);
+        }
+      }
+      
+      // Sync configuration to Firebase
+      async function syncConfigToFirebase(config) {
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            const path = `onlineAdmissions/${tournamentId}/round${selectedRound}/config`;
+            await db.ref(path).set(config);
+            console.log('✓ Config synced to Firebase');
+          }
+        } catch (e) {
+          console.warn('Firebase sync failed:', e);
+        }
+      }
+      
+      // Show public link
+      function showPublicLink() {
+        const linkCard = document.getElementById('public-link-card');
+        linkCard.style.display = 'block';
+        
+        const baseUrl = window.location.origin + window.location.pathname.replace('online_admissions_config.html', '');
+        const publicUrl = `${baseUrl}online_admissions.html?t=${tournamentId}&r=${selectedRound}`;
+        
+        document.getElementById('public-link').value = publicUrl;
+        document.getElementById('preview-link').href = publicUrl;
+      }
+      
+      // Copy public link
+      function copyPublicLink() {
+        const input = document.getElementById('public-link');
+        input.select();
+        document.execCommand('copy');
+        
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+      }
+      
+      // Deactivate admissions
+      function deactivateAdmissions() {
+        if (!confirm('Are you sure you want to deactivate online admissions? Players will no longer be able to register.')) {
+          return;
+        }
+        
+        if (currentConfig) {
+          currentConfig.isActive = false;
+          currentConfig.updatedAt = new Date().toISOString();
+          
+          const configKey = `onlineAdmissions_${tournamentId}_round${selectedRound}`;
+          localStorage.setItem(configKey, JSON.stringify(currentConfig));
+          
+          updateTournamentWithAdmissionsConfig(currentConfig);
+          syncConfigToFirebase(currentConfig);
+          
+          updateStatusDisplay(currentConfig);
+          document.getElementById('public-link-card').style.display = 'none';
+          document.getElementById('btn-deactivate').style.display = 'none';
+          
+          alert('Online admissions deactivated.');
+        }
+      }
+      
+      // Utility functions
+      function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&"'<>]/g, s => ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'})[s]);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Login - Tournament Registration</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+    }
+    
+    .login-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      padding: 24px;
+      text-align: center;
+      color: white;
+    }
+    
+    .login-header .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    
+    .login-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .login-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .login-body {
+      padding: 24px;
+    }
+    
+    .tournament-info {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .tournament-info .label {
+      font-size: 12px;
+      color: #059669;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .tournament-info .name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-top: 4px;
+    }
+    
+    .tournament-info .round {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #1e293b;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .info-text {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 16px;
+    }
+    
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      color: #059669;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+    
+    .loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #059669;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <div class="icon">🏌️‍♂️</div>
+      <h1>Club Registration Portal</h1>
+      <p>Register your club members for tournaments</p>
+    </div>
+    
+    <div class="login-body">
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading tournament...</p>
+      </div>
+      
+      <div id="login-form">
+        <div class="tournament-info" id="tournament-info" style="display: none;">
+          <div class="label">Tournament</div>
+          <div class="name" id="tournament-name">-</div>
+          <div class="round" id="tournament-round">Round 1</div>
+        </div>
+        
+        <div id="error" class="error"></div>
+        
+        <div class="form-group">
+          <label for="username">Club Login Name</label>
+          <input id="username" type="text" placeholder="Enter your club login" autocomplete="username" />
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+        </div>
+        
+        <button id="loginBtn" class="btn btn-primary">Sign In & Continue</button>
+        
+        <p class="info-text">Use your club credentials provided by the tournament admin.</p>
+        
+        <a href="#" id="back-link" class="back-link">← Back to Admitted Players List</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+    const roundNum = parseInt(urlParams.get('r') || urlParams.get('round')) || 1;
+    
+    const loadingEl = document.getElementById('loading');
+    const loginFormEl = document.getElementById('login-form');
+    const errorEl = document.getElementById('error');
+    const tournamentInfoEl = document.getElementById('tournament-info');
+    
+    // Set back link
+    document.getElementById('back-link').href = `../tournaments/online_admissions_list.html?t=${tournamentId}&r=${roundNum}`;
+    
+    // Load tournament info
+    async function loadTournament() {
+      if (!tournamentId) {
+        errorEl.textContent = 'No tournament specified.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      
+      try {
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+          const db = firebase.database();
+          const snapshot = await db.ref(`tournaments/${tournamentId}`).once('value');
+          const tournament = snapshot.val();
+          
+          if (tournament) {
+            document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+            document.getElementById('tournament-round').textContent = `Round ${roundNum}`;
+            tournamentInfoEl.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        console.error('Error loading tournament:', e);
+      }
+    }
+    
+    // Check if already logged in as club
+    async function checkExistingAuth() {
+      return new Promise((resolve) => {
+        if (typeof window.Auth === 'undefined') {
+          setTimeout(() => checkExistingAuth().then(resolve), 100);
+          return;
+        }
+        
+        window.Auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            try {
+              const role = await window.Auth.getUserRole();
+              if (role === 'club' || role === 'user' || role === 'admin') {
+                // Already logged in as club/admin - redirect to registration
+                window.location.href = `../tournaments/online_register_club.html?t=${tournamentId}&r=${roundNum}`;
+                return;
+              }
+            } catch (e) {
+              console.error('Role check error:', e);
+            }
+          }
+          resolve();
+        });
+      });
+    }
+    
+    // Login handler
+    async function handleLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      
+      if (!username || !password) {
+        errorEl.textContent = 'Please enter both login name and password.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      
+      errorEl.style.display = 'none';
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing in...';
+      
+      try {
+        await window.Auth.signInWithUsername(username, password);
+        
+        // Check role
+        const role = await window.Auth.getUserRole();
+        
+        if (role !== 'club' && role !== 'user' && role !== 'admin') {
+          // Not a club user - sign out and show error
+          await window.Auth.signOut();
+          errorEl.textContent = 'This login is for clubs only. Players should use the Player Registration page.';
+          errorEl.style.display = 'block';
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Sign In & Continue';
+          return;
+        }
+        
+        // Success - redirect to club registration page
+        window.location.href = `../tournaments/online_register_club.html?t=${tournamentId}&r=${roundNum}`;
+        
+      } catch (err) {
+        errorEl.textContent = err.message || 'Login failed. Please check your credentials.';
+        errorEl.style.display = 'block';
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In & Continue';
+      }
+    }
+    
+    // Initialize
+    async function init() {
+      loadingEl.style.display = 'block';
+      loginFormEl.style.display = 'none';
+      
+      await loadTournament();
+      await checkExistingAuth();
+      
+      loadingEl.style.display = 'none';
+      loginFormEl.style.display = 'block';
+      
+      // Setup login button
+      document.getElementById('loginBtn').addEventListener('click', handleLogin);
+      
+      // Enter key handler
+      document.getElementById('password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+      });
+      document.getElementById('username').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('password').focus();
+      });
+    }
+    
+    init();
+  </script>
+</body>
+</html>

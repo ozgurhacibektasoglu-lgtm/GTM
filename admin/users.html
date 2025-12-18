@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { background: #f8fafc; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:#0f172a; }
+    .container { max-width: 900px; margin: 40px auto; background: #fff; border:1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.08); }
+    .header { padding: 16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; }
+    .body { padding: 20px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { border:1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display:block; font-weight:600; margin-bottom:6px; color:#1e293b; }
+    .form-group input, .form-group select { width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; }
+    .btn { padding:10px 16px; border-radius:8px; border:1px solid transparent; cursor:pointer; font-weight:600; }
+    .btn-primary { background:#1e293b; color:#fff; }
+    .btn-secondary { background:#f1f5f9; color:#1e293b; border:1px solid #e2e8f0; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid #e2e8f0; padding:8px; text-align:left; font-size:14px; }
+    .error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:10px; border-radius:8px; margin-bottom:12px; display:none; }
+    .info { background:#eff6ff; color:#1e3a8a; border:1px solid #dbeafe; padding:10px; border-radius:8px; margin-bottom:12px; }
+    .btn-edit { background:#3b82f6; color:#fff; padding:6px 12px; font-size:12px; }
+    .btn-edit:hover { background:#2563eb; }
+    .btn-delete { background:#ef4444; color:#fff; padding:6px 12px; font-size:12px; margin-left:6px; }
+    .btn-delete:hover { background:#dc2626; }
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; }
+    .modal.active { display:flex; }
+    .modal-content { background:#fff; border-radius:12px; padding:24px; width:100%; max-width:400px; box-shadow:0 10px 40px rgba(0,0,0,0.2); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .modal-header h3 { margin:0; }
+    .modal-close { background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin:0; font-size:18px;">User Management</h1>
+      <a href="../index.html" class="btn btn-secondary">Back</a>
+    </div>
+    <div class="body">
+      <div id="error" class="error"></div>
+      <div class="grid">
+        <div class="card">
+          <h3 style="margin:0 0 12px 0;">Create User</h3>
+          <p class="info">Provide a login name, display name, password, and role. The system will create the account and store the profile.</p>
+          <div class="form-group">
+            <label for="newLoginName">Login Name</label>
+            <input id="newLoginName" type="text" placeholder="e.g. clubname" />
+          </div>
+          <div class="form-group">
+            <label for="newDisplayName">Display Name (Optional)</label>
+            <input id="newDisplayName" type="text" placeholder="e.g. Club Name Full" />
+          </div>
+          <div class="form-group">
+            <label for="newEmail">Email (for Firebase Auth)</label>
+            <input id="newEmail" type="email" placeholder="temp-email@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="newPassword">Password</label>
+            <input id="newPassword" type="password" />
+          </div>
+          <div class="form-group">
+            <label for="newRole">Role</label>
+            <select id="newRole">
+              <option value="user">Club</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button id="createUserBtn" class="btn btn-primary">Create User</button>
+        </div>
+        <div class="card">
+          <h3 style="margin:0 0 12px 0;">Reset Password</h3>
+          <div class="form-group">
+            <label for="resetEmail">User Email</label>
+            <input id="resetEmail" type="email" placeholder="user@example.com" />
+          </div>
+          <button id="sendReset" class="btn btn-primary">Send Password Reset Email</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3 style="margin:0 0 12px 0;">Users</h3>
+        <table>
+          <thead>
+            <tr><th>Login Name</th><th>Display Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit User</h3>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <input type="hidden" id="editUserId" />
+      <div class="form-group">
+        <label for="editLoginName">Login Name</label>
+        <input id="editLoginName" type="text" />
+      </div>
+      <div class="form-group">
+        <label for="editDisplayName">Display Name</label>
+        <input id="editDisplayName" type="text" />
+      </div>
+      <div class="form-group">
+        <label for="editEmail">Email</label>
+        <input id="editEmail" type="email" readonly style="background:#f1f5f9;" />
+      </div>
+      <div class="form-group">
+        <label for="editRole">Role</label>
+        <select id="editRole">
+          <option value="user">Club</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelEdit">Cancel</button>
+        <button class="btn btn-primary" id="saveEdit">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  <script>
+    (async function(){
+      try {
+        const { role } = await window.Auth.requireAuth('admin');
+      } catch(e){
+        document.getElementById('error').textContent = 'Admin only';
+        document.getElementById('error').style.display = 'block';
+        return;
+      }
+
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+      const errorEl = document.getElementById('error');
+      const usersTable = document.getElementById('usersTable');
+
+      // List users from Firestore collection `users`
+      db.collection('users').orderBy('createdAt','desc').onSnapshot((snap)=>{
+        usersTable.innerHTML = '';
+        snap.forEach(doc => {
+          const u = doc.data();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${u.loginName || '-'}</td><td>${u.displayName || '-'}</td><td>${u.email || '-'}</td><td>${u.role || 'user'}</td><td>${u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleString() : '-'}</td><td><button class="btn btn-edit" data-id="${doc.id}">Edit</button></td>`;
+          usersTable.appendChild(tr);
+        });
+        
+        // Add click handlers for edit buttons
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.target.dataset.id;
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              document.getElementById('editUserId').value = userId;
+              document.getElementById('editLoginName').value = userData.loginName || '';
+              document.getElementById('editDisplayName').value = userData.displayName || '';
+              document.getElementById('editEmail').value = userData.email || '';
+              document.getElementById('editRole').value = userData.role || 'user';
+              document.getElementById('editModal').classList.add('active');
+            }
+          });
+        });
+      });
+
+      // Modal handlers
+      const editModal = document.getElementById('editModal');
+      document.getElementById('closeModal').addEventListener('click', () => editModal.classList.remove('active'));
+      document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove('active'));
+      editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('active'); });
+      
+      // Save edit
+      document.getElementById('saveEdit').addEventListener('click', async () => {
+        const userId = document.getElementById('editUserId').value;
+        const loginName = document.getElementById('editLoginName').value.trim();
+        const displayName = document.getElementById('editDisplayName').value.trim();
+        const role = document.getElementById('editRole').value;
+        
+        if (!loginName) {
+          alert('Login name is required');
+          return;
+        }
+        
+        try {
+          await db.collection('users').doc(userId).update({
+            loginName: loginName,
+            displayName: displayName || loginName,
+            role: role
+          });
+          alert('✅ User updated successfully');
+          editModal.classList.remove('active');
+        } catch (err) {
+          alert('Error updating user: ' + err.message);
+        }
+      });
+
+      // Create new user
+      document.getElementById('createUserBtn').addEventListener('click', async () => {
+        const loginName = document.getElementById('newLoginName').value.trim();
+        const displayName = document.getElementById('newDisplayName').value.trim();
+        const email = document.getElementById('newEmail').value.trim();
+        const password = document.getElementById('newPassword').value;
+        const role = document.getElementById('newRole').value;
+
+        errorEl.style.display = 'none';
+
+        if (!loginName || !email || !password) {
+          errorEl.textContent = 'Login name, email, and password are required';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        // Check if login name already exists
+        try {
+          const existing = await db.collection('users').where('loginName', '==', loginName).limit(1).get();
+          if (!existing.empty) {
+            errorEl.textContent = 'Login name already exists';
+            errorEl.style.display = 'block';
+            return;
+          }
+        } catch(e) {}
+
+        try {
+          // Create a secondary Firebase app instance to create users without logging out admin
+          let secondaryApp;
+          try {
+            secondaryApp = firebase.app('Secondary');
+          } catch(e) {
+            // Initialize secondary app if it doesn't exist
+            secondaryApp = firebase.initializeApp(window.firebaseConfig, 'Secondary');
+          }
+          
+          const secondaryAuth = secondaryApp.auth();
+          
+          // Create user in Firebase Auth using secondary app (won't affect current session)
+          const { user } = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+          
+          // Create user profile in Firestore (using primary app's firestore)
+          await db.collection('users').doc(user.uid).set({
+            loginName: loginName,
+            displayName: displayName || loginName,
+            email: email,
+            role: role,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            uid: user.uid
+          });
+
+          // Sign out from secondary app
+          await secondaryAuth.signOut();
+
+          alert(`✅ User "${loginName}" created successfully with role "${role}"`);
+          
+          // Clear form
+          document.getElementById('newLoginName').value = '';
+          document.getElementById('newDisplayName').value = '';
+          document.getElementById('newEmail').value = '';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('newRole').value = 'user';
+        } catch(err) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+        }
+      });
+
+      // Send password reset email
+      document.getElementById('sendReset').addEventListener('click', async () => {
+        const email = document.getElementById('resetEmail').value.trim();
+        errorEl.style.display = 'none';
+        if (!email) {
+          errorEl.textContent = 'Email is required';
+          errorEl.style.display = 'block';
+          return;
+        }
+        try {
+          await auth.sendPasswordResetEmail(email);
+          alert('✅ Password reset email sent to ' + email);
+          document.getElementById('resetEmail').value = '';
+        } catch(err) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

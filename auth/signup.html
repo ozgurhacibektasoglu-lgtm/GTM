@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTM Sign Up</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    body { background: #f8fafc; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #0f172a; }
+    .signup-container { max-width: 420px; margin: 60px auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.08); }
+    .signup-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; }
+    .signup-header img { width: 36px; height: 36px; border-radius: 8px; }
+    .signup-header h1 { font-size: 18px; margin: 0; }
+    .signup-body { padding: 20px; }
+    .step-indicator { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .step { flex: 1; text-align: center; padding: 8px; border-bottom: 3px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; }
+    .step.active { border-bottom-color: #1e293b; color: #1e293b; }
+    .step.completed { border-bottom-color: #10b981; color: #10b981; }
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #1e293b; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .form-group small { display: block; margin-top: 4px; color: #64748b; font-size: 12px; }
+    .btn { display: inline-block; width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn-primary { background: #1e293b; color: white; }
+    .btn-primary:hover { background: #0f172a; }
+    .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-secondary { background: white; color: #1e293b; border: 1px solid #cbd5e1; }
+    .btn-secondary:hover { background: #f8fafc; }
+    .btn-group { display: flex; gap: 10px; margin-top: 16px; }
+    .error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+    .small { font-size: 12px; color: #64748b; margin-top: 10px; text-align: center; }
+    .small a { color: #1e293b; text-decoration: none; font-weight: 600; }
+    .small a:hover { text-decoration: underline; }
+    .player-info { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    .player-info-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+    .player-info-label { font-weight: 600; color: #475569; }
+    .player-info-value { color: #1e293b; }
+    .password-strength { margin-top: 8px; font-size: 12px; }
+    .strength-bar { height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .strength-fill { height: 100%; background: #94a3b8; transition: width 0.3s, background 0.3s; }
+    .strength-fill.weak { background: #ef4444; width: 33%; }
+    .strength-fill.medium { background: #f59e0b; width: 66%; }
+    .strength-fill.strong { background: #10b981; width: 100%; }
+    .verification-option { padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .verification-option:hover { border-color: #cbd5e1; }
+    .verification-option.selected { border-color: #1e293b; background: #f8fafc; }
+    .verification-option input[type="radio"] { margin-right: 8px; }
+    .verification-option label { cursor: pointer; font-weight: 600; }
+    .code-input { text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600; }
+    .reg-input-wrapper { display: flex; align-items: center; gap: 8px; }
+    .reg-prefix { font-weight: 700; color: #1e293b; font-size: 16px; }
+    #regNumberInput { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <div class="signup-header">
+      <img src="../logo.png" alt="GTM" onerror="this.style.display='none'" />
+      <h1>GTM Sign Up</h1>
+    </div>
+    <div class="signup-body">
+      <div class="step-indicator">
+        <div class="step active" id="step1-indicator">Step 1</div>
+        <div class="step" id="step2-indicator">Step 2</div>
+        <div class="step" id="step3-indicator">Step 3</div>
+      </div>
+
+      <div id="error" class="error"></div>
+      <div id="success" class="success"></div>
+
+      <!-- Step 1: Enter Player Registration Number -->
+      <div class="form-section active" id="step1">
+        <div class="info">Enter your player registration number to verify your GTM membership.</div>
+        <div class="form-group">
+          <label for="regNumber">Player Registration Number</label>
+          <div class="reg-input-wrapper">
+            <span class="reg-prefix">P</span>
+            <input id="regNumberInput" type="text" placeholder="0001" autocomplete="off" inputmode="numeric" maxlength="4" />
+          </div>
+          <small>This is your unique registration number in the GTM system.</small>
+        </div>
+        <button id="step1Btn" class="btn btn-primary">Continue</button>
+      </div>
+
+      <!-- Step 2: Choose Verification Method & Enter Code -->
+      <div class="form-section" id="step2">
+        <div id="playerInfo" class="player-info" style="display:none;"></div>
+        
+        <div id="chooseMethod">
+          <div class="info">Choose how you want to receive your verification code:</div>
+          <div class="form-group">
+            <div class="verification-option" id="emailOption">
+              <input type="radio" name="verificationMethod" value="email" id="emailRadio" />
+              <label for="emailRadio">Send code to email</label>
+              <div id="emailDisplay" style="margin-left: 24px; font-size: 12px; color: #64748b;"></div>
+            </div>
+            <div class="verification-option" id="mobileOption">
+              <input type="radio" name="verificationMethod" value="mobile" id="mobileRadio" />
+              <label for="mobileRadio">Send code to mobile</label>
+              <div id="mobileDisplay" style="margin-left: 24px; font-size: 12px; color: #64748b;"></div>
+            </div>
+          </div>
+          <button id="sendCodeBtn" class="btn btn-primary">Send Verification Code</button>
+        </div>
+
+        <div id="enterCode" style="display:none;">
+          <div class="info">Enter the 6-digit verification code sent to your <span id="sentTo"></span>.</div>
+          <div class="form-group">
+            <label for="verificationCode">Verification Code</label>
+            <input id="verificationCode" type="text" class="code-input" placeholder="000000" maxlength="6" autocomplete="off" />
+            <small>Code expires in <span id="codeTimer">5:00</span> minutes.</small>
+          </div>
+          <div class="btn-group">
+            <button id="resendCodeBtn" class="btn btn-secondary">Resend Code</button>
+            <button id="verifyCodeBtn" class="btn btn-primary">Verify Code</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Set Password -->
+      <div class="form-section" id="step3">
+        <div class="info">Create a secure password for your account.</div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="new-password" />
+          <div class="password-strength">
+            <div class="strength-bar">
+              <div class="strength-fill" id="strengthFill"></div>
+            </div>
+            <small id="strengthText">Password strength: <span id="strengthLabel">-</span></small>
+          </div>
+          <small>Minimum 8 characters, including uppercase, lowercase, and number.</small>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input id="confirmPassword" type="password" autocomplete="new-password" />
+        </div>
+        <button id="completeSignupBtn" class="btn btn-primary">Complete Sign Up</button>
+      </div>
+
+      <div class="small">
+        Already have an account? <a href="player-login.html">Sign in here</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  <script>
+    let currentStep = 1;
+    let playerData = null;
+    let verificationMethod = null;
+    let verificationCode = null;
+    let codeTimerInterval = null;
+
+    // UI Helper Functions
+    function showError(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => { errorEl.style.display = 'none'; }, 5000);
+    }
+
+    function showSuccess(message) {
+      const successEl = document.getElementById('success');
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+      setTimeout(() => { successEl.style.display = 'none'; }, 3000);
+    }
+
+    function clearMessages() {
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('success').style.display = 'none';
+    }
+
+    function goToStep(step) {
+      // Hide all sections
+      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'completed'));
+      
+      // Show current section
+      document.getElementById('step' + step).classList.add('active');
+      document.getElementById('step' + step + '-indicator').classList.add('active');
+      
+      // Mark previous steps as completed
+      for (let i = 1; i < step; i++) {
+        document.getElementById('step' + i + '-indicator').classList.add('completed');
+      }
+      
+      currentStep = step;
+      clearMessages();
+    }
+
+    // Format registration number input - only allow digits
+    document.getElementById('regNumberInput').addEventListener('input', (e) => {
+      // Only allow digits, max 4 characters
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    // Step 1: Verify Player Registration Number
+    document.getElementById('step1Btn').addEventListener('click', async () => {
+      const regNumberInput = document.getElementById('regNumberInput').value.trim();
+      
+      if (!regNumberInput) {
+        showError('Please enter your player registration number');
+        return;
+      }
+      
+      // Add P prefix (e.g., "10" becomes "P10")
+      const regNumber = 'P' + regNumberInput;
+
+      clearMessages();
+      document.getElementById('step1Btn').disabled = true;
+      document.getElementById('step1Btn').textContent = 'Checking...';
+
+      try {
+        // Check if player exists - try Firebase directly first
+        let player = null;
+        
+        // Try Firebase Realtime Database directly
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+          try {
+            console.log('Trying Firebase lookup for:', regNumber);
+            const snapshot = await firebase.database().ref(`players/${regNumber}`).once('value');
+            player = snapshot.val();
+            if (player) {
+              console.log('✓ Found player in Firebase:', player);
+            } else {
+              console.log('Not found in Firebase by key, trying Auth function...');
+            }
+          } catch (fbErr) {
+            console.warn('Firebase direct lookup failed:', fbErr);
+          }
+        }
+        
+        // Fallback to Auth function (which checks localStorage)
+        if (!player) {
+          player = await window.Auth.findPlayerByRegNumber(regNumber);
+        }
+        
+        console.log('Player lookup result:', player);
+        console.log('Player keys:', player ? Object.keys(player) : 'null');
+        
+        if (!player) {
+          showError('Player registration number not found. Please contact your administrator.');
+          return;
+        }
+
+        // Check for email and mobile (handle different field names)
+        const playerEmail = player.email || player.Email || player['e-mail'] || null;
+        const playerMobile = player.mobile || player.mobileNumber || player.phone || player.Mobile || null;
+        
+        console.log('Found email:', playerEmail);
+        console.log('Found mobile:', playerMobile);
+        
+        // Update player object with normalized fields
+        player.email = playerEmail;
+        player.mobile = playerMobile;
+
+        if (!playerEmail && !playerMobile) {
+          showError('This player does not have an email or mobile number on file. Please ask your club administrator to update your contact information in the GTM system before signing up.');
+          return;
+        }
+
+        // Check if player already has an account
+        const hasAccount = await window.Auth.checkPlayerHasAccount(regNumber);
+        if (hasAccount) {
+          showError('An account already exists for this player. Please use the login page.');
+          return;
+        }
+
+        playerData = player;
+        
+        // Display player info
+        const playerInfoDiv = document.getElementById('playerInfo');
+        playerInfoDiv.innerHTML = `
+          <div class="player-info-row">
+            <span class="player-info-label">Name:</span>
+            <span class="player-info-value">${player.firstName} ${player.lastName}</span>
+          </div>
+          <div class="player-info-row">
+            <span class="player-info-label">Reg No:</span>
+            <span class="player-info-value">${player.reg}</span>
+          </div>
+        `;
+        playerInfoDiv.style.display = 'block';
+
+        // Setup verification options
+        if (player.email) {
+          document.getElementById('emailDisplay').textContent = maskEmail(player.email);
+          document.getElementById('emailOption').style.display = 'block';
+          document.getElementById('emailRadio').checked = true;
+        } else {
+          document.getElementById('emailOption').style.display = 'none';
+        }
+
+        if (player.mobile) {
+          document.getElementById('mobileDisplay').textContent = maskMobile(player.mobile);
+          document.getElementById('mobileOption').style.display = 'block';
+          if (!player.email) {
+            document.getElementById('mobileRadio').checked = true;
+          }
+        } else {
+          document.getElementById('mobileOption').style.display = 'none';
+        }
+
+        goToStep(2);
+      } catch (error) {
+        showError(error.message || 'An error occurred. Please try again.');
+      } finally {
+        document.getElementById('step1Btn').disabled = false;
+        document.getElementById('step1Btn').textContent = 'Continue';
+      }
+    });
+
+    // Step 2: Send Verification Code
+    document.getElementById('sendCodeBtn').addEventListener('click', async () => {
+      verificationMethod = document.querySelector('input[name="verificationMethod"]:checked')?.value;
+      
+      if (!verificationMethod) {
+        showError('Please select a verification method');
+        return;
+      }
+
+      clearMessages();
+      document.getElementById('sendCodeBtn').disabled = true;
+      document.getElementById('sendCodeBtn').textContent = 'Sending...';
+
+      try {
+        const contact = verificationMethod === 'email' ? playerData.email : playerData.mobile;
+        verificationCode = await window.Auth.sendVerificationCode(playerData.reg, verificationMethod, contact);
+        
+        document.getElementById('chooseMethod').style.display = 'none';
+        document.getElementById('enterCode').style.display = 'block';
+        document.getElementById('sentTo').textContent = verificationMethod;
+        
+        showSuccess('Verification code sent successfully!');
+        startCodeTimer();
+      } catch (error) {
+        showError(error.message || 'Failed to send verification code. Please try again.');
+      } finally {
+        document.getElementById('sendCodeBtn').disabled = false;
+        document.getElementById('sendCodeBtn').textContent = 'Send Verification Code';
+      }
+    });
+
+    // Resend Code
+    document.getElementById('resendCodeBtn').addEventListener('click', async () => {
+      clearMessages();
+      try {
+        const contact = verificationMethod === 'email' ? playerData.email : playerData.mobile;
+        verificationCode = await window.Auth.sendVerificationCode(playerData.reg, verificationMethod, contact);
+        showSuccess('Verification code resent successfully!');
+        resetCodeTimer();
+      } catch (error) {
+        showError(error.message || 'Failed to resend code. Please try again.');
+      }
+    });
+
+    // Verify Code
+    document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
+      const enteredCode = document.getElementById('verificationCode').value.trim();
+      
+      if (!enteredCode || enteredCode.length !== 6) {
+        showError('Please enter a valid 6-digit code');
+        return;
+      }
+
+      clearMessages();
+      document.getElementById('verifyCodeBtn').disabled = true;
+      document.getElementById('verifyCodeBtn').textContent = 'Verifying...';
+
+      try {
+        const isValid = await window.Auth.verifyCode(playerData.reg, enteredCode, verificationCode);
+        
+        if (!isValid) {
+          showError('Invalid verification code. Please try again.');
+          return;
+        }
+
+        if (codeTimerInterval) {
+          clearInterval(codeTimerInterval);
+        }
+
+        showSuccess('Code verified successfully!');
+        setTimeout(() => goToStep(3), 1000);
+      } catch (error) {
+        showError(error.message || 'Verification failed. Please try again.');
+      } finally {
+        document.getElementById('verifyCodeBtn').disabled = false;
+        document.getElementById('verifyCodeBtn').textContent = 'Verify Code';
+      }
+    });
+
+    // Step 3: Complete Signup
+    document.getElementById('completeSignupBtn').addEventListener('click', async () => {
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (!password || password.length < 8) {
+        showError('Password must be at least 8 characters long');
+        return;
+      }
+
+      if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+        showError('Password must contain uppercase, lowercase, and number');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('Passwords do not match');
+        return;
+      }
+
+      clearMessages();
+      document.getElementById('completeSignupBtn').disabled = true;
+      document.getElementById('completeSignupBtn').textContent = 'Creating Account...';
+
+      try {
+        await window.Auth.completeSignup(playerData, password, verificationMethod === 'email' ? playerData.email : playerData.mobile);
+        
+        showSuccess('Account created successfully! Redirecting to login...');
+        setTimeout(() => {
+          // Pass return URL to login page if we have one
+          const urlParams = new URLSearchParams(window.location.search);
+          const returnUrl = urlParams.get('return');
+          if (returnUrl) {
+            window.location.href = `player-login.html?return=${encodeURIComponent(returnUrl)}`;
+          } else {
+            window.location.href = 'player-login.html';
+          }
+        }, 2000);
+      } catch (error) {
+        showError(error.message || 'Failed to create account. Please try again.');
+        document.getElementById('completeSignupBtn').disabled = false;
+        document.getElementById('completeSignupBtn').textContent = 'Complete Sign Up';
+      }
+    });
+
+    // Password Strength Indicator
+    document.getElementById('password').addEventListener('input', (e) => {
+      const password = e.target.value;
+      const strengthFill = document.getElementById('strengthFill');
+      const strengthLabel = document.getElementById('strengthLabel');
+
+      if (!password) {
+        strengthFill.className = 'strength-fill';
+        strengthLabel.textContent = '-';
+        return;
+      }
+
+      let strength = 0;
+      if (password.length >= 8) strength++;
+      if (/[A-Z]/.test(password)) strength++;
+      if (/[a-z]/.test(password)) strength++;
+      if (/[0-9]/.test(password)) strength++;
+      if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+      if (strength <= 2) {
+        strengthFill.className = 'strength-fill weak';
+        strengthLabel.textContent = 'Weak';
+      } else if (strength <= 3) {
+        strengthFill.className = 'strength-fill medium';
+        strengthLabel.textContent = 'Medium';
+      } else {
+        strengthFill.className = 'strength-fill strong';
+        strengthLabel.textContent = 'Strong';
+      }
+    });
+
+    // Verification option selection
+    document.querySelectorAll('.verification-option').forEach(option => {
+      option.addEventListener('click', function() {
+        document.querySelectorAll('.verification-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        this.querySelector('input[type="radio"]').checked = true;
+      });
+    });
+
+    // Code input formatting
+    document.getElementById('verificationCode').addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    // Helper Functions
+    function maskEmail(email) {
+      if (!email) return '';
+      const [local, domain] = email.split('@');
+      if (local.length <= 2) return email;
+      return local[0] + '***' + local[local.length - 1] + '@' + domain;
+    }
+
+    function maskMobile(mobile) {
+      if (!mobile) return '';
+      const digits = mobile.replace(/\D/g, '');
+      if (digits.length < 4) return mobile;
+      return '***' + digits.slice(-4);
+    }
+
+    function startCodeTimer() {
+      let timeLeft = 300; // 5 minutes
+      const timerEl = document.getElementById('codeTimer');
+      
+      codeTimerInterval = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+          clearInterval(codeTimerInterval);
+          showError('Verification code has expired. Please request a new one.');
+          document.getElementById('verifyCodeBtn').disabled = true;
+        }
+      }, 1000);
+    }
+
+    function resetCodeTimer() {
+      if (codeTimerInterval) {
+        clearInterval(codeTimerInterval);
+      }
+      document.getElementById('codeTimer').textContent = '5:00';
+      document.getElementById('verifyCodeBtn').disabled = false;
+      startCodeTimer();
+    }
+  </script>
+</body>
+</html>

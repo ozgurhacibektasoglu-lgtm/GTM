@@ -81,6 +81,22 @@
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      // Only admin can access the course creation page
+      (async function(){
+        try {
+          await window.Auth.requireAuth('admin');
+        } catch(e){
+          alert('Admin only');
+          window.location.href = './index.html';
+        }
+      })();
+    </script>
     <div class="top-nav">
       <h1>⛳ New Course</h1>
       <a href="index.html" class="btn-back-top">← Back</a>

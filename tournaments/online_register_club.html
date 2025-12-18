@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Registration - Tournament</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: #f8fafc;
+      color: #0f172a;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 20px;
+    }
+    
+    .header-content {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    
+    .header-info {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .header-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .btn-logout {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .btn-logout:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Main content */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Tournament info card */
+    .tournament-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .tournament-card h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    
+    .tournament-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      color: #64748b;
+    }
+    
+    .tournament-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 700;
+      color: #059669;
+    }
+    
+    .stat-card .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    /* Two column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .card-body {
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    
+    /* Search */
+    .search-box {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 12px 14px;
+      padding-left: 40px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    
+    .search-box .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+    
+    /* Player list */
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .player-item:hover {
+      border-color: #059669;
+      background: #f0fdf4;
+    }
+    
+    .player-item.selected {
+      border-color: #059669;
+      background: #ecfdf5;
+    }
+    
+    .player-item.registered {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #f1f5f9;
+    }
+    
+    .player-item.registered:hover {
+      border-color: #e2e8f0;
+      background: #f1f5f9;
+    }
+    
+    .player-item.ineligible {
+      opacity: 0.7;
+      cursor: not-allowed;
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+    
+    .player-item.ineligible:hover {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+    
+    .player-item.ineligible .player-checkbox {
+      background: #fecaca;
+      border-color: #f87171;
+      color: #dc2626;
+    }
+    
+    .player-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .player-item.selected .player-checkbox {
+      background: #059669;
+      border-color: #059669;
+      color: white;
+    }
+    
+    .player-item.registered .player-checkbox {
+      background: #94a3b8;
+      border-color: #94a3b8;
+      color: white;
+    }
+    
+    .player-details {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .player-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #0f172a;
+    }
+    
+    .player-meta {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    
+    .player-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    
+    .badge-registered {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .badge-ineligible {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    /* Selected players */
+    .selected-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .selected-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #ecfdf5;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+    }
+    
+    .selected-item .name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .selected-item .remove-btn {
+      background: none;
+      border: none;
+      color: #dc2626;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0 4px;
+    }
+    
+    .empty-selection {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+    }
+    
+    .empty-selection .icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    
+    /* Register button */
+    .register-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      width: 100%;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    /* Success message */
+    .success-message {
+      background: #ecfdf5;
+      border: 1px solid #86efac;
+      color: #166534;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 16px;
+      display: none;
+    }
+    
+    /* Links */
+    .action-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .action-links a {
+      color: #059669;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .action-links a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    
+    .loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #059669;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Error state */
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    
+    .error-state .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .error-state h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    
+    .error-state p {
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    
+    /* Select all */
+    .select-all-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .select-all-row label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .player-count {
+      font-size: 13px;
+      color: #64748b;
+    }
+    
+    /* Club Registered Players Section */
+    .club-registered-section {
+      margin-bottom: 20px;
+    }
+    
+    .club-registered-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .club-registered-header h4 {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+    
+    .registered-player-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #ecfdf5;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .registered-player-info {
+      flex: 1;
+    }
+    
+    .registered-player-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .registered-player-meta {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .registered-player-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+    
+    .status-admitted {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-reserve {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .btn-cancel-small {
+      background: #fee2e2;
+      color: #dc2626;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn-cancel-small:hover {
+      background: #fecaca;
+    }
+    
+    .no-club-registrations {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      font-size: 13px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px dashed #e2e8f0;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div class="header-top">
+        <h1>🏌️ Club Registration Portal</h1>
+        <button class="btn-logout" id="btn-logout">Logout</button>
+      </div>
+      <div class="header-info">
+        <span class="header-badge" id="club-name">Loading...</span>
+        <span class="header-badge" id="tournament-badge">Tournament</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Loading State -->
+  <div class="container" id="loading-state">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading registration data...</p>
+    </div>
+  </div>
+  
+  <!-- Error State -->
+  <div class="container hidden" id="error-state">
+    <div class="error-state">
+      <div class="icon">⚠️</div>
+      <h2 id="error-title">Access Denied</h2>
+      <p id="error-message">You don't have permission to access this page.</p>
+      <a href="../index.html" class="btn btn-secondary">Go to Dashboard</a>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <div class="container hidden" id="main-content">
+    <!-- Tournament Info -->
+    <div class="tournament-card">
+      <h2 id="tournament-name">Tournament</h2>
+      <div class="tournament-meta">
+        <span>📅 <span id="tournament-date">-</span></span>
+        <span>⛳ <span id="tournament-course">-</span></span>
+        <span>🔄 Round <span id="round-number">1</span></span>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="number" id="stat-club-players">0</div>
+        <div class="label">Your Club Players</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-registered">0</div>
+        <div class="label">Already Registered</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-available">0</div>
+        <div class="label">Eligible to Register</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-spots">0</div>
+        <div class="label">Spots Left</div>
+      </div>
+    </div>
+    
+    <!-- Two Column Layout -->
+    <div class="two-col">
+      <!-- Available Players -->
+      <div class="card">
+        <div class="card-header">
+          <h3>👥 Your Club Players</h3>
+        </div>
+        <div class="card-body">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-players" placeholder="Search by name or reg number..." />
+          </div>
+          
+          <div class="select-all-row">
+            <label>
+              <input type="checkbox" id="select-all" />
+              Select All Available
+            </label>
+            <span class="player-count" id="filtered-count">0 players</span>
+          </div>
+          
+          <div class="player-list" id="player-list">
+            <!-- Players will be loaded here -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Selected for Registration -->
+      <div class="card">
+        <div class="card-header">
+          <h3>✅ Registration Panel</h3>
+          <span id="selected-count">0 selected</span>
+        </div>
+        <div class="card-body">
+          <!-- New Players to Register (at the top) -->
+          <div class="selected-list" id="selected-list">
+            <div class="empty-selection">
+              <div class="icon">👈</div>
+              <p>Select players from the left panel to register them</p>
+            </div>
+          </div>
+          
+          <div class="success-message" id="success-message"></div>
+          
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">
+          
+          <!-- Players Already Registered by This Club -->
+          <div class="club-registered-section" id="club-registered-section">
+            <div class="club-registered-header">
+              <h4>🏢 Players You Registered</h4>
+              <span id="club-registered-count">0</span>
+            </div>
+            <div id="club-registered-list">
+              <div class="no-club-registrations">No players registered by your club yet</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="action-links" style="padding: 0 20px 20px; display: flex; justify-content: space-between; align-items: center;">
+          <button class="btn btn-primary" id="btn-register" disabled>
+            Register Selected Players
+          </button>
+          <a href="#" id="view-list-link">📋 View Admitted Players List</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+    const roundNum = parseInt(urlParams.get('r') || urlParams.get('round')) || 1;
+    
+    // State
+    let currentUser = null;
+    let clubName = null;
+    let tournament = null;
+    let admissionsConfig = null;
+    let admissionCriteria = null;
+    let registrations = [];
+    let clubPlayers = [];
+    let selectedPlayers = new Set();
+    
+    // DOM elements
+    const loadingState = document.getElementById('loading-state');
+    const errorState = document.getElementById('error-state');
+    const mainContent = document.getElementById('main-content');
+    
+    // Initialize Firebase
+    function initFirebaseApp() {
+      if (typeof firebase !== 'undefined' && !firebase.apps.length && window.firebaseConfig) {
+        firebase.initializeApp(window.firebaseConfig);
+      }
+    }
+    
+    // Show error
+    function showError(title, message) {
+      loadingState.classList.add('hidden');
+      mainContent.classList.add('hidden');
+      errorState.classList.remove('hidden');
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-message').textContent = message;
+    }
+    
+    // Load tournament data
+    async function loadTournament() {
+      if (!tournamentId) {
+        showError('No Tournament', 'No tournament ID specified in URL.');
+        return false;
+      }
+      
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`tournaments/${tournamentId}`).once('value');
+        tournament = snapshot.val();
+        
+        if (!tournament) {
+          showError('Tournament Not Found', 'The specified tournament does not exist.');
+          return false;
+        }
+        
+        // Update UI
+        document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+        document.getElementById('tournament-badge').textContent = tournament.name || 'Tournament';
+        document.getElementById('tournament-date').textContent = tournament.date || tournament.startDate || '-';
+        document.getElementById('tournament-course').textContent = tournament.course || '-';
+        document.getElementById('round-number').textContent = roundNum;
+        
+        return true;
+      } catch (e) {
+        console.error('Error loading tournament:', e);
+        showError('Error', 'Failed to load tournament data.');
+        return false;
+      }
+    }
+    
+    // Load admissions config
+    async function loadAdmissionsConfig() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/config`).once('value');
+        admissionsConfig = snapshot.val() || {};
+        return true;
+      } catch (e) {
+        console.error('Error loading config:', e);
+        return false;
+      }
+    }
+    
+    // Load admission criteria
+    async function loadAdmissionCriteria() {
+      try {
+        // First try to get from admissionsConfig (embedded)
+        if (admissionsConfig && admissionsConfig.admissionCriteria) {
+          admissionCriteria = admissionsConfig.admissionCriteria;
+          console.log('Loaded criteria from config:', admissionCriteria);
+          return;
+        }
+        
+        // Try Firebase next
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+          const db = firebase.database();
+          const snapshot = await db.ref(`admissionCriteria/${tournamentId}`).once('value');
+          admissionCriteria = snapshot.val();
+          console.log('Loaded criteria from Firebase:', admissionCriteria);
+        }
+      } catch (e) {
+        console.error('Error loading criteria:', e);
+      }
+    }
+    
+    // Calculate age based on January 1st of current year (golf age calculation)
+    function calculateAge(dob) {
+      if (!dob) return null;
+      try {
+        const birthDate = new Date(dob);
+        if (isNaN(birthDate.getTime())) return null;
+        const referenceDate = new Date(new Date().getFullYear(), 0, 1); // January 1st of current year
+        let age = referenceDate.getFullYear() - birthDate.getFullYear();
+        return age;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Check if player meets admission criteria
+    function checkCriteria(player) {
+      const results = [];
+      let allPassed = true;
+      
+      if (!admissionCriteria) {
+        return { passed: true, results: [{ pass: true, text: 'No criteria' }] };
+      }
+      
+      const playerGender = (player.gender || '').toUpperCase();
+      const isMale = playerGender === 'M' || playerGender === 'MALE';
+      const isFemale = playerGender === 'F' || playerGender === 'FEMALE';
+      
+      // Check HCP for men
+      if (isMale && admissionCriteria.hcpMen && admissionCriteria.hcpMen !== 'NA') {
+        const playerHcp = parseFloat(player.hcp) || 54;
+        const limitHcp = parseFloat(admissionCriteria.hcpMenValue) || 54;
+        
+        if (admissionCriteria.hcpMen.includes('Limit')) {
+          const passed = playerHcp <= limitHcp;
+          results.push({ pass: passed, text: `HCP ≤ ${limitHcp}` });
+          if (!passed) allPassed = false;
+        }
+      }
+      
+      // Check HCP for women
+      if (isFemale && admissionCriteria.hcpWomen && admissionCriteria.hcpWomen !== 'NA') {
+        const playerHcp = parseFloat(player.hcp) || 54;
+        const limitHcp = parseFloat(admissionCriteria.hcpWomenValue) || 54;
+        
+        if (admissionCriteria.hcpWomen.includes('Limit')) {
+          const passed = playerHcp <= limitHcp;
+          results.push({ pass: passed, text: `HCP ≤ ${limitHcp}` });
+          if (!passed) allPassed = false;
+        }
+      }
+      
+      // Check age criteria
+      if (admissionCriteria.ageMin || admissionCriteria.ageMax) {
+        const age = calculateAge(player.dob || player.dateOfBirth || player.birthDate);
+        if (age !== null) {
+          let agePassed = true;
+          let ageText = `Age ${age}`;
+          
+          if (admissionCriteria.ageMin && age < parseInt(admissionCriteria.ageMin)) {
+            agePassed = false;
+            ageText += ` < min ${admissionCriteria.ageMin}`;
+          }
+          if (admissionCriteria.ageMax && age > parseInt(admissionCriteria.ageMax)) {
+            agePassed = false;
+            ageText += ` > max ${admissionCriteria.ageMax}`;
+          }
+          if (agePassed) {
+            if (admissionCriteria.ageMin && admissionCriteria.ageMax) {
+              ageText = `Age ${age} (${admissionCriteria.ageMin}-${admissionCriteria.ageMax})`;
+            } else if (admissionCriteria.ageMin) {
+              ageText = `Age ${age} (min ${admissionCriteria.ageMin})`;
+            } else {
+              ageText = `Age ${age} (max ${admissionCriteria.ageMax})`;
+            }
+          }
+          
+          results.push({ pass: agePassed, text: ageText });
+          if (!agePassed) allPassed = false;
+        } else {
+          // No DOB available - show warning but don't fail
+          let ageRangeText = '';
+          if (admissionCriteria.ageMin && admissionCriteria.ageMax) {
+            ageRangeText = `Age ${admissionCriteria.ageMin}-${admissionCriteria.ageMax}`;
+          } else if (admissionCriteria.ageMin) {
+            ageRangeText = `Min age ${admissionCriteria.ageMin}`;
+          } else {
+            ageRangeText = `Max age ${admissionCriteria.ageMax}`;
+          }
+          results.push({ pass: true, text: `${ageRangeText} (DOB not available)` });
+        }
+      }
+      
+      // Check gender restriction
+      if (admissionCriteria.gender && admissionCriteria.gender !== 'both' && admissionCriteria.gender !== '') {
+        let passed = false;
+        if (admissionCriteria.gender === 'M' && isMale) passed = true;
+        if (admissionCriteria.gender === 'F' && isFemale) passed = true;
+        
+        const genderText = admissionCriteria.gender === 'M' ? 'Men only' : 'Women only';
+        results.push({ pass: passed, text: genderText });
+        if (!passed) allPassed = false;
+      }
+      
+      return { passed: allPassed, results };
+    }
+    
+    // Check if player meets criteria (simple boolean)
+    function playerMeetsCriteria(player) {
+      return checkCriteria(player).passed;
+    }
+    
+    // Load existing registrations
+    async function loadRegistrations() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).once('value');
+        const data = snapshot.val();
+        registrations = data ? Object.values(data) : [];
+        return true;
+      } catch (e) {
+        console.error('Error loading registrations:', e);
+        return false;
+      }
+    }
+    
+    // Load club players
+    async function loadClubPlayers() {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref('players').once('value');
+        const allPlayers = snapshot.val();
+        
+        if (!allPlayers) {
+          clubPlayers = [];
+          return true;
+        }
+        
+        // Filter by club name (case-insensitive)
+        const clubNameUpper = clubName.toUpperCase();
+        clubPlayers = Object.values(allPlayers).filter(p => {
+          const playerClub = (p.homeClub || p.club || '').toUpperCase();
+          return playerClub === clubNameUpper || playerClub.includes(clubNameUpper) || clubNameUpper.includes(playerClub);
+        });
+        
+        console.log(`Found ${clubPlayers.length} players for club: ${clubName}`);
+        return true;
+      } catch (e) {
+        console.error('Error loading players:', e);
+        return false;
+      }
+    }
+    
+    // Check if player is already registered
+    function isPlayerRegistered(playerReg) {
+      return registrations.some(r => r.playerReg?.toUpperCase() === playerReg?.toUpperCase());
+    }
+    
+    // Update stats
+    function updateStats() {
+      const registeredCount = clubPlayers.filter(p => isPlayerRegistered(p.reg || p.id)).length;
+      const eligibleCount = clubPlayers.filter(p => !isPlayerRegistered(p.reg || p.id) && playerMeetsCriteria(p)).length;
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      const spotsLeft = Math.max(0, maxPlayers - registrations.length);
+      
+      document.getElementById('stat-club-players').textContent = clubPlayers.length;
+      document.getElementById('stat-registered').textContent = registeredCount;
+      document.getElementById('stat-available').textContent = eligibleCount;
+      document.getElementById('stat-spots').textContent = spotsLeft;
+      
+      // Also update the club registered section
+      renderClubRegisteredPlayers();
+    }
+    
+    // Get registrations made by this club
+    function getClubRegistrations() {
+      const clubNameUpper = clubName.toUpperCase();
+      return registrations.filter(r => 
+        r.registeredByType === 'club' && 
+        (r.registeredBy || '').toUpperCase() === clubNameUpper
+      );
+    }
+    
+    // Render club registered players
+    function renderClubRegisteredPlayers() {
+      const container = document.getElementById('club-registered-list');
+      const clubRegs = getClubRegistrations();
+      
+      document.getElementById('club-registered-count').textContent = clubRegs.length;
+      
+      if (clubRegs.length === 0) {
+        container.innerHTML = '<div class="no-club-registrations">No players registered by your club yet</div>';
+        return;
+      }
+      
+      // Sort by position
+      clubRegs.sort((a, b) => {
+        if (a.status === 'admitted' && b.status !== 'admitted') return -1;
+        if (a.status !== 'admitted' && b.status === 'admitted') return 1;
+        return (a.position || 0) - (b.position || 0);
+      });
+      
+      container.innerHTML = clubRegs.map(r => {
+        const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+        const statusClass = r.status === 'admitted' ? 'status-admitted' : 'status-reserve';
+        const statusText = r.status === 'admitted' ? `Admitted #${r.position}` : `Reserve #${r.position}`;
+        
+        return `
+          <div class="registered-player-item">
+            <div class="registered-player-info">
+              <div class="registered-player-name">
+                ${escapeHtml(name)}
+                <span class="registered-player-status ${statusClass}">${statusText}</span>
+              </div>
+              <div class="registered-player-meta">${escapeHtml(r.playerReg)} • HCP: ${r.handicap || '-'}</div>
+            </div>
+            <button class="btn-cancel-small" onclick="cancelRegistration('${escapeHtml(r.registrationId)}', '${escapeHtml(name)}')">
+              Cancel
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Cancel a registration
+    async function cancelRegistration(registrationId, playerName) {
+      if (!confirm(`Are you sure you want to cancel the registration for ${playerName}?`)) {
+        return;
+      }
+      
+      try {
+        // Find and remove the registration
+        const index = registrations.findIndex(r => r.registrationId === registrationId);
+        if (index === -1) {
+          alert('Registration not found.');
+          return;
+        }
+        
+        // Check if this registration was made by this club
+        const reg = registrations[index];
+        const clubNameUpper = clubName.toUpperCase();
+        if (reg.registeredByType !== 'club' || (reg.registeredBy || '').toUpperCase() !== clubNameUpper) {
+          alert('You can only cancel registrations made by your club.');
+          return;
+        }
+        
+        registrations.splice(index, 1);
+        
+        // Reorder remaining registrations
+        reorderRegistrations();
+        
+        // Save to Firebase
+        const db = firebase.database();
+        const regsObj = {};
+        registrations.forEach(r => regsObj[r.registrationId] = r);
+        await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+        
+        // Update UI
+        updateStats();
+        renderPlayerList(document.getElementById('search-players').value);
+        
+        // Show success
+        const successMsg = document.getElementById('success-message');
+        successMsg.innerHTML = `✅ Registration cancelled for ${escapeHtml(playerName)}`;
+        successMsg.style.display = 'block';
+        setTimeout(() => {
+          successMsg.style.display = 'none';
+        }, 3000);
+        
+      } catch (e) {
+        console.error('Error cancelling registration:', e);
+        alert('Failed to cancel registration. Please try again.');
+      }
+    }
+    
+    // Render player list
+    function renderPlayerList(filter = '') {
+      const container = document.getElementById('player-list');
+      const filterLower = filter.toLowerCase();
+      
+      let filteredPlayers = clubPlayers;
+      if (filter) {
+        filteredPlayers = clubPlayers.filter(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+          const reg = (p.reg || p.id || '').toLowerCase();
+          return name.includes(filterLower) || reg.includes(filterLower);
+        });
+      }
+      
+      // Sort: eligible first, then ineligible, then registered
+      filteredPlayers.sort((a, b) => {
+        const aReg = isPlayerRegistered(a.reg || a.id);
+        const bReg = isPlayerRegistered(b.reg || b.id);
+        if (aReg !== bReg) return aReg ? 1 : -1;
+        
+        // Then by criteria eligibility
+        const aEligible = playerMeetsCriteria(a);
+        const bEligible = playerMeetsCriteria(b);
+        if (aEligible !== bEligible) return aEligible ? -1 : 1;
+        
+        const aName = `${a.firstName || ''} ${a.lastName || ''}`;
+        const bName = `${b.firstName || ''} ${b.lastName || ''}`;
+        return aName.localeCompare(bName);
+      });
+      
+      document.getElementById('filtered-count').textContent = `${filteredPlayers.length} players`;
+      
+      if (filteredPlayers.length === 0) {
+        container.innerHTML = `
+          <div class="empty-selection">
+            <div class="icon">🔍</div>
+            <p>${filter ? 'No players match your search' : 'No players found for your club'}</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = filteredPlayers.map(p => {
+        const reg = p.reg || p.id || '';
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
+        const isRegistered = isPlayerRegistered(reg);
+        const isSelected = selectedPlayers.has(reg);
+        const criteriaResult = checkCriteria(p);
+        const meetsAllCriteria = criteriaResult.passed;
+        const isClickable = !isRegistered && meetsAllCriteria;
+        
+        // Build status badge
+        let badge = '';
+        if (isRegistered) {
+          badge = '<span class="player-badge badge-registered">Registered</span>';
+        } else if (!meetsAllCriteria) {
+          const failedCriteria = criteriaResult.results.filter(r => !r.pass).map(r => r.text).join(', ');
+          badge = `<span class="player-badge badge-ineligible" title="${escapeHtml(failedCriteria)}">❌ ${escapeHtml(failedCriteria)}</span>`;
+        }
+        
+        return `
+          <div class="player-item ${isRegistered ? 'registered' : ''} ${!meetsAllCriteria && !isRegistered ? 'ineligible' : ''} ${isSelected ? 'selected' : ''}" 
+               data-reg="${escapeHtml(reg)}"
+               onclick="${isClickable ? `togglePlayer('${escapeHtml(reg)}')` : ''}">
+            <div class="player-checkbox">${isSelected || isRegistered ? '✓' : (!meetsAllCriteria ? '✕' : '')}</div>
+            <div class="player-details">
+              <div class="player-name">${escapeHtml(name)}</div>
+              <div class="player-meta">${escapeHtml(reg)} • HCP: ${p.hcp || '-'} • ${p.gender || '-'}</div>
+            </div>
+            ${badge}
+          </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Toggle player selection
+    function togglePlayer(reg) {
+      if (selectedPlayers.has(reg)) {
+        selectedPlayers.delete(reg);
+      } else {
+        selectedPlayers.add(reg);
+      }
+      renderPlayerList(document.getElementById('search-players').value);
+      renderSelectedList();
+      updateRegisterButton();
+    }
+    
+    // Render selected list
+    function renderSelectedList() {
+      const container = document.getElementById('selected-list');
+      document.getElementById('selected-count').textContent = `${selectedPlayers.size} selected`;
+      
+      if (selectedPlayers.size === 0) {
+        container.innerHTML = `
+          <div class="empty-selection">
+            <div class="icon">👈</div>
+            <p>Select players from the left panel to register them</p>
+          </div>
+        `;
+        return;
+      }
+      
+      const selectedArray = Array.from(selectedPlayers).map(reg => {
+        return clubPlayers.find(p => (p.reg || p.id) === reg);
+      }).filter(Boolean);
+      
+      container.innerHTML = selectedArray.map(p => {
+        const reg = p.reg || p.id || '';
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
+        
+        return `
+          <div class="selected-item">
+            <div>
+              <div class="name">${escapeHtml(name)}</div>
+              <div style="font-size: 12px; color: #64748b;">${escapeHtml(reg)} • HCP: ${p.hcp || '-'}</div>
+            </div>
+            <button class="remove-btn" onclick="togglePlayer('${escapeHtml(reg)}')">&times;</button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Update register button state
+    function updateRegisterButton() {
+      const btn = document.getElementById('btn-register');
+      const count = selectedPlayers.size;
+      
+      if (count === 0) {
+        btn.disabled = true;
+        btn.textContent = 'Register Selected Players';
+      } else {
+        btn.disabled = false;
+        btn.textContent = `Register ${count} Player${count > 1 ? 's' : ''}`;
+      }
+    }
+    
+    // Select all available (only eligible players)
+    function toggleSelectAll() {
+      const checkbox = document.getElementById('select-all');
+      const filter = document.getElementById('search-players').value.toLowerCase();
+      
+      let targetPlayers = clubPlayers;
+      if (filter) {
+        targetPlayers = clubPlayers.filter(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+          const reg = (p.reg || p.id || '').toLowerCase();
+          return name.includes(filter) || reg.includes(filter);
+        });
+      }
+      
+      if (checkbox.checked) {
+        targetPlayers.forEach(p => {
+          const reg = p.reg || p.id;
+          // Only select if not registered AND meets criteria
+          if (!isPlayerRegistered(reg) && playerMeetsCriteria(p)) {
+            selectedPlayers.add(reg);
+          }
+        });
+      } else {
+        targetPlayers.forEach(p => {
+          selectedPlayers.delete(p.reg || p.id);
+        });
+      }
+      
+      renderPlayerList(filter);
+      renderSelectedList();
+      updateRegisterButton();
+    }
+    
+    // Register selected players
+    async function registerSelectedPlayers() {
+      if (selectedPlayers.size === 0) return;
+      
+      const btn = document.getElementById('btn-register');
+      btn.disabled = true;
+      btn.textContent = 'Registering...';
+      
+      const successMsg = document.getElementById('success-message');
+      successMsg.style.display = 'none';
+      
+      try {
+        const maxPlayers = admissionsConfig?.maxPlayers || 72;
+        let registeredCount = 0;
+        
+        for (const reg of selectedPlayers) {
+          const player = clubPlayers.find(p => (p.reg || p.id) === reg);
+          if (!player) continue;
+          
+          // Check if already registered (in case of race condition)
+          if (isPlayerRegistered(reg)) continue;
+          
+          const admitted = registrations.filter(r => r.status === 'admitted').length;
+          const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+          const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+          
+          const registration = {
+            registrationId: 'REG-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            playerId: player.playerId || reg,
+            playerReg: reg.toUpperCase(),
+            firstName: player.firstName || '',
+            lastName: player.lastName || '',
+            handicap: player.hcp || player.handicap || null,
+            club: player.homeClub || player.club || clubName,
+            gender: player.gender || '',
+            email: player.email || '',
+            status: status,
+            position: position,
+            registeredAt: new Date().toISOString(),
+            registeredBy: clubName,
+            registeredByType: 'club',
+            tournamentId: tournamentId,
+            round: roundNum
+          };
+          
+          registrations.push(registration);
+          registeredCount++;
+          
+          // Small delay to ensure unique timestamps
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        
+        // Reorder all registrations
+        reorderRegistrations();
+        
+        // Save to Firebase
+        const db = firebase.database();
+        const regsObj = {};
+        registrations.forEach(r => regsObj[r.registrationId] = r);
+        await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+        
+        // Clear selection
+        selectedPlayers.clear();
+        
+        // Update UI
+        updateStats();
+        renderPlayerList(document.getElementById('search-players').value);
+        renderSelectedList();
+        updateRegisterButton();
+        
+        // Show success
+        successMsg.innerHTML = `✅ Successfully registered ${registeredCount} player${registeredCount > 1 ? 's' : ''}!`;
+        successMsg.style.display = 'block';
+        
+        // Hide success after 5 seconds
+        setTimeout(() => {
+          successMsg.style.display = 'none';
+        }, 5000);
+        
+      } catch (e) {
+        console.error('Error registering players:', e);
+        alert('Failed to register players. Please try again.');
+      }
+      
+      btn.disabled = selectedPlayers.size === 0;
+      btn.textContent = 'Register Selected Players';
+    }
+    
+    // Reorder registrations
+    function reorderRegistrations() {
+      const sortMethod = admissionsConfig?.sortMethod || 'registration_order';
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      
+      if (sortMethod === 'handicap') {
+        registrations.sort((a, b) => {
+          const hcpA = parseFloat(a.handicap) || 999;
+          const hcpB = parseFloat(b.handicap) || 999;
+          if (hcpA !== hcpB) return hcpA - hcpB;
+          return new Date(a.registeredAt) - new Date(b.registeredAt);
+        });
+      } else {
+        registrations.sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+      }
+      
+      let admittedCount = 0;
+      let reserveCount = 0;
+      
+      registrations.forEach(r => {
+        if (admittedCount < maxPlayers) {
+          r.status = 'admitted';
+          admittedCount++;
+          r.position = admittedCount;
+        } else {
+          r.status = 'reserve';
+          reserveCount++;
+          r.position = reserveCount;
+        }
+      });
+    }
+    
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Logout
+    async function logout() {
+      try {
+        await window.Auth.signOut();
+        window.location.href = `../auth/club-register-login.html?t=${tournamentId}&r=${roundNum}`;
+      } catch (e) {
+        console.error('Logout error:', e);
+      }
+    }
+    
+    // Initialize
+    async function init() {
+      initFirebaseApp();
+      
+      // Wait for Auth
+      if (typeof window.Auth === 'undefined') {
+        setTimeout(init, 100);
+        return;
+      }
+      
+      // Check authentication
+      window.Auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = `../auth/club-register-login.html?t=${tournamentId}&r=${roundNum}`;
+          return;
+        }
+        
+        currentUser = user;
+        
+        try {
+          // Get user profile to check role and club name
+          const profile = await window.Auth.getUserProfile();
+          const role = profile?.role || 'user';
+          
+          if (role !== 'club' && role !== 'user' && role !== 'admin') {
+            showError('Access Denied', 'This page is for club users only.');
+            return;
+          }
+          
+          // Get club name from profile
+          clubName = profile?.displayName || profile?.loginName || user.displayName || 'Unknown Club';
+          document.getElementById('club-name').textContent = `🏢 ${clubName}`;
+          
+          // Load all data
+          const tournamentOk = await loadTournament();
+          if (!tournamentOk) return;
+          
+          await loadAdmissionsConfig();
+          await loadAdmissionCriteria();
+          await loadRegistrations();
+          await loadClubPlayers();
+          
+          // Setup links
+          document.getElementById('view-list-link').href = `online_admissions_list.html?t=${tournamentId}&r=${roundNum}`;
+          
+          // Update UI
+          updateStats();
+          renderPlayerList();
+          renderSelectedList();
+          updateRegisterButton();
+          
+          // Show main content
+          loadingState.classList.add('hidden');
+          mainContent.classList.remove('hidden');
+          
+          // Setup event listeners
+          document.getElementById('search-players').addEventListener('input', (e) => {
+            renderPlayerList(e.target.value);
+            document.getElementById('select-all').checked = false;
+          });
+          
+          document.getElementById('select-all').addEventListener('change', toggleSelectAll);
+          document.getElementById('btn-register').addEventListener('click', registerSelectedPlayers);
+          document.getElementById('btn-logout').addEventListener('click', logout);
+          
+        } catch (e) {
+          console.error('Init error:', e);
+          showError('Error', 'Failed to initialize. Please try again.');
+        }
+      });
+    }
+    
+    // Make functions available globally
+    window.togglePlayer = togglePlayer;
+    window.cancelRegistration = cancelRegistration;
+    
+    // Start
+    init();
+  </script>
+</body>
+</html>

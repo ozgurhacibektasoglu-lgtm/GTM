@@ -130,6 +130,7 @@
       .nav-card.tournaments:hover { border-bottom: 4px solid #4ade80; }
       .nav-card.players:hover { border-bottom: 4px solid #60a5fa; }
       .nav-card.courses:hover { border-bottom: 4px solid #fbbf24; }
+      .nav-card.preferences:hover { border-bottom: 4px solid #a78bfa; }
 
       .footer {
         margin-top: 80px;
@@ -155,6 +156,54 @@
         transform: translateY(-2px);
       }
 
+      /* User info and logout */
+      .user-info-bar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50px;
+        padding: 12px 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      .user-info-text {
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      }
+
+      .user-name {
+        color: #4ade80;
+        font-weight: 700;
+      }
+
+      .logout-btn {
+        background: rgba(239, 68, 68, 0.8);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+
+      .logout-btn:hover {
+        background: rgba(220, 38, 38, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
+
       @media (max-width: 640px) {
         .nav-cards {
           flex-direction: column;
@@ -169,6 +218,42 @@
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="./firebase-config.js"></script>
+    <script src="./components/auth.js"></script>
+    <script>
+      // Redirect to login if not authenticated or not admin/club
+      (function(){
+        window.Auth.onAuthStateChanged(async (user) => {
+          if (!user){
+            window.location.href = './auth/login.html';
+            return;
+          }
+          // Check if user is admin or club (not a player)
+          try {
+            const role = await window.Auth.getUserRole();
+            if (role !== 'admin' && role !== 'club') {
+              // Players should not access admin dashboard
+              await window.Auth.signOut();
+              window.location.href = './auth/login.html';
+            }
+          } catch (e) {
+            console.error('Role check error:', e);
+            window.location.href = './auth/login.html';
+          }
+        });
+      })();
+    </script>
+    
+    <!-- User info bar -->
+    <div class="user-info-bar" id="user-info-bar">
+      <span class="user-info-text">Logged in as: <span class="user-name" id="user-display-name">Loading...</span></span>
+      <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
+
     <main class="home-container">
       <!-- Logo removed as per request, using background logo -->
 
@@ -188,10 +273,25 @@
           <span class="nav-label">Courses</span>
           <span class="nav-desc">Course information</span>
         </button>
+        <button class="nav-card users" id="btn-users" style="display:none;">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Users</span>
+          <span class="nav-desc">Manage users (Admin)</span>
+        </button>
+        <button class="nav-card preferences" id="btn-preferences">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Preferences</span>
+          <span class="nav-desc">System settings</span>
+        </button>
+        <button class="nav-card lounge" id="btn-lounge">
+          <span class="nav-icon">🎯</span>
+          <span class="nav-label">Players Lounge</span>
+          <span class="nav-desc">Player portal</span>
+        </button>
       </nav>
 
       <p class="footer">
-        GTM v1.1 
+        GTM v1.3 
         <span id="sync-status" style="margin-left: 10px; font-size: 11px;">
           <span style="color: #fbbf24;">⚡ Connecting...</span>
         </span>
@@ -239,6 +339,59 @@
 
       document.getElementById('btn-courses').addEventListener('click', () => {
         window.location.href = 'courses/index.html';
+      });
+
+      const usersBtn = document.getElementById('btn-users');
+      if (usersBtn) {
+        usersBtn.addEventListener('click', () => {
+          window.location.href = 'admin/users.html';
+        });
+      }
+
+      document.getElementById('btn-preferences').addEventListener('click', () => {
+        window.location.href = 'preferences.html';
+      });
+
+      document.getElementById('btn-lounge').addEventListener('click', () => {
+        window.open('public/players-lounge.html', '_blank');
+      });
+
+      // Show Users button only for admin and display user info
+      (async function(){
+        try {
+          // Wait a bit for auth to be ready
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const role = await window.Auth.getUserRole();
+          const profile = await window.Auth.getUserProfile();
+          
+          console.log('Current user role:', role);
+          console.log('User profile:', profile);
+          
+          // Display user name
+          const displayNameEl = document.getElementById('user-display-name');
+          if (displayNameEl && profile) {
+            displayNameEl.textContent = profile.displayName || profile.loginName || 'User';
+          }
+          
+          // Show Users button for admin
+          if (role === 'admin' && usersBtn) {
+            usersBtn.style.display = '';
+            console.log('Users button shown for admin');
+          }
+        } catch(e){
+          console.error('Error checking role:', e);
+        }
+      })();
+
+      // Logout functionality
+      document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+          await window.Auth.signOut();
+          window.location.href = './auth/login.html';
+        } catch (error) {
+          console.error('Error signing out:', error);
+          alert('Error signing out. Please try again.');
+        }
       });
     </script>
   </body>

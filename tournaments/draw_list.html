@@ -239,6 +239,7 @@
     .draw-table td.tee-color-cell,
     .draw-table td.hcp-cell,
     .draw-table td.phcp-cell,
+    .draw-table td.match-hcp-cell,
     .draw-table td.category-cell,
     .draw-table td.buggy-cell {
       vertical-align: middle;
@@ -352,6 +353,12 @@
             Buggy No
           </label>
         </div>
+        <div class="option-group" id="match-hcp-option" style="display: none;">
+          <label>
+            <input type="checkbox" id="opt-match-hcp">
+            Match HCP
+          </label>
+        </div>
         <div class="option-group">
           <label>
             <input type="checkbox" id="opt-group-by-tee">
@@ -376,6 +383,7 @@
 
       <div class="button-group">
         <button class="btn btn-primary" onclick="generatePreview()">Generate Preview</button>
+        <button class="btn btn-success" id="publish-btn" onclick="publishDrawList()" style="background: #28a745;">Publish Draw List</button>
         <button class="btn btn-success" onclick="window.print()">Print</button>
         <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
       </div>
@@ -430,6 +438,66 @@
       } catch (err) {
         console.error('Failed to parse tournaments', err);
         return [];
+      }
+    }
+
+    function publishDrawList() {
+      const previewArea = document.getElementById('preview-area');
+      const previewHTML = previewArea.innerHTML;
+      
+      if (!previewHTML || previewHTML.includes('Click "Generate Preview"')) {
+        alert('Please generate a preview first before publishing');
+        return;
+      }
+      
+      // Save the published flag and the preview HTML to the tournament object
+      const tournaments = getTournaments();
+      const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
+      if (idx !== -1) {
+        tournaments[idx].published = true;
+        tournaments[idx].publishedHTML = previewHTML;
+        tournaments[idx].publishedDate = new Date().toISOString();
+        
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+        // Sync to Firebase if needed
+        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+          syncToFirebase('tournaments', tournaments);
+        }
+        
+        // Update button appearance
+        const btn = document.getElementById('publish-btn');
+        btn.style.background = '#198754';
+        btn.innerHTML = '✓ Published - Click to Unpublish';
+        btn.onclick = unpublishDrawList;
+        
+        alert('Draw list published successfully!');
+      }
+    }
+    
+    function unpublishDrawList() {
+      if (!confirm('Are you sure you want to unpublish this draw list?')) {
+        return;
+      }
+      
+      const tournaments = getTournaments();
+      const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
+      if (idx !== -1) {
+        tournaments[idx].published = false;
+        delete tournaments[idx].publishedHTML;
+        delete tournaments[idx].publishedDate;
+        
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+        if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
+          syncToFirebase('tournaments', tournaments);
+        }
+        
+        // Update button appearance
+        const btn = document.getElementById('publish-btn');
+        btn.style.background = '#28a745';
+        btn.innerHTML = 'Publish Draw List';
+        btn.onclick = publishDrawList;
+        
+        alert('Draw list unpublished');
       }
     }
 
@@ -713,6 +781,169 @@
       let age = referenceDate.getFullYear() - birthDate.getFullYear();
       return age;
     }
+    
+    // Get stored match HCPs from localStorage (calculated and saved when draw is saved)
+    function getStoredMatchHCPs(roundId) {
+      try {
+        const storedData = localStorage.getItem('matchHCPs');
+        if (storedData) {
+          const allMatchHCPs = JSON.parse(storedData);
+          return allMatchHCPs[roundId] || {};
+        }
+      } catch (e) {
+        console.warn('Error reading stored match HCPs:', e);
+      }
+      return {};
+    }
+    
+    // Get match HCP for display - uses stored value if available, falls back to calculation
+    function getDisplayMatchHcp(player, roundId, group, groupIdx, allGroups, matchType) {
+      const storedMatchHCPs = getStoredMatchHCPs(roundId);
+      // Use reg first since that's what draw.html uses to save match HCPs
+      const playerId = player.reg || player.odaId || player.odaid || `${player.firstName}_${player.lastName}`;
+      
+      // Check if we have a stored value
+      if (storedMatchHCPs[playerId] !== undefined) {
+        return storedMatchHCPs[playerId];
+      }
+      
+      // Fallback to calculation
+      return calculateMatchHcp(player, roundId, group, groupIdx, allGroups, matchType);
+    }
+    
+    // Calculate Match HCP for match play formats
+    // For Fourball: Find lowest PHCP in group, then show difference from that
+    // For Singles: Players 1&2 compete, Players 3&4 compete (if 4 in group)
+    // For Foursomes: TBD
+    function calculateMatchHcp(player, roundId, group, groupIdx, allGroups, matchType) {
+      const playingHcp = calculatePlayingHcp(player, roundId);
+      if (playingHcp === '-') return '-';
+      
+      // Parse the playing hcp (handle '+' prefix for plus handicaps)
+      function parsePhcp(phcp) {
+        if (phcp === '-') return NaN;
+        if (typeof phcp === 'string' && phcp.startsWith('+')) {
+          return -parseInt(phcp.substring(1));
+        }
+        return parseInt(phcp);
+      }
+      
+      let playerPhcp = parsePhcp(playingHcp);
+      if (isNaN(playerPhcp)) return '-';
+      
+      // Find the player's index in the group
+      const playerIndex = group.players.findIndex(p => 
+        p.reg === player.reg || (p.firstName === player.firstName && p.lastName === player.lastName)
+      );
+      
+      // Fourball: Calculate relative to lowest PHCP in the entire group
+      if (matchType === 'fourball') {
+        // Get all PHCPs in the group
+        const groupPhcps = [];
+        for (const p of group.players) {
+          const phcp = calculatePlayingHcp(p, roundId);
+          const numPhcp = parsePhcp(phcp);
+          if (!isNaN(numPhcp)) {
+            groupPhcps.push(numPhcp);
+          }
+        }
+        
+        if (groupPhcps.length === 0) return '-';
+        
+        // Find the lowest PHCP in the group
+        const lowestPhcp = Math.min(...groupPhcps);
+        
+        // Calculate the difference
+        const matchHcp = playerPhcp - lowestPhcp;
+        return matchHcp;
+      }
+      
+      // Singles: Players compete in pairs (1v2, 3v4)
+      if (matchType === 'singles' || matchType === '') {
+        const groupSize = group.players.length;
+        
+        // Determine which pair this player belongs to
+        let pairPlayers = [];
+        if (groupSize <= 2) {
+          // All players in one pair
+          pairPlayers = group.players;
+        } else if (groupSize === 4) {
+          // First 2 vs each other, last 2 vs each other
+          if (playerIndex < 2) {
+            pairPlayers = group.players.slice(0, 2);
+          } else {
+            pairPlayers = group.players.slice(2, 4);
+          }
+        } else if (groupSize === 3) {
+          // Edge case: 3 players - first 2 compete, 3rd has no opponent
+          if (playerIndex < 2) {
+            pairPlayers = group.players.slice(0, 2);
+          } else {
+            return '-'; // No opponent for 3rd player
+          }
+        } else {
+          // For other sizes, pair players sequentially (1v2, 3v4, 5v6, etc.)
+          const pairIndex = Math.floor(playerIndex / 2) * 2;
+          pairPlayers = group.players.slice(pairIndex, pairIndex + 2);
+        }
+        
+        // Get PHCPs of the pair
+        const pairPhcps = [];
+        for (const p of pairPlayers) {
+          const phcp = calculatePlayingHcp(p, roundId);
+          const numPhcp = parsePhcp(phcp);
+          if (!isNaN(numPhcp)) {
+            pairPhcps.push(numPhcp);
+          }
+        }
+        
+        if (pairPhcps.length < 2) return '-';
+        
+        // Find the lowest PHCP in the pair
+        const lowestPhcp = Math.min(...pairPhcps);
+        
+        // Calculate the difference
+        const matchHcp = playerPhcp - lowestPhcp;
+        return matchHcp;
+      }
+      
+      // Foursomes: Team A+B vs Team C+D, side PHCP = (player1 + player2) / 2
+      if (matchType === 'foursomes') {
+        const groupSize = group.players.length;
+        if (groupSize < 4) return '-'; // Need 4 players for foursomes
+        
+        // Get PHCPs for all 4 players
+        const phcps = [];
+        for (let i = 0; i < 4; i++) {
+          const p = group.players[i];
+          if (!p) {
+            phcps.push(NaN);
+            continue;
+          }
+          const phcp = calculatePlayingHcp(p, roundId);
+          phcps.push(parsePhcp(phcp));
+        }
+        
+        // Check all PHCPs are valid
+        if (phcps.some(p => isNaN(p))) return '-';
+        
+        // Calculate side PHCPs: Team 1 (A+B) and Team 2 (C+D)
+        const team1Phcp = (phcps[0] + phcps[1]) / 2;
+        const team2Phcp = (phcps[2] + phcps[3]) / 2;
+        
+        // Determine which team this player is on
+        const isTeam1 = playerIndex < 2;
+        const myTeamPhcp = isTeam1 ? team1Phcp : team2Phcp;
+        const lowestTeamPhcp = Math.min(team1Phcp, team2Phcp);
+        
+        // Calculate the difference (rounded)
+        const matchHcp = Math.round(myTeamPhcp - lowestTeamPhcp);
+        return matchHcp;
+      }
+      
+      // For other match play types, return PHCP for now
+      return playingHcp;
+    }
 
     // Get category short name from tournament categories
     // categoryCode can be either the code (like "MA", "WB") or the name
@@ -754,6 +985,7 @@
         teeColor: document.getElementById('opt-tee-color').checked,
         category: document.getElementById('opt-category').checked,
         buggy: document.getElementById('opt-buggy').checked,
+        matchHcp: document.getElementById('opt-match-hcp').checked,
         groupByTee: document.getElementById('opt-group-by-tee').checked,
         buggyStart: document.getElementById('buggy-start').value,
         buggySkip: document.getElementById('buggy-skip').value
@@ -772,6 +1004,7 @@
           document.getElementById('opt-tee-color').checked = options.teeColor !== undefined ? options.teeColor : true;
           document.getElementById('opt-category').checked = options.category !== undefined ? options.category : false;
           document.getElementById('opt-buggy').checked = options.buggy !== undefined ? options.buggy : false;
+          document.getElementById('opt-match-hcp').checked = options.matchHcp !== undefined ? options.matchHcp : false;
           document.getElementById('opt-group-by-tee').checked = options.groupByTee !== undefined ? options.groupByTee : false;
           document.getElementById('buggy-start').value = options.buggyStart !== undefined ? options.buggyStart : 1;
           document.getElementById('buggy-skip').value = options.buggySkip !== undefined ? options.buggySkip : '';
@@ -795,6 +1028,19 @@
 
       const roundId = document.getElementById('round-select').value;
       const drawData = getDrawData(roundId);
+      
+      // Determine if this is a match play tournament (type contains 'match')
+      const tournamentType = (tournament.type || '').toLowerCase();
+      const isMatchPlay = tournamentType.includes('match');
+      
+      // Get the match type for this round (fourball, foursomes, singles)
+      const roundIds = tournament.meta?.roundIds || [];
+      const roundIndex = roundIds.indexOf(roundId);
+      const roundData = tournament.meta?.roundsData?.[roundIndex >= 0 ? roundIndex : 0];
+      const matchType = (roundData?.matchType || '').toLowerCase();
+      
+      // Show/hide Match HCP option based on match play
+      document.getElementById('match-hcp-option').style.display = isMatchPlay ? 'block' : 'none';
       
       if (!drawData || !drawData.groups || drawData.groups.length === 0) {
         document.getElementById('preview-area').innerHTML = `
@@ -841,6 +1087,7 @@
       const showTeeColor = document.getElementById('opt-tee-color').checked;
       const showCategory = document.getElementById('opt-category').checked;
       const showBuggy = document.getElementById('opt-buggy').checked;
+      const showMatchHcp = isMatchPlay && document.getElementById('opt-match-hcp').checked;
       const groupByTee = document.getElementById('opt-group-by-tee').checked;
       const buggyStart = parseInt(document.getElementById('buggy-start').value) || 1;
       
@@ -924,6 +1171,7 @@
               ${showClub ? '<th>Club/Country</th>' : ''}
               ${showHcp ? '<th class="center-header">HCP</th>' : ''}
               ${showPhcp ? '<th class="center-header">PHCP</th>' : ''}
+              ${showMatchHcp ? '<th class="center-header">Match HCP</th>' : ''}
               ${showCategory ? '<th class="center-header">Category</th>' : ''}
               ${showBuggy ? '<th class="center-header">Buggy No</th>' : ''}
             </tr>
@@ -957,6 +1205,7 @@
                 ${showClub ? `<td>${player.club || player.homeClub || '-'}</td>` : ''}
                 ${showHcp ? `<td class="hcp-cell">${player.hcp || '-'}</td>` : ''}
                 ${showPhcp ? `<td class="phcp-cell">${calculatePlayingHcp(player, roundId)}</td>` : ''}
+                ${showMatchHcp ? `<td class="match-hcp-cell">${getDisplayMatchHcp(player, roundId, group, idx, groups, matchType)}</td>` : ''}
                 ${showCategory ? `<td class="category-cell">${categoryDisplay}</td>` : ''}
                 ${showBuggy ? `<td class="buggy-cell" data-group="${idx}" data-player="${pIdx}">${groupBuggies[pIdx] || '-'}</td>` : ''}
               </tr>
@@ -1069,7 +1318,17 @@
       loadOptions();
       populateRoundSelect();
       generatePreview();
-      
+
+      // Set publish button state from tournament
+      const tournaments = getTournaments();
+      const t = tournaments.find(t => t.tournamentId === tournamentId);
+      const publishBtn = document.getElementById('publish-btn');
+      if (publishBtn && t && t.published) {
+        publishBtn.style.background = '#198754';
+        publishBtn.innerHTML = '✓ Published - Click to Unpublish';
+        publishBtn.onclick = unpublishDrawList;
+      }
+
       // Add event listeners to save options when changed
       document.querySelectorAll('.options-grid input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {

@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Live Scoring Setup</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { padding-top: 70px; background: #f8fafc; }
+      .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+      
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      }
+      
+      .card h2 {
+        margin: 0 0 16px 0;
+        font-size: 20px;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .card p {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 16px;
+        line-height: 1.6;
+      }
+      
+      .info-box {
+        background: #f0fdf4;
+        border: 2px solid #86efac;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .info-box.warning {
+        background: #fef3c7;
+        border-color: #fbbf24;
+      }
+      
+      .info-box h3 {
+        margin: 0 0 8px 0;
+        font-size: 15px;
+        color: #065f46;
+      }
+      
+      .info-box.warning h3 { color: #92400e; }
+      
+      .info-box ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #047857;
+        font-size: 14px;
+      }
+      
+      .info-box.warning ul { color: #78350f; }
+      
+      .selector-group {
+        margin-bottom: 20px;
+      }
+      
+      .selector-group label {
+        display: block;
+        font-weight: 600;
+        font-size: 14px;
+        color: #475569;
+        margin-bottom: 8px;
+      }
+      
+      .selector-group select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 15px;
+        background: white;
+        cursor: pointer;
+      }
+      
+      .selector-group select:focus {
+        outline: none;
+        border-color: #059669;
+      }
+      
+      .links-section {
+        display: grid;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      
+      .link-item {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      
+      .link-item h4 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .link-item p {
+        font-size: 12px;
+        color: #64748b;
+        margin: 0 0 12px 0;
+      }
+      
+      .link-input-group {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .link-input-group input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #1e293b;
+        background: white;
+      }
+      
+      .link-input-group input:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+      
+      .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+      }
+      
+      .btn-secondary {
+        background: white;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+      }
+      
+      .btn-secondary:hover {
+        background: #f8fafc;
+      }
+      
+      .btn-open {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+      }
+      
+      /* QR Code Section */
+      .qr-section {
+        text-align: center;
+        padding: 24px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+      
+      .qr-section h4 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        color: #1e293b;
+      }
+      
+      #qr-code {
+        display: inline-block;
+        padding: 16px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      
+      #qr-code canvas {
+        display: block;
+      }
+      
+      .qr-instructions {
+        margin-top: 16px;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      /* Actions */
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      
+      .actions .btn {
+        flex: 1;
+        padding: 14px 20px;
+        font-size: 15px;
+      }
+      
+      /* Quick Start Steps */
+      .steps {
+        display: grid;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      
+      .step {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      
+      .step-number {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      
+      .step-content h4 {
+        margin: 0 0 4px 0;
+        font-size: 15px;
+        color: #1e293b;
+      }
+      
+      .step-content p {
+        margin: 0;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      /* No tournament selected */
+      .no-selection {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+      }
+      
+      .no-selection-icon { font-size: 48px; margin-bottom: 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="top-nav">
+      <h1>📱 Live Scoring Setup</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
+
+    <div class="container">
+      <!-- Introduction Card -->
+      <div class="card">
+        <h2>⛳ Live Scoring System</h2>
+        <p>Enable real-time score tracking for your tournament. Scores entered on mobile devices will instantly appear on the live leaderboard.</p>
+        
+        <div class="info-box">
+          <h3>✨ Features</h3>
+          <ul>
+            <li>Mobile-optimized scoring interface for on-course scorers</li>
+            <li>Real-time leaderboard updates via Firebase</li>
+            <li>QR codes for easy access to scoring and leaderboard</li>
+            <li>Works offline with automatic sync when connected</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tournament Selection -->
+      <div class="card">
+        <h2>🏆 Select Tournament</h2>
+        
+        <div class="selector-group">
+          <label>Tournament</label>
+          <select id="tournament-select">
+            <option value="">-- Select a tournament --</option>
+          </select>
+        </div>
+        
+        <div class="selector-group" id="round-selector" style="display: none;">
+          <label>Round</label>
+          <select id="round-select">
+            <option value="">-- Select a round --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Links Section -->
+      <div class="card" id="links-card" style="display: none;">
+        <h2>🔗 Share Links</h2>
+        
+        <div class="links-section">
+          <!-- Live Scoring Link (for scorers) -->
+          <div class="link-item">
+            <h4>📱 Live Scoring (For Scorers)</h4>
+            <p>Share this link with on-course scorers to enter scores hole-by-hole on their mobile devices.</p>
+            <div class="link-input-group">
+              <input type="text" id="scoring-link" readonly>
+              <button class="btn btn-secondary" onclick="copyLink('scoring-link')">Copy</button>
+              <button class="btn btn-open" onclick="openLink('scoring-link')">Open</button>
+            </div>
+          </div>
+          
+          <!-- Live Leaderboard Link (for spectators) -->
+          <div class="link-item">
+            <h4>📊 Live Leaderboard (For Spectators)</h4>
+            <p>Share this public link to let spectators view the real-time leaderboard.</p>
+            <div class="link-input-group">
+              <input type="text" id="leaderboard-link" readonly>
+              <button class="btn btn-secondary" onclick="copyLink('leaderboard-link')">Copy</button>
+              <button class="btn btn-open" onclick="openLink('leaderboard-link')">Open</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- QR Codes -->
+        <div class="qr-section">
+          <h4>📷 Scan to Access</h4>
+          <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+            <div>
+              <div id="qr-scoring"></div>
+              <div class="qr-instructions">Scoring</div>
+            </div>
+            <div>
+              <div id="qr-leaderboard"></div>
+              <div class="qr-instructions">Leaderboard</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="actions">
+          <button class="btn btn-primary" onclick="openScoring()">📱 Open Live Scoring</button>
+          <button class="btn btn-open" onclick="openLeaderboard()">📊 Open Leaderboard</button>
+        </div>
+      </div>
+
+      <!-- Quick Start Guide -->
+      <div class="card">
+        <h2>🚀 Quick Start Guide</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Set Up Your Tournament</h4>
+              <p>Create the tournament, add players to admissions, and generate the draw.</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Share Scoring Link</h4>
+              <p>Send the scoring link or QR code to your on-course scorers (volunteers, marshals, or players themselves).</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Share Leaderboard</h4>
+              <p>Display the live leaderboard on TVs, share the link on social media, or post the QR code at the clubhouse.</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Monitor Progress</h4>
+              <p>Watch scores update in real-time. All data is synced to the cloud and saved locally.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="info-box warning" style="margin-top: 20px;">
+          <h3>⚠️ Important Notes</h3>
+          <ul>
+            <li>Ensure scorers have a stable internet connection for real-time sync</li>
+            <li>Scores are auto-saved after each hole entry</li>
+            <li>The leaderboard auto-refreshes every 30-60 seconds</li>
+            <li>Data is backed up to Firebase and localStorage for reliability</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
+    <script>
+      let currentTournament = null;
+      let currentRoundId = null;
+      
+      // Get base URL for links
+      function getBaseUrl() {
+        const loc = window.location;
+        return `${loc.protocol}//${loc.host}`;
+      }
+      
+      // Load tournaments
+      async function loadTournaments() {
+        // Wait for Firebase
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (typeof initFirebase === 'function') {
+          initFirebase();
+        }
+        
+        // Load from Firebase
+        if (typeof loadTournamentsFromFirebase === 'function') {
+          await loadTournamentsFromFirebase();
+        }
+        
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const select = document.getElementById('tournament-select');
+        
+        // Sort by date
+        tournaments.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        tournaments.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t.tournamentId;
+          option.textContent = `${t.name} (${t.date || 'No date'})`;
+          select.appendChild(option);
+        });
+        
+        // Check URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        
+        if (tournamentId) {
+          select.value = tournamentId;
+          select.dispatchEvent(new Event('change'));
+        }
+      }
+      
+      // Tournament selected
+      document.getElementById('tournament-select').addEventListener('change', function() {
+        const tournamentId = this.value;
+        
+        if (!tournamentId) {
+          document.getElementById('round-selector').style.display = 'none';
+          document.getElementById('links-card').style.display = 'none';
+          return;
+        }
+        
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+        
+        if (!currentTournament) return;
+        
+        // Populate rounds
+        const roundSelect = document.getElementById('round-select');
+        roundSelect.innerHTML = '<option value="">-- Select a round --</option>';
+        
+        const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
+        
+        roundIds.forEach((roundId, idx) => {
+          const option = document.createElement('option');
+          option.value = roundId;
+          option.textContent = `Round ${idx + 1}`;
+          roundSelect.appendChild(option);
+        });
+        
+        document.getElementById('round-selector').style.display = 'block';
+        
+        // Auto-select if single round
+        if (roundIds.length === 1) {
+          roundSelect.value = roundIds[0];
+          roundSelect.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      // Round selected
+      document.getElementById('round-select').addEventListener('change', function() {
+        currentRoundId = this.value;
+        
+        if (!currentRoundId) {
+          document.getElementById('links-card').style.display = 'none';
+          return;
+        }
+        
+        updateLinks();
+        document.getElementById('links-card').style.display = 'block';
+      });
+      
+      // Update links
+      function updateLinks() {
+        const baseUrl = getBaseUrl();
+        const tournamentId = currentTournament.tournamentId;
+        
+        const scoringUrl = `${baseUrl}/tournaments/live_scoring.html?tournamentId=${encodeURIComponent(tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`;
+        const leaderboardUrl = `${baseUrl}/public/live-leaderboard.html?tournamentId=${encodeURIComponent(tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`;
+        
+        document.getElementById('scoring-link').value = scoringUrl;
+        document.getElementById('leaderboard-link').value = leaderboardUrl;
+        
+        // Generate QR codes
+        generateQR('qr-scoring', scoringUrl);
+        generateQR('qr-leaderboard', leaderboardUrl);
+      }
+      
+      // Generate QR code
+      function generateQR(elementId, url) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+        
+        if (typeof QRCode === 'undefined') {
+          container.innerHTML = '<div style="padding: 20px; background: #f1f5f9; border-radius: 8px; font-size: 12px; color: #64748b;">QR Code loading...</div>';
+          return;
+        }
+        
+        const canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, url, {
+          width: 150,
+          margin: 2,
+          color: {
+            dark: '#1e293b',
+            light: '#ffffff'
+          }
+        }, function(error) {
+          if (error) {
+            console.error(error);
+            container.innerHTML = '<div style="padding: 20px; color: #dc2626;">QR Error</div>';
+          }
+        });
+        container.appendChild(canvas);
+      }
+      
+      // Copy link
+      function copyLink(inputId) {
+        const input = document.getElementById(inputId);
+        input.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const btn = input.nextElementSibling;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+      }
+      
+      // Open link
+      function openLink(inputId) {
+        const url = document.getElementById(inputId).value;
+        window.open(url, '_blank');
+      }
+      
+      // Open scoring
+      function openScoring() {
+        openLink('scoring-link');
+      }
+      
+      // Open leaderboard
+      function openLeaderboard() {
+        openLink('leaderboard-link');
+      }
+      
+      // Initialize
+      document.addEventListener('DOMContentLoaded', loadTournaments);
+    </script>
+  </body>
+</html>

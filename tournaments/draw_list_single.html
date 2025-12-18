@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Draw List</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { background: #f8fafc; font-family: system-ui,-apple-system,sans-serif; color:#1e293b; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .not-published { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: 18px; border-radius: 10px; text-align: center; font-size: 18px; margin: 20px 0; }
+    .tournament-section { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(2,6,23,0.08); padding: 20px; }
+    .loading { text-align: center; padding: 40px; color: #64748b; font-size: 16px; }
+    
+    /* Draw table styles - matching draw_list.html */
+    .draw-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .draw-table thead { background: #f8f9fa; }
+    .draw-table th { padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 13px; color: #495057; }
+    .draw-table th.center-header, .draw-table th:first-child, .draw-table th:nth-child(2) { text-align: center; }
+    .draw-table td { padding: 10px 12px; border-bottom: 1px solid #dee2e6; font-size: 13px; }
+    .draw-table td.time-cell, .draw-table td.tee-cell, .draw-table td.tee-color-cell, .draw-table td.hcp-cell, 
+    .draw-table td.phcp-cell, .draw-table td.match-hcp-cell, .draw-table td.category-cell, .draw-table td.buggy-cell { 
+      vertical-align: middle; text-align: center; 
+    }
+    .draw-table tbody tr:hover { background: #f8f9fa; }
+    .group-separator { border-top: 1px solid #666 !important; }
+    .group-separator td { padding-top: 4px !important; }
+    .group-header { background: #e9ecef !important; font-weight: 600; }
+    .male-row { background: #e0f2fe; }
+    .female-row { background: #fce7f3; }
+    
+    /* Print header styles */
+    .print-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+    .print-header h1 { margin: 0 0 5px 0; font-size: 24px; }
+    .print-header .subtitle { color: #666; font-size: 14px; }
+    
+    .back-link { display: inline-block; margin-bottom: 20px; color: #0b6efd; text-decoration: none; font-weight: 600; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="draw_lists_public.html" class="back-link">← Back to All Draw Lists</a>
+    <div id="content"><div class="loading">Loading draw list...</div></div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script>
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    
+    const tournamentId = getParam('tournamentId');
+
+    function showNotPublished() {
+      document.getElementById('content').innerHTML = '<div class="not-published">This draw list is no longer published.</div>';
+    }
+
+    async function loadFromFirebase() {
+      if (!syncEnabled) {
+        console.log('Firebase not enabled');
+        return;
+      }
+      try {
+        const tournamentsData = await syncFromFirebase('tournaments');
+        if (tournamentsData) {
+          // Convert from object format to array if needed
+          let tournamentsArray;
+          if (Array.isArray(tournamentsData)) {
+            tournamentsArray = tournamentsData.filter(t => t !== null);
+          } else {
+            tournamentsArray = Object.values(tournamentsData).filter(t => t !== null);
+          }
+          localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
+        }
+        console.log('✓ Data loaded from Firebase');
+      } catch(e) {
+        console.error('Firebase load error:', e);
+      }
+    }
+
+    async function loadDrawList() {
+      if (!tournamentId) {
+        document.getElementById('content').innerHTML = '<div class="not-published">No tournament ID provided.</div>';
+        return;
+      }
+      
+      // Load data from Firebase
+      await loadFromFirebase();
+      
+      let tournaments = [];
+      try {
+        const raw = localStorage.getItem('tournaments');
+        tournaments = raw ? JSON.parse(raw) : [];
+      } catch(e) {
+        console.error('Error parsing tournaments:', e);
+      }
+      
+      const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+      
+      if (!tournament) {
+        document.getElementById('content').innerHTML = '<div class="not-published">Tournament not found.</div>';
+        return;
+      }
+      
+      if (!tournament.published) {
+        showNotPublished();
+        return;
+      }
+      
+      // Display the published HTML
+      let html = '<div class="tournament-section">';
+      
+      if (tournament.publishedHTML) {
+        html += tournament.publishedHTML;
+      } else {
+        html += '<div class="not-published">No published draw data available.</div>';
+      }
+      
+      html += '</div>';
+      
+      document.getElementById('content').innerHTML = html;
+    }
+    
+    setTimeout(() => {
+      loadDrawList();
+    }, 500);
+  </script>
+</body>
+</html>

@@ -210,8 +210,29 @@
 
       function getTeams() {
         try {
-          const raw = localStorage.getItem('teams');
-          return raw ? JSON.parse(raw) : [];
+          const tournament = getTournament();
+          if (!tournament) return [];
+          
+          // Teams are stored in tournament.teamsByRound
+          // Get teams from round 0 (or first available round)
+          const teamsByRound = tournament.teamsByRound || {};
+          const roundKeys = Object.keys(teamsByRound);
+          
+          if (roundKeys.length > 0) {
+            // Return teams from the first round (usually round 0)
+            const firstRoundTeams = teamsByRound[roundKeys[0]] || [];
+            console.log('Teams loaded from teamsByRound:', firstRoundTeams);
+            return firstRoundTeams;
+          }
+          
+          // Fallback to legacy teams array
+          if (tournament.teams && tournament.teams.length > 0) {
+            console.log('Teams loaded from legacy teams array:', tournament.teams);
+            return tournament.teams;
+          }
+          
+          console.log('No teams found in tournament');
+          return [];
         } catch (err) {
           console.error('Error loading teams:', err);
           return [];
@@ -393,8 +414,16 @@
 
       function getCategoryPlayers() {
         const allPlayers = getAdmittedPlayers();
+        const tournament = getTournament();
+        const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
+        const isTeamCategory = categoryCode === 'TEAM';
+        
         // Filter players who belong to this category
         return allPlayers.filter(player => {
+          // In team tournaments, all players belong to TEAM category
+          if (isTeamTournament && isTeamCategory) {
+            return true;
+          }
           if (player.categories && Array.isArray(player.categories)) {
             return player.categories.includes(categoryCode);
           }

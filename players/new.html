@@ -6,9 +6,12 @@
     <title>Create Player</title>
     
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
     
     <link rel="stylesheet" href="../styles.css">
     <style>
@@ -58,9 +61,15 @@
             </div>
           </div>
 
-          <div class="field">
-            <label for="homeClub">Home club</label>
-            <input id="homeClub" name="homeClub" readonly />
+          <div class="form-row">
+            <div class="col field">
+              <label for="homeClub">Home club</label>
+              <input id="homeClub" name="homeClub" readonly />
+            </div>
+            <div class="col field">
+              <label for="hcp">Handicap</label>
+              <input id="hcp" name="hcp" type="number" step="0.1" placeholder="e.g. 12.4" />
+            </div>
           </div>
 
           <div class="form-row">
@@ -68,6 +77,13 @@
               <label for="dob">Date of Birth</label>
               <input id="dob" name="dob" type="date" required />
             </div>
+            <div class="col field">
+              <label for="ageGroup">Age Group</label>
+              <input id="ageGroup" name="ageGroup" readonly style="background-color: #f1f5f9; cursor: not-allowed;" />
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="col field">
               <label for="gender">Gender</label>
               <select id="gender" name="gender" required>
@@ -77,16 +93,235 @@
                 <option value="other">Other</option>
               </select>
             </div>
+            <div class="col field">
+              <!-- Empty space for layout balance -->
+            </div>
           </div>
 
           <div class="form-row">
             <div class="col field">
-              <label for="idNo">ID No</label>
-              <input id="idNo" name="idNo" inputmode="numeric" maxlength="11" placeholder="11 digits" required />
+              <label for="nationality">Nationality</label>
+              <select id="nationality" name="nationality" required>
+                <option value="">Select Country</option>
+                <option value="Afghanistan">Afghanistan</option>
+                <option value="Albania">Albania</option>
+                <option value="Algeria">Algeria</option>
+                <option value="Andorra">Andorra</option>
+                <option value="Angola">Angola</option>
+                <option value="Argentina">Argentina</option>
+                <option value="Armenia">Armenia</option>
+                <option value="Australia">Australia</option>
+                <option value="Austria">Austria</option>
+                <option value="Azerbaijan">Azerbaijan</option>
+                <option value="Bahamas">Bahamas</option>
+                <option value="Bahrain">Bahrain</option>
+                <option value="Bangladesh">Bangladesh</option>
+                <option value="Barbados">Barbados</option>
+                <option value="Belarus">Belarus</option>
+                <option value="Belgium">Belgium</option>
+                <option value="Belize">Belize</option>
+                <option value="Benin">Benin</option>
+                <option value="Bhutan">Bhutan</option>
+                <option value="Bolivia">Bolivia</option>
+                <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
+                <option value="Botswana">Botswana</option>
+                <option value="Brazil">Brazil</option>
+                <option value="Brunei">Brunei</option>
+                <option value="Bulgaria">Bulgaria</option>
+                <option value="Burkina Faso">Burkina Faso</option>
+                <option value="Burundi">Burundi</option>
+                <option value="Cambodia">Cambodia</option>
+                <option value="Cameroon">Cameroon</option>
+                <option value="Canada">Canada</option>
+                <option value="Cape Verde">Cape Verde</option>
+                <option value="Central African Republic">Central African Republic</option>
+                <option value="Chad">Chad</option>
+                <option value="Chile">Chile</option>
+                <option value="China">China</option>
+                <option value="Colombia">Colombia</option>
+                <option value="Comoros">Comoros</option>
+                <option value="Congo">Congo</option>
+                <option value="Costa Rica">Costa Rica</option>
+                <option value="Croatia">Croatia</option>
+                <option value="Cuba">Cuba</option>
+                <option value="Cyprus">Cyprus</option>
+                <option value="Czech Republic">Czech Republic</option>
+                <option value="Denmark">Denmark</option>
+                <option value="Djibouti">Djibouti</option>
+                <option value="Dominica">Dominica</option>
+                <option value="Dominican Republic">Dominican Republic</option>
+                <option value="Ecuador">Ecuador</option>
+                <option value="Egypt">Egypt</option>
+                <option value="El Salvador">El Salvador</option>
+                <option value="Equatorial Guinea">Equatorial Guinea</option>
+                <option value="Eritrea">Eritrea</option>
+                <option value="Estonia">Estonia</option>
+                <option value="Ethiopia">Ethiopia</option>
+                <option value="Fiji">Fiji</option>
+                <option value="Finland">Finland</option>
+                <option value="France">France</option>
+                <option value="Gabon">Gabon</option>
+                <option value="Gambia">Gambia</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Germany">Germany</option>
+                <option value="Ghana">Ghana</option>
+                <option value="Greece">Greece</option>
+                <option value="Grenada">Grenada</option>
+                <option value="Guatemala">Guatemala</option>
+                <option value="Guinea">Guinea</option>
+                <option value="Guinea-Bissau">Guinea-Bissau</option>
+                <option value="Guyana">Guyana</option>
+                <option value="Haiti">Haiti</option>
+                <option value="Honduras">Honduras</option>
+                <option value="Hungary">Hungary</option>
+                <option value="Iceland">Iceland</option>
+                <option value="India">India</option>
+                <option value="Indonesia">Indonesia</option>
+                <option value="Iran">Iran</option>
+                <option value="Iraq">Iraq</option>
+                <option value="Ireland">Ireland</option>
+                <option value="Israel">Israel</option>
+                <option value="Italy">Italy</option>
+                <option value="Jamaica">Jamaica</option>
+                <option value="Japan">Japan</option>
+                <option value="Jordan">Jordan</option>
+                <option value="Kazakhstan">Kazakhstan</option>
+                <option value="Kenya">Kenya</option>
+                <option value="Kiribati">Kiribati</option>
+                <option value="Korea, North">Korea, North</option>
+                <option value="Korea, South">Korea, South</option>
+                <option value="Kuwait">Kuwait</option>
+                <option value="Kyrgyzstan">Kyrgyzstan</option>
+                <option value="Laos">Laos</option>
+                <option value="Latvia">Latvia</option>
+                <option value="Lebanon">Lebanon</option>
+                <option value="Lesotho">Lesotho</option>
+                <option value="Liberia">Liberia</option>
+                <option value="Libya">Libya</option>
+                <option value="Liechtenstein">Liechtenstein</option>
+                <option value="Lithuania">Lithuania</option>
+                <option value="Luxembourg">Luxembourg</option>
+                <option value="Madagascar">Madagascar</option>
+                <option value="Malawi">Malawi</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Maldives">Maldives</option>
+                <option value="Mali">Mali</option>
+                <option value="Malta">Malta</option>
+                <option value="Marshall Islands">Marshall Islands</option>
+                <option value="Mauritania">Mauritania</option>
+                <option value="Mauritius">Mauritius</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Micronesia">Micronesia</option>
+                <option value="Moldova">Moldova</option>
+                <option value="Monaco">Monaco</option>
+                <option value="Mongolia">Mongolia</option>
+                <option value="Montenegro">Montenegro</option>
+                <option value="Morocco">Morocco</option>
+                <option value="Mozambique">Mozambique</option>
+                <option value="Myanmar">Myanmar</option>
+                <option value="Namibia">Namibia</option>
+                <option value="Nauru">Nauru</option>
+                <option value="Nepal">Nepal</option>
+                <option value="Netherlands">Netherlands</option>
+                <option value="New Zealand">New Zealand</option>
+                <option value="Nicaragua">Nicaragua</option>
+                <option value="Niger">Niger</option>
+                <option value="Nigeria">Nigeria</option>
+                <option value="North Macedonia">North Macedonia</option>
+                <option value="Norway">Norway</option>
+                <option value="Oman">Oman</option>
+                <option value="Pakistan">Pakistan</option>
+                <option value="Palau">Palau</option>
+                <option value="Palestine">Palestine</option>
+                <option value="Panama">Panama</option>
+                <option value="Papua New Guinea">Papua New Guinea</option>
+                <option value="Paraguay">Paraguay</option>
+                <option value="Peru">Peru</option>
+                <option value="Philippines">Philippines</option>
+                <option value="Poland">Poland</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Qatar">Qatar</option>
+                <option value="Romania">Romania</option>
+                <option value="Russia">Russia</option>
+                <option value="Rwanda">Rwanda</option>
+                <option value="Saint Kitts and Nevis">Saint Kitts and Nevis</option>
+                <option value="Saint Lucia">Saint Lucia</option>
+                <option value="Saint Vincent and the Grenadines">Saint Vincent and the Grenadines</option>
+                <option value="Samoa">Samoa</option>
+                <option value="San Marino">San Marino</option>
+                <option value="Sao Tome and Principe">Sao Tome and Principe</option>
+                <option value="Saudi Arabia">Saudi Arabia</option>
+                <option value="Senegal">Senegal</option>
+                <option value="Serbia">Serbia</option>
+                <option value="Seychelles">Seychelles</option>
+                <option value="Sierra Leone">Sierra Leone</option>
+                <option value="Singapore">Singapore</option>
+                <option value="Slovakia">Slovakia</option>
+                <option value="Slovenia">Slovenia</option>
+                <option value="Solomon Islands">Solomon Islands</option>
+                <option value="Somalia">Somalia</option>
+                <option value="South Africa">South Africa</option>
+                <option value="South Sudan">South Sudan</option>
+                <option value="Spain">Spain</option>
+                <option value="Sri Lanka">Sri Lanka</option>
+                <option value="Sudan">Sudan</option>
+                <option value="Suriname">Suriname</option>
+                <option value="Sweden">Sweden</option>
+                <option value="Switzerland">Switzerland</option>
+                <option value="Syria">Syria</option>
+                <option value="Taiwan">Taiwan</option>
+                <option value="Tajikistan">Tajikistan</option>
+                <option value="Tanzania">Tanzania</option>
+                <option value="Thailand">Thailand</option>
+                <option value="Timor-Leste">Timor-Leste</option>
+                <option value="Togo">Togo</option>
+                <option value="Tonga">Tonga</option>
+                <option value="Trinidad and Tobago">Trinidad and Tobago</option>
+                <option value="Tunisia">Tunisia</option>
+                <option value="Turkey">Turkey</option>
+                <option value="Turkmenistan">Turkmenistan</option>
+                <option value="Tuvalu">Tuvalu</option>
+                <option value="Uganda">Uganda</option>
+                <option value="Ukraine">Ukraine</option>
+                <option value="United Arab Emirates">United Arab Emirates</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="United States">United States</option>
+                <option value="Uruguay">Uruguay</option>
+                <option value="Uzbekistan">Uzbekistan</option>
+                <option value="Vanuatu">Vanuatu</option>
+                <option value="Vatican City">Vatican City</option>
+                <option value="Venezuela">Venezuela</option>
+                <option value="Vietnam">Vietnam</option>
+                <option value="Yemen">Yemen</option>
+                <option value="Zambia">Zambia</option>
+                <option value="Zimbabwe">Zimbabwe</option>
+              </select>
             </div>
             <div class="col field">
+              <label for="playerType">Player Type</label>
+              <select id="playerType" name="playerType" required>
+                <option value="">Select</option>
+                <option value="amateur">Amateur</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
+              <label for="admissionDate">Admission Date</label>
+              <input id="admissionDate" name="admissionDate" type="date" readonly />
+            </div>
+            <div class="col field">
+              <label for="idNo">ID No</label>
+              <input id="idNo" name="idNo" inputmode="numeric" maxlength="11" placeholder="11 digits" autocomplete="off" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="col field">
               <label for="email">E-mail</label>
-              <input id="email" name="email" type="email" required />
+              <input id="email" name="email" type="email" autocomplete="off" required />
             </div>
           </div>
 
@@ -123,7 +358,7 @@
 
           <div class="actions">
             <button type="button" id="cancel" class="big-btn">Cancel</button>
-            <button type="submit" class="big-btn">Create</button>
+            <button type="submit" id="submit-btn" class="big-btn">Create</button>
           </div>
         </form>
       </div>
@@ -138,9 +373,15 @@
           if(prev) localStorage.setItem('players_backup', prev);
           localStorage.setItem('players', JSON.stringify(list||[]));
           localStorage.setItem('players_backup_ts', new Date().toISOString());
-          // Sync to Firebase
+          // Sync to Firebase - convert array to object keyed by reg no
           if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('players', list || []);
+            const playersObj = {};
+            (list || []).forEach(player => {
+              if (player && player.reg) {
+                playersObj[player.reg] = player;
+              }
+            });
+            syncToFirebase('players', playersObj);
           }
         }catch(e){ console.error('savePlayers error', e); }
       }
@@ -160,15 +401,98 @@
         return 'P' + padNum(max+1, 4);
       }
 
+      // Calculate age as of January 1st of current year
+      function calculateAgeAsOfJan1(dob) {
+        if (!dob) return null;
+        const birthDate = new Date(dob);
+        const currentYear = new Date().getFullYear();
+        const jan1 = new Date(currentYear, 0, 1);
+        let age = jan1.getFullYear() - birthDate.getFullYear();
+        return age;
+      }
+
+      // Get age group based on age and preferences
+      function getAgeGroup(age) {
+        if (age === null || age === undefined) return '';
+        
+        try {
+          const prefsRaw = localStorage.getItem('preferences');
+          if (!prefsRaw) return '';
+          
+          const prefs = JSON.parse(prefsRaw);
+          const ageGroups = prefs.ageGroups || [];
+          
+          for (let group of ageGroups) {
+            if (age >= group.minAge && age <= group.maxAge) {
+              return group.name;
+            }
+          }
+        } catch(e) {
+          console.error('Error getting age group:', e);
+        }
+        
+        return '';
+      }
+
+      // Update age group when DOB changes
+      function updateAgeGroup() {
+        const dobEl = document.getElementById('dob');
+        const ageGroupEl = document.getElementById('ageGroup');
+        
+        if (dobEl.value) {
+          const age = calculateAgeAsOfJan1(dobEl.value);
+          const ageGroup = getAgeGroup(age);
+          ageGroupEl.value = ageGroup;
+        } else {
+          ageGroupEl.value = '';
+        }
+      }
+
       // initialize
-      document.addEventListener('DOMContentLoaded', ()=>{
-        const cur = getCurrentUser();
+      document.addEventListener('DOMContentLoaded', async ()=>{
         const regEl = document.getElementById('reg');
         const homeClubEl = document.getElementById('homeClub');
-        // derive display club name from currentUser (e.g. 'Club: Klassis' -> 'Klassis')
-        let clubName = cur.name;
-        if(cur.name && cur.name.includes(':')) clubName = cur.name.split(':').pop().trim();
+        
+        // Get user profile from Firebase Auth/Firestore
+        let clubName = 'Main Admin';
+        try {
+          // Wait for Auth module to be available
+          let attempts = 0;
+          while (typeof window.Auth === 'undefined' && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          
+          if (typeof window.Auth !== 'undefined') {
+            // Wait a bit for auth state to be ready
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const profile = await window.Auth.getUserProfile();
+            const role = await window.Auth.getUserRole();
+            console.log('User profile loaded:', profile, 'Role:', role);
+            
+            if (profile) {
+              // Use displayName (e.g., "Klassis Golf Club") or loginName (e.g., "klassis")
+              clubName = profile.displayName || profile.loginName || 'Club';
+            } else if (role === 'admin') {
+              clubName = 'Main Admin';
+            }
+          } else {
+            console.warn('Auth module not available, using fallback');
+          }
+        } catch(e) {
+          console.error('Error loading user profile:', e);
+          // Fallback to localStorage method
+          const cur = getCurrentUser();
+          clubName = cur.name;
+          if(cur.name && cur.name.includes(':')) clubName = cur.name.split(':').pop().trim();
+        }
+        
         homeClubEl.value = clubName;
+        
+        // Set admission date to today for new players
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('admissionDate').value = today;
 
         // detect edit mode via query param ?edit=<index>
         const params = new URLSearchParams(window.location.search);
@@ -177,10 +501,18 @@
         let editMode = false;
         if(editParam !== null){
           const i = parseInt(editParam,10);
+          console.log('Edit param:', editParam, 'Parsed index:', i);
           if(!isNaN(i)){
             const players = getPlayers();
-            if(players[i]){
+            console.log('All players:', players.length, 'Looking for index:', i);
+            if(players && players[i]){
               editIndex = i; editMode = true;
+              console.log('✓ Edit mode enabled for player:', players[i]);
+            } else {
+              console.error('Player not found at index:', i);
+              alert('Player not found. Returning to players list.');
+              window.location.href = 'index.html';
+              return;
             }
           }
         }
@@ -189,15 +521,34 @@
           // populate form with existing player
           const players = getPlayers();
           const p = players[editIndex];
-          document.querySelector('h2').textContent = 'Modify Player';
+          console.log('Edit mode - Loading player:', p);
+          const titleEl = document.querySelector('.top-nav h1');
+          if (titleEl) titleEl.textContent = '🏌️ Modify Player';
+          const submitBtn = document.getElementById('submit-btn');
+          if (submitBtn) submitBtn.textContent = 'Save Changes';
           regEl.value = p.reg || nextReg();
           document.getElementById('firstName').value = p.firstName || '';
           document.getElementById('lastName').value = p.lastName || '';
+          homeClubEl.value = p.homeClub || p.club || '';
+          
+          // Allow home club editing only for admin users
+          try {
+            const userRole = await window.Auth.getUserRole();
+            homeClubEl.readOnly = (userRole !== 'admin');
+          } catch(e) {
+            // If Auth fails, keep it readonly for safety
+            homeClubEl.readOnly = true;
+          }
+          
           document.getElementById('dob').value = p.dob || '';
+          updateAgeGroup(); // Calculate age group from DOB
           document.getElementById('gender').value = p.gender || '';
+          document.getElementById('nationality').value = p.nationality || '';
+          document.getElementById('playerType').value = p.playerType || '';
+          document.getElementById('admissionDate').value = p.admissionDate || today;
+          document.getElementById('hcp').value = p.hcp || '';
           document.getElementById('idNo').value = p.idNo || '';
-          // lock ID on edit
-          document.getElementById('idNo').readOnly = true;
+          // Allow ID edit but it will still check for duplicates
           document.getElementById('email').value = p.email || '';
           // mobile: split country code and raw digits if available
           if(p.mobileRaw){
@@ -220,6 +571,9 @@
         }
 
         document.getElementById('cancel').addEventListener('click', ()=>{ window.location.href = 'index.html' });
+
+        // Add DOB change listener to auto-update age group
+        document.getElementById('dob').addEventListener('change', updateAgeGroup);
 
         const mobileEl = document.getElementById('mobileNumber');
         const countryEl = document.getElementById('countryCode');
@@ -367,14 +721,26 @@
           const lastRaw = document.getElementById('lastName').value.trim();
           const first = capitalizeWords(firstRaw);
           const last = capitalizeWords(lastRaw);
+          const hcpValue = document.getElementById('hcp').value.trim();
+          const dob = document.getElementById('dob').value;
+          const age = calculateAgeAsOfJan1(dob);
+          const ageGroup = getAgeGroup(age);
+          
           const data = {
             reg: document.getElementById('reg').value.trim(),
             firstName: first,
             lastName: last,
             name: (first + ' ' + last).trim(),
+            homeClub: document.getElementById('homeClub').value.trim(),
             club: document.getElementById('homeClub').value.trim(),
-            dob: document.getElementById('dob').value,
+            hcp: hcpValue ? parseFloat(hcpValue) : undefined,
+            dob: dob,
+            age: age,
+            ageGroup: ageGroup,
             gender: document.getElementById('gender').value,
+            nationality: document.getElementById('nationality').value,
+            playerType: document.getElementById('playerType').value,
+            admissionDate: document.getElementById('admissionDate').value,
             idNo: document.getElementById('idNo').value.trim(),
             email: document.getElementById('email').value.trim(),
             mobile: countryCode + ' ' + mobileFormatted,
@@ -383,7 +749,7 @@
           };
 
           // validate required
-          const required = ['reg','firstName','lastName','club','dob','gender','idNo','email'];
+          const required = ['reg','firstName','lastName','club','dob','gender','nationality','playerType','idNo','email'];
           // mobile handled separately
           if(!mobileRaw || mobileRaw.length < 7){ showMessage('error','Please enter a valid mobile number (digits only)'); return }
           if(expected){

@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pairings</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { padding-top: 70px; background: #f8fafc; }
+      .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+      
+      .header-section { background: white; padding: 20px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; }
+      .header-section h1 { margin: 0 0 8px 0; color: #1e293b; font-size: 24px; }
+      .header-section .tournament-info { color: #64748b; font-size: 14px; }
+      
+      /* Three-column layout */
+      .main-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; }
+      
+      /* Panel styling */
+      .panel { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); display: flex; flex-direction: column; }
+      .panel-header { padding: 16px 20px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+      .panel-header h2 { margin: 0; font-size: 18px; color: #1e293b; }
+      .panel-content { flex: 1; overflow-y: auto; max-height: 600px; }
+      
+      /* Teams list (left panel) */
+      .pairings-list { padding: 0; }
+      .pairing-item { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
+      .pairing-item:hover { background: #f8fafc; }
+      .pairing-item.selected { background: #dbeafe; border-left: 4px solid var(--accent); }
+      .pairing-item .pairing-name { font-weight: 600; color: #1e293b; font-size: 15px; }
+      .pairing-item .player-count { color: #64748b; font-size: 13px; margin-top: 4px; }
+      .pairing-item.complete { background: #dcfce7; border-left: 4px solid #16a34a; }
+      .pairing-item.complete:hover { background: #bbf7d0; }
+      .pairing-item.complete.selected { background: #bbf7d0; border-left: 4px solid #16a34a; }
+      
+      /* Center panel - Pairing Creation */
+      .pairing-creator { padding: 20px; }
+      .pairing-creator .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+      .pairing-creator .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+      .pairing-creator .team-title { font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+      
+      /* Search with autocomplete */
+      .player-search-container { position: relative; margin-bottom: 20px; }
+      .player-search-container input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+      .player-search-container input:focus { outline: none; border-color: var(--accent); }
+      .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+      .autocomplete-dropdown.show { display: block; }
+      .autocomplete-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+      .autocomplete-item:hover, .autocomplete-item.highlighted { background: #f0f9ff; }
+      .autocomplete-item .player-name { font-weight: 600; color: #1e293b; }
+      .autocomplete-item .player-hcp { color: #64748b; font-size: 12px; }
+      
+      /* Bracket-style pairings */
+      .pairings-bracket { display: flex; flex-direction: column; gap: 16px; }
+      .bracket-pairing { display: flex; align-items: center; gap: 12px; }
+      .bracket-number { width: 30px; height: 30px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #475569; font-size: 14px; }
+      .bracket-connector { width: 20px; display: flex; flex-direction: column; align-items: center; }
+      .bracket-connector .line-top, .bracket-connector .line-bottom { width: 2px; height: 20px; background: #cbd5e1; }
+      .bracket-connector .line-horizontal { width: 100%; height: 2px; background: #cbd5e1; }
+      .bracket-slots { flex: 1; background: white; border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+      .bracket-slots.complete { border-color: #16a34a; background: #f0fdf4; }
+      .bracket-slots.drag-over { border-color: var(--accent); background: #f0f9ff; }
+      .bracket-slot { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+      .bracket-slot:last-child { border-bottom: none; }
+      .bracket-slot.empty { background: #f8fafc; color: #94a3b8; font-style: italic; cursor: pointer; }
+      .bracket-slot.occupied { cursor: grab; }
+      .bracket-slot.occupied:active { cursor: grabbing; }
+      .bracket-slot.filled { cursor: grab; }
+      .bracket-slot.filled:active { cursor: grabbing; }
+      .bracket-slot.drag-over { background: #dbeafe; border-color: var(--accent); }
+      .bracket-slot .slot-player { font-weight: 600; color: #1e293b; }
+      .bracket-slot .slot-hcp { color: #64748b; font-size: 12px; }
+      .bracket-slot .remove-btn { color: #dc2626; cursor: pointer; padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+      .bracket-slot .remove-btn:hover { background: #fee2e2; }
+      
+      /* Players list (right panel) */
+      .players-list { padding: 12px; min-height: 100px; transition: background 0.2s; }
+      .players-list.drag-over { background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 8px; }
+      .player-card { padding: 12px 14px; margin-bottom: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; transition: all 0.15s; user-select: none; cursor: grab; }
+      .player-card:hover { background: white; border-color: var(--accent); }
+      .player-card.highlighted { background: #dbeafe; border-color: var(--accent); box-shadow: 0 2px 8px rgba(2,6,23,0.15); }
+      .player-card.assigned { opacity: 0.5; background: #e2e8f0; cursor: default; }
+      .player-card.assigned:hover { background: #e2e8f0; border-color: #e2e8f0; }
+      .player-card .player-name { font-weight: 600; color: #1e293b; font-size: 14px; }
+      .player-card .player-info { color: #64748b; font-size: 12px; margin-top: 4px; }
+      
+      /* Teams list highlight */
+      .pairing-item.highlighted { background: #dbeafe; border-left: 4px solid var(--accent); }
+      
+      /* Search box */
+      .search-box { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+      .search-box input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+      .search-box input:focus { outline: none; border-color: var(--accent); }
+      
+      .actions { display: flex; gap: 12px; margin-top: 24px; }
+      .btn-back { padding: 10px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-decoration: none; color: #1e293b; font-weight: 600; display: inline-block; }
+      .btn-save { padding: 10px 20px; background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+      .btn-auto { padding: 10px 20px; background: linear-gradient(180deg, #7c3aed, #6d28d9); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav style="position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%); padding: 12px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000;">
+      <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1600px; margin: 0 auto;">
+        <h1 style="margin: 0; color: white; font-size: 20px;">⛳ Golf Tournament Manager</h1>
+        <a href="index.html" style="color: white; text-decoration: none; font-weight: 600;">← Back to Tournaments</a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- Header Section -->
+      <div class="header-section">
+        <h1 id="page-title">Manage Pairings</h1>
+        <div class="tournament-info">
+          <strong id="tournament-name">Loading...</strong> | 
+          <span id="tournament-type"></span> | 
+          <span id="tournament-date"></span> | 
+          <span id="round-info"></span>
+        </div>
+      </div>
+
+      <!-- Main Layout -->
+      <div class="main-layout">
+        <!-- Left Panel: Teams List -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Teams (<span id="pairings-count">0</span>)</h2>
+          </div>
+          <div class="search-box">
+            <input type="text" id="team-search" placeholder="Search teams..." 
+                   oninput="filterTeams()" 
+                   onkeydown="handleTeamSearchKeydown(event)" />
+          </div>
+          <div class="panel-content">
+            <div id="pairings-list" class="pairings-list">
+              <!-- Teams will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Panel: Pairing Creation -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Create Pairings</h2>
+          </div>
+          <div class="panel-content">
+            <div id="pairing-creator" class="pairing-creator">
+              <div class="empty-state">
+                <div class="icon">👥</div>
+                <p>Select a team from the left to create pairings</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Team Players -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2 id="players-panel-title">Team Players (<span id="players-count">0</span>)</h2>
+          </div>
+          <div class="search-box">
+            <input type="text" id="player-search" placeholder="Search players..." 
+                   oninput="filterPlayers()" 
+                   onkeydown="handlePlayerSearchKeydown(event)" />
+          </div>
+          <div class="panel-content">
+            <div id="players-list" class="players-list"
+                 ondragover="handlePlayersListDragOver(event)"
+                 ondragleave="handlePlayersListDragLeave(event)"
+                 ondrop="handlePlayersListDrop(event)">
+              <!-- Players will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <a href="index.html" class="btn-back">← Back to Tournaments</a>
+        <button class="btn-auto" onclick="autoCreatePairings()">⚡ Auto-Generate Pairings</button>
+        <button class="btn-save" onclick="savePairings()">💾 Save Pairings</button>
+      </div>
+    </div>
+
+    <script>
+      let currentRoundId = '';
+      let currentTournament = null;
+      let currentRound = null;
+      let teams = [];
+      let selectedTeamIndex = null;
+      let teamPairings = {}; // { teamName: [[player1, player2], [player3, player4], ...] }
+      let teamPlayers = []; // Players of currently selected team
+      let highlightedSuggestionIndex = -1;
+      let highlightedTeamIndex = -1; // For team keyboard navigation
+      let highlightedPlayerIndex = -1; // For player keyboard navigation
+      let filteredTeams = []; // Filtered teams list for keyboard nav
+      let filteredPlayers = []; // Filtered players list for keyboard nav
+      let currentPairingSlot = null; // { pairingIndex: 0, slotIndex: 0 }
+      let playersPerPairing = 2; // For fourball/foursomes
+
+      // Get tournament ID and round from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const roundId = urlParams.get('roundId');
+
+      if (!roundId) {
+        alert('No round specified');
+        window.location.href = 'index.html';
+      }
+
+      // Parse roundId (format: T0001-1 or M0001-1)
+      const parts = roundId.split('-');
+      const tournamentId = parts[0];
+      const roundNumber = parseInt(parts[1]);
+
+      function getTournaments() {
+        const raw = localStorage.getItem('tournaments');
+        return raw ? JSON.parse(raw) : [];
+      }
+
+      function saveTournaments(list) {
+        localStorage.setItem('tournaments', JSON.stringify(list));
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+
+      // Initialize
+      function init() {
+        currentRoundId = roundId;
+        
+        try {
+          const tournaments = getTournaments();
+          currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (!currentTournament) {
+            alert('Tournament not found');
+            window.location.href = 'index.html';
+            return;
+          }
+
+          // Get round data
+          if (currentTournament.meta && currentTournament.meta.roundsData) {
+            currentRound = currentTournament.meta.roundsData[roundNumber - 1];
+          }
+
+          if (!currentRound) {
+            alert('Round not found');
+            window.location.href = 'index.html';
+            return;
+          }
+
+          // Update header
+          document.getElementById('tournament-name').textContent = currentTournament.name;
+          document.getElementById('tournament-type').textContent = currentTournament.type || 'Tournament';
+          document.getElementById('tournament-date').textContent = formatDate(currentTournament.date);
+          document.getElementById('round-info').textContent = `Round ${roundNumber} - ${currentRound.matchType ? currentRound.matchType.charAt(0).toUpperCase() + currentRound.matchType.slice(1) : 'Match Play'}`;
+
+          // Load admitted players for THIS round (not just round 1)
+          const roundIndex = roundNumber - 1;
+          const roundIdForAdmissions = currentTournament.meta?.roundIds?.[roundIndex] || `${tournamentId}_R${roundNumber}`;
+          const admittedData = localStorage.getItem('admittedPlayers');
+          const allAdmitted = admittedData ? JSON.parse(admittedData) : {};
+          const admittedPlayersData = allAdmitted[roundIdForAdmissions] || [];
+          
+          // Create player lookup map
+          const playerMap = {};
+          admittedPlayersData.forEach(player => {
+            let playerName = 'Unknown';
+            if (player.firstName || player.lastName) {
+              playerName = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+            } else if (player.name) {
+              playerName = player.name;
+            }
+            const playerId = player.reg || player.playerId;
+            playerMap[playerId] = {
+              ...player,
+              playerId: playerId,
+              name: playerName,
+              hcp: player.hcp || player.handicap || player.hcpIndex || 'N/A'
+            };
+          });
+
+          // Load teams for THIS round (use new teamsByRound format, fallback to old teams format)
+          let roundTeams = [];
+          if (currentTournament.teamsByRound && currentTournament.teamsByRound[roundIndex]) {
+            roundTeams = currentTournament.teamsByRound[roundIndex];
+          } else if (currentTournament.teams) {
+            // Fallback to old format
+            roundTeams = currentTournament.teams;
+          }
+          
+          // Convert teams with full player objects
+          teams = roundTeams.map(team => {
+            const teamPlayersList = [];
+            if (team.players && team.players.length > 0) {
+              team.players.forEach(playerId => {
+                const player = playerMap[playerId];
+                if (player) {
+                  teamPlayersList.push(player);
+                }
+              });
+            }
+            return {
+              name: team.name,
+              players: teamPlayersList
+            };
+          });
+
+          // Load existing pairings if they exist
+          if (currentTournament.teamPairings && currentTournament.teamPairings[roundId]) {
+            const existingPairings = currentTournament.teamPairings[roundId];
+            
+            // Migrate old format (team names as keys) to new format (indices as keys)
+            teamPairings = {};
+            Object.keys(existingPairings).forEach(key => {
+              // Check if key is a number (new format) or string (old format)
+              if (!isNaN(key)) {
+                // Already in new format (index)
+                teamPairings[key] = existingPairings[key];
+              } else {
+                // Old format - find team index by name
+                const teamIndex = teams.findIndex(t => t.name === key);
+                if (teamIndex >= 0) {
+                  teamPairings[teamIndex] = existingPairings[key];
+                }
+              }
+            });
+          }
+
+          renderTeams();
+          renderPairingCreator();
+          renderPlayers();
+          
+        } catch (e) {
+          console.error('Error loading tournament:', e);
+        }
+      }
+
+      function renderTeams() {
+        const list = document.getElementById('pairings-list');
+        const count = document.getElementById('pairings-count');
+        
+        list.innerHTML = '';
+        count.textContent = teams.length;
+
+        // Apply search filter
+        const searchTerm = document.getElementById('team-search')?.value.toLowerCase() || '';
+        filteredTeams = teams.filter(t => 
+          t.name.toLowerCase().includes(searchTerm)
+        );
+
+        filteredTeams.forEach((team, filteredIndex) => {
+          const originalIndex = teams.indexOf(team);
+          const div = document.createElement('div');
+          div.className = 'pairing-item';
+          div.dataset.filteredIndex = filteredIndex;
+          
+          // Check if this team has complete pairings
+          const pairingsForTeam = teamPairings[originalIndex] || [];
+          const numPairings = Math.floor((team.players?.length || 0) / playersPerPairing);
+          const completePairings = pairingsForTeam.filter(p => p.length === playersPerPairing).length;
+          
+          if (completePairings === numPairings && numPairings > 0) {
+            div.classList.add('complete');
+          }
+          if (originalIndex === selectedTeamIndex) {
+            div.classList.add('selected');
+          }
+          if (filteredIndex === highlightedTeamIndex) {
+            div.classList.add('highlighted');
+          }
+          
+          div.innerHTML = `
+            <div>
+              <div class="pairing-name">${team.name}</div>
+              <div class="player-count">${team.players?.length || 0} players</div>
+            </div>
+          `;
+          
+          div.onclick = () => selectTeam(originalIndex);
+          list.appendChild(div);
+        });
+      }
+
+      function selectTeam(index) {
+        selectedTeamIndex = index;
+        teamPlayers = teams[index]?.players || [];
+        currentPairingSlot = null;
+        renderTeams();
+        renderPairingCreator();
+        renderPlayers();
+        // Focus players search bar
+        setTimeout(() => {
+          document.getElementById('player-search')?.focus();
+        }, 50);
+      }
+
+      function renderPairingCreator() {
+        const creator = document.getElementById('pairing-creator');
+        
+        if (selectedTeamIndex === null) {
+          creator.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">👥</div>
+              <p>Select a team from the left to create pairings</p>
+            </div>
+          `;
+          return;
+        }
+
+        const team = teams[selectedTeamIndex];
+        const numPairings = Math.floor((team.players?.length || 0) / playersPerPairing);
+        
+        // Initialize pairings for this team if not exists (use index as key for Firebase compatibility)
+        if (!teamPairings[selectedTeamIndex]) {
+          teamPairings[selectedTeamIndex] = [];
+          for (let i = 0; i < numPairings; i++) {
+            teamPairings[selectedTeamIndex].push([]);
+          }
+        }
+        
+        // Ensure correct number of pairings
+        while (teamPairings[selectedTeamIndex].length < numPairings) {
+          teamPairings[selectedTeamIndex].push([]);
+        }
+
+        const pairingsData = teamPairings[selectedTeamIndex];
+        
+        creator.innerHTML = `
+          <div class="team-title">${team.name} - Pairings</div>
+          <div class="pairings-bracket">
+            ${pairingsData.map((pairing, pIdx) => `
+              <div class="bracket-pairing">
+                <div class="bracket-number">${pIdx + 1}</div>
+                <div class="bracket-connector">
+                  <div class="line-top"></div>
+                  <div class="line-horizontal"></div>
+                  <div class="line-bottom"></div>
+                </div>
+                <div class="bracket-slots ${pairing.length === playersPerPairing ? 'complete' : ''}" 
+                     data-pairing-index="${pIdx}">
+                  ${[0, 1].map(slotIdx => {
+                    const player = pairing[slotIdx];
+                    const isSelected = currentPairingSlot?.pairingIndex === pIdx && currentPairingSlot?.slotIndex === slotIdx;
+                    if (player) {
+                      return `
+                        <div class="bracket-slot occupied" 
+                             data-slot-index="${slotIdx}"
+                             data-pairing-index="${pIdx}"
+                             draggable="true"
+                             ondragstart="handlePairingSlotDragStart(event, ${pIdx}, ${slotIdx})"
+                             ondragend="handlePairingSlotDragEnd(event)"
+                             ondragover="handlePairingSlotDragOver(event)"
+                             ondragleave="handlePairingSlotDragLeave(event)"
+                             ondrop="handlePairingSlotDrop(event, ${pIdx}, ${slotIdx})">
+                          <div>
+                            <span class="slot-player">${player.name}</span>
+                            <span class="slot-hcp">HCP: ${player.hcp}</span>
+                          </div>
+                          <span class="remove-btn" onclick="removeFromPairing(${pIdx}, ${slotIdx})">✕</span>
+                        </div>
+                      `;
+                    } else {
+                      return `
+                        <div class="bracket-slot empty ${isSelected ? 'selected' : ''}" 
+                             data-slot-index="${slotIdx}"
+                             data-pairing-index="${pIdx}"
+                             ondragover="handlePairingSlotDragOver(event)"
+                             ondragleave="handlePairingSlotDragLeave(event)"
+                             ondrop="handlePairingSlotDrop(event, ${pIdx}, ${slotIdx})"
+                             onclick="selectSlot(${pIdx}, ${slotIdx})">
+                          Click to select or drag player here
+                        </div>
+                      `;
+                    }
+                  }).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      function selectSlot(pairingIndex, slotIndex) {
+        currentPairingSlot = { pairingIndex, slotIndex };
+        renderPairingCreator();
+      }
+
+      // Keyboard navigation for teams search
+      function handleTeamSearchKeydown(e) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (filteredTeams.length > 0) {
+            highlightedTeamIndex = Math.min(highlightedTeamIndex + 1, filteredTeams.length - 1);
+            renderTeams();
+            scrollToHighlightedTeam();
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (filteredTeams.length > 0) {
+            highlightedTeamIndex = Math.max(highlightedTeamIndex - 1, 0);
+            renderTeams();
+            scrollToHighlightedTeam();
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedTeamIndex >= 0 && highlightedTeamIndex < filteredTeams.length) {
+            const team = filteredTeams[highlightedTeamIndex];
+            const originalIndex = teams.indexOf(team);
+            // Clear search box
+            document.getElementById('team-search').value = '';
+            highlightedTeamIndex = -1;
+            selectTeam(originalIndex);
+          }
+        }
+      }
+
+      function scrollToHighlightedTeam() {
+        const list = document.getElementById('pairings-list');
+        const highlighted = list.querySelector('.pairing-item.highlighted');
+        if (highlighted) {
+          highlighted.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      // Keyboard navigation for players search
+      function handlePlayerSearchKeydown(e) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (filteredPlayers.length > 0) {
+            highlightedPlayerIndex = Math.min(highlightedPlayerIndex + 1, filteredPlayers.length - 1);
+            renderPlayers();
+            scrollToHighlightedPlayer();
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (filteredPlayers.length > 0) {
+            highlightedPlayerIndex = Math.max(highlightedPlayerIndex - 1, 0);
+            renderPlayers();
+            scrollToHighlightedPlayer();
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedPlayerIndex >= 0 && highlightedPlayerIndex < filteredPlayers.length) {
+            const player = filteredPlayers[highlightedPlayerIndex];
+            // Check if player is not assigned
+            const assignedPlayerIds = new Set();
+            const pairingsData = teamPairings[selectedTeamIndex] || [];
+            pairingsData.forEach(pairing => {
+              pairing.forEach(p => {
+                if (p) assignedPlayerIds.add(p.playerId);
+              });
+            });
+            if (!assignedPlayerIds.has(player.playerId)) {
+              // Clear search box
+              document.getElementById('player-search').value = '';
+              highlightedPlayerIndex = -1;
+              assignPlayerToNextSlot(player.playerId);
+            }
+          }
+        }
+      }
+
+      function scrollToHighlightedPlayer() {
+        const list = document.getElementById('players-list');
+        const highlighted = list.querySelector('.player-card.highlighted');
+        if (highlighted) {
+          highlighted.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      // Assign player to next available slot
+      function assignPlayerToNextSlot(playerId) {
+        if (selectedTeamIndex === null) return;
+        
+        const player = teamPlayers.find(p => p.playerId === playerId);
+        if (!player) return;
+
+        const pairingsData = teamPairings[selectedTeamIndex];
+        
+        // Check if player is already assigned
+        for (const pairing of pairingsData) {
+          if (pairing.some(p => p?.playerId === playerId)) {
+            return; // Already assigned
+          }
+        }
+        
+        // Always find the first empty slot from the beginning
+        let targetSlot = null;
+        for (let pIdx = 0; pIdx < pairingsData.length; pIdx++) {
+          for (let sIdx = 0; sIdx < playersPerPairing; sIdx++) {
+            if (!pairingsData[pIdx][sIdx]) {
+              targetSlot = { pairingIndex: pIdx, slotIndex: sIdx };
+              break;
+            }
+          }
+          if (targetSlot) break;
+        }
+
+        if (targetSlot) {
+          pairingsData[targetSlot.pairingIndex][targetSlot.slotIndex] = player;
+          currentPairingSlot = null; // Reset selected slot
+          renderTeams();
+          renderPairingCreator();
+          renderPlayers();
+          
+          // Check if all players for this team are assigned
+          checkAllPlayersAssigned();
+        }
+      }
+
+      function checkAllPlayersAssigned() {
+        if (selectedTeamIndex === null) return;
+        
+        const pairingsData = teamPairings[selectedTeamIndex] || [];
+        
+        // Count assigned players
+        let assignedCount = 0;
+        pairingsData.forEach(pairing => {
+          pairing.forEach(p => {
+            if (p) assignedCount++;
+          });
+        });
+        
+        // If all players assigned, focus teams search bar
+        const totalPlayers = teamPlayers.length;
+        const numPairings = Math.floor(totalPlayers / playersPerPairing);
+        const maxAssignable = numPairings * playersPerPairing;
+        
+        if (assignedCount >= maxAssignable && maxAssignable > 0) {
+          setTimeout(() => {
+            document.getElementById('team-search')?.focus();
+          }, 50);
+        }
+      }
+
+      function findNextEmptySlot(currentPairing, currentSlot) {
+        const pairingsData = teamPairings[selectedTeamIndex];
+        
+        // Check remaining slots in current pairing
+        for (let sIdx = currentSlot + 1; sIdx < playersPerPairing; sIdx++) {
+          if (!pairingsData[currentPairing][sIdx]) {
+            return { pairingIndex: currentPairing, slotIndex: sIdx };
+          }
+        }
+        
+        // Check subsequent pairings
+        for (let pIdx = currentPairing + 1; pIdx < pairingsData.length; pIdx++) {
+          for (let sIdx = 0; sIdx < playersPerPairing; sIdx++) {
+            if (!pairingsData[pIdx][sIdx]) {
+              return { pairingIndex: pIdx, slotIndex: sIdx };
+            }
+          }
+        }
+        
+        return null;
+      }
+
+      function removeFromPairing(pairingIndex, slotIndex) {
+        teamPairings[selectedTeamIndex][pairingIndex][slotIndex] = null;
+        teamPairings[selectedTeamIndex][pairingIndex] = teamPairings[selectedTeamIndex][pairingIndex].filter(p => p !== null);
+        renderTeams();
+        renderPairingCreator();
+        renderPlayers();
+      }
+
+      // Drag and drop from players list to pairing slot
+      function handlePairingSlotDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+      }
+
+      function handlePairingSlotDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+      }
+
+      // Drag from occupied pairing slot
+      let dragSourceSlot = null;
+      
+      function handlePairingSlotDragStart(e, pairingIndex, slotIndex) {
+        const player = teamPairings[selectedTeamIndex][pairingIndex][slotIndex];
+        if (player) {
+          e.dataTransfer.setData('playerId', player.playerId);
+          e.dataTransfer.setData('source', 'pairing-slot');
+          e.dataTransfer.setData('sourcePairingIndex', pairingIndex);
+          e.dataTransfer.setData('sourceSlotIndex', slotIndex);
+          dragSourceSlot = { pairingIndex, slotIndex };
+          e.currentTarget.style.opacity = '0.5';
+        }
+      }
+
+      function handlePairingSlotDragEnd(e) {
+        e.currentTarget.style.opacity = '1';
+        dragSourceSlot = null;
+      }
+
+      function handlePairingSlotDrop(e, targetPairingIndex, targetSlotIndex) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over');
+        
+        const playerId = e.dataTransfer.getData('playerId');
+        const source = e.dataTransfer.getData('source');
+        
+        const pairingsData = teamPairings[selectedTeamIndex];
+        
+        if (source === 'pairing-slot') {
+          // Dragging from another pairing slot - swap or move
+          const sourcePairingIndex = parseInt(e.dataTransfer.getData('sourcePairingIndex'));
+          const sourceSlotIndex = parseInt(e.dataTransfer.getData('sourceSlotIndex'));
+          
+          const sourcePlayer = pairingsData[sourcePairingIndex][sourceSlotIndex];
+          const targetPlayer = pairingsData[targetPairingIndex][targetSlotIndex];
+          
+          // Swap players
+          pairingsData[targetPairingIndex][targetSlotIndex] = sourcePlayer;
+          pairingsData[sourcePairingIndex][sourceSlotIndex] = targetPlayer;
+          
+          // Clean up nulls in arrays
+          pairingsData[sourcePairingIndex] = pairingsData[sourcePairingIndex].filter((p, idx) => {
+            if (p === null && idx === sourceSlotIndex && targetPlayer === undefined) return false;
+            return p !== undefined;
+          });
+          
+        } else if (source === 'players-list') {
+          // Dragging from players list
+          const player = teamPlayers.find(p => p.playerId === playerId);
+          if (!player) return;
+
+          // Check if player is already assigned
+          for (const pairing of pairingsData) {
+            if (pairing.some(p => p?.playerId === playerId)) {
+              alert('Player is already assigned to a pairing');
+              return;
+            }
+          }
+          
+          // If target slot has a player, we can't add here from players list
+          if (pairingsData[targetPairingIndex][targetSlotIndex]) {
+            alert('This slot is already occupied. Drag an existing player to swap.');
+            return;
+          }
+          
+          pairingsData[targetPairingIndex][targetSlotIndex] = player;
+        }
+        
+        renderTeams();
+        renderPairingCreator();
+        renderPlayers();
+      }
+
+      // Drop handlers for players list (to return players from pairings)
+      function handlePlayersListDragOver(e) {
+        const source = e.dataTransfer.types.includes('text/plain') ? 'unknown' : 'pairing-slot';
+        // Only allow drop if dragging from pairing slot
+        if (dragSourceSlot) {
+          e.preventDefault();
+          e.currentTarget.classList.add('drag-over');
+        }
+      }
+
+      function handlePlayersListDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+      }
+
+      function handlePlayersListDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        
+        const source = e.dataTransfer.getData('source');
+        
+        if (source === 'pairing-slot' && dragSourceSlot) {
+          // Remove player from pairing slot
+          const pairingsData = teamPairings[selectedTeamIndex];
+          
+          pairingsData[dragSourceSlot.pairingIndex][dragSourceSlot.slotIndex] = null;
+          pairingsData[dragSourceSlot.pairingIndex] = pairingsData[dragSourceSlot.pairingIndex].filter(p => p !== null);
+          
+          dragSourceSlot = null;
+          
+          renderTeams();
+          renderPairingCreator();
+          renderPlayers();
+        }
+      }
+
+      function renderPlayers() {
+        const list = document.getElementById('players-list');
+        const titleEl = document.getElementById('players-panel-title');
+        
+        if (selectedTeamIndex === null) {
+          titleEl.innerHTML = `Team Players (<span id="players-count">0</span>)`;
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">Select a team to view its players</div>';
+          filteredPlayers = [];
+          return;
+        }
+
+        const team = teams[selectedTeamIndex];
+        titleEl.innerHTML = `Team Players (<span id="players-count">${teamPlayers.length}</span>)`;
+        
+        // Get assigned player IDs
+        const assignedPlayerIds = new Set();
+        const pairingsData = teamPairings[selectedTeamIndex] || [];
+        pairingsData.forEach(pairing => {
+          pairing.forEach(player => {
+            if (player) assignedPlayerIds.add(player.playerId);
+          });
+        });
+
+        // Apply search filter and exclude assigned players
+        const searchTerm = document.getElementById('player-search')?.value.toLowerCase() || '';
+        filteredPlayers = teamPlayers.filter(p => 
+          !assignedPlayerIds.has(p.playerId) && p.name.toLowerCase().includes(searchTerm)
+        );
+
+        // Update count to show unassigned players
+        document.getElementById('players-count').textContent = filteredPlayers.length;
+
+        list.innerHTML = '';
+        
+        filteredPlayers.forEach((player, index) => {
+          const isHighlighted = index === highlightedPlayerIndex;
+          const div = document.createElement('div');
+          div.className = 'player-card' + (isHighlighted ? ' highlighted' : '');
+          div.draggable = true;
+          div.dataset.playerIndex = index;
+          
+          div.innerHTML = `
+            <div class="player-name">${player.name}</div>
+            <div class="player-info">HCP: ${player.hcp}</div>
+          `;
+          
+          div.ondragstart = (e) => {
+            e.dataTransfer.setData('playerId', player.playerId);
+            e.dataTransfer.setData('source', 'players-list');
+            div.style.opacity = '0.5';
+          };
+          div.ondragend = () => {
+            div.style.opacity = '1';
+          };
+          div.ondblclick = () => {
+            assignPlayerToNextSlot(player.playerId);
+          };
+          
+          list.appendChild(div);
+        });
+      }
+
+      function filterTeams() {
+        // Auto-highlight first result when typing
+        highlightedTeamIndex = filteredTeams.length > 0 ? 0 : -1;
+        renderTeams();
+        // Update highlight after render since filteredTeams is set in renderTeams
+        if (document.getElementById('team-search').value) {
+          highlightedTeamIndex = 0;
+          renderTeams();
+        }
+      }
+
+      function filterPlayers() {
+        // Auto-highlight first result when typing
+        renderPlayers();
+        // Update highlight after render since filteredPlayers is set in renderPlayers
+        if (document.getElementById('player-search').value && filteredPlayers.length > 0) {
+          highlightedPlayerIndex = 0;
+          renderPlayers();
+        } else {
+          highlightedPlayerIndex = -1;
+        }
+      }
+
+      function autoCreatePairings() {
+        if (selectedTeamIndex === null) {
+          alert('Please select a team first');
+          return;
+        }
+
+        if (!confirm('This will reset pairings for this team and auto-generate new ones. Continue?')) {
+          return;
+        }
+
+        const team = teams[selectedTeamIndex];
+        const players = [...teamPlayers];
+        
+        // Shuffle players
+        for (let i = players.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [players[i], players[j]] = [players[j], players[i]];
+        }
+
+        // Create pairings
+        const numPairings = Math.floor(players.length / playersPerPairing);
+        teamPairings[selectedTeamIndex] = [];
+        
+        for (let i = 0; i < numPairings; i++) {
+          const pairing = [];
+          for (let j = 0; j < playersPerPairing; j++) {
+            pairing.push(players[i * playersPerPairing + j]);
+          }
+          teamPairings[selectedTeamIndex].push(pairing);
+        }
+
+        renderTeams();
+        renderPairingCreator();
+        renderPlayers();
+      }
+
+      function savePairings() {
+        try {
+          const tournaments = getTournaments();
+          const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (tournamentIndex === -1) {
+            alert('Tournament not found');
+            return;
+          }
+
+          // Initialize teamPairings object if it doesn't exist
+          if (!tournaments[tournamentIndex].teamPairings) {
+            tournaments[tournamentIndex].teamPairings = {};
+          }
+
+          // Save teamPairings for this round
+          tournaments[tournamentIndex].teamPairings[roundId] = teamPairings;
+
+          saveTournaments(tournaments);
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments);
+          }
+          
+          alert('Pairings saved successfully!');
+        } catch (e) {
+          console.error('Error saving pairings:', e);
+          alert('Error saving pairings: ' + e.message);
+        }
+      }
+
+      // Initialize on load
+      init();
+    </script>
+  </body>
+</html>

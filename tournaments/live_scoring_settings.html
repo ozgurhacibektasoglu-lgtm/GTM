@@ -1,0 +1,2270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Live Scoring Settings</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      * { box-sizing: border-box; }
+      body { 
+        padding-top: 60px; 
+        background: #f0f4f8; 
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      .top-nav {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        padding: 12px 16px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .top-nav h1 { margin: 0; color: white; font-size: 18px; font-weight: 700; }
+      
+      .btn-back {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      
+      .container { 
+        max-width: 800px; 
+        margin: 0 auto; 
+        padding: 20px; 
+      }
+      
+      /* Cards */
+      .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .card-header-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+      
+      .card-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      
+      .card-header p {
+        margin: 4px 0 0 0;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      /* Tournament Info */
+      .tournament-info {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .tournament-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 4px 0;
+      }
+      
+      .tournament-details {
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      /* Round Selector */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .form-group select,
+      .form-group input[type="text"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 15px;
+        color: #1e293b;
+        background: white;
+        transition: border-color 0.2s;
+      }
+      
+      .form-group select:focus,
+      .form-group input[type="text"]:focus {
+        outline: none;
+        border-color: #059669;
+      }
+      
+      /* Scoring Type Selection */
+      .scoring-types {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      
+      @media (max-width: 600px) {
+        .scoring-types {
+          grid-template-columns: 1fr;
+        }
+      }
+      
+      .scoring-type {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+      }
+      
+      .scoring-type:hover {
+        border-color: #059669;
+        background: #f0fdf4;
+      }
+      
+      .scoring-type.selected {
+        border-color: #059669;
+        background: #f0fdf4;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      }
+      
+      .scoring-type-icon {
+        font-size: 36px;
+        margin-bottom: 12px;
+      }
+      
+      .scoring-type-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+      }
+      
+      .scoring-type-desc {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.4;
+      }
+      
+      /* Volunteer Holes Section */
+      .volunteer-settings {
+        display: none;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .volunteer-settings.active {
+        display: block;
+      }
+      
+      /* Player Mode Settings */
+      .player-settings {
+        display: none;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .player-settings.active {
+        display: block;
+      }
+      
+      .player-mode-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .player-mode-option {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+      }
+      
+      .player-mode-option:hover {
+        border-color: #059669;
+        background: #f0fdf4;
+      }
+      
+      .player-mode-option.selected {
+        border-color: #059669;
+        background: #f0fdf4;
+      }
+      
+      .player-mode-icon {
+        font-size: 32px;
+        flex-shrink: 0;
+      }
+      
+      .player-mode-content {
+        flex: 1;
+      }
+      
+      .player-mode-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+      }
+      
+      .player-mode-desc {
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.4;
+      }
+      
+      .player-mode-check {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #059669;
+        color: white;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      
+      .player-mode-option.selected .player-mode-check {
+        display: flex;
+      }
+
+      .hole-selector {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      
+      @media (max-width: 500px) {
+        .hole-selector {
+          grid-template-columns: repeat(6, 1fr);
+        }
+      }
+      
+      .hole-btn {
+        width: 100%;
+        aspect-ratio: 1;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        font-size: 15px;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .hole-btn:hover {
+        border-color: #059669;
+        color: #059669;
+      }
+      
+      .hole-btn.selected {
+        background: #059669;
+        border-color: #059669;
+        color: white;
+      }
+      
+      .quick-select {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      
+      .quick-select-btn {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .quick-select-btn:hover {
+        background: #e2e8f0;
+      }
+      
+      .selected-holes-display {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: #475569;
+      }
+      
+      .selected-holes-display strong {
+        color: #059669;
+      }
+      
+      /* Status Section */
+      .status-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      
+      .status-row:last-child {
+        border-bottom: none;
+      }
+      
+      .status-label {
+        font-size: 14px;
+        color: #64748b;
+      }
+      
+      .status-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .status-badge.active {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      .status-badge.inactive {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+      
+      /* Action Buttons */
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      
+      .btn {
+        flex: 1;
+        padding: 14px 24px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        text-align: center;
+        text-decoration: none;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+      }
+      
+      .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+      }
+      
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+      
+      .btn-danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 2px solid #fecaca;
+      }
+      
+      .btn-danger:hover {
+        background: #fee2e2;
+      }
+      
+      /* Links Section */
+      .links-section {
+        margin-top: 24px;
+      }
+      
+      .link-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      
+      .link-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #64748b;
+        background: #f8fafc;
+      }
+      
+      .btn-copy {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+      }
+      
+      .btn-copy:hover {
+        background: #e2e8f0;
+      }
+      
+      /* QR Codes */
+      .qr-section {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 20px;
+      }
+      
+      @media (max-width: 500px) {
+        .qr-section {
+          grid-template-columns: 1fr;
+        }
+      }
+      
+      .qr-card {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+      }
+      
+      .qr-card h4 {
+        margin: 0 0 12px 0;
+        font-size: 13px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .qr-placeholder {
+        width: 120px;
+        height: 120px;
+        background: white;
+        border: 2px dashed #e5e7eb;
+        border-radius: 8px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      
+      /* Groups Overview */
+      .groups-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      
+      .group-card {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 14px;
+        border-left: 4px solid #059669;
+      }
+      
+      .group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      
+      .group-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 14px;
+      }
+      
+      .group-time {
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      .group-players {
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      /* Volunteer Link Cards */
+      .volunteer-link-card {
+        background: #f8fafc;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      
+      .volunteer-link-card:hover {
+        border-color: #059669;
+      }
+      
+      .volunteer-link-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .volunteer-station {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .volunteer-hole-badge {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 800;
+      }
+      
+      .volunteer-station-info h4 {
+        margin: 0;
+        font-size: 15px;
+        color: #1e293b;
+      }
+      
+      .volunteer-station-info p {
+        margin: 2px 0 0 0;
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      .volunteer-holes-range {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .volunteer-link-row {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .volunteer-link-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #64748b;
+        background: white;
+      }
+      
+      .volunteer-link-actions {
+        display: flex;
+        gap: 6px;
+      }
+      
+      .btn-small {
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #475569;
+        transition: all 0.2s;
+      }
+      
+      .btn-small:hover {
+        background: #f1f5f9;
+      }
+      
+      .btn-small.btn-qr {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      
+      /* QR Modal */
+      .qr-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .qr-modal.active {
+        display: flex;
+      }
+      
+      .qr-modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        max-width: 320px;
+        width: 90%;
+      }
+      
+      .qr-modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px 0;
+      }
+      
+      .qr-modal-subtitle {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0 0 20px 0;
+      }
+      
+      .qr-modal-code {
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+      
+      .qr-modal-close {
+        background: #f1f5f9;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        width: 100%;
+      }
+      
+      /* Loading & Error States */
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #64748b;
+      }
+      
+      .error {
+        background: #fef2f2;
+        color: #dc2626;
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      
+      .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+      
+      .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      .alert-warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <a href="index.html" class="btn-back">← Back</a>
+      <h1>⚡ Live Scoring Settings</h1>
+      <div style="width: 80px;"></div>
+    </div>
+
+    <div class="container">
+      <!-- Tournament Selection -->
+      <div class="card" id="tournament-card">
+        <div class="card-header">
+          <div class="card-header-icon">🏌️</div>
+          <div>
+            <h2>Select Tournament & Round</h2>
+            <p>Choose the tournament and round for live scoring</p>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Tournament</label>
+          <select id="tournament-select">
+            <option value="">Select a tournament...</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="round-group" style="display: none;">
+          <label>Round</label>
+          <select id="round-select">
+            <option value="">Select a round...</option>
+          </select>
+        </div>
+        
+        <div class="tournament-info" id="tournament-info" style="display: none;">
+          <div class="tournament-name" id="info-name"></div>
+          <div class="tournament-details" id="info-details"></div>
+        </div>
+      </div>
+
+      <!-- Scoring Type Selection -->
+      <div class="card" id="scoring-type-card" style="display: none;">
+        <div class="card-header">
+          <div class="card-header-icon">📱</div>
+          <div>
+            <h2>Scoring Method</h2>
+            <p>How will scores be collected during the round?</p>
+          </div>
+        </div>
+        
+        <div class="scoring-types">
+          <div class="scoring-type" data-type="volunteers" onclick="selectScoringType('volunteers')">
+            <div class="scoring-type-icon">🏁</div>
+            <div class="scoring-type-name">Volunteers</div>
+            <div class="scoring-type-desc">Stationed at specific holes to collect scores from passing groups</div>
+          </div>
+          
+          <div class="scoring-type" data-type="players" onclick="selectScoringType('players')">
+            <div class="scoring-type-icon">👤</div>
+            <div class="scoring-type-name">Players</div>
+            <div class="scoring-type-desc">Players enter scores on their mobile devices</div>
+          </div>
+          
+          <div class="scoring-type" data-type="walking" onclick="selectScoringType('walking')">
+            <div class="scoring-type-icon">🚶</div>
+            <div class="scoring-type-name">Walking Scorers</div>
+            <div class="scoring-type-desc">Dedicated scorers walk with each group and record all scores</div>
+          </div>
+        </div>
+        
+        <!-- Player Mode Sub-options -->
+        <div class="player-settings" id="player-settings">
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Player Scoring Mode
+          </label>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+            Choose how players will enter their scores
+          </p>
+          
+          <div class="player-mode-options">
+            <div class="player-mode-option selected" data-mode="group" onclick="selectPlayerMode('group')">
+              <div class="player-mode-icon">👥</div>
+              <div class="player-mode-content">
+                <div class="player-mode-name">One Player per Group</div>
+                <div class="player-mode-desc">One designated player in each group enters scores for all players in the group</div>
+              </div>
+              <div class="player-mode-check">✓</div>
+            </div>
+            
+            <div class="player-mode-option" data-mode="individual" onclick="selectPlayerMode('individual')">
+              <div class="player-mode-icon">👤</div>
+              <div class="player-mode-content">
+                <div class="player-mode-name">Every Player</div>
+                <div class="player-mode-desc">Each player enters their own scores individually on their own device</div>
+              </div>
+              <div class="player-mode-check">✓</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Volunteer Hole Selection -->
+        <div class="volunteer-settings" id="volunteer-settings">
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Select Scoring Holes
+          </label>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+            Choose which holes will have volunteers stationed to collect scores
+          </p>
+          
+          <div class="quick-select">
+            <button class="quick-select-btn" onclick="quickSelect([3,6,9,12,15,18])">Every 3rd (3,6,9...)</button>
+            <button class="quick-select-btn" onclick="quickSelect([4,8,12,16])">Every 4th</button>
+            <button class="quick-select-btn" onclick="quickSelect([9,18])">9 & 18 Only</button>
+            <button class="quick-select-btn" onclick="quickSelect([6,12,18])">6, 12, 18</button>
+            <button class="quick-select-btn" onclick="clearHoles()">Clear All</button>
+          </div>
+          
+          <div class="hole-selector" id="hole-selector">
+            <!-- Holes 1-18 generated by JS -->
+          </div>
+          
+          <div class="selected-holes-display" id="selected-holes-display">
+            Selected holes: <strong>None</strong>
+          </div>
+        </div>
+        
+        <!-- Save Settings Button -->
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600;">
+            💾 Save Settings
+          </button>
+          <p id="save-status" style="text-align: center; margin-top: 10px; font-size: 13px; color: #64748b;"></p>
+        </div>
+      </div>
+
+      <!-- Live Scoring Status & Actions -->
+      <div class="card" id="status-card" style="display: none;">
+        <div class="card-header">
+          <div class="card-header-icon">📊</div>
+          <div>
+            <h2>Live Scoring Status</h2>
+            <p>Current status and quick actions</p>
+          </div>
+        </div>
+        
+        <div class="status-section" style="margin-top: 0; padding-top: 0; border-top: none;">
+          <div class="status-row">
+            <span class="status-label">Status</span>
+            <span class="status-badge inactive" id="status-badge">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span>
+              Not Active
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Scoring Type</span>
+            <span class="status-value" id="status-type">-</span>
+          </div>
+          <div class="status-row" id="status-holes-row" style="display: none;">
+            <span class="status-label">Scoring Holes</span>
+            <span class="status-value" id="status-holes">-</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Groups</span>
+            <span class="status-value" id="status-groups">-</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Players with Scores</span>
+            <span class="status-value" id="status-scored">0</span>
+          </div>
+        </div>
+        
+        <div class="actions">
+          <button class="btn btn-primary" id="btn-activate" onclick="activateLiveScoring()">
+            🚀 Activate Live Scoring
+          </button>
+        </div>
+        
+        <div class="actions" id="active-actions" style="display: none;">
+          <button class="btn btn-secondary" onclick="openScoringInterface()">
+            📝 Open Scoring Interface
+          </button>
+          <button class="btn btn-secondary" onclick="openLeaderboard()">
+            📊 View Leaderboard
+          </button>
+        </div>
+        
+        <div class="actions" id="deactivate-actions" style="display: none;">
+          <button class="btn btn-danger" onclick="deactivateLiveScoring()">
+            ⏹ Stop Live Scoring
+          </button>
+          <button class="btn btn-warning" id="btn-hide-leaderboard" onclick="hideLeaderboard()" style="background: #d97706;">
+            👁️‍🗨️ Hide Leaderboard
+          </button>
+          <button class="btn btn-success" id="btn-publish-leaderboard" onclick="publishLeaderboard()" style="display: none;">
+            📢 Publish Leaderboard
+          </button>
+          <button class="btn btn-danger" onclick="clearAllScores()" style="background: #dc2626;">
+            🗑️ Clear All Scores
+          </button>
+        </div>
+      </div>
+
+      <!-- Sharing Links -->
+      <div class="card" id="links-card" style="display: none;">
+        <div class="card-header">
+          <div class="card-header-icon">🔗</div>
+          <div>
+            <h2>Sharing Links</h2>
+            <p>Share these links with scorers and spectators</p>
+          </div>
+        </div>
+        
+        <div class="links-section" style="margin-top: 0;">
+          <!-- Volunteer Links Section (shown only for volunteer mode) -->
+          <div id="volunteer-links-section" style="display: none;">
+            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <span style="font-size: 28px;">🏁</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 16px;">Volunteer Scoring Links</div>
+                  <div style="font-size: 13px; opacity: 0.9;">Each volunteer has their own unique link - share the correct one!</div>
+                </div>
+              </div>
+            </div>
+            <div id="volunteer-links-count" style="background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 500;">
+              <span id="volunteer-count-text">Loading volunteer links...</span>
+            </div>
+            <div id="volunteer-links-container">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+          
+          <!-- Player Group Links Section (shown for player mode with group option) -->
+          <div id="player-group-links-section" style="display: none;">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <span style="font-size: 28px;">👥</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 16px;">Group Scoring Links</div>
+                  <div style="font-size: 13px; opacity: 0.9;">Each group has a unique link - share the correct one with the designated scorer in each group!</div>
+                </div>
+              </div>
+            </div>
+            <div id="player-group-links-count" style="background: #dbeafe; border: 1px solid #3b82f6; color: #1e40af; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 500;">
+              <span id="player-group-count-text">Loading group links...</span>
+            </div>
+            <div id="player-group-links-container">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+          
+          <!-- General Scoring Link (for players/walking scorers) -->
+          <div class="form-group" id="general-scoring-link-group">
+            <label>Scoring Interface (for scorers)</label>
+            <div class="link-row">
+              <input type="text" class="link-input" id="scoring-link" readonly>
+              <button class="btn-copy" onclick="copyLink('scoring-link')">Copy</button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Public Leaderboard (for spectators)</label>
+            <div class="link-row">
+              <input type="text" class="link-input" id="leaderboard-link" readonly>
+              <button class="btn-copy" onclick="copyLink('leaderboard-link')">Copy</button>
+            </div>
+          </div>
+          
+          <div class="qr-section" id="general-qr-section">
+            <div class="qr-card">
+              <h4>Scoring QR</h4>
+              <div class="qr-placeholder" id="qr-scoring">QR Code</div>
+            </div>
+            <div class="qr-card">
+              <h4>Leaderboard QR</h4>
+              <div class="qr-placeholder" id="qr-leaderboard">QR Code</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Groups Overview -->
+      <div class="card" id="groups-card" style="display: none;">
+        <div class="card-header">
+          <div class="card-header-icon">👥</div>
+          <div>
+            <h2>Groups Overview</h2>
+            <p>View and manage group scoring status</p>
+          </div>
+        </div>
+        
+        <div class="groups-grid" id="groups-grid">
+          <!-- Groups rendered by JS -->
+        </div>
+        
+        <div class="actions" style="margin-top: 20px;">
+          <button class="btn btn-secondary" onclick="openScoringInterface()">
+            📝 Open Full Scoring Interface
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div class="qr-modal" id="qr-modal" onclick="closeQRModal(event)">
+      <div class="qr-modal-content" onclick="event.stopPropagation()">
+        <h3 class="qr-modal-title" id="qr-modal-title">Hole 3 Volunteer</h3>
+        <p class="qr-modal-subtitle" id="qr-modal-subtitle">Holes 1-3</p>
+        <div class="qr-modal-code" id="qr-modal-code"></div>
+        <button class="qr-modal-close" onclick="closeQRModal()">Close</button>
+      </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Firebase -->
+    <script src="../firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+    <script>
+      // State
+      let currentTournament = null;
+      let currentRoundId = null;
+      let selectedScoringType = null;
+      let selectedHoles = [];
+      let liveSettings = null;
+      // db is declared in firebase-config.js
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        // Init Firebase
+        if (typeof initFirebase === 'function') {
+          initFirebase();
+        }
+        
+        // Wait for Firebase to initialize
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Use the global db from firebase-config.js or create it
+        if (typeof db === 'undefined' || !db) {
+          try {
+            if (typeof firebase !== 'undefined') {
+              window.db = firebase.database();
+            }
+          } catch (e) {
+            console.error('Firebase init error:', e);
+          }
+        }
+        
+        // Generate hole buttons
+        generateHoleButtons();
+        
+        // Load tournaments
+        await loadTournaments();
+        
+        // Check URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        
+        if (tournamentId) {
+          document.getElementById('tournament-select').value = tournamentId;
+          await selectTournament(tournamentId);
+        }
+      });
+
+      // Generate hole selector buttons
+      function generateHoleButtons() {
+        const container = document.getElementById('hole-selector');
+        let html = '';
+        
+        for (let i = 1; i <= 18; i++) {
+          html += `<button class="hole-btn" data-hole="${i}" onclick="toggleHole(${i})">${i}</button>`;
+        }
+        
+        container.innerHTML = html;
+      }
+
+      // Load tournaments
+      async function loadTournaments() {
+        let tournaments = [];
+        
+        // Try Firebase first
+        if (db) {
+          try {
+            const snapshot = await db.ref('tournaments').once('value');
+            const data = snapshot.val();
+            if (data) {
+              tournaments = Object.values(data);
+            }
+          } catch (e) {
+            console.error('Firebase error:', e);
+          }
+        }
+        
+        // Fall back to localStorage
+        if (tournaments.length === 0) {
+          tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        }
+        
+        // Get today's date (without time) for comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Filter to only show tournaments with rounds today or in the future
+        const availableTournaments = tournaments.filter(t => {
+          const lastRoundDate = getLastRoundDate(t);
+          if (!lastRoundDate) return true; // If no date, show it
+          return lastRoundDate >= today;
+        });
+        
+        // Sort by first available round date
+        availableTournaments.sort((a, b) => {
+          const dateA = getFirstAvailableRoundDate(a) || new Date('2099-12-31');
+          const dateB = getFirstAvailableRoundDate(b) || new Date('2099-12-31');
+          return dateA - dateB;
+        });
+        
+        const select = document.getElementById('tournament-select');
+        availableTournaments.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t.tournamentId;
+          const dateStr = getTournamentDateDisplay(t);
+          option.textContent = `${t.name}${dateStr ? ' (' + dateStr + ')' : ''}`;
+          select.appendChild(option);
+        });
+      }
+      
+      // Get the last round date for a tournament
+      function getLastRoundDate(tournament) {
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          const lastRound = roundsData[roundsData.length - 1];
+          if (lastRound?.date) {
+            const date = new Date(lastRound.date);
+            date.setHours(0, 0, 0, 0);
+            return date;
+          }
+          return null;
+        } else if (tournament.date) {
+          const date = new Date(tournament.date);
+          date.setHours(0, 0, 0, 0);
+          return date;
+        }
+        return null;
+      }
+      
+      // Get the first available (not yet played) round date
+      function getFirstAvailableRoundDate(tournament) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          for (const round of roundsData) {
+            if (round?.date) {
+              const roundDate = new Date(round.date);
+              roundDate.setHours(0, 0, 0, 0);
+              if (roundDate >= today) return roundDate;
+            }
+          }
+        } else if (tournament.date) {
+          const tDate = new Date(tournament.date);
+          tDate.setHours(0, 0, 0, 0);
+          if (tDate >= today) return tDate;
+        }
+        return null;
+      }
+      
+      // Get display string for tournament date
+      function getTournamentDateDisplay(tournament) {
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          const dates = roundsData.filter(r => r?.date).map(r => r.date);
+          if (dates.length === 1) {
+            return formatDateShort(dates[0]);
+          } else if (dates.length > 1) {
+            return `${formatDateShort(dates[0])} - ${formatDateShort(dates[dates.length - 1])}`;
+          }
+        } else if (tournament.date) {
+          return formatDateShort(tournament.date);
+        }
+        return '';
+      }
+      
+      // Format date as short string
+      function formatDateShort(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      }
+
+      // Tournament selected
+      document.getElementById('tournament-select').addEventListener('change', function() {
+        selectTournament(this.value);
+      });
+
+      async function selectTournament(tournamentId) {
+        if (!tournamentId) {
+          document.getElementById('round-group').style.display = 'none';
+          document.getElementById('tournament-info').style.display = 'none';
+          document.getElementById('scoring-type-card').style.display = 'none';
+          document.getElementById('status-card').style.display = 'none';
+          document.getElementById('links-card').style.display = 'none';
+          document.getElementById('groups-card').style.display = 'none';
+          resetSettingsToDefaults();
+          return;
+        }
+        
+        // Reset settings when switching tournaments
+        resetSettingsToDefaults();
+        
+        // Load tournament
+        let tournaments = [];
+        
+        if (db) {
+          try {
+            const snapshot = await db.ref('tournaments').once('value');
+            const data = snapshot.val();
+            if (data) {
+              tournaments = Object.values(data);
+            }
+          } catch (e) {}
+        }
+        
+        if (tournaments.length === 0) {
+          tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        }
+        
+        currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+        
+        if (!currentTournament) return;
+        
+        // Show round selector - all rounds (no date filtering)
+        const roundSelect = document.getElementById('round-select');
+        roundSelect.innerHTML = '<option value="">Select a round...</option>';
+        
+        const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
+        const roundsData = currentTournament.meta?.roundsData || [];
+        
+        let availableRounds = [];
+        
+        roundIds.forEach((rid, idx) => {
+          // Get round date for display
+          let roundDate = null;
+          if (roundsData[idx]?.date) {
+            roundDate = new Date(roundsData[idx].date);
+          } else if (idx === 0 && currentTournament.date) {
+            roundDate = new Date(currentTournament.date);
+          }
+          
+          const option = document.createElement('option');
+          option.value = rid;
+          const dateStr = roundDate ? ` (${formatDateShort(roundDate)})` : '';
+          option.textContent = `Round ${idx + 1}${dateStr}`;
+          roundSelect.appendChild(option);
+          availableRounds.push(rid);
+        });
+        
+        document.getElementById('round-group').style.display = 'block';
+        
+        // Auto-select first round if only one available
+        if (availableRounds.length === 1) {
+          roundSelect.value = availableRounds[0];
+          selectRound(availableRounds[0]);
+        }
+      }
+
+      // Round selected
+      document.getElementById('round-select').addEventListener('change', function() {
+        selectRound(this.value);
+      });
+
+      async function selectRound(roundId) {
+        if (!roundId) {
+          document.getElementById('tournament-info').style.display = 'none';
+          document.getElementById('scoring-type-card').style.display = 'none';
+          document.getElementById('status-card').style.display = 'none';
+          document.getElementById('links-card').style.display = 'none';
+          document.getElementById('groups-card').style.display = 'none';
+          return;
+        }
+        
+        currentRoundId = roundId;
+        
+        // Show tournament info
+        document.getElementById('info-name').textContent = currentTournament.name;
+        
+        const roundNum = (currentTournament.meta?.roundIds || []).indexOf(roundId) + 1;
+        const courseId = currentTournament.meta?.courses?.[0] || currentTournament.courseId;
+        
+        document.getElementById('info-details').textContent = 
+          `${currentTournament.date || ''} • Round ${roundNum} • ${courseId || 'No course'}`;
+        
+        document.getElementById('tournament-info').style.display = 'block';
+        
+        // Reset to defaults first, then load saved settings
+        resetSettingsToDefaults();
+        await loadLiveSettings();
+        
+        // Show scoring type card
+        document.getElementById('scoring-type-card').style.display = 'block';
+        document.getElementById('status-card').style.display = 'block';
+        
+        // Load groups
+        await loadGroups();
+        
+        // Update links
+        updateLinks();
+      }
+      
+      // Reset all settings to defaults
+      function resetSettingsToDefaults() {
+        console.log('[resetSettingsToDefaults] Resetting to defaults');
+        
+        // Reset variables
+        selectedScoringType = null;
+        selectedHoles = [];
+        selectedPlayerMode = 'group';
+        
+        // Reset UI - scoring types (check if elements exist)
+        document.querySelectorAll('.scoring-type').forEach(el => {
+          el.classList.remove('selected');
+        });
+        
+        // Hide volunteer and player settings sections
+        const volunteerSettings = document.getElementById('volunteer-settings');
+        const playerSettings = document.getElementById('player-settings');
+        if (volunteerSettings) volunteerSettings.classList.remove('active');
+        if (playerSettings) playerSettings.classList.remove('active');
+        
+        // Reset player mode buttons
+        document.querySelectorAll('.player-mode-option').forEach(el => {
+          el.classList.toggle('selected', el.dataset.mode === 'group');
+        });
+        
+        // Reset hole buttons
+        document.querySelectorAll('.hole-btn').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        
+        // Reset displays (check if functions exist)
+        if (typeof updateSelectedHolesDisplay === 'function') {
+          updateSelectedHolesDisplay();
+        }
+        if (typeof updateStatusDisplay === 'function') {
+          updateStatusDisplay();
+        }
+        
+        // Clear save status
+        const saveStatusEl = document.getElementById('save-status');
+        if (saveStatusEl) saveStatusEl.textContent = '';
+      }
+
+      // Load existing live scoring settings for this round
+      async function loadLiveSettings() {
+        if (!currentTournament || !currentRoundId) return;
+        
+        liveSettings = null;
+        
+        console.log('[loadLiveSettings] Loading settings for round:', currentRoundId);
+        
+        // Load round-specific settings from liveSettings/${roundId}
+        // This contains ALL settings: scoringType, holes, playerMode, AND active state
+        if (db) {
+          try {
+            const snapshot = await db.ref(`liveSettings/${currentRoundId}`).once('value');
+            liveSettings = snapshot.val();
+            console.log('[loadLiveSettings] Settings from Firebase:', liveSettings);
+          } catch (e) {
+            console.error('[loadLiveSettings] Firebase error:', e);
+          }
+        }
+        
+        // Fall back to localStorage
+        if (!liveSettings) {
+          const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+          liveSettings = allSettings[currentRoundId];
+          console.log('[loadLiveSettings] Settings from localStorage:', liveSettings);
+        }
+        
+        // Apply settings to UI
+        if (liveSettings) {
+          console.log('[loadLiveSettings] Applying settings:', liveSettings);
+          
+          selectedScoringType = liveSettings.scoringType || null;
+          selectedHoles = liveSettings.scoringHoles || [];
+          selectedPlayerMode = liveSettings.playerMode || 'group';
+          
+          // Update UI
+          document.querySelectorAll('.scoring-type').forEach(el => {
+            el.classList.toggle('selected', el.dataset.type === selectedScoringType);
+          });
+          
+          document.getElementById('volunteer-settings').classList.toggle('active', selectedScoringType === 'volunteers');
+          document.getElementById('player-settings').classList.toggle('active', selectedScoringType === 'players');
+          
+          // Update player mode buttons
+          document.querySelectorAll('.player-mode-option').forEach(el => {
+            el.classList.toggle('selected', el.dataset.mode === selectedPlayerMode);
+          });
+          
+          // Update hole buttons
+          document.querySelectorAll('.hole-btn').forEach(btn => {
+            btn.classList.toggle('selected', selectedHoles.includes(parseInt(btn.dataset.hole)));
+          });
+          
+          updateSelectedHolesDisplay();
+          updateStatusDisplay();
+          updateLinks(); // Update links based on loaded settings
+        } else {
+          console.log('[loadLiveSettings] No saved settings found - using defaults');
+          // Initialize liveSettings with defaults so status display works
+          liveSettings = {
+            active: false,
+            scoringType: null,
+            scoringHoles: [],
+            playerMode: 'group'
+          };
+          updateStatusDisplay();
+        }
+      }
+      
+      // Save settings manually (called by Save button)
+      async function saveSettings() {
+        if (!currentTournament || !currentRoundId) {
+          alert('Please select a tournament and round first');
+          return;
+        }
+        
+        const saveStatusEl = document.getElementById('save-status');
+        
+        // Preserve existing active state and other properties
+        const settingsToSave = {
+          ...liveSettings, // Keep existing properties (active, activatedAt, etc.)
+          scoringType: selectedScoringType,
+          scoringHoles: selectedHoles,
+          playerMode: selectedPlayerMode,
+          tournamentId: currentTournament.tournamentId,
+          tournamentName: currentTournament.name,
+          roundId: currentRoundId,
+          updatedAt: Date.now()
+        };
+        
+        console.log('[saveSettings] Saving for round:', currentRoundId, settingsToSave);
+        saveStatusEl.textContent = 'Saving...';
+        saveStatusEl.style.color = '#64748b';
+        
+        try {
+          // Save to localStorage (keyed by roundId)
+          const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+          allSettings[currentRoundId] = settingsToSave;
+          localStorage.setItem('liveSettings', JSON.stringify(allSettings));
+          console.log('[saveSettings] Saved to localStorage');
+          
+          // Update liveSettings in memory
+          liveSettings = settingsToSave;
+          
+          // Save to Firebase (keyed by roundId)
+          if (db) {
+            await db.ref(`liveSettings/${currentRoundId}`).set(settingsToSave);
+            console.log('[saveSettings] Saved to Firebase');
+          }
+          
+          saveStatusEl.textContent = '✓ Settings saved successfully!';
+          saveStatusEl.style.color = '#059669';
+          
+          // Update status display to reflect saved settings
+          updateStatusDisplay();
+          updateLinks();
+          
+          // Clear message after 3 seconds
+          setTimeout(() => {
+            saveStatusEl.textContent = '';
+          }, 3000);
+          
+        } catch (error) {
+          console.error('[saveSettings] Error:', error);
+          saveStatusEl.textContent = '❌ Error saving settings';
+          saveStatusEl.style.color = '#dc2626';
+        }
+      }
+      
+      // Remove auto-save calls (now manual save only)
+      function autoSaveSettings() {
+        // No longer auto-saving - user must click Save button
+      }
+
+      // Select scoring type
+      function selectScoringType(type) {
+        selectedScoringType = type;
+        
+        // Update UI
+        document.querySelectorAll('.scoring-type').forEach(el => {
+          el.classList.toggle('selected', el.dataset.type === type);
+        });
+        
+        // Show/hide volunteer settings
+        document.getElementById('volunteer-settings').classList.toggle('active', type === 'volunteers');
+        
+        // Show/hide player settings
+        document.getElementById('player-settings').classList.toggle('active', type === 'players');
+        
+        updateStatusDisplay();
+        updateLinks();
+      }
+      
+      // Player mode selection
+      let selectedPlayerMode = 'group'; // 'group' = one player per group, 'individual' = every player
+      
+      function selectPlayerMode(mode) {
+        selectedPlayerMode = mode;
+        
+        // Update UI
+        document.querySelectorAll('.player-mode-option').forEach(el => {
+          el.classList.toggle('selected', el.dataset.mode === mode);
+        });
+        
+        updateStatusDisplay();
+        updateLinks();
+        autoSaveSettings(); // Auto-save when scoring type changes
+      }
+
+      // Toggle hole selection
+      function toggleHole(holeNum) {
+        const index = selectedHoles.indexOf(holeNum);
+        
+        if (index === -1) {
+          selectedHoles.push(holeNum);
+        } else {
+          selectedHoles.splice(index, 1);
+        }
+        
+        // Sort holes
+        selectedHoles.sort((a, b) => a - b);
+        
+        // Update button
+        document.querySelector(`.hole-btn[data-hole="${holeNum}"]`).classList.toggle('selected', index === -1);
+        
+        updateSelectedHolesDisplay();
+        autoSaveSettings(); // Auto-save when holes change
+      }
+
+      // Quick select holes
+      function quickSelect(holes) {
+        selectedHoles = [...holes];
+        
+        document.querySelectorAll('.hole-btn').forEach(btn => {
+          btn.classList.toggle('selected', selectedHoles.includes(parseInt(btn.dataset.hole)));
+        });
+        
+        updateSelectedHolesDisplay();
+        autoSaveSettings(); // Auto-save when holes change
+      }
+
+      // Clear all holes
+      function clearHoles() {
+        selectedHoles = [];
+        
+        document.querySelectorAll('.hole-btn').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        
+        updateSelectedHolesDisplay();
+        autoSaveSettings(); // Auto-save when holes cleared
+      }
+
+      // Update selected holes display
+      function updateSelectedHolesDisplay() {
+        const display = document.getElementById('selected-holes-display');
+        
+        if (selectedHoles.length === 0) {
+          display.innerHTML = 'Selected holes: <strong>None</strong>';
+        } else {
+          // Show holes with their ranges
+          const ranges = calculateVolunteerRanges();
+          let rangeText = ranges.map(r => {
+            const range = r.startHole === r.endHole ? `${r.startHole}` : `${r.startHole}-${r.endHole}`;
+            return `<span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin: 2px;">Hole ${r.station}: collects ${range}</span>`;
+          }).join(' ');
+          
+          display.innerHTML = `
+            <div style="margin-bottom: 8px;">Scoring stations: <strong>${selectedHoles.join(', ')}</strong> (${selectedHoles.length} volunteers)</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">${rangeText}</div>
+          `;
+        }
+        
+        // Update volunteer links if visible
+        if (selectedScoringType === 'volunteers' && document.getElementById('links-card').style.display !== 'none') {
+          generateVolunteerLinks();
+        }
+      }
+
+      // Calculate volunteer hole ranges
+      // Each volunteer at a scoring hole collects scores for all holes since the previous station
+      function calculateVolunteerRanges() {
+        if (selectedHoles.length === 0) return [];
+        
+        const sortedHoles = [...selectedHoles].sort((a, b) => a - b);
+        const ranges = [];
+        
+        sortedHoles.forEach((stationHole, index) => {
+          const previousHole = index === 0 ? 0 : sortedHoles[index - 1];
+          const startHole = previousHole + 1;
+          const endHole = stationHole;
+          
+          ranges.push({
+            station: stationHole,
+            startHole: startHole,
+            endHole: endHole,
+            holes: Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i)
+          });
+        });
+        
+        return ranges;
+      }
+
+      // Update status display
+      function updateStatusDisplay() {
+        // Guard: check if status card is visible
+        const statusCard = document.getElementById('status-card');
+        if (!statusCard || statusCard.style.display === 'none') {
+          return;
+        }
+        
+        const isActive = liveSettings?.active === true;
+        
+        // Status badge
+        const badge = document.getElementById('status-badge');
+        badge.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
+        badge.innerHTML = `<span style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span> ${isActive ? 'Active' : 'Not Active'}`;
+        
+        // Scoring type
+        const typeNames = {
+          'volunteers': '🏁 Volunteers',
+          'players': '👤 Players',
+          'walking': '🚶 Walking Scorers'
+        };
+        document.getElementById('status-type').textContent = typeNames[selectedScoringType] || '-';
+        
+        // Holes (for volunteers)
+        const holesRow = document.getElementById('status-holes-row');
+        if (selectedScoringType === 'volunteers') {
+          holesRow.style.display = 'flex';
+          document.getElementById('status-holes').textContent = selectedHoles.length > 0 ? selectedHoles.join(', ') : '-';
+        } else {
+          holesRow.style.display = 'none';
+        }
+        
+        // Show/hide action buttons
+        document.getElementById('btn-activate').style.display = isActive ? 'none' : 'block';
+        document.getElementById('active-actions').style.display = isActive ? 'flex' : 'none';
+        document.getElementById('deactivate-actions').style.display = isActive ? 'flex' : 'none';
+        
+        // Update leaderboard hide/publish buttons
+        updateLeaderboardButtons();
+        
+        // Show links if active
+        document.getElementById('links-card').style.display = isActive ? 'block' : 'none';
+        
+        // Also update link section visibility when status changes
+        if (isActive) {
+          const isVolunteer = selectedScoringType === 'volunteers';
+          document.getElementById('volunteer-links-section').style.display = isVolunteer ? 'block' : 'none';
+          document.getElementById('general-scoring-link-group').style.display = isVolunteer ? 'none' : 'block';
+          document.getElementById('general-qr-section').style.display = isVolunteer ? 'none' : 'grid';
+          
+          // Generate volunteer links if needed
+          if (isVolunteer && selectedHoles.length > 0) {
+            generateVolunteerLinks();
+          }
+        }
+      }
+
+      // Load groups
+      async function loadGroups() {
+        let drawData = null;
+        
+        // Try localStorage
+        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        drawData = draws[currentRoundId];
+        
+        // Try alternative key
+        if (!drawData) {
+          const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+          drawData = draws[altRoundId];
+        }
+        
+        // Update groups count
+        const groupCount = drawData?.groups?.length || 0;
+        document.getElementById('status-groups').textContent = groupCount;
+        
+        // Render groups if available
+        if (drawData?.groups && drawData.groups.length > 0) {
+          document.getElementById('groups-card').style.display = 'block';
+          
+          const grid = document.getElementById('groups-grid');
+          grid.innerHTML = drawData.groups.map((group, idx) => `
+            <div class="group-card">
+              <div class="group-header">
+                <span class="group-name">Group ${idx + 1}</span>
+                <span class="group-time">${group.teeTime || ''}</span>
+              </div>
+              <div class="group-players">
+                ${group.players?.map(p => `${p.firstName} ${p.lastName}`).join(', ') || 'No players'}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('groups-card').style.display = 'none';
+        }
+        
+        // Update scored count
+        await updateScoredCount();
+      }
+
+      // Update scored players count
+      async function updateScoredCount() {
+        let scores = {};
+        
+        // Try Firebase
+        if (db) {
+          try {
+            const snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
+            scores = snapshot.val() || {};
+          } catch (e) {}
+        }
+        
+        // Fall back to localStorage
+        if (Object.keys(scores).length === 0) {
+          const allScores = JSON.parse(localStorage.getItem('scores') || '{}');
+          scores = allScores[currentRoundId] || {};
+        }
+        
+        const scoredCount = Object.values(scores).filter(s => s?.holes?.some(h => h !== '' && h !== null)).length;
+        document.getElementById('status-scored').textContent = scoredCount;
+      }
+
+      // Activate live scoring
+      async function activateLiveScoring() {
+        if (!selectedScoringType) {
+          alert('Please select a scoring method first.');
+          return;
+        }
+        
+        if (selectedScoringType === 'volunteers' && selectedHoles.length === 0) {
+          alert('Please select at least one hole for volunteer scoring.');
+          return;
+        }
+        
+        // Save settings
+        liveSettings = {
+          active: true,
+          scoringType: selectedScoringType,
+          scoringHoles: selectedHoles,
+          playerMode: selectedPlayerMode,
+          activatedAt: new Date().toISOString(),
+          tournamentId: currentTournament.tournamentId,
+          roundId: currentRoundId
+        };
+        
+        // Save to Firebase
+        if (db) {
+          try {
+            await db.ref(`liveSettings/${currentRoundId}`).set(liveSettings);
+          } catch (e) {
+            console.error('Firebase save error:', e);
+          }
+        }
+        
+        // Save to localStorage
+        const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+        allSettings[currentRoundId] = liveSettings;
+        localStorage.setItem('liveSettings', JSON.stringify(allSettings));
+        
+        updateStatusDisplay();
+        updateLinks();
+        
+        alert('Live scoring activated! Share the links with your scorers.');
+      }
+
+      // Deactivate live scoring
+      async function deactivateLiveScoring() {
+        if (!confirm('Are you sure you want to stop live scoring? Existing scores will be preserved.')) {
+          return;
+        }
+        
+        liveSettings.active = false;
+        liveSettings.deactivatedAt = new Date().toISOString();
+        
+        // Save to Firebase
+        if (db) {
+          try {
+            await db.ref(`liveSettings/${currentRoundId}`).set(liveSettings);
+          } catch (e) {}
+        }
+        
+        // Save to localStorage
+        const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+        allSettings[currentRoundId] = liveSettings;
+        localStorage.setItem('liveSettings', JSON.stringify(allSettings));
+        
+        updateStatusDisplay();
+      }
+
+      // Hide leaderboard (make it show empty but keep scores)
+      async function hideLeaderboard() {
+        if (!confirm('This will hide the live leaderboard from public view.\n\nScores will be preserved and you can publish again later.\n\nContinue?')) {
+          return;
+        }
+        
+        liveSettings.leaderboardVisible = false;
+        liveSettings.hiddenAt = new Date().toISOString();
+        
+        // Save to Firebase
+        if (db) {
+          try {
+            await db.ref(`liveSettings/${currentRoundId}`).set(liveSettings);
+          } catch (e) {
+            console.error('Firebase error:', e);
+          }
+        }
+        
+        // Save to localStorage
+        const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+        allSettings[currentRoundId] = liveSettings;
+        localStorage.setItem('liveSettings', JSON.stringify(allSettings));
+        
+        updateLeaderboardButtons();
+        alert('Leaderboard is now hidden. Scores are preserved.');
+      }
+      
+      // Publish leaderboard (make it visible again)
+      async function publishLeaderboard() {
+        liveSettings.leaderboardVisible = true;
+        liveSettings.publishedAt = new Date().toISOString();
+        
+        // Save to Firebase
+        if (db) {
+          try {
+            await db.ref(`liveSettings/${currentRoundId}`).set(liveSettings);
+          } catch (e) {
+            console.error('Firebase error:', e);
+          }
+        }
+        
+        // Save to localStorage
+        const allSettings = JSON.parse(localStorage.getItem('liveSettings') || '{}');
+        allSettings[currentRoundId] = liveSettings;
+        localStorage.setItem('liveSettings', JSON.stringify(allSettings));
+        
+        updateLeaderboardButtons();
+        alert('Leaderboard is now published and visible!');
+      }
+      
+      // Clear all live scores for current round
+      async function clearAllScores() {
+        if (!confirm('⚠️ WARNING: This will DELETE ALL live scores for this round!\n\nThis action cannot be undone.\n\nAre you sure you want to continue?')) {
+          return;
+        }
+        
+        // Double confirmation
+        if (!confirm('Please confirm again: DELETE ALL SCORES for this round?')) {
+          return;
+        }
+        
+        try {
+          // Clear from Firebase
+          if (db) {
+            await db.ref(`liveScores/${currentRoundId}`).remove();
+            await db.ref(`scores/${currentRoundId}`).remove();
+          }
+          
+          // Clear from localStorage
+          const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+          delete scoresData[currentRoundId];
+          localStorage.setItem('scores', JSON.stringify(scoresData));
+          
+          // Update scored count
+          document.getElementById('status-scored').textContent = '0';
+          
+          alert('✓ All scores have been cleared successfully!\n\nThe leaderboard will now show no scores.');
+          
+          // Refresh the page to show updated state
+          location.reload();
+          
+        } catch (error) {
+          console.error('Error clearing scores:', error);
+          alert('Error clearing scores: ' + error.message);
+        }
+      }
+
+      // Update hide/publish buttons based on current state
+      function updateLeaderboardButtons() {
+        const hideBtn = document.getElementById('btn-hide-leaderboard');
+        const publishBtn = document.getElementById('btn-publish-leaderboard');
+        
+        if (!hideBtn || !publishBtn) return;
+        
+        // Default to visible if not set (handle null liveSettings)
+        const isVisible = liveSettings?.leaderboardVisible !== false;
+        
+        hideBtn.style.display = isVisible ? 'inline-flex' : 'none';
+        publishBtn.style.display = isVisible ? 'none' : 'inline-flex';
+      }
+
+      // Update sharing links
+      function updateLinks() {
+        if (!currentTournament || !currentRoundId) {
+          console.log('[updateLinks] No tournament or round selected, skipping');
+          return;
+        }
+        
+        const baseUrl = window.location.origin;
+        
+        console.log('[updateLinks] selectedScoringType:', selectedScoringType);
+        console.log('[updateLinks] selectedHoles:', selectedHoles);
+        console.log('[updateLinks] selectedPlayerMode:', selectedPlayerMode);
+        
+        // Show/hide sections based on scoring type
+        const isVolunteer = selectedScoringType === 'volunteers';
+        const isPlayerGroup = selectedScoringType === 'players' && selectedPlayerMode === 'group';
+        const isPlayerIndividual = selectedScoringType === 'players' && selectedPlayerMode === 'individual';
+        
+        console.log('[updateLinks] isVolunteer:', isVolunteer);
+        console.log('[updateLinks] isPlayerGroup:', isPlayerGroup);
+        
+        document.getElementById('volunteer-links-section').style.display = isVolunteer ? 'block' : 'none';
+        document.getElementById('player-group-links-section').style.display = isPlayerGroup ? 'block' : 'none';
+        document.getElementById('general-scoring-link-group').style.display = (isVolunteer || isPlayerGroup) ? 'none' : 'block';
+        document.getElementById('general-qr-section').style.display = (isVolunteer || isPlayerGroup) ? 'none' : 'grid';
+        
+        // Generate volunteer links
+        if (isVolunteer && selectedHoles.length > 0) {
+          generateVolunteerLinks();
+        }
+        
+        // Generate player group links
+        if (isPlayerGroup) {
+          generatePlayerGroupLinks();
+        }
+        
+        // General scoring URL (for players/walking)
+        let scoringUrl = `${baseUrl}/tournaments/live_scoring.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`;
+        
+        if (selectedScoringType) {
+          scoringUrl += `&mode=${selectedScoringType}`;
+        }
+        
+        const leaderboardUrl = `${baseUrl}/tournaments/live_leaderboard.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`;
+        
+        document.getElementById('scoring-link').value = scoringUrl;
+        document.getElementById('leaderboard-link').value = leaderboardUrl;
+        
+        // Generate QR codes
+        generateQR('qr-scoring', scoringUrl);
+        generateQR('qr-leaderboard', leaderboardUrl);
+      }
+
+      // Generate volunteer link cards
+      function generateVolunteerLinks() {
+        const ranges = calculateVolunteerRanges();
+        const container = document.getElementById('volunteer-links-container');
+        const countEl = document.getElementById('volunteer-count-text');
+        const baseUrl = window.location.origin;
+        
+        // Update count display
+        if (countEl) {
+          countEl.innerHTML = `<strong>${ranges.length} volunteer links</strong> have been generated. Make sure to share the correct link with each volunteer!`;
+        }
+        
+        let html = '';
+        
+        ranges.forEach((range, index) => {
+          const holesParam = range.holes.join(',');
+          const volunteerUrl = `${baseUrl}/tournaments/live_scoring.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}&mode=volunteers&station=${range.station}&holes=${holesParam}`;
+          
+          const rangeText = range.startHole === range.endHole 
+            ? `Hole ${range.startHole}` 
+            : `Holes ${range.startHole}-${range.endHole}`;
+          
+          html += `
+            <div class="volunteer-link-card">
+              <div class="volunteer-link-header">
+                <div class="volunteer-station">
+                  <div class="volunteer-hole-badge">${range.station}</div>
+                  <div class="volunteer-station-info">
+                    <h4>Station at Hole ${range.station}</h4>
+                    <p>Volunteer #${index + 1}</p>
+                  </div>
+                </div>
+                <div class="volunteer-holes-range">${rangeText}</div>
+              </div>
+              <div class="volunteer-link-row">
+                <input type="text" class="volunteer-link-input" id="volunteer-link-${range.station}" value="${volunteerUrl}" readonly>
+                <div class="volunteer-link-actions">
+                  <button class="btn-small" onclick="copyVolunteerLink(${range.station})">Copy</button>
+                  <button class="btn-small btn-qr" onclick="showVolunteerQR(${range.station}, '${rangeText}', '${volunteerUrl}')">QR</button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+        
+        console.log(`[Volunteer Links] Generated ${ranges.length} links for holes: ${selectedHoles.join(', ')}`);
+      }
+
+      // Generate player group links
+      function generatePlayerGroupLinks() {
+        const container = document.getElementById('player-group-links-container');
+        const countEl = document.getElementById('player-group-count-text');
+        const baseUrl = window.location.origin;
+        
+        // Get groups from draw data - use same key format as loadGroups()
+        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        let drawData = draws[currentRoundId];
+        
+        // Try alternative key
+        if (!drawData) {
+          const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+          drawData = draws[altRoundId];
+        }
+        
+        const groups = drawData?.groups || [];
+        
+        if (groups.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 20px;">No groups found. Please create a draw first.</div>';
+          if (countEl) countEl.innerHTML = '<strong>No groups found</strong>';
+          return;
+        }
+        
+        // Update count display
+        if (countEl) {
+          countEl.innerHTML = `<strong>${groups.length} group links</strong> have been generated. Share each link with the designated scorer in each group!`;
+        }
+        
+        let html = '';
+        
+        groups.forEach((group, index) => {
+          const groupNumber = index + 1;
+          const groupUrl = `${baseUrl}/tournaments/live_scoring.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}&mode=player-group&group=${groupNumber}`;
+          
+          // Get player names for display
+          const playerNames = (group.players || []).map(p => `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(n => n);
+          const playersText = playerNames.length > 0 ? playerNames.join(', ') : 'No players';
+          const teeTime = group.teeTime || group.time || '-';
+          
+          html += `
+            <div class="volunteer-link-card">
+              <div class="volunteer-link-header">
+                <div class="volunteer-station">
+                  <div class="volunteer-hole-badge" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">${groupNumber}</div>
+                  <div class="volunteer-station-info">
+                    <h4>Group ${groupNumber}</h4>
+                    <p style="font-size: 12px; color: #64748b;">${teeTime}</p>
+                  </div>
+                </div>
+                <div class="volunteer-holes-range" style="font-size: 11px; max-width: 200px; text-align: right;">${playersText}</div>
+              </div>
+              <div class="volunteer-link-row">
+                <input type="text" class="volunteer-link-input" id="player-group-link-${groupNumber}" value="${groupUrl}" readonly>
+                <div class="volunteer-link-actions">
+                  <button class="btn-small" onclick="copyPlayerGroupLink(${groupNumber})">Copy</button>
+                  <button class="btn-small btn-qr" onclick="showPlayerGroupQR(${groupNumber}, '${playersText.replace(/'/g, "\\'")}', '${groupUrl}')">QR</button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+        
+        console.log(`[Player Group Links] Generated ${drawData.length} group links`);
+      }
+
+      // Copy player group link
+      function copyPlayerGroupLink(groupNumber) {
+        const input = document.getElementById(`player-group-link-${groupNumber}`);
+        input.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const btn = input.nextElementSibling.querySelector('.btn-small');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      }
+
+      // Show player group QR code in modal
+      function showPlayerGroupQR(groupNumber, playersText, url) {
+        document.getElementById('qr-modal-title').textContent = `Group ${groupNumber}`;
+        document.getElementById('qr-modal-subtitle').textContent = playersText;
+        
+        const qrContainer = document.getElementById('qr-modal-code');
+        qrContainer.innerHTML = '';
+        
+        new QRCode(qrContainer, {
+          text: url,
+          width: 200,
+          height: 200,
+          colorDark: '#1e293b',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        
+        document.getElementById('qr-modal').classList.add('active');
+      }
+
+      // Copy volunteer link
+      function copyVolunteerLink(station) {
+        const input = document.getElementById(`volunteer-link-${station}`);
+        input.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const btn = input.nextElementSibling.querySelector('.btn-small');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      }
+
+      // Show volunteer QR code in modal
+      function showVolunteerQR(station, rangeText, url) {
+        document.getElementById('qr-modal-title').textContent = `Hole ${station} Volunteer`;
+        document.getElementById('qr-modal-subtitle').textContent = rangeText;
+        
+        const qrContainer = document.getElementById('qr-modal-code');
+        qrContainer.innerHTML = '';
+        
+        new QRCode(qrContainer, {
+          text: url,
+          width: 200,
+          height: 200,
+          colorDark: '#1e293b',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        
+        document.getElementById('qr-modal').classList.add('active');
+      }
+
+      // Close QR modal
+      function closeQRModal(event) {
+        if (!event || event.target === document.getElementById('qr-modal')) {
+          document.getElementById('qr-modal').classList.remove('active');
+        }
+      }
+
+      // Generate QR code
+      function generateQR(elementId, url) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+        
+        if (typeof QRCode === 'undefined') {
+          container.innerHTML = 'Loading...';
+          return;
+        }
+        
+        new QRCode(container, {
+          text: url,
+          width: 120,
+          height: 120,
+          colorDark: '#1e293b',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      // Copy link
+      function copyLink(inputId) {
+        const input = document.getElementById(inputId);
+        input.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const btn = input.nextElementSibling;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      }
+
+      // Open scoring interface
+      function openScoringInterface() {
+        let url = `live_scoring.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`;
+        
+        if (selectedScoringType) {
+          url += `&mode=${selectedScoringType}`;
+        }
+        if (selectedScoringType === 'volunteers' && selectedHoles.length > 0) {
+          url += `&holes=${selectedHoles.join(',')}`;
+        }
+        
+        window.location.href = url;
+      }
+
+      // Open leaderboard
+      function openLeaderboard() {
+        window.open(`live_leaderboard.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}`, '_blank');
+      }
+    </script>
+  </body>
+</html>

@@ -18,6 +18,30 @@
     </style>
   </head>
   <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    <script>
+      (async function(){
+        const { user, role } = await window.Auth.requireAuth();
+        const uid = user.uid;
+        const params = new URLSearchParams(window.location.search);
+        const tournamentId = params.get('tournamentId');
+        try {
+          const raw = localStorage.getItem('tournaments');
+          const list = raw ? JSON.parse(raw) : [];
+          const t = list.find(x => x && x.tournamentId === tournamentId);
+          if (!t) return;
+          if (role !== 'admin' && t.createdBy && t.createdBy !== uid){
+            alert('You do not have access to this tournament.');
+            window.location.href = 'index.html';
+          }
+        } catch(e){}
+      })();
+    </script>
     <div class="top-nav">
       <h1>🏆 Documents</h1>
       <a href="index.html" class="btn-back-top">← Back</a>

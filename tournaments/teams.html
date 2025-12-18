@@ -95,6 +95,12 @@
       .actions { display: flex; gap: 12px; margin-top: 24px; }
       .btn-back { padding: 10px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-decoration: none; color: #1e293b; font-weight: 600; display: inline-block; }
       .btn-save { padding: 10px 20px; background: linear-gradient(180deg, var(--accent), #0a58d1); color: white; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; }
+      
+      /* Round selector */
+      .round-selector { padding: 12px 20px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24; }
+      .round-selector label { display: block; font-weight: 600; color: #92400e; margin-bottom: 6px; font-size: 13px; }
+      .round-selector select { padding: 8px 12px; border: 1px solid #fbbf24; border-radius: 6px; font-size: 14px; font-weight: 600; background: white; min-width: 140px; }
+      .round-indicator { display: inline-block; padding: 4px 10px; background: #fef3c7; border-radius: 4px; font-size: 12px; font-weight: 600; color: #92400e; margin-left: 8px; }
     </style>
   </head>
   <body>
@@ -118,10 +124,16 @@
               <label for="max-players-input" style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 13px;">Players per Team</label>
               <input type="number" id="max-players-input" min="1" max="50" placeholder="e.g. 4" style="width: 80px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 600;" oninput="updateTeamCriteria()" />
             </div>
-            <div style="padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+            <div id="scores-per-team-container" style="padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
               <label for="team-scores-input" style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 13px;">Scores for Team</label>
               <input type="number" id="team-scores-input" min="1" max="50" placeholder="e.g. 3" style="width: 80px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 600;" oninput="updateTeamCriteria()" />
             </div>
+          </div>
+          <div id="round-selector-container" class="round-selector" style="display: none;">
+            <label for="round-select">View Round</label>
+            <select id="round-select" onchange="changeViewRound()">
+              <option value="base">Base Roster</option>
+            </select>
           </div>
           <div id="team-criteria" style="text-align: right; padding: 12px 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bfdbfe;">
             <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">Team Criteria</div>
@@ -173,7 +185,7 @@
         <!-- Right Panel: Admitted Players -->
         <div class="panel">
           <div class="panel-header">
-            <h2>Admitted Players</h2>
+            <h2 id="admitted-players-title">Admitted Players (Round 1)</h2>
           </div>
           <div class="search-box">
             <input type="text" id="player-search" placeholder="Search by name, club, or reg... (↑↓ to navigate, Enter to assign)" oninput="filterPlayers()" onkeydown="handlePlayerSearchKeydown(event)" />
@@ -209,14 +221,16 @@
       const params = new URLSearchParams(window.location.search);
       const tournamentId = params.get('tournamentId');
       let currentTournament = null;
-      let allTeams = [];
+      let teamDefinitions = []; // Base team definitions (name, teamId) - shared across all rounds
+      let teamsByRound = {}; // { roundIndex: [{ teamId, name, players: [] }] }
+      let currentRoundIndex = 0; // Currently selected round (0-based)
       let selectedTeam = null;
-      let admittedPlayers = [];
+      let admittedPlayers = []; // Players admitted for the CURRENT round
       let highlightedPlayerIndex = -1;
       let filteredPlayersList = [];
       let filteredTeamsList = [];
       let highlightedTeamIndex = -1;
-      let teamMaxPlayers = null; // Will be set from team criteria
+      let teamMaxPlayers = null;
 
       // Load tournament info
       function loadTournament() {
@@ -234,6 +248,13 @@
           document.getElementById('tournament-type').textContent = currentTournament.type || 'Tournament';
           document.getElementById('tournament-date').textContent = formatDate(currentTournament.date);
           
+          // Hide "Scores for Team" for Match Play tournaments
+          const isMatchPlay = currentTournament.type && currentTournament.type.toLowerCase().includes('match');
+          const scoresContainer = document.getElementById('scores-per-team-container');
+          if (scoresContainer) {
+            scoresContainer.style.display = isMatchPlay ? 'none' : '';
+          }
+          
           // Load team criteria inputs
           if (currentTournament.meta?.teamMaxPlayers) {
             document.getElementById('max-players-input').value = currentTournament.meta.teamMaxPlayers;
@@ -246,12 +267,218 @@
           // Display team criteria
           displayTeamCriteria();
           
+          // Setup round selector
+          setupRoundSelector();
+          
+          // Load team definitions and teams by round
+          loadTeamData();
+          
           // Auto-focus team search on page load
           setTimeout(() => {
             document.getElementById('team-search').focus();
           }, 100);
         } catch (e) {
           console.error('Error loading tournament:', e);
+        }
+      }
+      
+      // Setup round selector dropdown
+      function setupRoundSelector() {
+        const container = document.getElementById('round-selector-container');
+        const select = document.getElementById('round-select');
+        const roundsData = currentTournament?.meta?.roundsData || [];
+        const numRounds = currentTournament?.meta?.rounds || 1;
+        
+        // Always show round selector (even for single round - shows "Round 1")
+        container.style.display = '';
+        
+        // Populate options - no "base roster", just rounds
+        select.innerHTML = '';
+        for (let i = 0; i < numRounds; i++) {
+          const roundInfo = roundsData[i];
+          const roundLabel = roundInfo?.date ? `Round ${i + 1} (${formatDate(roundInfo.date)})` : `Round ${i + 1}`;
+          select.innerHTML += `<option value="${i}">${roundLabel}</option>`;
+        }
+        
+        // Set current round to the first one
+        currentRoundIndex = 0;
+        select.value = '0';
+      }
+      
+      // Change the selected round
+      function changeViewRound() {
+        const select = document.getElementById('round-select');
+        currentRoundIndex = parseInt(select.value);
+        
+        // Update admitted players title
+        document.getElementById('admitted-players-title').textContent = `Admitted Players (Round ${currentRoundIndex + 1})`;
+        
+        // Load admitted players for this round
+        loadAdmittedPlayersForRound(currentRoundIndex);
+        
+        // Ensure teams exist for this round (copy from previous if needed)
+        ensureTeamsForRound(currentRoundIndex);
+        
+        // Cleanup teams - remove players not admitted in this round
+        cleanupTeamPlayers();
+        
+        // Clear selection and re-render
+        selectedTeam = null;
+        renderTeams();
+        renderTeamDetails();
+        renderAdmittedPlayers();
+      }
+      
+      // Load team data from tournament
+      function loadTeamData() {
+        // Load team definitions (names/ids shared across rounds)
+        teamDefinitions = currentTournament.teamDefinitions || [];
+        
+        // Load teams by round
+        teamsByRound = currentTournament.teamsByRound || {};
+        
+        // For backward compatibility - convert old teams format to new
+        if (currentTournament.teams && currentTournament.teams.length > 0 && Object.keys(teamsByRound).length === 0) {
+          console.log('Migrating old teams format to new round-based format');
+          // Old format: teams array with players
+          teamDefinitions = currentTournament.teams.map(t => ({
+            teamId: t.teamId,
+            name: t.name,
+            createdAt: t.createdAt
+          }));
+          
+          // Copy players to round 0
+          teamsByRound[0] = currentTournament.teams.map(t => ({
+            teamId: t.teamId,
+            name: t.name,
+            players: t.players || []
+          }));
+          
+          // Save the migrated format
+          saveTeamData();
+        }
+        
+        // Load admitted players for initial round
+        loadAdmittedPlayersForRound(currentRoundIndex);
+        
+        // Ensure teams exist for current round
+        ensureTeamsForRound(currentRoundIndex);
+        
+        // Cleanup teams
+        cleanupTeamPlayers();
+      }
+      
+      // Load admitted players for a specific round
+      function loadAdmittedPlayersForRound(roundIndex) {
+        try {
+          // Get the round ID - same format as admissions.html uses
+          const roundIds = currentTournament.meta?.roundIds || [];
+          const roundId = roundIds[roundIndex] || `${tournamentId}_R${roundIndex + 1}`;
+          
+          // Load from the admittedPlayers object (same as admissions.html)
+          const raw = localStorage.getItem('admittedPlayers');
+          const data = raw ? JSON.parse(raw) : {};
+          const playersData = data[roundId] || [];
+          
+          // Normalize player data to include a consistent ID and name
+          admittedPlayers = playersData.map(player => ({
+            ...player,
+            playerId: player.reg || player.playerId,
+            name: `${player.firstName || ''} ${player.lastName || ''}`.trim() || player.name || 'Unknown'
+          }));
+          
+          console.log(`Loaded ${admittedPlayers.length} admitted players for round ${roundIndex + 1} (${roundId})`);
+        } catch (e) {
+          console.error('Error loading admitted players:', e);
+          admittedPlayers = [];
+        }
+      }
+      
+      // Ensure teams exist for a round (copy from previous round if not)
+      function ensureTeamsForRound(roundIndex) {
+        // If this round already has teams, we're done
+        if (teamsByRound[roundIndex] && teamsByRound[roundIndex].length > 0) {
+          return;
+        }
+        
+        // If this is round 0 and no teams exist, create from definitions
+        if (roundIndex === 0) {
+          teamsByRound[0] = teamDefinitions.map(def => ({
+            teamId: def.teamId,
+            name: def.name,
+            players: []
+          }));
+          return;
+        }
+        
+        // Copy from previous round
+        const prevRoundTeams = teamsByRound[roundIndex - 1];
+        if (prevRoundTeams && prevRoundTeams.length > 0) {
+          teamsByRound[roundIndex] = prevRoundTeams.map(team => ({
+            teamId: team.teamId,
+            name: team.name,
+            players: [...(team.players || [])]
+          }));
+          console.log(`Copied teams from round ${roundIndex} to round ${roundIndex + 1}`);
+        } else {
+          // No previous round teams, create from definitions
+          teamsByRound[roundIndex] = teamDefinitions.map(def => ({
+            teamId: def.teamId,
+            name: def.name,
+            players: []
+          }));
+        }
+      }
+      
+      // Get current round's teams
+      function getCurrentRoundTeams() {
+        return teamsByRound[currentRoundIndex] || [];
+      }
+      
+      // Remove players from teams if they're not admitted in current round
+      function cleanupTeamPlayers() {
+        const teams = getCurrentRoundTeams();
+        if (!teams || teams.length === 0) return;
+        
+        const admittedPlayerIds = new Set(admittedPlayers.map(p => p.playerId || p.reg));
+        let needsSave = false;
+        
+        teams.forEach(team => {
+          if (team.players && team.players.length > 0) {
+            const originalLength = team.players.length;
+            team.players = team.players.filter(playerId => admittedPlayerIds.has(playerId));
+            
+            if (team.players.length !== originalLength) {
+              needsSave = true;
+              console.log(`Removed ${originalLength - team.players.length} players from ${team.name} (not admitted in round ${currentRoundIndex + 1})`);
+            }
+          }
+        });
+        
+        if (needsSave) {
+          saveTeamData();
+        }
+      }
+      
+      // Save team data
+      function saveTeamData() {
+        if (!currentTournament) return;
+        
+        currentTournament.teamDefinitions = teamDefinitions;
+        currentTournament.teamsByRound = teamsByRound;
+        
+        // Update tournament in localStorage
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (tournamentIndex >= 0) {
+          tournaments[tournamentIndex] = currentTournament;
+          localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          
+          // Sync to Firebase if available
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('tournaments', tournaments);
+          }
         }
       }
       
@@ -303,85 +530,6 @@
         renderTeamDetails();
       }
       
-      // Load admitted players for this tournament
-      function loadAdmittedPlayers() {
-        try {
-          const roundId = currentTournament.meta?.roundIds?.[0] || `${tournamentId}_R1`;
-          const admittedData = localStorage.getItem('admittedPlayers');
-          const allAdmitted = admittedData ? JSON.parse(admittedData) : {};
-          const playersData = allAdmitted[roundId] || [];
-          
-          // Normalize player data to include a consistent ID and name
-          admittedPlayers = playersData.map(player => ({
-            ...player,
-            playerId: player.reg || player.playerId,
-            name: `${player.firstName || ''} ${player.lastName || ''}`.trim() || player.name || 'Unknown'
-          }));
-          
-          console.log('Loaded admitted players:', admittedPlayers.length);
-          renderAdmittedPlayers();
-        } catch (e) {
-          console.error('Error loading admitted players:', e);
-          admittedPlayers = [];
-        }
-      }
-
-      // Load all teams from localStorage
-      function loadTeams() {
-        try {
-          const teamsData = localStorage.getItem('teams');
-          allTeams = teamsData ? JSON.parse(teamsData) : [];
-          
-          // Clean up teams - remove players who are no longer admitted
-          cleanupTeamPlayers();
-          
-          renderTeams();
-        } catch (e) {
-          console.error('Error loading teams:', e);
-          allTeams = [];
-        }
-      }
-      
-      // Remove players from teams if they're no longer in admitted players list
-      function cleanupTeamPlayers() {
-        if (!allTeams || allTeams.length === 0) return;
-        if (!admittedPlayers || admittedPlayers.length === 0) return;
-        
-        const admittedPlayerIds = new Set(admittedPlayers.map(p => p.playerId || p.reg));
-        let needsSave = false;
-        
-        allTeams.forEach(team => {
-          if (team.players && team.players.length > 0) {
-            const originalLength = team.players.length;
-            // Keep only players who are still admitted
-            team.players = team.players.filter(playerId => admittedPlayerIds.has(playerId));
-            
-            if (team.players.length !== originalLength) {
-              needsSave = true;
-            }
-          }
-        });
-        
-        // Save teams if any players were removed
-        if (needsSave) {
-          saveTeams();
-          console.log('Teams cleaned up - removed players no longer in admissions');
-        }
-      }
-
-      // Save teams to localStorage
-      function saveTeams() {
-        try {
-          localStorage.setItem('teams', JSON.stringify(allTeams));
-          // Sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('teams', allTeams);
-          }
-        } catch (e) {
-          console.error('Error saving teams:', e);
-        }
-      }
-
       // Modal functions
       function openAddTeamModal() {
         document.getElementById('add-team-modal').classList.add('active');
@@ -401,33 +549,45 @@
           return;
         }
 
-        // Check for duplicate names
-        if (allTeams.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
+        // Check for duplicate names in definitions
+        if (teamDefinitions.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
           alert('A team with this name already exists');
           return;
         }
 
-        const newTeam = {
-          teamId: generateTeamId(),
+        const newTeamId = generateTeamId();
+        const newTeamDef = {
+          teamId: newTeamId,
           name: teamName,
-          players: [],
-          createdAt: new Date().toISOString(),
-          active: true
+          createdAt: new Date().toISOString()
         };
 
-        allTeams.push(newTeam);
-        saveTeams();
+        // Add to definitions
+        teamDefinitions.push(newTeamDef);
+        
+        // Add to current round's teams
+        if (!teamsByRound[currentRoundIndex]) {
+          teamsByRound[currentRoundIndex] = [];
+        }
+        teamsByRound[currentRoundIndex].push({
+          teamId: newTeamId,
+          name: teamName,
+          players: []
+        });
+        
+        saveTeamData();
         renderTeams();
         closeAddTeamModal();
         
         // Auto-select the new team
-        selectTeam(newTeam.teamId);
+        selectTeam(newTeamId);
       }
 
       // Generate unique team ID
       function generateTeamId() {
-        const maxId = allTeams.reduce((max, team) => {
-          const match = team.teamId?.match(/^TEAM(\d+)$/);
+        const allIds = teamDefinitions.map(t => t.teamId);
+        const maxId = allIds.reduce((max, teamId) => {
+          const match = teamId?.match(/^TEAM(\d+)$/);
           return match ? Math.max(max, parseInt(match[1])) : max;
         }, 0);
         return `TEAM${String(maxId + 1).padStart(4, '0')}`;
@@ -444,8 +604,9 @@
       // Render teams list
       function renderTeams() {
         const list = document.getElementById('teams-list');
+        const teams = getCurrentRoundTeams();
         
-        if (allTeams.length === 0) {
+        if (teams.length === 0) {
           filteredTeamsList = [];
           list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No teams yet. Click "Add Team" to create one.</div>';
           return;
@@ -453,9 +614,9 @@
 
         // Apply search filter
         const searchTerm = document.getElementById('team-search')?.value.toLowerCase() || '';
-        let teamsToShow = allTeams;
+        let teamsToShow = teams;
         if (searchTerm) {
-          teamsToShow = allTeams.filter(team => {
+          teamsToShow = teams.filter(team => {
             const name = team.name.toLowerCase();
             const teamId = (team.teamId || '').toLowerCase();
             return name.includes(searchTerm) || teamId.includes(searchTerm);
@@ -524,7 +685,8 @@
 
       // Select a team
       function selectTeam(teamId) {
-        selectedTeam = allTeams.find(t => t.teamId === teamId);
+        const teams = getCurrentRoundTeams();
+        selectedTeam = teams.find(t => t.teamId === teamId);
         renderTeams();
         renderTeamDetails();
         
@@ -554,8 +716,10 @@
           return;
         }
 
-        titleEl.textContent = selectedTeam.name;
+        // Show players for current round
         const teamPlayers = selectedTeam.players || [];
+        
+        titleEl.textContent = `${selectedTeam.name} (Round ${currentRoundIndex + 1})`;
         const playerCount = teamPlayers.length;
         const isFull = teamMaxPlayers && playerCount === teamMaxPlayers;
         const isOverLimit = teamMaxPlayers && playerCount > teamMaxPlayers;
@@ -571,20 +735,29 @@
           statusText = ' (FULL ✓)';
         }
         
+        // Build player list HTML
+        let playerListHtml = '';
+        teamPlayers.forEach(playerId => {
+          const player = findPlayerById(playerId);
+          if (player) {
+            playerListHtml += `
+              <div class="player-item">
+                <div class="player-name">${escapeHtml(player.name)}</div>
+                <div class="remove-btn" onclick="removePlayerFromTeam('${playerId}')">✕ Remove</div>
+              </div>
+            `;
+          }
+        });
+        
         container.innerHTML = `
-          <div class="team-title">${escapeHtml(selectedTeam.name)}</div>
+          <div class="team-title">
+            ${escapeHtml(selectedTeam.name)}
+            <span class="round-indicator">Round ${currentRoundIndex + 1}</span>
+          </div>
           <div class="drop-zone ${statusClass}" id="drop-zone">
             <div class="hint">👉 Drag players from the right panel and drop them here${statusText}</div>
             <div class="player-list" id="team-player-list">
-              ${teamPlayers.map(playerId => {
-                const player = findPlayerById(playerId);
-                return player ? `
-                  <div class="player-item">
-                    <div class="player-name">${escapeHtml(player.name)}</div>
-                    <div class="remove-btn" onclick="removePlayerFromTeam('${playerId}')">✕ Remove</div>
-                  </div>
-                ` : '';
-              }).join('')}
+              ${playerListHtml}
             </div>
           </div>
         `;
@@ -825,8 +998,9 @@
           return;
         }
 
-        // Remove from other teams first
-        allTeams.forEach(team => {
+        // Remove from other teams in this round first
+        const teams = getCurrentRoundTeams();
+        teams.forEach(team => {
           if (team.players && team.players.includes(playerId)) {
             team.players = team.players.filter(id => id !== playerId);
           }
@@ -836,7 +1010,7 @@
         if (!selectedTeam.players) selectedTeam.players = [];
         selectedTeam.players.push(playerId);
         
-        saveTeams();
+        saveTeamData();
         renderTeams(); // Update team list to show new count
         renderTeamDetails();
         renderAdmittedPlayers();
@@ -860,15 +1034,16 @@
         if (!selectedTeam) return;
         
         selectedTeam.players = selectedTeam.players.filter(id => id !== playerId);
-        saveTeams();
+        saveTeamData();
         renderTeams(); // Update team list to show new count
         renderTeamDetails();
         renderAdmittedPlayers();
       }
 
-      // Check if player is assigned to any team
+      // Check if player is assigned to any team in current round
       function isPlayerAssignedToAnyTeam(playerId) {
-        return allTeams.some(team => team.players && team.players.includes(playerId));
+        const teams = getCurrentRoundTeams();
+        return teams.some(team => team.players && team.players.includes(playerId));
       }
 
       // Find player by ID
@@ -878,14 +1053,21 @@
 
       // Delete team
       function deleteTeam(teamId) {
-        const team = allTeams.find(t => t.teamId === teamId);
+        const teams = getCurrentRoundTeams();
+        const team = teams.find(t => t.teamId === teamId);
         if (!team) return;
 
-        if (!confirm(`Are you sure you want to delete team "${team.name}"?\n\nThis will remove all player assignments.`)) {
+        if (!confirm(`Are you sure you want to delete team "${team.name}"?\n\nThis will remove the team from ALL rounds.`)) {
           return;
         }
 
-        allTeams = allTeams.filter(t => t.teamId !== teamId);
+        // Remove from definitions
+        teamDefinitions = teamDefinitions.filter(t => t.teamId !== teamId);
+        
+        // Remove from all rounds
+        for (const roundIdx of Object.keys(teamsByRound)) {
+          teamsByRound[roundIdx] = teamsByRound[roundIdx].filter(t => t.teamId !== teamId);
+        }
         
         // Deselect if this was the selected team
         if (selectedTeam?.teamId === teamId) {
@@ -893,7 +1075,7 @@
           renderTeamDetails();
         }
         
-        saveTeams();
+        saveTeamData();
         renderTeams();
         renderAdmittedPlayers();
       }
@@ -902,8 +1084,9 @@
       function checkOverLimitTeams() {
         if (!teamMaxPlayers) return [];
         
+        const teams = getCurrentRoundTeams();
         const overLimitTeams = [];
-        allTeams.forEach(team => {
+        teams.forEach(team => {
           const playerCount = team.players?.length || 0;
           if (playerCount > teamMaxPlayers) {
             overLimitTeams.push({
@@ -921,14 +1104,15 @@
       function trimTeamsToLimit() {
         if (!teamMaxPlayers) return;
         
-        allTeams.forEach(team => {
+        const teams = getCurrentRoundTeams();
+        teams.forEach(team => {
           if (team.players && team.players.length > teamMaxPlayers) {
             // Keep only the first N players (remove from bottom of list)
             team.players = team.players.slice(0, teamMaxPlayers);
           }
         });
         
-        saveTeams();
+        saveTeamData();
       }
 
       // Save and return
@@ -962,27 +1146,10 @@
           // Save team criteria to tournament
           updateTeamCriteria();
           
-          // Update tournament in localStorage
-          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-          const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
-          
-          if (tournamentIndex >= 0) {
-            tournaments[tournamentIndex] = currentTournament;
-            localStorage.setItem('tournaments', JSON.stringify(tournaments));
-            
-            // Sync to Firebase if available
-            if (typeof syncToFirebase !== 'undefined') {
-              syncToFirebase('tournaments', tournaments);
-            }
-          }
-          
-          // Teams are already saved to localStorage via saveTeams()
-          // Just sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('teams', allTeams);
-          }
+          // Save team data
+          saveTeamData();
 
-          alert('Teams and criteria saved successfully!');
+          alert(`Teams for Round ${currentRoundIndex + 1} saved successfully!`);
         } catch (e) {
           console.error('Error saving:', e);
           alert('Error saving teams. Please try again.');
@@ -990,23 +1157,19 @@
       }
 
       function resetTeams() {
-        if (!confirm('Are you sure you want to reset all teams? This will remove all team assignments. This action cannot be undone.')) {
+        if (!confirm(`Are you sure you want to reset all teams for Round ${currentRoundIndex + 1}? This will remove all player assignments for this round.`)) {
           return;
         }
         
         try {
-          // Clear all player assignments from teams
-          allTeams.forEach(team => {
+          // Clear all player assignments from teams in current round
+          const teams = getCurrentRoundTeams();
+          teams.forEach(team => {
             team.players = [];
           });
           
-          // Save the reset teams
-          saveTeams();
-          
-          // Sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('teams', allTeams);
-          }
+          // Save
+          saveTeamData();
           
           // Refresh the display
           selectedTeam = null;
@@ -1014,7 +1177,7 @@
           renderTeamDetails();
           renderAdmittedPlayers();
           
-          alert('All team assignments have been reset.');
+          alert(`All team assignments for Round ${currentRoundIndex + 1} have been reset.`);
           
           // Auto-focus team search
           setTimeout(() => {
@@ -1032,8 +1195,9 @@
           return;
         }
         
-        if (allTeams.length > 0) {
-          const proceed = confirm('This will replace existing teams. Continue?');
+        const teams = getCurrentRoundTeams();
+        if (teams.some(t => t.players && t.players.length > 0)) {
+          const proceed = confirm(`This will replace team assignments for Round ${currentRoundIndex + 1}. Continue?`);
           if (!proceed) return;
         }
         
@@ -1050,8 +1214,8 @@
           });
           
           // Clear existing teams and create new ones by club
-          allTeams = [];
           const clubs = Object.keys(playersByClub).sort();
+          const newTeams = [];
           
           clubs.forEach(club => {
             const clubPlayers = playersByClub[club];
@@ -1069,8 +1233,19 @@
             
             while (playerIndex < clubPlayers.length) {
               const teamName = clubs.length > 1 ? `${club} ${teamNumber > 1 ? '#' + teamNumber : ''}`.trim() : `${club}`;
+              const newTeamId = generateTeamId();
+              
+              // Add to definitions if it doesn't exist
+              if (!teamDefinitions.find(t => t.name.toLowerCase() === teamName.toLowerCase())) {
+                teamDefinitions.push({
+                  teamId: newTeamId,
+                  name: teamName,
+                  createdAt: new Date().toISOString()
+                });
+              }
+              
               const newTeam = {
-                teamId: generateTeamId(),
+                teamId: newTeamId,
                 name: teamName,
                 players: []
               };
@@ -1082,18 +1257,16 @@
                 playerIndex++;
               }
               
-              allTeams.push(newTeam);
+              newTeams.push(newTeam);
               teamNumber++;
             }
           });
           
-          // Save teams
-          saveTeams();
+          // Update teams for current round
+          teamsByRound[currentRoundIndex] = newTeams;
           
-          // Sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('teams', allTeams);
-          }
+          // Save teams
+          saveTeamData();
           
           // Refresh the display
           selectedTeam = null;
@@ -1101,7 +1274,7 @@
           renderTeamDetails();
           renderAdmittedPlayers();
           
-          alert(`Auto Teams created! ${allTeams.length} teams created from ${clubs.length} clubs`);
+          alert(`Auto Teams created for Round ${currentRoundIndex + 1}! ${newTeams.length} teams created from ${clubs.length} clubs`);
           
           // Auto-focus team search
           setTimeout(() => {
@@ -1138,27 +1311,10 @@
           // Save team criteria to tournament
           updateTeamCriteria();
           
-          // Update tournament in localStorage
-          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
-          const tournamentIndex = tournaments.findIndex(t => t.tournamentId === tournamentId);
-          
-          if (tournamentIndex >= 0) {
-            tournaments[tournamentIndex] = currentTournament;
-            localStorage.setItem('tournaments', JSON.stringify(tournaments));
-            
-            // Sync to Firebase if available
-            if (typeof syncToFirebase !== 'undefined') {
-              syncToFirebase('tournaments', tournaments);
-            }
-          }
-          
-          // Teams are already saved to localStorage via saveTeams()
-          // Just sync to Firebase if available
-          if (typeof syncToFirebase !== 'undefined') {
-            syncToFirebase('teams', allTeams);
-          }
+          // Save team data
+          saveTeamData();
 
-          alert('Teams and criteria saved successfully!');
+          alert('Teams saved successfully!');
           window.location.href = 'index.html';
         } catch (e) {
           console.error('Error saving:', e);
@@ -1183,8 +1339,8 @@
 
       // Initialize
       loadTournament();
-      loadAdmittedPlayers();
-      loadTeams(); // Load teams after admitted players so cleanup can validate
+      renderTeams();
+      renderAdmittedPlayers();
       
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {

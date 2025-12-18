@@ -1,0 +1,1564 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tournament Registration</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      
+      body { 
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      
+      /* Tournament Header */
+      .tournament-header {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        border-radius: 16px 16px 0 0;
+        padding: 24px;
+        color: white;
+        text-align: center;
+      }
+      
+      .tournament-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      
+      .tournament-header .tournament-meta {
+        font-size: 14px;
+        opacity: 0.9;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+      }
+      
+      .tournament-header .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      /* Status Banner */
+      .status-banner {
+        padding: 12px 24px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      
+      .status-banner.open {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      .status-banner.closed {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      .status-banner.scheduled {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      .status-banner.full {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      /* Capacity Progress */
+      .capacity-section {
+        background: white;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .capacity-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      
+      .capacity-info .spots {
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .capacity-info .total {
+        color: #64748b;
+      }
+      
+      .progress-bar {
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+        border-radius: 5px;
+        transition: width 0.5s ease;
+      }
+      
+      .progress-fill.warning {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+      }
+      
+      .progress-fill.full {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+      }
+      
+      /* Main Card */
+      .main-card {
+        background: white;
+        border-radius: 0 0 16px 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      
+      .card-content {
+        padding: 24px;
+      }
+      
+      /* Form Styles */
+      .form-section {
+        margin-bottom: 24px;
+      }
+      
+      .form-section h3 {
+        font-size: 16px;
+        color: #1e293b;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .form-group {
+        margin-bottom: 16px;
+      }
+      
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+      
+      .form-group label .required {
+        color: #ef4444;
+      }
+      
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.2s;
+      }
+      
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #0b6efd;
+        box-shadow: 0 0 0 3px rgba(11, 110, 253, 0.1);
+      }
+      
+      .form-group input.error {
+        border-color: #ef4444;
+        background: #fef2f2;
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      
+      .hint {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
+      .error-message {
+        font-size: 12px;
+        color: #ef4444;
+        margin-top: 4px;
+        display: none;
+      }
+      
+      .error-message.visible {
+        display: block;
+      }
+      
+      /* Player Search */
+      .player-search-section {
+        margin-bottom: 20px;
+      }
+      
+      .search-box {
+        position: relative;
+      }
+      
+      .search-box input {
+        padding-left: 40px;
+      }
+      
+      .search-box .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+      }
+      
+      .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 100;
+        display: none;
+      }
+      
+      .search-results.active {
+        display: block;
+      }
+      
+      .search-result-item {
+        padding: 12px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.2s;
+      }
+      
+      .search-result-item:hover {
+        background: #f8fafc;
+      }
+      
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+      
+      .search-result-item .player-name {
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .search-result-item .player-info {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+      
+      /* Selected Player Card */
+      .selected-player-card {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      
+      .selected-player-card.active {
+        display: block;
+      }
+      
+      .selected-player-card .player-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .selected-player-card .player-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #166534;
+      }
+      
+      .selected-player-card .btn-change {
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid #86efac;
+        border-radius: 6px;
+        color: #166534;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      
+      .selected-player-card .btn-change:hover {
+        background: #dcfce7;
+      }
+      
+      .selected-player-card .player-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      
+      .selected-player-card .detail-item {
+        font-size: 14px;
+      }
+      
+      .selected-player-card .detail-label {
+        color: #64748b;
+        font-size: 12px;
+      }
+      
+      .selected-player-card .detail-value {
+        color: #166534;
+        font-weight: 600;
+      }
+      
+      /* Guest Toggle */
+      .guest-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      
+      .guest-toggle label {
+        margin: 0;
+        font-weight: 500;
+        color: #1e293b;
+        flex: 1;
+      }
+      
+      .toggle-switch {
+        position: relative;
+        width: 48px;
+        height: 26px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 26px;
+      }
+      
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      
+      .toggle-switch input:checked + .toggle-slider {
+        background-color: #0b6efd;
+      }
+      
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(22px);
+      }
+      
+      /* Guest Form */
+      .guest-form {
+        display: none;
+      }
+      
+      .guest-form.active {
+        display: block;
+      }
+      
+      /* Submit Button */
+      .btn-register {
+        width: 100%;
+        padding: 16px 24px;
+        background: linear-gradient(180deg, #22c55e, #16a34a);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      
+      .btn-register:hover:not(:disabled) {
+        background: linear-gradient(180deg, #16a34a, #15803d);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+      }
+      
+      .btn-register:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      /* Success State */
+      .success-card {
+        display: none;
+        text-align: center;
+        padding: 40px 24px;
+      }
+      
+      .success-card.active {
+        display: block;
+      }
+      
+      .success-card .success-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+      }
+      
+      .success-card h2 {
+        font-size: 24px;
+        color: #166534;
+        margin-bottom: 12px;
+      }
+      
+      .success-card p {
+        color: #64748b;
+        margin-bottom: 24px;
+      }
+      
+      .success-card .registration-details {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        text-align: left;
+      }
+      
+      .success-card .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .success-card .detail-row:last-child {
+        border-bottom: none;
+      }
+      
+      .success-card .btn-done {
+        padding: 14px 32px;
+        background: #0b6efd;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      
+      /* Reserve Notice */
+      .reserve-notice {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: #92400e;
+      }
+      
+      /* Closed State */
+      .closed-message {
+        text-align: center;
+        padding: 40px 24px;
+      }
+      
+      .closed-message .closed-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+      }
+      
+      .closed-message h2 {
+        font-size: 22px;
+        color: #991b1b;
+        margin-bottom: 12px;
+      }
+      
+      .closed-message p {
+        color: #64748b;
+        margin-bottom: 24px;
+      }
+      
+      /* Check Registration */
+      .check-registration {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 16px;
+        margin-top: 24px;
+      }
+      
+      .check-registration h4 {
+        font-size: 14px;
+        color: #475569;
+        margin-bottom: 12px;
+      }
+      
+      .check-registration .input-group {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .check-registration input {
+        flex: 1;
+      }
+      
+      .check-registration button {
+        padding: 12px 16px;
+        background: #0b6efd;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      
+      /* Registration Status */
+      .registration-status {
+        display: none;
+        margin-top: 16px;
+        padding: 16px;
+        border-radius: 8px;
+      }
+      
+      .registration-status.active {
+        display: block;
+      }
+      
+      .registration-status.admitted {
+        background: #dcfce7;
+        border: 1px solid #86efac;
+        color: #166534;
+      }
+      
+      .registration-status.reserve {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        color: #92400e;
+      }
+      
+      .registration-status.not-found {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #991b1b;
+      }
+      
+      /* Cancellation */
+      .btn-cancel-registration {
+        margin-top: 12px;
+        padding: 10px 16px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .btn-cancel-registration:hover {
+        background: #dc2626;
+      }
+      
+      /* Responsive */
+      @media (max-width: 640px) {
+        body {
+          padding: 10px;
+        }
+        
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        
+        .tournament-header {
+          padding: 20px;
+        }
+        
+        .tournament-header h1 {
+          font-size: 20px;
+        }
+        
+        .tournament-header .tournament-meta {
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+      
+      /* Loading */
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+      }
+      
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #0b6efd;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Loading State -->
+      <div id="loading-state" class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading tournament information...</p>
+      </div>
+      
+      <!-- Main Content (hidden until loaded) -->
+      <div id="main-content" style="display: none;">
+        <!-- Tournament Header -->
+        <div class="tournament-header">
+          <h1 id="tournament-name">Tournament Registration</h1>
+          <div class="tournament-meta">
+            <span class="meta-item">📅 <span id="tournament-date">-</span></span>
+            <span class="meta-item">⛳ <span id="tournament-course">-</span></span>
+            <span class="meta-item">🏌️ <span id="tournament-type">-</span></span>
+          </div>
+        </div>
+        
+        <!-- Main Card -->
+        <div class="main-card">
+          <!-- Status Banner -->
+          <div class="status-banner" id="status-banner">
+            Loading...
+          </div>
+          
+          <!-- Capacity Section -->
+          <div class="capacity-section">
+            <div class="capacity-info">
+              <span class="spots"><span id="spots-remaining">-</span> spots remaining</span>
+              <span class="total"><span id="current-registrations">0</span> / <span id="max-capacity">-</span> players</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="capacity-progress" style="width: 0%"></div>
+            </div>
+          </div>
+          
+          <!-- Registration Form -->
+          <div class="card-content" id="registration-form">
+            <!-- Reserve Notice -->
+            <div class="reserve-notice" id="reserve-notice" style="display: none;">
+              ⚠️ The tournament is currently full. You will be placed below the cut line: <strong id="cut-line-display">Reserve List</strong>
+            </div>
+            
+            <!-- Player Search Section -->
+            <div class="form-section" id="member-section">
+              <h3>👤 Player Information</h3>
+              
+              <div class="player-search-section">
+                <label style="font-weight: 600; color: #334155; margin-bottom: 6px; font-size: 14px; display: block;">Search for your name:</label>
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="player-search" placeholder="Type your name to search..." autocomplete="off" />
+                  <div class="search-results" id="search-results">
+                    <!-- Results populated dynamically -->
+                  </div>
+                </div>
+                <p class="hint">Start typing to find your profile in our system</p>
+              </div>
+              
+              <!-- Selected Player Display -->
+              <div class="selected-player-card" id="selected-player-card">
+                <div class="player-header">
+                  <span class="player-name" id="selected-player-name">-</span>
+                  <button class="btn-change" onclick="clearSelectedPlayer()">Change</button>
+                </div>
+                <div class="player-details">
+                  <div class="detail-item">
+                    <div class="detail-label">Handicap</div>
+                    <div class="detail-value" id="selected-player-hcp">-</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Club</div>
+                    <div class="detail-value" id="selected-player-club">-</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Guest Toggle -->
+            <div class="guest-toggle" id="guest-toggle">
+              <label>I'm not in the system (Guest Player)</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="is-guest" onchange="toggleGuestForm()" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <!-- Guest Form -->
+            <div class="guest-form" id="guest-form">
+              <div class="form-section">
+                <h3>📝 Guest Registration</h3>
+                
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="guest-first-name">First Name <span class="required">*</span></label>
+                    <input type="text" id="guest-first-name" placeholder="Enter first name" />
+                    <span class="error-message" id="guest-first-name-error">First name is required</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="guest-last-name">Last Name <span class="required">*</span></label>
+                    <input type="text" id="guest-last-name" placeholder="Enter last name" />
+                    <span class="error-message" id="guest-last-name-error">Last name is required</span>
+                  </div>
+                </div>
+                
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="guest-handicap">Handicap Index <span class="required">*</span></label>
+                    <input type="text" id="guest-handicap" placeholder="e.g., 15.4" />
+                    <span class="error-message" id="guest-handicap-error">Valid handicap is required</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="guest-club">Home Club</label>
+                    <input type="text" id="guest-club" placeholder="Enter club name" />
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="guest-email">Email Address <span class="required">*</span></label>
+                  <input type="email" id="guest-email" placeholder="your@email.com" />
+                  <span class="error-message" id="guest-email-error">Valid email is required</span>
+                  <p class="hint">We'll send your registration confirmation here</p>
+                </div>
+                
+                <div class="form-group">
+                  <label for="guest-phone">Phone Number</label>
+                  <input type="tel" id="guest-phone" placeholder="+90 5XX XXX XX XX" />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contact Info for Members -->
+            <div class="form-section" id="member-contact-section" style="display: none;">
+              <h3>📧 Contact Information</h3>
+              <div class="form-group">
+                <label for="member-email">Email Address</label>
+                <input type="email" id="member-email" placeholder="your@email.com" />
+                <p class="hint">Optional - for registration confirmation</p>
+              </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <button class="btn-register" id="btn-register" onclick="submitRegistration()" disabled>
+              <span>✓</span> Complete Registration
+            </button>
+          </div>
+          
+          <!-- Success Card -->
+          <div class="success-card" id="success-card">
+            <div class="success-icon">🎉</div>
+            <h2>Registration Successful!</h2>
+            <p id="success-message">You have been registered for the tournament.</p>
+            
+            <div class="registration-details">
+              <div class="detail-row">
+                <span>Name</span>
+                <strong id="success-name">-</strong>
+              </div>
+              <div class="detail-row">
+                <span>Handicap</span>
+                <strong id="success-hcp">-</strong>
+              </div>
+              <div class="detail-row">
+                <span>Status</span>
+                <strong id="success-status">-</strong>
+              </div>
+              <div class="detail-row">
+                <span>Position</span>
+                <strong id="success-position">-</strong>
+              </div>
+              <div class="detail-row">
+                <span>Registration ID</span>
+                <strong id="success-reg-id">-</strong>
+              </div>
+            </div>
+            
+            <button class="btn-done" onclick="location.reload()">Register Another Player</button>
+          </div>
+          
+          <!-- Closed State -->
+          <div class="closed-message" id="closed-message" style="display: none;">
+            <div class="closed-icon">🚫</div>
+            <h2 id="closed-title">Registration Closed</h2>
+            <p id="closed-reason">The registration period for this tournament has ended.</p>
+          </div>
+          
+          <!-- Check Registration Status -->
+          <div class="check-registration" id="check-registration-section">
+            <h4>📋 Check Your Registration Status</h4>
+            <div class="input-group">
+              <input type="text" id="check-email" placeholder="Enter your email or registration ID" />
+              <button onclick="checkRegistration()">Check</button>
+            </div>
+            <div class="registration-status" id="registration-status">
+              <div id="status-content"></div>
+              <button class="btn-cancel-registration" id="btn-cancel-registration" style="display: none;" onclick="cancelRegistration()">
+                Cancel Registration
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      // Get parameters from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+      const roundNum = urlParams.get('r') || urlParams.get('round') || '1';
+      
+      let tournament = null;
+      let admissionsConfig = null;
+      let registrations = [];
+      let allPlayers = [];
+      let selectedPlayer = null;
+      
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        if (!tournamentId) {
+          showError('Invalid Link', 'No tournament specified in the link.');
+          return;
+        }
+        
+        await loadData();
+        setupEventListeners();
+      });
+      
+      // Load tournament and config data
+      async function loadData() {
+        try {
+          // Try to load from Firebase first
+          let loadedFromFirebase = false;
+          
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            try {
+              const db = firebase.database();
+              
+              // Load tournament
+              const tournamentSnapshot = await db.ref(`tournaments`).once('value');
+              const tournamentsData = tournamentSnapshot.val();
+              
+              if (tournamentsData) {
+                const tournamentsArray = Array.isArray(tournamentsData) ? tournamentsData : Object.values(tournamentsData);
+                tournament = tournamentsArray.find(t => t && t.tournamentId === tournamentId);
+              }
+              
+              // Load config
+              const configSnapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/config`).once('value');
+              admissionsConfig = configSnapshot.val();
+              
+              // Load registrations
+              const regSnapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).once('value');
+              const regData = regSnapshot.val();
+              registrations = regData ? Object.values(regData) : [];
+              
+              // Load players
+              const playersSnapshot = await db.ref('players').once('value');
+              const playersData = playersSnapshot.val();
+              allPlayers = playersData ? (Array.isArray(playersData) ? playersData : Object.values(playersData)) : [];
+              
+              loadedFromFirebase = true;
+            } catch (e) {
+              console.warn('Firebase load failed, falling back to localStorage:', e);
+            }
+          }
+          
+          // Fallback to localStorage
+          if (!loadedFromFirebase) {
+            const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+            tournament = tournaments.find(t => t && t.tournamentId === tournamentId);
+            
+            const configKey = `onlineAdmissions_${tournamentId}_round${roundNum}`;
+            admissionsConfig = JSON.parse(localStorage.getItem(configKey) || 'null');
+            
+            const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+            registrations = JSON.parse(localStorage.getItem(regKey) || '[]');
+            
+            allPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+          }
+          
+          // Validate data
+          if (!tournament) {
+            showError('Tournament Not Found', 'This tournament does not exist or has been removed.');
+            return;
+          }
+          
+          if (!admissionsConfig) {
+            showError('Registration Not Available', 'Online registration has not been configured for this tournament.');
+            return;
+          }
+          
+          // Show main content
+          document.getElementById('loading-state').style.display = 'none';
+          document.getElementById('main-content').style.display = 'block';
+          
+          renderTournamentInfo();
+          updateStatus();
+          updateCapacity();
+          
+          // Note: Guest player registration (for non-members) is a separate feature
+          // The 'allowAdmitOthers' config controls whether players can admit other REGISTERED players
+          // The guest toggle here is for non-member registration which may need its own config option
+          // For now, guest toggle is always visible if the element exists
+          // if (!admissionsConfig.allowGuestPlayers) {
+          //   document.getElementById('guest-toggle').style.display = 'none';
+          // }
+          
+        } catch (e) {
+          console.error('Error loading data:', e);
+          showError('Error', 'Failed to load tournament information. Please try again later.');
+        }
+      }
+      
+      // Show error state
+      function showError(title, message) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('registration-form').style.display = 'none';
+        document.getElementById('check-registration-section').style.display = 'none';
+        
+        const closedEl = document.getElementById('closed-message');
+        closedEl.style.display = 'block';
+        document.getElementById('closed-title').textContent = title;
+        document.getElementById('closed-reason').textContent = message;
+      }
+      
+      // Render tournament information
+      function renderTournamentInfo() {
+        document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+        
+        // Date
+        let dateStr = '-';
+        if (tournament.meta?.roundsData && tournament.meta.roundsData.length > 0) {
+          const roundData = tournament.meta.roundsData[parseInt(roundNum) - 1];
+          if (roundData?.date) {
+            dateStr = formatDate(roundData.date);
+          }
+        } else if (tournament.date) {
+          dateStr = formatDate(tournament.date);
+        }
+        document.getElementById('tournament-date').textContent = dateStr;
+        
+        // Course
+        let courseStr = '-';
+        if (tournament.meta?.roundsData && tournament.meta.roundsData.length > 0) {
+          const roundData = tournament.meta.roundsData[parseInt(roundNum) - 1];
+          if (roundData?.course) {
+            courseStr = roundData.course;
+          }
+        }
+        document.getElementById('tournament-course').textContent = courseStr;
+        
+        // Type
+        document.getElementById('tournament-type').textContent = tournament.type || '-';
+      }
+      
+      // Update registration status
+      function updateStatus() {
+        const now = new Date();
+        const startDate = admissionsConfig.startDate ? new Date(admissionsConfig.startDate) : null;
+        const endDate = admissionsConfig.endDate ? new Date(admissionsConfig.endDate) : null;
+        
+        const banner = document.getElementById('status-banner');
+        const form = document.getElementById('registration-form');
+        const closed = document.getElementById('closed-message');
+        
+        if (!admissionsConfig.isActive) {
+          banner.className = 'status-banner closed';
+          banner.textContent = '🔒 Registration is currently closed';
+          form.style.display = 'none';
+          closed.style.display = 'block';
+          document.getElementById('closed-title').textContent = 'Registration Closed';
+          document.getElementById('closed-reason').textContent = 'Online registration has been deactivated for this tournament.';
+          return;
+        }
+        
+        if (startDate && now < startDate) {
+          banner.className = 'status-banner scheduled';
+          banner.textContent = `⏰ Registration opens ${formatDateTime(startDate)}`;
+          form.style.display = 'none';
+          closed.style.display = 'block';
+          document.getElementById('closed-title').textContent = 'Registration Not Yet Open';
+          document.getElementById('closed-reason').textContent = `Registration will open on ${formatDateTime(startDate)}`;
+          return;
+        }
+        
+        if (endDate && now > endDate) {
+          banner.className = 'status-banner closed';
+          banner.textContent = '🔒 Registration period has ended';
+          form.style.display = 'none';
+          closed.style.display = 'block';
+          document.getElementById('closed-title').textContent = 'Registration Closed';
+          document.getElementById('closed-reason').textContent = 'The registration deadline has passed.';
+          return;
+        }
+        
+        // Check capacity - players beyond maxPlayers go to reserve automatically
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const maxPlayers = admissionsConfig.maxPlayers || 72;
+        
+        // Set the cut line text
+        const cutLineText = admissionsConfig.cutLineText || '───── RESERVE LIST ─────';
+        document.getElementById('cut-line-display').textContent = cutLineText;
+        
+        if (admitted >= maxPlayers) {
+          banner.className = 'status-banner full';
+          banner.textContent = '⚠️ Tournament full - You will be added to reserve list';
+          document.getElementById('reserve-notice').style.display = 'block';
+        } else {
+          banner.className = 'status-banner open';
+          banner.textContent = '✅ Registration is open';
+        }
+      }
+      
+      // Update capacity display
+      function updateCapacity() {
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const maxPlayers = admissionsConfig.maxPlayers || 72;
+        const remaining = Math.max(0, maxPlayers - admitted);
+        
+        document.getElementById('spots-remaining').textContent = remaining;
+        document.getElementById('current-registrations').textContent = admitted;
+        document.getElementById('max-capacity').textContent = maxPlayers;
+        
+        const percentage = Math.min(100, (admitted / maxPlayers) * 100);
+        const progressEl = document.getElementById('capacity-progress');
+        progressEl.style.width = percentage + '%';
+        
+        if (percentage >= 100) {
+          progressEl.classList.add('full');
+          progressEl.classList.remove('warning');
+        } else if (percentage >= 80) {
+          progressEl.classList.add('warning');
+          progressEl.classList.remove('full');
+        } else {
+          progressEl.classList.remove('warning', 'full');
+        }
+      }
+      
+      // Setup event listeners
+      function setupEventListeners() {
+        // Player search
+        const searchInput = document.getElementById('player-search');
+        searchInput.addEventListener('input', debounce(handlePlayerSearch, 300));
+        searchInput.addEventListener('focus', () => {
+          if (searchInput.value.length >= 2) {
+            document.getElementById('search-results').classList.add('active');
+          }
+        });
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.player-search-section')) {
+            document.getElementById('search-results').classList.remove('active');
+          }
+        });
+        
+        // Form validation
+        document.querySelectorAll('#guest-form input').forEach(input => {
+          input.addEventListener('input', validateForm);
+        });
+      }
+      
+      // Handle player search
+      function handlePlayerSearch() {
+        const query = document.getElementById('player-search').value.toLowerCase().trim();
+        const resultsEl = document.getElementById('search-results');
+        
+        if (query.length < 2) {
+          resultsEl.classList.remove('active');
+          return;
+        }
+        
+        const filtered = allPlayers.filter(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+          return name.includes(query);
+        }).slice(0, 10);
+        
+        if (filtered.length === 0) {
+          resultsEl.innerHTML = '<div class="search-result-item"><span style="color: #64748b;">No players found. Register as a guest below.</span></div>';
+          resultsEl.classList.add('active');
+          return;
+        }
+        
+        resultsEl.innerHTML = filtered.map(p => {
+          const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
+          return `
+            <div class="search-result-item" onclick="selectPlayer('${p.playerId}')">
+              <div class="player-name">${escapeHtml(name)}</div>
+              <div class="player-info">HCP: ${p.handicap || '-'} | ${p.club || 'No club'}</div>
+            </div>
+          `;
+        }).join('');
+        
+        resultsEl.classList.add('active');
+      }
+      
+      // Select a player from search results
+      function selectPlayer(playerId) {
+        selectedPlayer = allPlayers.find(p => p.playerId === playerId);
+        if (!selectedPlayer) return;
+        
+        const name = `${selectedPlayer.firstName || ''} ${selectedPlayer.lastName || ''}`.trim();
+        
+        // Check if already registered
+        const existingReg = registrations.find(r => r.playerId === playerId);
+        if (existingReg) {
+          alert('This player is already registered for this tournament.');
+          return;
+        }
+        
+        // Hide search, show selected player
+        document.getElementById('search-results').classList.remove('active');
+        document.getElementById('player-search').style.display = 'none';
+        
+        document.getElementById('selected-player-card').classList.add('active');
+        document.getElementById('selected-player-name').textContent = name;
+        document.getElementById('selected-player-hcp').textContent = selectedPlayer.handicap || '-';
+        document.getElementById('selected-player-club').textContent = selectedPlayer.club || '-';
+        
+        // Hide guest form if visible
+        document.getElementById('is-guest').checked = false;
+        document.getElementById('guest-form').classList.remove('active');
+        
+        // Show member contact section
+        document.getElementById('member-contact-section').style.display = 'block';
+        
+        validateForm();
+      }
+      
+      // Clear selected player
+      function clearSelectedPlayer() {
+        selectedPlayer = null;
+        document.getElementById('selected-player-card').classList.remove('active');
+        document.getElementById('player-search').style.display = 'block';
+        document.getElementById('player-search').value = '';
+        document.getElementById('member-contact-section').style.display = 'none';
+        validateForm();
+      }
+      
+      // Toggle guest form
+      function toggleGuestForm() {
+        const isGuest = document.getElementById('is-guest').checked;
+        const guestForm = document.getElementById('guest-form');
+        const memberSection = document.getElementById('member-section');
+        
+        if (isGuest) {
+          guestForm.classList.add('active');
+          memberSection.style.display = 'none';
+          clearSelectedPlayer();
+        } else {
+          guestForm.classList.remove('active');
+          memberSection.style.display = 'block';
+        }
+        
+        validateForm();
+      }
+      
+      // Validate form
+      function validateForm() {
+        const isGuest = document.getElementById('is-guest').checked;
+        let isValid = false;
+        
+        if (isGuest) {
+          const firstName = document.getElementById('guest-first-name').value.trim();
+          const lastName = document.getElementById('guest-last-name').value.trim();
+          const handicap = document.getElementById('guest-handicap').value.trim();
+          const email = document.getElementById('guest-email').value.trim();
+          
+          isValid = firstName && lastName && handicap && email && isValidEmail(email);
+          
+          // Show/hide error messages
+          toggleError('guest-first-name', !firstName);
+          toggleError('guest-last-name', !lastName);
+          toggleError('guest-handicap', !handicap);
+          toggleError('guest-email', !email || !isValidEmail(email));
+        } else {
+          isValid = selectedPlayer !== null;
+        }
+        
+        document.getElementById('btn-register').disabled = !isValid;
+        return isValid;
+      }
+      
+      // Toggle error message visibility
+      function toggleError(fieldId, show) {
+        const errorEl = document.getElementById(fieldId + '-error');
+        const inputEl = document.getElementById(fieldId);
+        if (errorEl) {
+          errorEl.classList.toggle('visible', show);
+        }
+        if (inputEl) {
+          inputEl.classList.toggle('error', show);
+        }
+      }
+      
+      // Submit registration
+      async function submitRegistration() {
+        if (!validateForm()) return;
+        
+        const isGuest = document.getElementById('is-guest').checked;
+        let playerData;
+        
+        if (isGuest) {
+          playerData = {
+            playerId: 'GUEST-' + Date.now(),
+            firstName: document.getElementById('guest-first-name').value.trim(),
+            lastName: document.getElementById('guest-last-name').value.trim(),
+            handicap: parseFloat(document.getElementById('guest-handicap').value.trim()),
+            club: document.getElementById('guest-club').value.trim() || 'Guest',
+            email: document.getElementById('guest-email').value.trim(),
+            phone: document.getElementById('guest-phone').value.trim(),
+            isGuest: true
+          };
+        } else {
+          playerData = {
+            playerId: selectedPlayer.playerId,
+            firstName: selectedPlayer.firstName,
+            lastName: selectedPlayer.lastName,
+            handicap: selectedPlayer.handicap,
+            club: selectedPlayer.club,
+            email: document.getElementById('member-email').value.trim() || selectedPlayer.email,
+            isGuest: false,
+            isMember: true
+          };
+        }
+        
+        // Check if already registered
+        const existing = registrations.find(r => 
+          r.playerId === playerData.playerId || 
+          (r.email && r.email === playerData.email)
+        );
+        
+        if (existing) {
+          alert('This player is already registered for this tournament.');
+          return;
+        }
+        
+        // Determine status (admitted or reserve)
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const maxPlayers = admissionsConfig.maxPlayers || 72;
+        const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+        
+        // Calculate position
+        const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+        
+        // Create registration record
+        const registration = {
+          registrationId: 'REG-' + Date.now(),
+          ...playerData,
+          status: status,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          tournamentId: tournamentId,
+          round: roundNum
+        };
+        
+        // Save registration
+        registrations.push(registration);
+        
+        // Apply sorting (handles HCP sorting with registration time tiebreaker)
+        reorderRegistrations();
+        
+        // Get updated registration data after reordering
+        const updatedRegistration = registrations.find(r => r.registrationId === registration.registrationId);
+        
+        // Save to localStorage
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        // Sync to Firebase (sync all registrations to keep positions accurate)
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            const regsObj = {};
+            registrations.forEach(r => regsObj[r.registrationId] = r);
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+          }
+        } catch (e) {
+          console.warn('Firebase sync failed:', e);
+        }
+        
+        // Show success with updated position
+        showSuccess(updatedRegistration || registration);
+      }
+      
+      // Show success state
+      function showSuccess(registration) {
+        document.getElementById('registration-form').style.display = 'none';
+        document.getElementById('success-card').classList.add('active');
+        
+        const name = `${registration.firstName} ${registration.lastName}`;
+        const cutLineText = admissionsConfig.cutLineText || '───── RESERVE LIST ─────';
+        
+        document.getElementById('success-name').textContent = name;
+        document.getElementById('success-hcp').textContent = registration.handicap || '-';
+        document.getElementById('success-status').textContent = registration.status === 'admitted' ? '✅ Confirmed' : '⏳ Below Cut Line';
+        document.getElementById('success-position').textContent = registration.status === 'admitted' 
+          ? `#${registration.position}` 
+          : `Reserve #${registration.position}`;
+        document.getElementById('success-reg-id').textContent = registration.registrationId;
+        
+        if (registration.status === 'reserve') {
+          document.getElementById('success-message').textContent = `You have been added below the cut line (${cutLineText}). We will notify you if a spot becomes available.`;
+        }
+      }
+      
+      // Check registration status
+      function checkRegistration() {
+        const query = document.getElementById('check-email').value.trim().toLowerCase();
+        if (!query) {
+          alert('Please enter your email or registration ID');
+          return;
+        }
+        
+        const registration = registrations.find(r => 
+          r.email?.toLowerCase() === query || 
+          r.registrationId?.toLowerCase() === query
+        );
+        
+        const statusEl = document.getElementById('registration-status');
+        const contentEl = document.getElementById('status-content');
+        const cancelBtn = document.getElementById('btn-cancel-registration');
+        
+        statusEl.classList.add('active');
+        
+        if (!registration) {
+          statusEl.className = 'registration-status active not-found';
+          contentEl.innerHTML = '<strong>❌ Not Found</strong><br>No registration found with this email or ID.';
+          cancelBtn.style.display = 'none';
+          return;
+        }
+        
+        const name = `${registration.firstName} ${registration.lastName}`;
+        const statusText = registration.status === 'admitted' ? 'Confirmed' : 'Below Cut Line (Reserve)';
+        
+        statusEl.className = `registration-status active ${registration.status}`;
+        contentEl.innerHTML = `
+          <strong>${registration.status === 'admitted' ? '✅' : '⏳'} ${statusText}</strong><br>
+          Name: ${escapeHtml(name)}<br>
+          Position: ${registration.status === 'admitted' ? '#' + registration.position : 'Reserve #' + registration.position}<br>
+          Registered: ${formatDateTime(new Date(registration.registeredAt))}
+        `;
+        
+        // Show cancel button if allowed
+        if (admissionsConfig.allowCancel) {
+          const tournamentDate = getTournamentDate();
+          const deadline = admissionsConfig.cancelDeadline || 24;
+          const deadlineDate = new Date(tournamentDate.getTime() - deadline * 60 * 60 * 1000);
+          
+          if (new Date() < deadlineDate) {
+            cancelBtn.style.display = 'block';
+            cancelBtn.dataset.registrationId = registration.registrationId;
+          } else {
+            cancelBtn.style.display = 'none';
+          }
+        } else {
+          cancelBtn.style.display = 'none';
+        }
+      }
+      
+      // Cancel registration
+      async function cancelRegistration() {
+        if (!confirm('Are you sure you want to cancel your registration?')) return;
+        
+        const regId = document.getElementById('btn-cancel-registration').dataset.registrationId;
+        const index = registrations.findIndex(r => r.registrationId === regId);
+        
+        if (index < 0) {
+          alert('Registration not found');
+          return;
+        }
+        
+        // Remove registration
+        registrations.splice(index, 1);
+        
+        // Re-sort and update positions
+        reorderRegistrations();
+        
+        // Save to localStorage
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        // Sync to Firebase
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations/${regId}`).remove();
+            
+            // Update all registrations in Firebase
+            const regsObj = {};
+            registrations.forEach(r => regsObj[r.registrationId] = r);
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+          }
+        } catch (e) {
+          console.warn('Firebase sync failed:', e);
+        }
+        
+        // Update UI
+        updateCapacity();
+        updateStatus();
+        
+        alert('Your registration has been cancelled.');
+        document.getElementById('registration-status').classList.remove('active');
+        document.getElementById('check-email').value = '';
+      }
+      
+      // Reorder registrations after cancellation
+      function reorderRegistrations() {
+        const maxPlayers = admissionsConfig.maxPlayers || 72;
+        const sortMethod = admissionsConfig.sortMethod || 'registration_order';
+        
+        // Sort based on configured method
+        if (sortMethod === 'handicap') {
+          // Sort by HCP (low to high), with registration time as tiebreaker
+          registrations.sort((a, b) => {
+            const hcpA = parseFloat(a.handicap) || 999;
+            const hcpB = parseFloat(b.handicap) || 999;
+            if (hcpA !== hcpB) {
+              return hcpA - hcpB; // Lower handicap first
+            }
+            // Same handicap: earlier registration wins
+            return new Date(a.registeredAt) - new Date(b.registeredAt);
+          });
+        } else {
+          // Default: registration order (first come, first served)
+          registrations.sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+        }
+        
+        // Update statuses and positions
+        let admittedCount = 0;
+        let reserveCount = 0;
+        
+        registrations.forEach(r => {
+          if (admittedCount < maxPlayers) {
+            r.status = 'admitted';
+            admittedCount++;
+            r.position = admittedCount;
+          } else {
+            r.status = 'reserve';
+            reserveCount++;
+            r.position = reserveCount;
+          }
+        });
+      }
+      
+      // Get tournament date
+      function getTournamentDate() {
+        if (tournament.meta?.roundsData && tournament.meta.roundsData.length > 0) {
+          const roundData = tournament.meta.roundsData[parseInt(roundNum) - 1];
+          if (roundData?.date) {
+            return new Date(roundData.date);
+          }
+        }
+        return new Date(tournament.date || Date.now());
+      }
+      
+      // Utility functions
+      function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      
+      function formatDateTime(date) {
+        if (!date) return '-';
+        const d = date instanceof Date ? date : new Date(date);
+        return d.toLocaleDateString('en-GB', { 
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      }
+      
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&"'<>]/g, s => ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'})[s]);
+      }
+      
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+      
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+    </script>
+  </body>
+</html>

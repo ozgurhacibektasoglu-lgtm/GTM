@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migrate Tournaments to New Format</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f8fafc;
+    }
+    h1 { color: #1e293b; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .btn-primary { background: #0b6efd; color: white; }
+    .btn-primary:hover { background: #0a58d1; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-success:hover { background: #15803d; }
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .status {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    .status.info { background: #dbeafe; color: #1e40af; }
+    .status.success { background: #dcfce7; color: #166534; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .warning { background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Migrate Tournaments to New Format</h1>
+  
+  <div class="card">
+    <h2>Current Firebase Structure</h2>
+    <p>This tool will convert tournaments from array format (0, 1, 2...) to object format (M0001, T0001, etc.)</p>
+    
+    <div class="warning">
+      ⚠️ <strong>Backup Warning:</strong> Make sure you have a backup before running the migration.
+    </div>
+    
+    <button class="btn btn-primary" onclick="loadCurrentData()">1. Load Current Data</button>
+    <button class="btn btn-success" onclick="previewMigration()">2. Preview Migration</button>
+    <button class="btn btn-danger" onclick="runMigration()">3. Run Migration</button>
+  </div>
+  
+  <div class="card">
+    <h2>Status</h2>
+    <div id="status" class="status info">Click "Load Current Data" to begin.</div>
+  </div>
+  
+  <div class="card">
+    <h2>Current Data (Before)</h2>
+    <pre id="before-data">No data loaded yet</pre>
+  </div>
+  
+  <div class="card">
+    <h2>New Format (After)</h2>
+    <pre id="after-data">Run preview to see new format</pre>
+  </div>
+
+  <script>
+    let currentData = null;
+    let newData = null;
+    
+    // Initialize Firebase
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(window.firebaseConfig);
+    }
+    
+    function setStatus(message, type = 'info') {
+      const el = document.getElementById('status');
+      el.textContent = message;
+      el.className = 'status ' + type;
+    }
+    
+    async function loadCurrentData() {
+      setStatus('Loading data from Firebase...', 'info');
+      
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref('tournaments').once('value');
+        currentData = snapshot.val();
+        
+        if (!currentData) {
+          setStatus('No tournaments found in Firebase', 'error');
+          document.getElementById('before-data').textContent = 'No data';
+          return;
+        }
+        
+        const isArray = Array.isArray(currentData);
+        const count = isArray ? currentData.filter(t => t).length : Object.keys(currentData).length;
+        
+        document.getElementById('before-data').textContent = JSON.stringify(currentData, null, 2);
+        setStatus(`Loaded ${count} tournaments. Format: ${isArray ? 'ARRAY (old)' : 'OBJECT (new)'}`, 'success');
+        
+      } catch (e) {
+        setStatus('Error loading data: ' + e.message, 'error');
+        console.error(e);
+      }
+    }
+    
+    function previewMigration() {
+      if (!currentData) {
+        setStatus('Please load current data first', 'error');
+        return;
+      }
+      
+      // Convert to new format
+      newData = {};
+      
+      if (Array.isArray(currentData)) {
+        // Convert from array
+        currentData.forEach((tournament, index) => {
+          if (tournament && tournament.tournamentId) {
+            newData[tournament.tournamentId] = tournament;
+          } else if (tournament) {
+            // Tournament without ID - generate one
+            const newId = 'MIGRATED-' + index;
+            tournament.tournamentId = newId;
+            newData[newId] = tournament;
+          }
+        });
+      } else {
+        // Already an object - check if keys are tournamentIds
+        for (const key of Object.keys(currentData)) {
+          const tournament = currentData[key];
+          if (tournament) {
+            const id = tournament.tournamentId || key;
+            tournament.tournamentId = id;
+            newData[id] = tournament;
+          }
+        }
+      }
+      
+      const beforeCount = Array.isArray(currentData) ? currentData.filter(t => t).length : Object.keys(currentData).length;
+      const afterCount = Object.keys(newData).length;
+      
+      document.getElementById('after-data').textContent = JSON.stringify(newData, null, 2);
+      setStatus(`Preview ready. ${beforeCount} tournaments → ${afterCount} tournaments (keyed by tournamentId)`, 'success');
+    }
+    
+    async function runMigration() {
+      if (!newData || Object.keys(newData).length === 0) {
+        setStatus('Please preview migration first', 'error');
+        return;
+      }
+      
+      if (!confirm('Are you sure you want to run the migration? This will replace the tournaments data in Firebase.')) {
+        return;
+      }
+      
+      setStatus('Running migration...', 'info');
+      
+      try {
+        const db = firebase.database();
+        
+        // Set the new data
+        await db.ref('tournaments').set(newData);
+        
+        // Also update localStorage
+        const tournamentsArray = Object.values(newData);
+        localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
+        
+        setStatus(`✅ Migration complete! ${Object.keys(newData).length} tournaments migrated to new format.`, 'success');
+        
+        // Reload to show new format
+        await loadCurrentData();
+        
+      } catch (e) {
+        setStatus('Migration failed: ' + e.message, 'error');
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>

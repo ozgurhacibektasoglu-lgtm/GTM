@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Published Draw Lists</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { background: #f8fafc; font-family: system-ui,-apple-system,sans-serif; color:#1e293b; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.08); padding: 32px; }
+    .page-title { font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #1e293b; }
+    .page-subtitle { color: #64748b; margin-bottom: 30px; }
+    .draw-list-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+    .draw-list-table th, .draw-list-table td { padding: 14px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    .draw-list-table th { background: #f8f9fa; font-weight: 600; font-size: 13px; color: #495057; border-bottom: 2px solid #dee2e6; }
+    .draw-list-table tbody tr:hover { background: #f8f9fa; }
+    .no-draws { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: 18px; border-radius: 10px; text-align: center; font-size: 18px; }
+    .show-btn { background: #0b6efd; color: #fff; border: none; border-radius: 6px; padding: 8px 20px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .show-btn:hover { background: #0a58ca; }
+    .loading { text-align: center; padding: 40px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="page-title">Published Draw Lists</h1>
+    <div id="draw-lists-content"><div class="loading">Loading...</div></div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script>
+    async function loadFromFirebase() {
+      if (!syncEnabled) {
+        console.log('Firebase not enabled');
+        return;
+      }
+      try {
+        const tournamentsData = await syncFromFirebase('tournaments');
+        if (tournamentsData) {
+          // Convert from object format to array if needed
+          let tournamentsArray;
+          if (Array.isArray(tournamentsData)) {
+            tournamentsArray = tournamentsData.filter(t => t !== null);
+          } else {
+            tournamentsArray = Object.values(tournamentsData).filter(t => t !== null);
+          }
+          localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
+        }
+        console.log('✓ Data loaded from Firebase');
+      } catch(e) {
+        console.error('Firebase load error:', e);
+      }
+    }
+
+    async function loadDrawLists() {
+      // Load from Firebase first
+      await loadFromFirebase();
+      
+      let tournaments = [];
+      try {
+        const raw = localStorage.getItem('tournaments');
+        tournaments = raw ? JSON.parse(raw) : [];
+      } catch(e) {
+        console.error('Error parsing tournaments:', e);
+      }
+      
+      // Only show tournaments with published draw lists, sorted by published date (newest first)
+      const published = tournaments
+        .filter(t => t && t.published === true)
+        .sort((a, b) => {
+          const dateA = new Date(a.publishedDate || 0);
+          const dateB = new Date(b.publishedDate || 0);
+          return dateB - dateA;
+        });
+      
+      if (!published.length) {
+        document.getElementById('draw-lists-content').innerHTML = '<div class="no-draws">Currently there are no published Draw Lists.</div>';
+        return;
+      }
+      
+      let html = '<table class="draw-list-table"><thead><tr><th>Date</th><th>Tournament Name</th><th style="text-align: center;">Round</th><th></th></tr></thead><tbody>';
+      
+      published.forEach(t => {
+        const roundNo = t.publishedRound || '1';
+        const roundIndex = parseInt(roundNo) - 1;
+        
+        // Get round-specific date from roundsData
+        let roundDate = '-';
+        if (t.meta && t.meta.roundsData && t.meta.roundsData[roundIndex] && t.meta.roundsData[roundIndex].date) {
+          roundDate = new Date(t.meta.roundsData[roundIndex].date).toLocaleDateString();
+        } else if (t.date) {
+          roundDate = new Date(t.date).toLocaleDateString();
+        } else if (t.startDate) {
+          roundDate = new Date(t.startDate).toLocaleDateString();
+        }
+        
+        html += `<tr>`;
+        html += `<td>${roundDate}</td>`;
+        html += `<td><strong>${t.name || '-'}</strong></td>`;
+        html += `<td style="text-align: center;">${roundNo}</td>`;
+        html += `<td><a class='show-btn' href='draw_list_single.html?tournamentId=${encodeURIComponent(t.tournamentId)}'>View</a></td>`;
+        html += `</tr>`;
+      });
+      
+      html += '</tbody></table>';
+      document.getElementById('draw-lists-content').innerHTML = html;
+    }
+    
+    setTimeout(() => {
+      loadDrawLists();
+    }, 500);
+  </script>
+</body>
+</html>

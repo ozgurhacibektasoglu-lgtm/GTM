@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Published Draw Lists</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { background: #f8fafc; font-family: system-ui,-apple-system,sans-serif; color:#1e293b; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .not-published { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: 18px; border-radius: 10px; text-align: center; font-size: 18px; margin: 20px 0; }
+    .tournament-section { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(2,6,23,0.08); margin-bottom: 30px; overflow: hidden; }
+    .tournament-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px 30px; }
+    .tournament-header h2 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; }
+    .tournament-header .meta { font-size: 14px; opacity: 0.9; }
+    .loading { text-align: center; padding: 40px; color: #64748b; font-size: 16px; }
+    
+    /* Draw table styles - matching draw_list.html */
+    .draw-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .draw-table thead { background: #f8f9fa; }
+    .draw-table th { padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; font-size: 13px; color: #495057; }
+    .draw-table th.center-header, .draw-table th:first-child, .draw-table th:nth-child(2) { text-align: center; }
+    .draw-table td { padding: 10px 12px; border-bottom: 1px solid #dee2e6; font-size: 13px; }
+    .draw-table td.time-cell, .draw-table td.tee-cell, .draw-table td.tee-color-cell, .draw-table td.hcp-cell, 
+    .draw-table td.phcp-cell, .draw-table td.match-hcp-cell, .draw-table td.category-cell, .draw-table td.buggy-cell { 
+      vertical-align: middle; text-align: center; 
+    }
+    .draw-table tbody tr:hover { background: #f8f9fa; }
+    .group-separator { border-top: 1px solid #666 !important; }
+    .group-separator td { padding-top: 4px !important; }
+    .group-header { background: #e9ecef !important; font-weight: 600; }
+    .male-row { background: #e0f2fe; }
+    .female-row { background: #fce7f3; }
+    
+    /* Print header styles */
+    .print-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+    .print-header h1 { margin: 0 0 5px 0; font-size: 24px; }
+    .print-header .subtitle { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content"></div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script>
+    function showLoading() {
+      document.getElementById('content').innerHTML = '<div class="loading">Loading published draw lists...</div>';
+    }
+
+    function showNotPublished() {
+      document.getElementById('content').innerHTML = '<div class="not-published">Currently there are no published Draw Lists.</div>';
+    }
+
+    function renderDrawTable(tournament, drawData) {
+      if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+        return '<div style="padding: 20px; text-align: center; color: #999;">No draw data available</div>';
+      }
+      
+      // Get display options from tournament
+      const opts = tournament.displayOptions || {
+        club: true,
+        hcp: true,
+        phcp: false,
+        teeColor: true,
+        category: false,
+        buggy: false,
+        matchHcp: false,
+        groupByTee: false
+      };
+      
+      // Build table header
+      let html = '<table class="draw-table"><thead><tr>';
+      html += '<th>Time</th><th>Tee</th><th>Name</th>';
+      if (opts.club) html += '<th>Club/Country</th>';
+      if (opts.hcp) html += '<th>HCP</th>';
+      if (opts.phcp) html += '<th>Playing HCP</th>';
+      if (opts.teeColor) html += '<th>Tee Color</th>';
+      if (opts.category) html += '<th>Category</th>';
+      if (opts.buggy) html += '<th>Buggy</th>';
+      if (opts.matchHcp) html += '<th>Match HCP</th>';
+      html += '</tr></thead><tbody>';
+      
+      drawData.groups.forEach((group, idx) => {
+        if (group.players && group.players.length > 0) {
+          const groupSize = group.players.length;
+          group.players.forEach((player, pIdx) => {
+            html += `<tr${pIdx === 0 ? ' class="group-separator"' : ''}>`;
+            html += pIdx === 0 ? `<td rowspan="${groupSize}">${group.time || '-'}</td>` : '';
+            html += pIdx === 0 ? `<td rowspan="${groupSize}">${group.tee || '-'}</td>` : '';
+            html += `<td><strong>${player.firstName} ${player.lastName}</strong></td>`;
+            if (opts.club) html += `<td>${player.club || player.homeClub || '-'}</td>`;
+            if (opts.hcp) html += `<td>${player.hcp !== undefined ? player.hcp : '-'}</td>`;
+            if (opts.phcp) html += `<td>${player.playingHcp !== undefined ? player.playingHcp : '-'}</td>`;
+            if (opts.teeColor) html += `<td>${player.tee || player.teeColor || '-'}</td>`;
+            if (opts.category) {
+              const cats = player.categories ? (Array.isArray(player.categories) ? player.categories.join(', ') : player.categories) : '-';
+              html += `<td>${cats}</td>`;
+            }
+            if (opts.buggy) html += `<td>${player.buggy || '-'}</td>`;
+            if (opts.matchHcp) html += `<td>${player.matchHcp !== undefined ? player.matchHcp : '-'}</td>`;
+            html += `</tr>`;
+          });
+        }
+      });
+      
+      html += '</tbody></table>';
+      return html;
+    }
+
+    async function loadFromFirebase() {
+      if (!syncEnabled) {
+        console.log('Firebase not enabled');
+        return;
+      }
+      try {
+        const tournamentsData = await syncFromFirebase('tournaments');
+        if (tournamentsData) {
+          // Convert from object format to array if needed
+          let tournamentsArray;
+          if (Array.isArray(tournamentsData)) {
+            tournamentsArray = tournamentsData.filter(t => t !== null);
+          } else {
+            tournamentsArray = Object.values(tournamentsData).filter(t => t !== null);
+          }
+          localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
+        }
+        const drawsData = await syncFromFirebase('draws');
+        if (drawsData) {
+          localStorage.setItem('draws', JSON.stringify(drawsData));
+        }
+        console.log('✓ Data loaded from Firebase');
+      } catch(e) {
+        console.error('Firebase load error:', e);
+      }
+    }
+
+    async function loadAllPublishedDraws() {
+      showLoading();
+      
+      // Load data from Firebase
+      await loadFromFirebase();
+      
+      // Get tournaments from localStorage
+      let tournaments = [];
+      
+      try {
+        const rawTournaments = localStorage.getItem('tournaments');
+        tournaments = rawTournaments ? JSON.parse(rawTournaments) : [];
+      } catch(e) {
+        console.error('Error parsing data:', e);
+      }
+      
+      // Filter published tournaments and sort by published date (newest first)
+      const published = tournaments
+        .filter(t => t.published === true)
+        .sort((a, b) => {
+          const dateA = new Date(a.publishedDate || 0);
+          const dateB = new Date(b.publishedDate || 0);
+          return dateB - dateA;
+        });
+      
+      console.log('Total tournaments:', tournaments.length);
+      console.log('Published tournaments:', published.length);
+      
+      if (published.length === 0) {
+        showNotPublished();
+        return;
+      }
+      
+      // Show list of all published draws (single or multiple)
+      let html = '<div style="background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(2,6,23,0.08);">';
+      html += '<h1 style="margin: 0 0 30px 0; font-size: 28px; font-weight: 700;">Published Draw Lists</h1>';
+      
+      html += '<table style="width: 100%; border-collapse: collapse;">';
+      html += '<thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
+      html += '<th style="padding: 14px; text-align: left; font-weight: 600; font-size: 13px; color: #495057;">Date</th>';
+      html += '<th style="padding: 14px; text-align: left; font-weight: 600; font-size: 13px; color: #495057;">Tournament Name</th>';
+      html += '<th style="padding: 14px; text-align: center; font-weight: 600; font-size: 13px; color: #495057;">Round</th>';
+      html += '<th style="padding: 14px;"></th>';
+      html += '</tr></thead><tbody>';
+      
+      published.forEach(t => {
+        const roundNo = t.publishedRound || '1';
+        const roundIndex = parseInt(roundNo) - 1;
+        
+        // Get round-specific date from roundsData
+        let roundDate = '-';
+        if (t.meta && t.meta.roundsData && t.meta.roundsData[roundIndex] && t.meta.roundsData[roundIndex].date) {
+          roundDate = new Date(t.meta.roundsData[roundIndex].date).toLocaleDateString();
+        } else if (t.date) {
+          roundDate = new Date(t.date).toLocaleDateString();
+        } else if (t.startDate) {
+          roundDate = new Date(t.startDate).toLocaleDateString();
+        }
+        
+        html += `<tr style="border-bottom: 1px solid #e5e7eb;">`;
+        html += `<td style="padding: 14px;">${roundDate}</td>`;
+        html += `<td style="padding: 14px;"><strong>${t.name || '-'}</strong></td>`;
+        html += `<td style="padding: 14px; text-align: center;">${roundNo}</td>`;
+        html += `<td style="padding: 14px;"><a href="draw_list_single.html?tournamentId=${encodeURIComponent(t.tournamentId)}" style="display: inline-block; padding: 8px 20px; background: #0b6efd; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">View</a></td>`;
+        html += `</tr>`;
+      });
+      
+      html += '</tbody></table>';
+      html += '</div>';
+      
+      document.getElementById('content').innerHTML = html;
+    }
+    
+    // Wait for Firebase to initialize
+    setTimeout(() => {
+      loadAllPublishedDraws();
+    }, 500);
+  </script>
+</body>
+</html>

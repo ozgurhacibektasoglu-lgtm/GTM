@@ -1,0 +1,2069 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- Real-time updates via Firebase - no page refresh needed -->
+    <title>Live Leaderboard</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        min-height: 100vh;
+        color: white;
+      }
+      
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        padding: 20px 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+      }
+      
+      .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+      
+      .tournament-name {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      
+      .tournament-info {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+      
+      .live-indicator {
+        position: absolute;
+        top: 20px;
+        right: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(239, 68, 68, 0.9);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        animation: pulse 2s infinite;
+      }
+      
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        animation: blink 1s infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.9; transform: scale(1.02); }
+      }
+      
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      /* Main Container */
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      
+      /* Quick Stats */
+      .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .stat-card {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 16px 20px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #10b981;
+      }
+      
+      .stat-value.red { color: #ef4444; }
+      .stat-value.yellow { color: #fbbf24; }
+      
+      .stat-label {
+        font-size: 12px;
+        color: rgba(255,255,255,0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+      }
+      
+      /* Category Tabs */
+      .category-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      
+      .category-tab {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .category-tab:hover {
+        background: rgba(255,255,255,0.2);
+      }
+      
+      .category-tab.active {
+        background: #059669;
+      }
+      
+      /* Leaderboard Table */
+      .leaderboard-wrapper {
+        background: rgba(255,255,255,0.05);
+        border-radius: 16px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .leaderboard-table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: collapse;
+      }
+      
+      .leaderboard-table thead {
+        background: rgba(0,0,0,0.3);
+      }
+      
+      .leaderboard-table th {
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .leaderboard-table th.center { text-align: center; }
+      
+      .leaderboard-table tbody tr {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: background 0.2s, transform 0.3s ease, opacity 0.3s ease;
+      }
+      
+      .leaderboard-table tbody tr:hover {
+        background: rgba(255,255,255,0.05);
+      }
+      
+      .leaderboard-table tbody tr.highlight {
+        background: rgba(16, 185, 129, 0.15);
+        animation: highlight 2s ease-out;
+      }
+      
+      @keyframes highlight {
+        0% { background: rgba(16, 185, 129, 0.4); transform: scale(1.01); }
+        100% { background: rgba(16, 185, 129, 0.15); transform: scale(1); }
+      }
+      
+      .score-cell {
+        transition: transform 0.3s ease, color 0.3s ease;
+      }
+      
+      .leaderboard-table td {
+        padding: 14px 16px;
+        font-size: 15px;
+      }
+      
+      .leaderboard-table td.center { text-align: center; }
+      
+      /* Position Cell */
+      .position-cell {
+        font-size: 18px;
+        font-weight: 800;
+        color: white;
+        width: 50px;
+      }
+      
+      .position-cell.top-3 { color: #fbbf24; }
+      
+      /* Player Cell */
+      .player-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .player-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      
+      .player-info {
+        flex: 1;
+      }
+      
+      .player-name {
+        font-weight: 600;
+        color: white;
+        font-size: 15px;
+      }
+      
+      .player-club {
+        font-size: 12px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      /* Score Cells */
+      .score-cell {
+        font-weight: 700;
+        font-size: 18px;
+        text-align: center;
+      }
+      
+      .score-cell.under-par { color: #ef4444; }
+      .score-cell.even-par { color: white; }
+      .score-cell.over-par { color: #94a3b8; }
+      
+      .thru-cell {
+        font-size: 13px;
+        color: rgba(255,255,255,0.6);
+        text-align: center;
+      }
+      
+      .thru-cell.finished {
+        color: #10b981;
+        font-weight: 600;
+      }
+      
+      .round-score {
+        font-size: 14px;
+        color: rgba(255,255,255,0.8);
+        text-align: center;
+      }
+      
+      /* Team Leaderboard Styles */
+      .team-header-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .team-header-row:hover {
+        filter: brightness(1.1);
+      }
+      
+      .team-player-row {
+        background: rgba(30, 41, 59, 0.5);
+        border-left: 3px solid transparent;
+      }
+      
+      .team-player-row[style*="rgba(34, 197, 94"] {
+        border-left-color: #22c55e;
+      }
+      
+      /* Movement Indicators */
+      .movement {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+      
+      .movement.up { color: #10b981; }
+      .movement.down { color: #ef4444; }
+      
+      /* Hole by Hole */
+      .hole-scores-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        align-items: center;
+      }
+      
+      /* Desktop: show all 18 in one row, hide nine-holes */
+      .nine-holes {
+        display: none;
+      }
+      
+      .hole-numbers-all,
+      .hole-scores-all {
+        display: flex;
+        gap: 3px;
+      }
+      
+      .hole-number {
+        width: 28px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .hole-scores {
+        display: flex;
+        gap: 3px;
+      }
+      
+      .hole-score {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.1);
+      }
+      
+      .hole-score.birdie { background: #dc2626; color: white; }
+      .hole-score.eagle { background: #fbbf24; color: #78350f; }
+      .hole-score.par { background: rgba(255,255,255,0.2); color: white; }
+      .hole-score.bogey { background: #1e293b; color: white; }
+      .hole-score.double { background: #3b82f6; color: white; }
+      .hole-score.dnf { background: #6b7280; color: white; font-style: italic; }
+      
+      /* Holes column width - desktop */
+      #holes-header {
+        min-width: 560px;
+      }
+      
+      /* Last Updated */
+      .last-updated {
+        text-align: center;
+        padding: 16px;
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      /* Loading State */
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: #10b981;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* No Data */
+      .no-data {
+        text-align: center;
+        padding: 60px 20px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .no-data-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+      
+      /* Tournament Selector (for non-direct links) */
+      .tournament-selector {
+        background: rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      
+      .tournament-selector label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+      
+      .tournament-selector select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        background: rgba(0,0,0,0.3);
+        color: white;
+        font-size: 15px;
+        font-weight: 500;
+        appearance: none;
+        cursor: pointer;
+      }
+      
+      .tournament-selector select:focus {
+        outline: none;
+        border-color: #10b981;
+      }
+      
+      /* Footer */
+      .footer {
+        text-align: center;
+        padding: 24px;
+        color: rgba(255,255,255,0.4);
+        font-size: 12px;
+      }
+      
+      .footer a {
+        color: #10b981;
+        text-decoration: none;
+      }
+      
+      /* Responsive */
+      @media (max-width: 768px) {
+        .tournament-name { font-size: 20px; }
+        .live-indicator { position: static; margin-top: 12px; display: inline-flex; }
+        
+        .leaderboard-table th,
+        .leaderboard-table td {
+          padding: 10px 8px;
+        }
+        
+        .player-avatar { display: none; }
+        .hole-scores-container {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          align-items: center;
+        }
+        /* Mobile: hide all-18 rows, show front/back nine */
+        .hole-numbers-all,
+        .hole-scores-all {
+          display: none !important;
+        }
+        .nine-holes {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+        .hole-numbers {
+          display: flex;
+          gap: 2px;
+        }
+        .hole-number {
+          width: 22px;
+          height: 12px;
+          font-size: 8px;
+        }
+        .hole-scores { 
+          display: flex;
+          gap: 2px;
+        }
+        .hole-score {
+          width: 22px;
+          height: 22px;
+          font-size: 10px;
+        }
+        /* Holes column width - mobile */
+        #holes-header {
+          min-width: 220px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <div class="tournament-name" id="tournament-name">Live Leaderboard</div>
+        <div class="tournament-info" id="tournament-info">Loading tournament...</div>
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          LIVE
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Tournament Selector (shown when no tournamentId in URL) -->
+      <div class="tournament-selector" id="tournament-selector" style="display: none;">
+        <label>Select Tournament</label>
+        <select id="tournament-select" onchange="selectTournament(this.value)">
+          <option value="">-- Choose a tournament --</option>
+        </select>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="stats-bar" style="display: none;">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-leader">-</div>
+          <div class="stat-label">Leader Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-players">0</div>
+          <div class="stat-label">Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value yellow" id="stat-scoring">0</div>
+          <div class="stat-label">On Course</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-finished">0</div>
+          <div class="stat-label">Finished</div>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="category-tabs" id="category-tabs" style="display: none;">
+        <button class="category-tab active" data-category="ALL">All Players</button>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="leaderboard-wrapper" id="leaderboard-wrapper" style="display: none;">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Pos</th>
+              <th>Player</th>
+              <th class="center" style="width: 80px;" id="score-header">To Par</th>
+              <th class="center" style="width: 60px;">Thru</th>
+              <th class="center" style="width: 70px;" id="today-header">Today</th>
+              <th class="center" style="width: 70px;" id="total-header">Total</th>
+              <th class="center" id="holes-header">Holes</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+          </tbody>
+        </table>
+        <div class="last-updated" id="last-updated">Last updated: --</div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div>Loading leaderboard...</div>
+      </div>
+
+      <!-- No Data -->
+      <div class="no-data" id="no-data" style="display: none;">
+        <div class="no-data-icon">⛳</div>
+        <div>No scores available yet</div>
+        <div style="margin-top: 8px; font-size: 13px;">Scores will appear here once players start</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Powered by <a href="#">GTM - Golf Tournament Management</a><br>
+      Updates in real-time
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
+    <script>
+      // State
+      let currentTournament = null;
+      let currentRoundId = null;
+      let currentCategory = 'ALL';
+      let liveScores = {};
+      let admittedPlayers = [];
+      let courseData = null;
+      let previousPositions = {};
+      let firebaseListener = null;
+      let settingsListener = null;
+      let isLiveScoringActive = true;
+      let isLeaderboardVisible = true;
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        console.log('=== Live Leaderboard Initializing ===');
+        
+        // Wait for Firebase
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (typeof initFirebase === 'function') {
+          initFirebase();
+          console.log('Firebase initialized');
+        }
+        
+        // Check URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        const roundId = urlParams.get('roundId');
+        
+        console.log('URL params - tournamentId:', tournamentId, 'roundId:', roundId);
+        
+        if (tournamentId) {
+          await loadTournament(tournamentId, roundId);
+        } else {
+          // Show tournament selector
+          await loadTournamentList();
+        }
+      });
+
+      // Load tournament list
+      async function loadTournamentList() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('tournament-selector').style.display = 'block';
+        
+        // Try to load from Firebase
+        let tournaments = [];
+        
+        if (db) {
+          try {
+            const snapshot = await db.ref('tournaments').once('value');
+            const data = snapshot.val();
+            if (data) {
+              tournaments = Object.values(data);
+            }
+          } catch (e) {
+            console.error('Firebase load error:', e);
+          }
+        }
+        
+        // Fall back to localStorage
+        if (tournaments.length === 0) {
+          tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        }
+        
+        // Sort by date descending
+        tournaments.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        const select = document.getElementById('tournament-select');
+        tournaments.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t.tournamentId;
+          option.textContent = `${t.name} (${t.date || 'No date'})`;
+          select.appendChild(option);
+        });
+      }
+
+      // Select tournament from dropdown
+      function selectTournament(tournamentId) {
+        if (!tournamentId) return;
+        
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set('tournamentId', tournamentId);
+        window.history.pushState({}, '', url);
+        
+        loadTournament(tournamentId);
+      }
+
+      // Change round from dropdown
+      function changeRound(roundId) {
+        if (!roundId) return;
+        currentRoundId = roundId;
+        
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set('roundId', roundId);
+        window.history.pushState({}, '', url);
+        
+        // Reload scores for new round
+        loadLiveScores().then(() => {
+          renderLeaderboard();
+        });
+      }
+
+      // Load tournament data
+      async function loadTournament(tournamentId, roundId) {
+        console.log('loadTournament called with:', tournamentId, roundId);
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('tournament-selector').style.display = 'none';
+        
+        try {
+          // Load tournament
+          let tournaments = [];
+          
+          if (db) {
+            try {
+              const snapshot = await db.ref('tournaments').once('value');
+              const data = snapshot.val();
+              if (data) {
+                tournaments = Object.values(data);
+              }
+            } catch (e) {
+              console.error('Firebase error:', e);
+            }
+          }
+          
+          if (tournaments.length === 0) {
+            tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          }
+          
+          currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (!currentTournament) {
+            throw new Error('Tournament not found');
+          }
+          
+          // Set round - use URL param, or default to FIRST round (not last)
+          const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
+          currentRoundId = roundId || roundIds[0]; // Default to first round
+          
+          // Update header with round selector if multiple rounds
+          document.getElementById('tournament-name').textContent = currentTournament.name;
+          
+          if (roundIds.length > 1) {
+            let roundSelector = `<select id="round-selector-dropdown" onchange="changeRound(this.value)" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; font-size: 13px; cursor: pointer;">`;
+            roundIds.forEach((rid, idx) => {
+              roundSelector += `<option value="${rid}" ${rid === currentRoundId ? 'selected' : ''} style="color: black;">Round ${idx + 1}</option>`;
+            });
+            roundSelector += `</select>`;
+            document.getElementById('tournament-info').innerHTML = 
+              `${currentTournament.date || ''} • ${roundSelector}`;
+          } else {
+            document.getElementById('tournament-info').textContent = 
+              `${currentTournament.date || ''} • Round 1`;
+          }
+          
+          // Load course data
+          await loadCourseData();
+          
+          // Load admitted players
+          await loadAdmittedPlayers();
+          
+          // Load categories
+          loadCategories();
+          
+          // Load live scores and setup listener
+          await loadLiveScores();
+          setupFirebaseListener();
+          
+          // Show UI
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('stats-bar').style.display = 'grid';
+          document.getElementById('leaderboard-wrapper').style.display = 'block';
+          
+          // Render leaderboard
+          renderLeaderboard();
+          
+        } catch (error) {
+          console.error('Error loading tournament:', error);
+          document.getElementById('loading').innerHTML = `
+            <div style="color: #ef4444;">Error loading tournament</div>
+            <div style="margin-top: 8px; font-size: 13px;">${error.message}</div>
+          `;
+        }
+      }
+
+      // Load course data
+      async function loadCourseData() {
+        let courses = [];
+        
+        if (db) {
+          try {
+            const snapshot = await db.ref('courses').once('value');
+            courses = snapshot.val() || [];
+          } catch (e) {}
+        }
+        
+        if (!courses.length) {
+          courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        }
+        
+        const courseId = currentTournament.meta?.courses?.[0] || currentTournament.courseId;
+        courseData = courses.find(c => c.id === courseId || c.name === courseId);
+      }
+
+      // Load admitted players
+      async function loadAdmittedPlayers() {
+        // First load from localStorage
+        let admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        console.log('All admitted player keys:', Object.keys(admittedData));
+        
+        admittedPlayers = admittedData[currentRoundId] || [];
+        console.log('Admitted players for', currentRoundId, ':', admittedPlayers.length);
+        
+        // Try alternative roundId format
+        if (admittedPlayers.length === 0) {
+          for (const key of Object.keys(admittedData)) {
+            if (key.endsWith(currentRoundId) || currentRoundId.endsWith(key) || 
+                key.includes(currentRoundId.replace(/^[A-Z]+-/, '')) ||
+                currentRoundId.includes(key.replace(/^[A-Z]+-/, ''))) {
+              console.log('Found admitted players with matching key:', key);
+              admittedPlayers = admittedData[key];
+              break;
+            }
+          }
+        }
+        
+        // Also try Firebase
+        if (db) {
+          try {
+            const snapshot = await db.ref('admittedPlayers').once('value');
+            const firebaseData = snapshot.val() || {};
+            
+            if (firebaseData[currentRoundId] && firebaseData[currentRoundId].length > admittedPlayers.length) {
+              admittedPlayers = firebaseData[currentRoundId];
+            }
+          } catch (e) {
+            console.error('Firebase admitted players error:', e);
+          }
+        }
+        
+        console.log('Final admitted players count:', admittedPlayers.length);
+      }
+
+      // Get teams from tournament
+      function getTeams() {
+        if (!currentTournament) return [];
+        
+        // Teams are stored in tournament.teamsByRound
+        const teamsByRound = currentTournament.teamsByRound || {};
+        const roundKeys = Object.keys(teamsByRound);
+        
+        if (roundKeys.length > 0) {
+          // Return teams from the first round (usually round 0)
+          return teamsByRound[roundKeys[0]] || [];
+        }
+        
+        // Fallback to legacy teams array
+        if (currentTournament.teams && currentTournament.teams.length > 0) {
+          return currentTournament.teams;
+        }
+        
+        return [];
+      }
+
+      // Check if current view should show team leaderboard
+      function isTeamLeaderboardView() {
+        return currentTournament?.meta?.teamsTournament === 'yes' && currentCategory === 'TEAM';
+      }
+
+      // Load categories
+      function loadCategories() {
+        // Check both direct categories and meta.categories
+        const categories = currentTournament.categories || currentTournament.meta?.categories || [];
+        const tabsContainer = document.getElementById('category-tabs');
+        
+        console.log('Loading categories from tournament:', currentTournament);
+        console.log('Tournament categories:', currentTournament.categories);
+        console.log('Meta categories:', currentTournament.meta?.categories);
+        console.log('Final categories array:', categories);
+        
+        if (categories.length === 0) {
+          console.log('No categories found - hiding tabs');
+          tabsContainer.style.display = 'none';
+          return;
+        }
+        
+        let html = '<button class="category-tab active" data-category="ALL" onclick="selectCategory(\'ALL\')">All Players</button>';
+        
+        categories.forEach(cat => {
+          // Handle both object format {code, name} and string format
+          const code = cat.code || cat;
+          const name = cat.name || cat;
+          console.log('Adding category tab:', code, name);
+          html += `<button class="category-tab" data-category="${code}" onclick="selectCategory('${code}')">${name}</button>`;
+        });
+        
+        tabsContainer.innerHTML = html;
+        tabsContainer.style.display = 'flex';
+      }
+
+      // Select category
+      function selectCategory(category) {
+        currentCategory = category;
+        
+        // Update tabs
+        document.querySelectorAll('.category-tab').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.category === category);
+        });
+        
+        // Update column headers based on scoring format
+        updateColumnHeaders();
+        
+        renderLeaderboard();
+      }
+      
+      // Update column headers for scoring format
+      function updateColumnHeaders() {
+        const useStableford = isStablefordScoring();
+        const useNet = isNetScoring();
+        const isTeamView = isTeamLeaderboardView();
+        
+        const scoreHeader = document.getElementById('score-header');
+        const todayHeader = document.getElementById('today-header');
+        const totalHeader = document.getElementById('total-header');
+        const holesHeader = document.getElementById('holes-header');
+        
+        // Find the table header row to modify for team view
+        const thead = document.querySelector('.leaderboard-table thead tr');
+        
+        if (isTeamView) {
+          // Team view: simpler columns
+          if (thead) {
+            const teamScoresCount = parseInt(currentTournament?.meta?.teamScoresCount) || 3;
+            thead.innerHTML = `
+              <th style="width: 50px;">Pos</th>
+              <th>Team / Player</th>
+              <th class="center" style="width: 60px;">Thru</th>
+              <th class="center" style="width: 80px;">Points</th>
+            `;
+          }
+          return;
+        }
+        
+        // Reset to normal player view headers
+        if (thead && thead.children.length < 6) {
+          thead.innerHTML = `
+            <th style="width: 50px;">Pos</th>
+            <th>Player</th>
+            <th class="center" style="width: 80px;" id="score-header">To Par</th>
+            <th class="center" style="width: 60px;">Thru</th>
+            <th class="center" style="width: 70px;" id="today-header">Today</th>
+            <th class="center" style="width: 70px;" id="total-header">Total</th>
+            <th class="center" id="holes-header">Holes</th>
+          `;
+        }
+        
+        // Re-get elements after potential reset
+        const newScoreHeader = document.getElementById('score-header');
+        const newTodayHeader = document.getElementById('today-header');
+        const newTotalHeader = document.getElementById('total-header');
+        
+        if (newScoreHeader) {
+          if (useStableford) {
+            newScoreHeader.textContent = 'Points';
+          } else if (useNet) {
+            newScoreHeader.textContent = 'Net';
+          } else {
+            newScoreHeader.textContent = 'To Par';
+          }
+        }
+        if (newTodayHeader) {
+          if (useStableford) {
+            newTodayHeader.textContent = 'Pts';
+          } else if (useNet) {
+            newTodayHeader.textContent = 'Net';
+          } else {
+            newTodayHeader.textContent = 'Today';
+          }
+        }
+        if (newTotalHeader) {
+          if (useStableford) {
+            newTotalHeader.textContent = 'Total Pts';
+          } else if (useNet) {
+            newTotalHeader.textContent = 'Net Total';
+          } else {
+            newTotalHeader.textContent = 'Total';
+          }
+        }
+      }
+      
+      // Get the scoring format for the current category
+      function getCurrentScoringFormat() {
+        if (currentCategory === 'ALL') {
+          // Default to stroke play for "All Players" view
+          return 'Stroke Play';
+        }
+        
+        // Check both direct categories and meta.categories (same as loadCategories)
+        const categories = currentTournament?.categories || currentTournament?.meta?.categories || [];
+        const category = categories.find(c => (c.code || c) === currentCategory);
+        
+        return category?.tournamentType || 'Stroke Play';
+      }
+      
+      // Check if current category uses Stableford scoring
+      function isStablefordScoring() {
+        const format = getCurrentScoringFormat();
+        return format.toLowerCase().includes('stableford');
+      }
+      
+      // Check if current category uses Net scoring (Medal Net, Stroke Play Net, etc.)
+      function isNetScoring() {
+        const format = getCurrentScoringFormat();
+        return format.toLowerCase().includes('net');
+      }
+      
+      // Calculate Stableford points for a single hole
+      function calculateStablefordPoints(grossScore, par, strokesReceived) {
+        if (!grossScore || grossScore === null) return 0;
+        
+        // Net score = gross - strokes received on this hole
+        const netScore = grossScore - strokesReceived;
+        
+        // Stableford points based on net score vs par
+        const diff = netScore - par;
+        
+        if (diff <= -3) return 5;      // Albatross or better
+        if (diff === -2) return 4;     // Eagle
+        if (diff === -1) return 3;     // Birdie
+        if (diff === 0) return 2;      // Par
+        if (diff === 1) return 1;      // Bogey
+        return 0;                       // Double bogey or worse
+      }
+
+      // Load live scores
+      async function loadLiveScores() {
+        console.log('Loading scores for round:', currentRoundId);
+        
+        // First, load from localStorage
+        const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+        console.log('All localStorage score keys:', Object.keys(scoresData));
+        
+        liveScores = scoresData[currentRoundId] || {};
+        console.log('Local scores found:', Object.keys(liveScores).length);
+        
+        // Try alternative roundId formats if no scores found
+        if (Object.keys(liveScores).length === 0) {
+          // Try without prefix (T0003-1 instead of KLA-T0003-1)
+          for (const key of Object.keys(scoresData)) {
+            if (key.endsWith(currentRoundId) || currentRoundId.endsWith(key) || 
+                key.includes(currentRoundId.replace(/^[A-Z]+-/, '')) ||
+                currentRoundId.includes(key.replace(/^[A-Z]+-/, ''))) {
+              console.log('Found scores with matching key:', key);
+              liveScores = scoresData[key];
+              break;
+            }
+          }
+        }
+        
+        // Then try Firebase
+        if (!db || !currentRoundId) return;
+        
+        try {
+          // Check live settings first
+          const settingsSnapshot = await db.ref(`liveSettings/${currentRoundId}`).once('value');
+          const settings = settingsSnapshot.val();
+          isLiveScoringActive = settings?.active !== false; // Default to true if not set
+          isLeaderboardVisible = settings?.leaderboardVisible !== false; // Default to true if not set
+          updateLiveIndicator();
+          
+          // Try liveScores path first
+          let snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
+          const firebaseLiveScores = snapshot.val() || {};
+          console.log('Firebase liveScores:', Object.keys(firebaseLiveScores).length);
+          
+          // Also check regular scores
+          snapshot = await db.ref(`scores/${currentRoundId}`).once('value');
+          const regularScores = snapshot.val() || {};
+          console.log('Firebase regular scores:', Object.keys(regularScores).length);
+          
+          // Merge Firebase scores into local scores
+          for (const playerId in firebaseLiveScores) {
+            liveScores[playerId] = firebaseLiveScores[playerId];
+          }
+          for (const playerId in regularScores) {
+            if (!liveScores[playerId]) {
+              liveScores[playerId] = regularScores[playerId];
+            }
+          }
+          
+          console.log('Total scores after merge:', Object.keys(liveScores).length);
+        } catch (error) {
+          console.error('Error loading scores from Firebase:', error);
+        }
+      }
+
+      // Setup Firebase real-time listener
+      function setupFirebaseListener() {
+        if (firebaseListener) {
+          firebaseListener();
+        }
+        if (settingsListener) {
+          settingsListener();
+        }
+        
+        if (!db || !currentRoundId) return;
+        
+        // Listen for live scores
+        const liveScoresRef = db.ref(`liveScores/${currentRoundId}`);
+        
+        firebaseListener = liveScoresRef.on('value', (snapshot) => {
+          const newScores = snapshot.val() || {};
+          
+          // Detect changes
+          const changedPlayers = [];
+          for (const key in newScores) {
+            if (!liveScores[key] || JSON.stringify(liveScores[key]) !== JSON.stringify(newScores[key])) {
+              changedPlayers.push(key);
+            }
+          }
+          
+          liveScores = newScores;
+          renderLeaderboard(changedPlayers);
+        });
+        
+        // Listen for live settings (active/inactive)
+        const settingsRef = db.ref(`liveSettings/${currentRoundId}`);
+        
+        settingsListener = settingsRef.on('value', (snapshot) => {
+          const settings = snapshot.val();
+          const wasActive = isLiveScoringActive;
+          const wasVisible = isLeaderboardVisible;
+          
+          isLiveScoringActive = settings?.active !== false; // Default to true if not set
+          isLeaderboardVisible = settings?.leaderboardVisible !== false; // Default to true if not set
+          
+          // Update the live indicator
+          updateLiveIndicator();
+          
+          // Re-render if status changed
+          if (wasActive !== isLiveScoringActive || wasVisible !== isLeaderboardVisible) {
+            renderLeaderboard();
+          }
+        });
+      }
+      
+      // Update the live indicator based on active status
+      function updateLiveIndicator() {
+        const indicator = document.querySelector('.live-indicator');
+        if (!indicator) return;
+        
+        if (!isLeaderboardVisible) {
+          indicator.innerHTML = '🚫 HIDDEN';
+          indicator.style.background = 'rgba(100, 116, 139, 0.9)';
+          indicator.style.animation = 'none';
+        } else if (isLiveScoringActive) {
+          indicator.innerHTML = '<div class="live-dot"></div> LIVE';
+          indicator.style.background = 'rgba(239, 68, 68, 0.9)';
+          indicator.style.animation = 'pulse 2s infinite';
+        } else {
+          indicator.innerHTML = '⏹ ENDED';
+          indicator.style.background = 'rgba(100, 116, 139, 0.9)';
+          indicator.style.animation = 'none';
+        }
+      }
+
+      // Calculate player score
+      function calculateScore(playerKey) {
+        const scoreData = liveScores[playerKey];
+        
+        if (!scoreData || !scoreData.holes) {
+          return { gross: 0, net: 0, toPar: 0, netToPar: 0, thru: 0, holesPlayed: 0, holes: [], stablefordPoints: 0, stablefordToPar: 0 };
+        }
+        
+        const holes = scoreData.holes;
+        const coursePars = getCoursePars();
+        const strokeIndexes = getCourseStrokeIndexes();
+        
+        // Get player info for handicap
+        const playerInfo = admittedPlayers.find(p => (p.reg || `${p.firstName}-${p.lastName}`) === playerKey) || scoreData;
+        
+        // Use phcp (from admissions) first, then playingHcp, then hcp
+        const playingHcp = playerInfo?.phcp || playerInfo?.playingHcp || playerInfo?.hcp || 0;
+        
+        let gross = 0;
+        let net = 0;
+        let coursePar = 0;
+        let thru = 0;  // Last hole number with a score (for display)
+        let holesPlayed = 0;  // Actual count of holes played (for Stableford calculation)
+        let stablefordPoints = 0;
+        let totalStrokesReceived = 0;  // Total strokes received on played holes
+        const holeScores = [];
+        
+        for (let i = 0; i < 18; i++) {
+          const holePar = coursePars[i];
+          const strokeIndex = strokeIndexes[i];
+          const strokesOnHole = getStrokesForHole(playingHcp, strokeIndex);
+          
+          if (holes[i] && holes[i] !== '' && holes[i] !== null) {
+            let score;
+            
+            // Handle 'X' (DNF) - use max score or net double bogey (0 points in Stableford)
+            if (holes[i] === 'X' || holes[i] === 'x') {
+              score = getMaxScoreForHole(i, playerInfo, holePar, strokeIndex);
+            } else {
+              score = parseInt(holes[i]);
+              // Skip invalid scores
+              if (isNaN(score)) {
+                holeScores.push({ score: null, netScore: null, displayScore: null, diff: 0, netDiff: 0, par: holePar, stablefordPoints: 0, strokesReceived: strokesOnHole });
+                continue;
+              }
+            }
+            
+            const netScore = score - strokesOnHole;
+            
+            gross += score;
+            net += netScore;
+            coursePar += holePar;
+            totalStrokesReceived += strokesOnHole;
+            thru = i + 1;  // Last hole number (1-indexed)
+            holesPlayed++;  // Increment actual count of holes played
+            
+            const diff = score - holePar;
+            const netDiff = netScore - holePar;
+            
+            // Calculate Stableford points for this hole
+            const holeStablefordPoints = (holes[i] === 'X' || holes[i] === 'x') 
+              ? 0 
+              : calculateStablefordPoints(score, holePar, strokesOnHole);
+            stablefordPoints += holeStablefordPoints;
+            
+            // Store original display value (X) but calculated score for sorting
+            holeScores.push({ 
+              score, 
+              netScore,
+              displayScore: holes[i], 
+              diff,
+              netDiff,
+              par: holePar,
+              stablefordPoints: holeStablefordPoints,
+              strokesReceived: strokesOnHole
+            });
+          } else {
+            holeScores.push({ score: null, netScore: null, displayScore: null, diff: 0, netDiff: 0, par: holePar, stablefordPoints: 0, strokesReceived: strokesOnHole });
+          }
+        }
+        
+        // Expected Stableford points (2 per hole ACTUALLY played = net par)
+        // Use holesPlayed (actual count), not thru (last hole index) for shotgun support
+        const expectedStablefordPoints = holesPlayed * 2;
+        // Stableford "to par" = actual points - expected (positive is good!)
+        const stablefordToPar = stablefordPoints - expectedStablefordPoints;
+        
+        return {
+          gross,
+          net,
+          toPar: gross - coursePar,  // Gross to par
+          netToPar: net - coursePar, // Net to par (net score - course par for played holes)
+          thru,
+          holesPlayed,
+          holes: holeScores,
+          stablefordPoints,
+          stablefordToPar,
+          playingHcp
+        };
+      }
+
+      // Get max score for a hole (used when X is entered)
+      function getMaxScoreForHole(holeIndex, player, par, strokeIndex) {
+        const maxScoreSetting = currentTournament?.meta?.maxScore;
+        
+        // If max score is defined in tournament settings
+        if (maxScoreSetting && maxScoreSetting !== 'na') {
+          const phcp = player?.playingHcp || player?.hcp || player?.phcp || 0;
+          
+          switch(maxScoreSetting) {
+            case 'net_double_bogey':
+              const strokesReceived = getStrokesForHole(phcp, strokeIndex);
+              return par + 2 + strokesReceived;
+            case 'par_plus_4':
+              return par + 4;
+            case 'double_par':
+              return par * 2;
+            case '10':
+              return 10;
+          }
+        }
+        
+        // Default: Net double bogey
+        const phcp = player?.playingHcp || player?.hcp || player?.phcp || 0;
+        const strokesReceived = getStrokesForHole(phcp, strokeIndex);
+        return par + 2 + strokesReceived;
+      }
+
+      // Calculate strokes received on a hole
+      function getStrokesForHole(playingHcp, strokeIndex) {
+        if (!playingHcp || playingHcp <= 0) return 0;
+        
+        let strokes = 0;
+        
+        if (playingHcp >= strokeIndex) strokes = 1;
+        if (playingHcp > 18 && (playingHcp - 18) >= strokeIndex) strokes += 1;
+        if (playingHcp > 36 && (playingHcp - 36) >= strokeIndex) strokes += 1;
+        
+        return strokes;
+      }
+
+      // Get course stroke indexes
+      function getCourseStrokeIndexes() {
+        const defaultSI = [1, 3, 5, 7, 9, 11, 13, 15, 17, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+        
+        if (!courseData) return defaultSI;
+        
+        if (courseData.strokeIndexes && Array.isArray(courseData.strokeIndexes)) {
+          return courseData.strokeIndexes;
+        }
+        
+        if (courseData.holes && Array.isArray(courseData.holes)) {
+          return courseData.holes.map(h => h.si || 1);
+        }
+        
+        return defaultSI;
+      }
+
+      // Get course pars array (handles different data formats)
+      function getCoursePars() {
+        const defaultPars = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5];
+        
+        if (!courseData) return defaultPars;
+        
+        // Check if course has pars array (new format)
+        if (courseData.pars && Array.isArray(courseData.pars)) {
+          return courseData.pars;
+        }
+        
+        // Check if course has holes array (old format)
+        if (courseData.holes && Array.isArray(courseData.holes)) {
+          return courseData.holes.map(h => h.par || 4);
+        }
+        
+        return defaultPars;
+      }
+
+      // Render leaderboard
+      function renderLeaderboard(changedPlayers = []) {
+        // Check if we should show team leaderboard
+        if (isTeamLeaderboardView()) {
+          renderTeamLeaderboard(changedPlayers);
+          return;
+        }
+        
+        const container = document.getElementById('leaderboard-body');
+        const noData = document.getElementById('no-data');
+        
+        // If leaderboard is hidden, show message
+        if (!isLeaderboardVisible) {
+          container.innerHTML = '';
+          noData.style.display = 'block';
+          noData.innerHTML = `
+            <div class="no-data-icon">🚫</div>
+            <div>Leaderboard is currently unavailable</div>
+            <div style="margin-top: 8px; font-size: 13px;">Please check back later</div>
+          `;
+          
+          // Hide stats
+          document.getElementById('stat-leader').textContent = '-';
+          document.getElementById('stat-players').textContent = '-';
+          document.getElementById('stat-completed').textContent = '-';
+          return;
+        }
+        
+        // Build player list with scores
+        let players = [];
+        
+        // Get all players from admitted list or scores
+        const playerKeys = new Set([
+          ...Object.keys(liveScores),
+          ...admittedPlayers.map(p => p.reg || `${p.firstName}-${p.lastName}`)
+        ]);
+        
+        playerKeys.forEach(key => {
+          const scoreData = calculateScore(key);
+          
+          // Find player info - try multiple matching strategies
+          let playerInfo = admittedPlayers.find(p => {
+            const playerReg = p.reg || '';
+            const playerKey = `${p.firstName}-${p.lastName}`;
+            return playerReg === key || playerKey === key || playerReg.toLowerCase() === key.toLowerCase();
+          });
+          
+          // Also try matching by reg number within score data
+          if (!playerInfo) {
+            const scoreInfo = liveScores[key];
+            if (scoreInfo?.firstName && scoreInfo?.lastName) {
+              playerInfo = {
+                firstName: scoreInfo.firstName,
+                lastName: scoreInfo.lastName,
+                club: scoreInfo.club || scoreInfo.homeClub || '',
+                categories: scoreInfo.categories || [],
+                hcp: scoreInfo.hcp,
+                playingHcp: scoreInfo.playingHcp || scoreInfo.phcp,
+                reg: key
+              };
+            } else {
+              // Last resort - check if key looks like a registration number
+              const isRegNumber = /^P\d+$/.test(key);
+              if (isRegNumber) {
+                // Try to find by reg number in admitted players
+                playerInfo = admittedPlayers.find(p => p.reg === key);
+              }
+              
+              if (!playerInfo) {
+                // Fallback - create minimal player info
+                const parts = key.split('-');
+                playerInfo = {
+                  firstName: parts.length > 1 ? parts[0] : key,
+                  lastName: parts.length > 1 ? parts.slice(1).join(' ') : '',
+                  reg: key
+                };
+              }
+            }
+          }
+          
+          // Filter by category
+          if (currentCategory !== 'ALL') {
+            const playerCategories = playerInfo.categories || [];
+            
+            // Special handling for TEAM category in team tournaments
+            const isTeamTournament = currentTournament?.meta?.teamsTournament === 'yes';
+            const isTeamCategory = currentCategory === 'TEAM';
+            
+            // In team tournaments, all players belong to TEAM category
+            if (isTeamTournament && isTeamCategory) {
+              // Include all players for TEAM category
+            } else if (!playerCategories.includes(currentCategory)) {
+              return;
+            }
+          }
+          
+          players.push({
+            key,
+            ...playerInfo,
+            ...scoreData
+          });
+        });
+        
+        // Check if we're using Stableford scoring for this category
+        const useStableford = isStablefordScoring();
+        const useNet = isNetScoring();
+        
+        // Sort by score
+        // Stroke play: lowest to par first (ascending)
+        // Medal Net: lowest net to par first (ascending)
+        // Stableford: highest points first (descending)
+        // Use holesPlayed (actual count) instead of thru (last hole index) for shotgun support
+        players.sort((a, b) => {
+          if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
+          if (a.holesPlayed === 0) return 1;
+          if (b.holesPlayed === 0) return -1;
+          
+          if (useStableford) {
+            // Stableford: higher is better
+            if (a.stablefordToPar !== b.stablefordToPar) return b.stablefordToPar - a.stablefordToPar;
+          } else if (useNet) {
+            // Medal Net: lower net to par is better
+            if (a.netToPar !== b.netToPar) return a.netToPar - b.netToPar;
+          } else {
+            // Stroke play (gross): lower is better
+            if (a.toPar !== b.toPar) return a.toPar - b.toPar;
+          }
+          return b.holesPlayed - a.holesPlayed;
+        });
+        
+        // Assign positions
+        let currentPosition = 1;
+        let previousScore = null;
+        let previousHolesPlayed = null;
+        let playersAtPosition = 0;
+        
+        players.forEach((player, index) => {
+          // Use appropriate score based on format
+          const sortScore = useStableford ? player.stablefordToPar : (useNet ? player.netToPar : player.toPar);
+          
+          if (player.holesPlayed === 0) {
+            player.position = '-';
+          } else if (sortScore === previousScore && player.holesPlayed === previousHolesPlayed) {
+            player.position = players[index - playersAtPosition].position;
+            playersAtPosition++;
+          } else {
+            player.position = currentPosition;
+            previousScore = sortScore;
+            previousHolesPlayed = player.holesPlayed;
+            playersAtPosition = 1;
+          }
+          currentPosition = index + 2;
+        });
+        
+        // Check for no data
+        const playersWithScores = players.filter(p => p.holesPlayed > 0);
+        
+        if (playersWithScores.length === 0) {
+          document.getElementById('leaderboard-wrapper').style.display = 'none';
+          document.getElementById('no-data').style.display = 'block';
+          document.getElementById('stats-bar').style.display = 'none';
+          return;
+        }
+        
+        document.getElementById('no-data').style.display = 'none';
+        document.getElementById('leaderboard-wrapper').style.display = 'block';
+        document.getElementById('stats-bar').style.display = 'grid';
+        
+        // Update stats
+        updateStats(players);
+        
+        // Smart DOM update - update individual rows instead of rebuilding entire table
+        const tbody = document.getElementById('leaderboard-body');
+        const existingRows = tbody.querySelectorAll('tr[data-player-key]');
+        const existingRowMap = {};
+        existingRows.forEach(row => {
+          existingRowMap[row.dataset.playerKey] = row;
+        });
+        
+        // Track rows that should exist
+        const currentPlayerKeys = new Set(players.map(p => p.key));
+        
+        // Remove rows for players no longer in the list
+        existingRows.forEach(row => {
+          if (!currentPlayerKeys.has(row.dataset.playerKey)) {
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(-20px)';
+            setTimeout(() => row.remove(), 300);
+          }
+        });
+        
+        // Update or create rows
+        players.forEach((player, index) => {
+          const isChanged = changedPlayers.includes(player.key);
+          const positionChange = getPositionChange(player.key, player.position);
+          
+          // Store current position for next update
+          if (typeof player.position === 'number') {
+            previousPositions[player.key] = player.position;
+          }
+          
+          // Format score based on scoring format
+          let toParStr, toParClass;
+          if (useStableford) {
+            // Stableford: show total points and +/- from expected (positive is good)
+            // Use holesPlayed to check if player has any scores (0 points is still a valid score!)
+            const hasScores = player.holesPlayed > 0;
+            const pointsDisplay = hasScores ? player.stablefordPoints : '-';
+            const toParValue = player.stablefordToPar;
+            // Check for NaN or no scores
+            if (!hasScores || isNaN(toParValue)) {
+              toParStr = '-';
+              toParClass = 'even-par';
+            } else {
+              toParStr = toParValue === 0 ? 'E' : (toParValue > 0 ? `+${toParValue}` : toParValue);
+              // In Stableford, positive is GOOD (under-par styling), negative is BAD (over-par styling)
+              toParClass = toParValue > 0 ? 'under-par' : (toParValue < 0 ? 'over-par' : 'even-par');
+            }
+          } else {
+            // Stroke play: show to par (negative is good)
+            // Check if using Net scoring (Medal Net, etc.)
+            const useNet = isNetScoring();
+            const toParValue = useNet ? player.netToPar : player.toPar;
+            
+            // Use holesPlayed to check if player has any scores
+            const hasScores = player.holesPlayed > 0;
+            if (!hasScores || isNaN(toParValue)) {
+              toParStr = '-';
+              toParClass = 'even-par';
+            } else {
+              toParStr = toParValue === 0 ? 'E' : (toParValue > 0 ? `+${toParValue}` : toParValue);
+              toParClass = toParValue < 0 ? 'under-par' : (toParValue > 0 ? 'over-par' : 'even-par');
+            }
+          }
+          
+          const initials = `${player.firstName?.[0] || ''}${player.lastName?.[0] || ''}`.toUpperCase();
+          
+          const existingRow = existingRowMap[player.key];
+          
+          if (existingRow) {
+            // Update existing row with smooth transition
+            const posCell = existingRow.querySelector('.position-cell');
+            const scoreCell = existingRow.querySelector('.score-cell');
+            const thruCell = existingRow.querySelector('.thru-cell');
+            const roundScores = existingRow.querySelectorAll('.round-score');
+            const holeScoresCell = existingRow.querySelector('td:last-child');
+            
+            // Update position
+            if (posCell) {
+              posCell.innerHTML = `${player.position}${positionChange}`;
+              posCell.className = `position-cell ${player.position <= 3 ? 'top-3' : ''}`;
+            }
+            
+            // Update score with animation if changed
+            if (scoreCell) {
+              const newScore = toParStr;
+              if (scoreCell.textContent !== newScore || isChanged) {
+                scoreCell.textContent = newScore;
+                scoreCell.className = `score-cell ${toParClass}`;
+                if (isChanged) {
+                  scoreCell.style.transform = 'scale(1.2)';
+                  scoreCell.style.transition = 'transform 0.3s ease';
+                  setTimeout(() => { scoreCell.style.transform = 'scale(1)'; }, 300);
+                }
+              }
+            }
+            
+            // Update thru (use holesPlayed for display, thru for "F" check)
+            if (thruCell) {
+              const thruDisplay = player.holesPlayed === 0 ? '-' : (player.holesPlayed === 18 ? 'F' : player.holesPlayed);
+              thruCell.textContent = thruDisplay;
+              thruCell.className = `thru-cell ${player.holesPlayed === 18 ? 'finished' : ''}`;
+            }
+            
+            // Update round scores (0 is a valid score, so check holesPlayed not the value)
+            const hasScores = player.holesPlayed > 0;
+            const useNet = isNetScoring();
+            let todayValue;
+            if (useStableford) {
+              todayValue = hasScores ? player.stablefordPoints : '-';
+            } else if (useNet) {
+              todayValue = hasScores ? player.net : '-';
+            } else {
+              todayValue = hasScores ? player.gross : '-';
+            }
+            roundScores.forEach(cell => {
+              cell.textContent = todayValue;
+            });
+            
+            // Update hole scores
+            if (holeScoresCell) {
+              holeScoresCell.innerHTML = renderHoleScores(player.holes, useStableford, useNet);
+            }
+            
+            // Highlight if changed
+            if (isChanged) {
+              existingRow.classList.add('highlight');
+              setTimeout(() => existingRow.classList.remove('highlight'), 2000);
+            }
+            
+            // Move row to correct position if needed
+            const currentIndex = Array.from(tbody.children).indexOf(existingRow);
+            if (currentIndex !== index) {
+              existingRow.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+              const targetRow = tbody.children[index];
+              if (targetRow && targetRow !== existingRow) {
+                tbody.insertBefore(existingRow, targetRow);
+              } else if (index >= tbody.children.length) {
+                tbody.appendChild(existingRow);
+              }
+            }
+          } else {
+            // Create new row with animation
+            const newRow = document.createElement('tr');
+            newRow.dataset.playerKey = player.key;
+            newRow.style.opacity = '0';
+            newRow.style.transform = 'translateX(20px)';
+            
+            // Display values based on scoring format
+            const hasScores = player.holesPlayed > 0;
+            const useNet = isNetScoring();
+            let todayValue, totalValue;
+            if (useStableford) {
+              todayValue = hasScores ? player.stablefordPoints : '-';
+              totalValue = hasScores ? player.stablefordPoints : '-';
+            } else if (useNet) {
+              todayValue = hasScores ? player.net : '-';
+              totalValue = hasScores ? player.net : '-';
+            } else {
+              todayValue = hasScores ? player.gross : '-';
+              totalValue = hasScores ? player.gross : '-';
+            }
+            
+            newRow.innerHTML = `
+              <td class="position-cell ${player.position <= 3 ? 'top-3' : ''}">${player.position}${positionChange}</td>
+              <td>
+                <div class="player-cell">
+                  <div class="player-avatar">${initials}</div>
+                  <div class="player-info">
+                    <div class="player-name">${player.firstName} ${player.lastName}</div>
+                    <div class="player-club">${player.club || player.homeClub || '-'}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="score-cell ${toParClass}">${toParStr}</td>
+              <td class="thru-cell ${player.holesPlayed === 18 ? 'finished' : ''}">${player.holesPlayed === 0 ? '-' : (player.holesPlayed === 18 ? 'F' : player.holesPlayed)}</td>
+              <td class="round-score">${todayValue}</td>
+              <td class="round-score">${totalValue}</td>
+              <td>${renderHoleScores(player.holes, useStableford, useNet)}</td>
+            `;
+            
+            // Insert at correct position
+            const targetRow = tbody.children[index];
+            if (targetRow) {
+              tbody.insertBefore(newRow, targetRow);
+            } else {
+              tbody.appendChild(newRow);
+            }
+            
+            // Animate in
+            requestAnimationFrame(() => {
+              newRow.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+              newRow.style.opacity = '1';
+              newRow.style.transform = 'translateX(0)';
+            });
+          }
+        });
+        
+        // Update last updated
+        document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+      }
+
+      // Get position change indicator
+      function getPositionChange(playerKey, currentPosition) {
+        if (typeof currentPosition !== 'number') return '';
+        
+        const previousPosition = previousPositions[playerKey];
+        if (!previousPosition) return '';
+        
+        const change = previousPosition - currentPosition;
+        
+        if (change > 0) {
+          return `<span class="movement up">↑${change}</span>`;
+        } else if (change < 0) {
+          return `<span class="movement down">↓${Math.abs(change)}</span>`;
+        }
+        
+        return '';
+      }
+
+      // Render hole scores
+      function renderHoleScores(holes, useStableford = false, useNet = false) {
+        if (!holes || holes.length === 0) return '-';
+        
+        // Helper to render a single hole score
+        function renderSingleHole(hole, index) {
+          if (hole.score === null) {
+            return `<div class="hole-score">-</div>`;
+          }
+          
+          let className = 'hole-score ';
+          const isX = hole.displayScore === 'X' || hole.displayScore === 'x';
+          
+          if (useStableford) {
+            const pts = hole.stablefordPoints || 0;
+            if (isX || pts === 0) className += 'double';
+            else if (pts === 1) className += 'bogey';
+            else if (pts === 2) className += 'par';
+            else if (pts === 3) className += 'birdie';
+            else className += 'eagle';
+            const displayValue = isX ? '0' : pts;
+            return `<div class="${className}" title="${hole.score} strokes">${displayValue}</div>`;
+          } else if (useNet) {
+            const netDiff = hole.netDiff || 0;
+            if (isX) className += 'dnf';
+            else if (netDiff <= -2) className += 'eagle';
+            else if (netDiff === -1) className += 'birdie';
+            else if (netDiff === 0) className += 'par';
+            else if (netDiff === 1) className += 'bogey';
+            else className += 'double';
+            const displayValue = isX ? 'X' : hole.netScore;
+            const strokeInfo = hole.strokesReceived > 0 ? ` (${hole.strokesReceived} stroke${hole.strokesReceived > 1 ? 's' : ''})` : '';
+            return `<div class="${className}" title="Gross: ${hole.score}${strokeInfo}">${displayValue}</div>`;
+          } else {
+            if (isX) className += 'dnf';
+            else if (hole.diff <= -2) className += 'eagle';
+            else if (hole.diff === -1) className += 'birdie';
+            else if (hole.diff === 0) className += 'par';
+            else if (hole.diff === 1) className += 'bogey';
+            else className += 'double';
+            const displayValue = isX ? 'X' : hole.score;
+            return `<div class="${className}">${displayValue}</div>`;
+          }
+        }
+        
+        let html = '<div class="hole-scores-container">';
+        
+        // All 18 hole numbers in one row (for desktop)
+        html += '<div class="hole-numbers hole-numbers-all">';
+        for (let i = 1; i <= 18; i++) {
+          html += `<div class="hole-number">${i}</div>`;
+        }
+        html += '</div>';
+        
+        // All 18 scores in one row (for desktop)
+        html += '<div class="hole-scores hole-scores-all">';
+        for (let i = 0; i < 18; i++) {
+          html += renderSingleHole(holes[i], i);
+        }
+        html += '</div>';
+        
+        // Front 9 (for mobile only)
+        html += '<div class="nine-holes front-nine">';
+        html += '<div class="hole-numbers">';
+        for (let i = 1; i <= 9; i++) {
+          html += `<div class="hole-number">${i}</div>`;
+        }
+        html += '</div>';
+        html += '<div class="hole-scores">';
+        for (let i = 0; i < 9; i++) {
+          html += renderSingleHole(holes[i], i);
+        }
+        html += '</div>';
+        html += '</div>';
+        
+        // Back 9 (for mobile only)
+        html += '<div class="nine-holes back-nine">';
+        html += '<div class="hole-numbers">';
+        for (let i = 10; i <= 18; i++) {
+          html += `<div class="hole-number">${i}</div>`;
+        }
+        html += '</div>';
+        html += '<div class="hole-scores">';
+        for (let i = 9; i < 18; i++) {
+          html += renderSingleHole(holes[i], i);
+        }
+        html += '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        return html;
+      }
+
+      // Render team leaderboard
+      function renderTeamLeaderboard(changedPlayers = []) {
+        const container = document.getElementById('leaderboard-body');
+        const noData = document.getElementById('no-data');
+        
+        // If leaderboard is hidden, show message
+        if (!isLeaderboardVisible) {
+          container.innerHTML = '';
+          noData.style.display = 'block';
+          noData.innerHTML = `
+            <div class="no-data-icon">🚫</div>
+            <div>Leaderboard is currently unavailable</div>
+          `;
+          return;
+        }
+        
+        const teams = getTeams();
+        const teamScoresCount = parseInt(currentTournament.meta?.teamScoresCount) || 3;
+        
+        console.log('Rendering team leaderboard:', teams.length, 'teams');
+        
+        if (teams.length === 0) {
+          container.innerHTML = '';
+          noData.style.display = 'block';
+          noData.innerHTML = `
+            <div class="no-data-icon">👥</div>
+            <div>No teams configured</div>
+            <div style="margin-top: 8px; font-size: 13px;">Please set up teams in the tournament settings</div>
+          `;
+          return;
+        }
+        
+        // Calculate team scores
+        const teamResults = teams.map(team => {
+          const teamPlayers = (team.players || []).map(playerId => {
+            return admittedPlayers.find(p => p.reg === playerId || p.playerId === playerId);
+          }).filter(p => p);
+          
+          // Get scores for each player
+          const playerScoresData = teamPlayers.map(player => {
+            const key = player.reg || `${player.firstName}-${player.lastName}`;
+            const scoreData = calculateScore(key);
+            
+            return {
+              ...player,
+              ...scoreData,
+              key
+            };
+          });
+          
+          // Sort by Stableford points (highest first) for best N
+          const sortedPlayers = [...playerScoresData].sort((a, b) => {
+            if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
+            if (a.holesPlayed === 0) return 1;
+            if (b.holesPlayed === 0) return -1;
+            return b.stablefordPoints - a.stablefordPoints;
+          });
+          
+          // Take best N scores
+          const countingPlayers = sortedPlayers.slice(0, teamScoresCount);
+          const totalPoints = countingPlayers.reduce((sum, p) => sum + (p.stablefordPoints || 0), 0);
+          const totalHolesPlayed = countingPlayers.reduce((sum, p) => sum + (p.holesPlayed || 0), 0);
+          const avgHolesPlayed = countingPlayers.length > 0 ? Math.round(totalHolesPlayed / countingPlayers.length) : 0;
+          
+          // Check if any counting player is still playing
+          const stillPlaying = countingPlayers.some(p => p.holesPlayed > 0 && p.holesPlayed < 18);
+          const allFinished = countingPlayers.length > 0 && countingPlayers.every(p => p.holesPlayed === 18);
+          
+          return {
+            teamId: team.teamId,
+            teamName: team.name,
+            players: sortedPlayers,
+            countingPlayers,
+            totalPoints,
+            avgHolesPlayed,
+            stillPlaying,
+            allFinished,
+            hasScores: countingPlayers.some(p => p.holesPlayed > 0)
+          };
+        });
+        
+        // Sort teams by total points (highest first)
+        teamResults.sort((a, b) => {
+          if (!a.hasScores && !b.hasScores) return 0;
+          if (!a.hasScores) return 1;
+          if (!b.hasScores) return -1;
+          return b.totalPoints - a.totalPoints;
+        });
+        
+        // Assign positions
+        let currentPosition = 1;
+        let previousPoints = null;
+        teamResults.forEach((team, index) => {
+          if (!team.hasScores) {
+            team.position = '-';
+          } else if (team.totalPoints === previousPoints) {
+            team.position = teamResults[index - 1].position;
+          } else {
+            team.position = currentPosition;
+          }
+          previousPoints = team.totalPoints;
+          currentPosition = index + 2;
+        });
+        
+        // Check for no data
+        const teamsWithScores = teamResults.filter(t => t.hasScores);
+        if (teamsWithScores.length === 0) {
+          document.getElementById('leaderboard-wrapper').style.display = 'none';
+          noData.style.display = 'block';
+          noData.innerHTML = `
+            <div class="no-data-icon">⏳</div>
+            <div>Waiting for scores...</div>
+            <div style="margin-top: 8px; font-size: 13px;">${teams.length} teams ready</div>
+          `;
+          return;
+        }
+        
+        noData.style.display = 'none';
+        document.getElementById('leaderboard-wrapper').style.display = 'block';
+        document.getElementById('stats-bar').style.display = 'grid';
+        
+        // Update stats for teams
+        document.getElementById('stat-players').textContent = teams.length + ' teams';
+        document.getElementById('stat-finished').textContent = teamResults.filter(t => t.allFinished).length;
+        document.getElementById('stat-scoring').textContent = teamResults.filter(t => t.stillPlaying).length;
+        
+        if (teamsWithScores.length > 0) {
+          const leader = teamsWithScores[0];
+          document.getElementById('stat-leader').textContent = `${leader.totalPoints} pts`;
+          document.getElementById('stat-leader').className = 'stat-value';
+        }
+        
+        // Render team rows
+        let html = '';
+        
+        teamResults.forEach(team => {
+          const posClass = team.position <= 3 && team.position !== '-' ? 'top-3' : '';
+          const statusIcon = team.allFinished ? '✓' : (team.stillPlaying ? '⛳' : '');
+          
+          // Team header row
+          html += `
+            <tr class="team-header-row" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); cursor: pointer;" onclick="toggleTeamPlayers('${team.teamId}')">
+              <td class="position-cell ${posClass}" style="color: white; font-weight: 700;">${team.position}</td>
+              <td style="color: white;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 700; font-size: 15px;">🏆 ${team.teamName}</span>
+                  <span style="opacity: 0.8; font-size: 12px;">(${team.countingPlayers.length}/${team.players.length} players)</span>
+                  ${statusIcon ? `<span style="margin-left: auto;">${statusIcon}</span>` : ''}
+                </div>
+              </td>
+              <td style="color: white; text-align: center; font-weight: 600;">${team.hasScores ? team.avgHolesPlayed : '-'}</td>
+              <td style="color: white; text-align: center; font-weight: 700; font-size: 16px;">${team.hasScores ? team.totalPoints : '-'}</td>
+            </tr>
+          `;
+          
+          // Player rows (initially hidden)
+          team.players.forEach((player, idx) => {
+            const isCounting = idx < teamScoresCount && player.holesPlayed > 0;
+            const countingStyle = isCounting ? 'background: rgba(34, 197, 94, 0.15);' : 'opacity: 0.7;';
+            const countingBadge = isCounting ? '<span style="background: #22c55e; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">COUNTING</span>' : '';
+            
+            html += `
+              <tr class="team-player-row" data-team="${team.teamId}" style="display: none; ${countingStyle}">
+                <td style="padding-left: 24px; color: #64748b;">${isCounting ? '★' : ''}</td>
+                <td>
+                  <span style="font-weight: 500;">${player.firstName} ${player.lastName}</span>
+                  ${countingBadge}
+                </td>
+                <td style="text-align: center;">${player.holesPlayed > 0 ? (player.holesPlayed === 18 ? 'F' : player.holesPlayed) : '-'}</td>
+                <td style="text-align: center; font-weight: 600;">${player.holesPlayed > 0 ? player.stablefordPoints : '-'}</td>
+              </tr>
+            `;
+          });
+        });
+        
+        container.innerHTML = html;
+      }
+      
+      // Toggle team players visibility
+      function toggleTeamPlayers(teamId) {
+        const playerRows = document.querySelectorAll(`.team-player-row[data-team="${teamId}"]`);
+        playerRows.forEach(row => {
+          row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+        });
+      }
+
+      // Update stats
+      function updateStats(players) {
+        const playersWithScores = players.filter(p => p.thru > 0);
+        const finishedPlayers = players.filter(p => p.thru === 18);
+        const onCourse = playersWithScores.length - finishedPlayers.length;
+        
+        document.getElementById('stat-players').textContent = players.length;
+        document.getElementById('stat-finished').textContent = finishedPlayers.length;
+        document.getElementById('stat-scoring').textContent = onCourse;
+        
+        // Leader score
+        if (playersWithScores.length > 0) {
+          const leader = playersWithScores[0];
+          const useStableford = isStablefordScoring();
+          
+          let leaderScore, isGoodScore;
+          if (useStableford) {
+            // Stableford: show points and +/- from expected
+            const toParValue = leader.stablefordToPar;
+            leaderScore = `${leader.stablefordPoints} pts` + (toParValue === 0 ? '' : (toParValue > 0 ? ` (+${toParValue})` : ` (${toParValue})`));
+            isGoodScore = toParValue > 0; // Positive is good in Stableford
+          } else {
+            // Stroke play: show to par
+            leaderScore = leader.toPar === 0 ? 'E' : (leader.toPar > 0 ? `+${leader.toPar}` : leader.toPar);
+            isGoodScore = leader.toPar < 0; // Negative is good in stroke play
+          }
+          
+          const statLeader = document.getElementById('stat-leader');
+          statLeader.textContent = leaderScore;
+          statLeader.className = 'stat-value ' + (isGoodScore ? 'red' : '');
+        }
+      }
+
+      // Cleanup
+      window.addEventListener('beforeunload', () => {
+        if (firebaseListener && db) {
+          db.ref(`liveScores/${currentRoundId}`).off('value', firebaseListener);
+        }
+      });
+    </script>
+  </body>
+</html>

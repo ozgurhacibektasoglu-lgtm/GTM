@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preferences</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="components/auth.js"></script>
+  
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { 
+      background: #f8fafc; 
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; 
+      color:#0f172a; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container { 
+      max-width: 1000px; 
+      margin: 20px auto; 
+      background: #fff; 
+      border:1px solid #e2e8f0; 
+      border-radius: 12px; 
+      box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+    }
+    
+    .header { 
+      padding: 20px 24px; 
+      border-bottom:1px solid #e2e8f0; 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .body { 
+      padding: 24px; 
+    }
+    
+    .section {
+      margin-bottom: 32px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .admin-badge {
+      background: #ef4444;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .form-group { 
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .form-group label { 
+      flex: 1;
+      font-weight: 600; 
+      color: #334155;
+      font-size: 15px;
+    }
+    
+    .form-group input[type="number"],
+    .form-group input[type="text"],
+    .form-group select { 
+      width: 200px;
+      padding: 10px 12px; 
+      border: 1px solid #cbd5e1; 
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .form-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .form-group .help-text {
+      flex: 1;
+      font-size: 13px;
+      color: #64748b;
+      font-style: italic;
+    }
+    
+    .btn { 
+      padding: 12px 20px; 
+      border-radius: 8px; 
+      border: 1px solid transparent; 
+      cursor: pointer; 
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary { 
+      background: #667eea; 
+      color: #fff;
+      border: none;
+    }
+    
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary { 
+      background: #f1f5f9; 
+      color: #1e293b; 
+      border: 1px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .message { 
+      padding: 12px 16px; 
+      border-radius: 8px; 
+      margin-bottom: 16px;
+      display: none;
+      font-weight: 500;
+    }
+    
+    .message.success { 
+      background: #dcfce7; 
+      color: #15803d; 
+      border: 1px solid #86efac;
+      display: block;
+    }
+    
+    .message.error { 
+      background: #fee2e2; 
+      color: #991b1b; 
+      border: 1px solid #fecaca;
+      display: block;
+    }
+    
+    .disabled-overlay {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    
+    .disabled-overlay::after {
+      content: '🔒 Admin Only';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    
+    .close-btn:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    
+    .age-group-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .age-group-item input {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .age-group-item input:first-child {
+      flex: 2;
+    }
+    
+    .age-group-item input[type="number"] {
+      flex: 1;
+    }
+    
+    .remove-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .remove-btn:hover {
+      background: #dc2626;
+    }
+    
+    .add-group-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .add-group-btn:hover {
+      background: #059669;
+    }
+    
+    /* Category Distribution Table Styles */
+    #categoryDistTable input[type="text"],
+    #categoryDistTable input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 14px;
+    }
+    
+    #categoryDistTable input[type="text"] {
+      text-align: left;
+    }
+    
+    #categoryDistTable .total-cell {
+      font-weight: 700;
+      text-align: center;
+      padding: 12px;
+    }
+    
+    #categoryDistTable .total-cell.valid {
+      color: #10b981;
+    }
+    
+    #categoryDistTable .total-cell.invalid {
+      color: #ef4444;
+    }
+    
+    #categoryDistTable .category-row {
+      background: white;
+    }
+    
+    #categoryDistTable .category-row:hover {
+      background: #f8fafc;
+    }
+    
+    #categoryDistTable td {
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ Preferences</h1>
+      <a href="index.html" class="btn btn-secondary">← Back to Home</a>
+    </div>
+    
+    <div class="body">
+      <div id="message" class="message"></div>
+      
+      <!-- General Preferences (Available to all users) -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">
+            🎯 General Settings
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="defaultCountry">Default Country Code</label>
+          <select id="defaultCountry">
+            <option value="+90">Turkey (+90)</option>
+            <option value="+1">USA (+1)</option>
+            <option value="+44">UK (+44)</option>
+            <option value="+61">Australia (+61)</option>
+            <option value="+49">Germany (+49)</option>
+          </select>
+          <span class="help-text">Default country code for mobile numbers</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="dateFormat">Date Format</label>
+          <select id="dateFormat">
+            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+          </select>
+          <span class="help-text">How dates are displayed</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="categoryDistribution">Category Distribution</label>
+          <button type="button" class="btn btn-primary" id="editCategoryDistBtn" style="width: auto; padding: 10px 20px;">Edit</button>
+          <span class="help-text">Set percentage distribution for tournament categories</span>
+        </div>
+      </div>
+      
+      <!-- Admin-Only Preferences -->
+      <div class="section" id="admin-section">
+        <div class="section-header">
+          <div class="section-title">
+            🔐 Admin Settings
+          </div>
+          <span class="admin-badge">Admin Only</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="ageGroups">Age Groups</label>
+          <button type="button" class="btn btn-primary" id="editAgeGroupsBtn" style="width: auto; padding: 10px 20px;">Edit</button>
+          <span class="help-text">Define age categories for tournaments</span>
+        </div>
+        
+      </div>
+      
+      <!-- Tournament Preferences -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">
+            🏆 Tournament Settings
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="autoPublishResults">Auto-publish Results</label>
+          <input type="checkbox" id="autoPublishResults" />
+          <span class="help-text">Automatically publish results after completion</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="defaultRounds">Default Number of Rounds</label>
+          <input type="number" id="defaultRounds" min="1" max="4" placeholder="1" />
+          <span class="help-text">Default rounds when creating tournaments</span>
+        </div>
+      </div>
+      
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Age Groups Modal -->
+  <div class="modal" id="ageGroupsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Age Groups</h2>
+        <button class="close-btn" id="closeModalBtn">×</button>
+      </div>
+      <div id="ageGroupsList"></div>
+      <button class="add-group-btn" id="addGroupBtn">+ Add Age Group</button>
+      <div class="actions" style="margin-top: 20px;">
+        <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveGroupsBtn">Save Age Groups</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Distribution Modal -->
+  <div class="modal" id="categoryDistModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Category Distribution</h2>
+        <button class="close-btn" id="closeCategoryModalBtn">×</button>
+      </div>
+      <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">Set the percentage distribution for each category. Each row should total 100%.</p>
+      <div style="overflow-x: auto;">
+        <table id="categoryDistTable" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Category</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">A (%)</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">B (%)</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">C (%)</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Total</th>
+              <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="categoryDistBody"></tbody>
+        </table>
+      </div>
+      <button class="add-group-btn" id="addCategoryBtn">+ Add Category</button>
+      <div class="actions" style="margin-top: 20px;">
+        <button class="btn btn-secondary" id="cancelCategoryModalBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveCategoryDistBtn">Save Distribution</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let userRole = 'user';
+    
+    // Load preferences from localStorage and Firebase
+    function loadPreferences() {
+      try {
+        const prefs = localStorage.getItem('preferences');
+        if (prefs) {
+          const data = JSON.parse(prefs);
+          
+          // General settings
+          if (data.defaultCountry) document.getElementById('defaultCountry').value = data.defaultCountry;
+          if (data.dateFormat) document.getElementById('dateFormat').value = data.dateFormat;
+          
+          // Admin settings will be loaded here
+          
+          // Tournament settings
+          if (data.autoPublishResults !== undefined) document.getElementById('autoPublishResults').checked = data.autoPublishResults;
+          if (data.defaultRounds) document.getElementById('defaultRounds').value = data.defaultRounds;
+        }
+      } catch(e) {
+        console.error('Error loading preferences:', e);
+      }
+    }
+    
+    // Save preferences to localStorage and Firebase
+    function savePreferences() {
+      // Get existing preferences to preserve age groups
+      let existingPrefs = {};
+      try {
+        const stored = localStorage.getItem('preferences');
+        if (stored) existingPrefs = JSON.parse(stored);
+      } catch(e) {}
+      
+      const prefs = {
+        ...existingPrefs, // Preserve existing data like ageGroups
+        defaultCountry: document.getElementById('defaultCountry').value,
+        dateFormat: document.getElementById('dateFormat').value,
+        autoPublishResults: document.getElementById('autoPublishResults').checked,
+        defaultRounds: parseInt(document.getElementById('defaultRounds').value) || 1,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      try {
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+        
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('preferences', prefs);
+        }
+        
+        showMessage('success', 'Preferences saved successfully!');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      } catch(e) {
+        console.error('Error saving preferences:', e);
+        showMessage('error', 'Failed to save preferences: ' + e.message);
+      }
+    }
+    
+    function showMessage(type, text) {
+      const msg = document.getElementById('message');
+      msg.className = 'message ' + type;
+      msg.textContent = text;
+      msg.style.display = 'block';
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          msg.style.display = 'none';
+        }, 3000);
+      }
+    }
+    
+    // Initialize
+    (async function() {
+      try {
+        // Wait for Auth to be ready
+        let attempts = 0;
+        while (typeof window.Auth === 'undefined' && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (typeof window.Auth !== 'undefined') {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          userRole = await window.Auth.getUserRole();
+          console.log('User role:', userRole);
+          
+          // Disable admin section for non-admin users
+          if (userRole !== 'admin') {
+            const adminSection = document.getElementById('admin-section');
+            adminSection.classList.add('disabled-overlay');
+          }
+        }
+        
+        loadPreferences();
+        
+        // Load from Firebase if available
+        if (typeof syncFromFirebase !== 'undefined') {
+          const firebasePrefs = await syncFromFirebase('preferences');
+          if (firebasePrefs) {
+            localStorage.setItem('preferences', JSON.stringify(firebasePrefs));
+            loadPreferences();
+          }
+        }
+      } catch(e) {
+        console.error('Error initializing preferences:', e);
+      }
+    })();
+    
+    // Save button
+    document.getElementById('saveBtn').addEventListener('click', savePreferences);
+    
+    // Age Groups Modal Management
+    let ageGroups = [];
+    
+    function loadAgeGroups() {
+      try {
+        const prefs = localStorage.getItem('preferences');
+        if (prefs) {
+          const data = JSON.parse(prefs);
+          ageGroups = data.ageGroups || [];
+        }
+        if (ageGroups.length === 0) {
+          // Default age groups
+          ageGroups = [
+            { name: 'Junior', minAge: 0, maxAge: 17 },
+            { name: 'Senior', minAge: 18, maxAge: 54 },
+            { name: 'Super Senior', minAge: 55, maxAge: 120 }
+          ];
+        }
+      } catch(e) {
+        console.error('Error loading age groups:', e);
+        ageGroups = [];
+      }
+    }
+    
+    function renderAgeGroups() {
+      const container = document.getElementById('ageGroupsList');
+      container.innerHTML = '';
+      
+      ageGroups.forEach((group, index) => {
+        const div = document.createElement('div');
+        div.className = 'age-group-item';
+        div.innerHTML = `
+          <input type="text" value="${group.name}" placeholder="Group Name" data-index="${index}" data-field="name" />
+          <input type="number" value="${group.minAge}" placeholder="Min Age" min="0" max="120" data-index="${index}" data-field="minAge" />
+          <input type="number" value="${group.maxAge}" placeholder="Max Age" min="0" max="120" data-index="${index}" data-field="maxAge" />
+          <button class="remove-btn" data-index="${index}">Remove</button>
+        `;
+        container.appendChild(div);
+      });
+      
+      // Add event listeners
+      container.querySelectorAll('input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          const field = e.target.dataset.field;
+          if (field === 'name') {
+            ageGroups[index][field] = e.target.value;
+          } else {
+            ageGroups[index][field] = parseInt(e.target.value) || 0;
+          }
+        });
+      });
+      
+      container.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          ageGroups.splice(index, 1);
+          renderAgeGroups();
+        });
+      });
+    }
+    
+    function openAgeGroupsModal() {
+      loadAgeGroups();
+      renderAgeGroups();
+      document.getElementById('ageGroupsModal').classList.add('active');
+    }
+    
+    function closeAgeGroupsModal() {
+      document.getElementById('ageGroupsModal').classList.remove('active');
+    }
+    
+    function saveAgeGroups() {
+      try {
+        const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+        prefs.ageGroups = ageGroups;
+        prefs.lastUpdated = new Date().toISOString();
+        
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+        
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('preferences', prefs);
+        }
+        
+        closeAgeGroupsModal();
+        showMessage('success', 'Age groups saved successfully!');
+      } catch(e) {
+        console.error('Error saving age groups:', e);
+        showMessage('error', 'Failed to save age groups: ' + e.message);
+      }
+    }
+    
+    // Modal event listeners
+    document.getElementById('editAgeGroupsBtn').addEventListener('click', openAgeGroupsModal);
+    document.getElementById('closeModalBtn').addEventListener('click', closeAgeGroupsModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeAgeGroupsModal);
+    document.getElementById('saveGroupsBtn').addEventListener('click', saveAgeGroups);
+    
+    document.getElementById('addGroupBtn').addEventListener('click', () => {
+      ageGroups.push({ name: '', minAge: 0, maxAge: 0 });
+      renderAgeGroups();
+    });
+    
+    // Close modal on outside click
+    document.getElementById('ageGroupsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'ageGroupsModal') {
+        closeAgeGroupsModal();
+      }
+    });
+    
+    // Category Distribution Modal Management
+    let categoryDistribution = [];
+    
+    function loadCategoryDistribution() {
+      try {
+        const prefs = localStorage.getItem('preferences');
+        if (prefs) {
+          const data = JSON.parse(prefs);
+          categoryDistribution = data.categoryDistribution || [];
+        }
+        if (categoryDistribution.length === 0) {
+          // Default categories
+          categoryDistribution = [
+            { name: '2 Cat', a: 40, b: 60, c: 0 },
+            { name: '3 Cat', a: 20, b: 35, c: 45 }
+          ];
+        }
+      } catch(e) {
+        console.error('Error loading category distribution:', e);
+        categoryDistribution = [];
+      }
+    }
+    
+    function calculateTotal(row) {
+      return (row.a || 0) + (row.b || 0) + (row.c || 0);
+    }
+    
+    function renderCategoryDistribution() {
+      const tbody = document.getElementById('categoryDistBody');
+      tbody.innerHTML = '';
+      
+      categoryDistribution.forEach((cat, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'category-row';
+        
+        // Determine if this is a 2-category or 3-category based on name
+        const is2Cat = cat.name && cat.name.toLowerCase().includes('2');
+        const cValue = is2Cat ? 'N/A' : (cat.c || 0);
+        const cDisabled = is2Cat ? 'disabled readonly' : '';
+        const cStyle = is2Cat ? 'background-color: #f1f5f9; cursor: not-allowed;' : '';
+        
+        const total = calculateTotal(cat);
+        const totalClass = total === 100 ? 'valid' : 'invalid';
+        
+        tr.innerHTML = `
+          <td>
+            <input type="text" value="${cat.name}" placeholder="Category Name" data-index="${index}" data-field="name" />
+          </td>
+          <td>
+            <input type="number" value="${cat.a || 0}" min="0" max="100" data-index="${index}" data-field="a" />
+          </td>
+          <td>
+            <input type="number" value="${cat.b || 0}" min="0" max="100" data-index="${index}" data-field="b" />
+          </td>
+          <td>
+            <input type="${is2Cat ? 'text' : 'number'}" value="${cValue}" min="0" max="100" data-index="${index}" data-field="c" ${cDisabled} style="${cStyle}" />
+          </td>
+          <td class="total-cell ${totalClass}" data-index="${index}">${total}%</td>
+          <td style="text-align: center;">
+            <button class="remove-btn" data-index="${index}">Remove</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      
+      // Add event listeners
+      tbody.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          const field = e.target.dataset.field;
+          if (field === 'name') {
+            categoryDistribution[index][field] = e.target.value;
+          } else {
+            categoryDistribution[index][field] = parseInt(e.target.value) || 0;
+          }
+          updateTotalCell(index);
+        });
+      });
+      
+      // Add remove button listeners
+      tbody.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          categoryDistribution.splice(index, 1);
+          renderCategoryDistribution();
+        });
+      });
+    }
+    
+    function updateTotalCell(index) {
+      const cat = categoryDistribution[index];
+      const total = calculateTotal(cat);
+      const totalCell = document.querySelector(`#categoryDistBody .total-cell[data-index="${index}"]`);
+      if (totalCell) {
+        totalCell.textContent = total + '%';
+        totalCell.className = 'total-cell ' + (total === 100 ? 'valid' : 'invalid');
+      }
+    }
+    
+    function openCategoryDistModal() {
+      loadCategoryDistribution();
+      renderCategoryDistribution();
+      document.getElementById('categoryDistModal').classList.add('active');
+    }
+    
+    function closeCategoryDistModal() {
+      document.getElementById('categoryDistModal').classList.remove('active');
+    }
+    
+    function saveCategoryDistribution() {
+      try {
+        // Validate all rows total 100%
+        let allValid = true;
+        categoryDistribution.forEach(cat => {
+          if (calculateTotal(cat) !== 100) {
+            allValid = false;
+          }
+        });
+        
+        if (!allValid) {
+          showMessage('error', 'All categories must total 100%. Please check your percentages.');
+          return;
+        }
+        
+        const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+        prefs.categoryDistribution = categoryDistribution;
+        prefs.lastUpdated = new Date().toISOString();
+        
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+        
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('preferences', prefs);
+        }
+        
+        closeCategoryDistModal();
+        showMessage('success', 'Category distribution saved successfully!');
+      } catch(e) {
+        console.error('Error saving category distribution:', e);
+        showMessage('error', 'Failed to save category distribution: ' + e.message);
+      }
+    }
+    
+    // Category Distribution Modal event listeners
+    document.getElementById('editCategoryDistBtn').addEventListener('click', openCategoryDistModal);
+    document.getElementById('closeCategoryModalBtn').addEventListener('click', closeCategoryDistModal);
+    document.getElementById('cancelCategoryModalBtn').addEventListener('click', closeCategoryDistModal);
+    document.getElementById('saveCategoryDistBtn').addEventListener('click', saveCategoryDistribution);
+    
+    document.getElementById('addCategoryBtn').addEventListener('click', () => {
+      categoryDistribution.push({ name: '', a: 0, b: 0, c: 0 });
+      renderCategoryDistribution();
+    });
+    
+    // Close modal on outside click
+    document.getElementById('categoryDistModal').addEventListener('click', (e) => {
+      if (e.target.id === 'categoryDistModal') {
+        closeCategoryDistModal();
+      }
+    });
+  </script>
+</body>
+</html>

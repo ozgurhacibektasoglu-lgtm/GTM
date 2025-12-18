@@ -1,0 +1,3486 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Live Scoring</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      * { box-sizing: border-box; }
+      body { 
+        padding-top: 60px; 
+        background: #f0f4f8; 
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      .top-nav {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        padding: 12px 16px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .top-nav h1 { margin: 0; color: white; font-size: 18px; font-weight: 700; }
+      .top-nav .live-badge {
+        background: #ef4444;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        animation: pulse 2s infinite;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      
+      .container { 
+        max-width: 600px; 
+        margin: 0 auto; 
+        padding: 16px; 
+      }
+      
+      /* Connection Status */
+      .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+      
+      .connection-status.connected {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      .connection-status.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+      
+      .connected .status-dot { background: #10b981; }
+      .disconnected .status-dot { background: #ef4444; }
+      
+      /* Volunteer Mode Banner */
+      .volunteer-banner {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        color: white;
+      }
+      
+      .volunteer-banner-icon {
+        font-size: 32px;
+      }
+      
+      .volunteer-banner-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      
+      .volunteer-banner-subtitle {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+      
+      /* Tournament Selector */
+      .selector-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      }
+      
+      .selector-card label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .selector-card select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        background: white;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+      }
+      
+      .selector-card select:focus {
+        outline: none;
+        border-color: #059669;
+      }
+      
+      /* Group Card */
+      .group-card {
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        overflow: hidden;
+      }
+      
+      .group-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .group-info { font-size: 14px; font-weight: 600; }
+      .group-tee { font-size: 12px; opacity: 0.9; }
+      
+      .group-players {
+        padding: 12px;
+      }
+      
+      .player-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .player-row:last-child { border-bottom: none; }
+      .player-row:active { background: #f0fdf4; }
+      
+      .player-info { flex: 1; }
+      .player-name { font-weight: 600; font-size: 15px; color: #1e293b; }
+      .player-details { font-size: 12px; color: #64748b; margin-top: 2px; }
+      
+      .player-score {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .score-badge {
+        min-width: 48px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 16px;
+      }
+      
+      .score-badge.no-score {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border: 2px dashed #cbd5e1;
+      }
+      
+      .score-badge.under-par {
+        background: #dc2626;
+        color: white;
+      }
+      
+      .score-badge.even-par {
+        background: #f8fafc;
+        color: #1e293b;
+        border: 2px solid #e2e8f0;
+      }
+      
+      .score-badge.over-par {
+        background: #1e293b;
+        color: white;
+      }
+      
+      .thru-badge {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+      }
+      
+      /* Search Box */
+      .search-box {
+        position: relative;
+        margin-bottom: 16px;
+      }
+      
+      .search-box input {
+        width: 100%;
+        padding: 14px 16px 14px 44px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 15px;
+        background: white;
+      }
+      
+      .search-box input:focus {
+        outline: none;
+        border-color: #059669;
+      }
+      
+      .search-box::before {
+        content: '🔍';
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+      }
+      
+      /* Score Entry Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: none;
+        align-items: flex-end;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .modal-overlay.active { display: flex; }
+      
+      .score-modal {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      
+      .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+      }
+      
+      .modal-player-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      .modal-player-details {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+      
+      .modal-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #f1f5f9;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      /* Hole Navigation */
+      .hole-nav {
+        display: flex;
+        padding: 12px 16px;
+        gap: 8px;
+        overflow-x: auto;
+        background: #f8fafc;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .hole-btn {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid #e2e8f0;
+        background: white;
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .hole-btn.active {
+        background: #059669;
+        border-color: #059669;
+        color: white;
+      }
+      
+      .hole-btn.has-score {
+        background: #d1fae5;
+        border-color: #10b981;
+        color: #065f46;
+      }
+      
+      .hole-btn.active.has-score {
+        background: #059669;
+        color: white;
+      }
+      
+      /* Current Hole Display */
+      .current-hole {
+        padding: 20px;
+        text-align: center;
+      }
+      
+      .hole-number {
+        font-size: 48px;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1;
+      }
+      
+      .hole-info {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 12px;
+      }
+      
+      .hole-stat {
+        text-align: center;
+      }
+      
+      .hole-stat-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .hole-stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-top: 2px;
+      }
+      
+      /* Score Input Grid */
+      .score-input-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        padding: 20px;
+      }
+      
+      .score-btn {
+        height: 56px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      
+      .score-btn:active {
+        transform: scale(0.95);
+      }
+      
+      .score-btn.selected {
+        border-color: #059669;
+        background: #059669;
+        color: white;
+      }
+      
+      /* Score type colors */
+      .score-btn.eagle { background: #fbbf24; border-color: #f59e0b; color: #78350f; }
+      .score-btn.birdie { background: #dc2626; border-color: #b91c1c; color: white; }
+      .score-btn.par { background: #f8fafc; border-color: #e2e8f0; color: #1e293b; }
+      .score-btn.bogey { background: #1e293b; border-color: #0f172a; color: white; }
+      .score-btn.double { background: #3b82f6; border-color: #2563eb; color: white; }
+      
+      .score-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+        opacity: 0.8;
+      }
+      
+      /* Action Buttons */
+      .modal-actions {
+        padding: 16px 20px 32px;
+        display: flex;
+        gap: 12px;
+      }
+      
+      .btn-clear {
+        flex: 1;
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        background: white;
+        font-size: 15px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+      }
+      
+      .btn-save-score {
+        flex: 2;
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        font-size: 15px;
+        font-weight: 700;
+        color: white;
+        cursor: pointer;
+      }
+      
+      .btn-save-score:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      /* Running Score Display */
+      .running-score {
+        background: #f8fafc;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid #e2e8f0;
+      }
+      
+      .running-stat {
+        text-align: center;
+      }
+      
+      .running-stat-label {
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+      }
+      
+      .running-stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      .running-stat-value.under { color: #dc2626; }
+      .running-stat-value.over { color: #1e293b; }
+      
+      /* Status messages */
+      .status-message {
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .status-message.success { background: #d1fae5; color: #065f46; }
+      .status-message.error { background: #fee2e2; color: #991b1b; }
+      .status-message.info { background: #dbeafe; color: #1e40af; }
+      
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+      }
+      
+      .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+      .empty-state-title { font-size: 18px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+      .empty-state-text { font-size: 14px; }
+      
+      /* Quick Stats */
+      .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      
+      .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      }
+      
+      .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #1e293b;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+      }
+      
+      /* Responsive */
+      @media (max-width: 400px) {
+        .score-input-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+
+      /* ========================================
+         VOLUNTEER GROUP SCORING MODAL
+         ======================================== */
+      .group-score-modal {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+        max-width: 500px;
+        max-height: 95vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      /* Full 18-hole mode needs wider modal and smaller cells */
+      .group-score-modal.full-holes {
+        max-width: 95vw;
+      }
+
+      .group-score-modal.full-holes .hole-col-header {
+        min-width: 42px;
+        font-size: 10px;
+        padding: 6px 2px;
+      }
+
+      .group-score-modal.full-holes .score-cell {
+        width: 30px;
+        min-width: 30px;
+        height: 30px;
+        font-size: 12px;
+      }
+      
+      .group-score-modal.full-holes .score-cell-wrapper {
+        padding: 3px 2px;
+      }
+
+      .group-score-modal.full-holes .player-col,
+      .group-score-modal.full-holes .player-col-header {
+        min-width: 100px;
+        padding: 8px 6px;
+      }
+
+      .group-score-modal.full-holes .player-col-name {
+        font-size: 10px;
+      }
+
+      .group-score-modal.full-holes .player-col-hcp {
+        font-size: 8px;
+      }
+
+      .group-modal-header {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: white;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .group-modal-title {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .group-modal-subtitle {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+
+      .group-modal-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Score Grid Container - single scroll container */
+      .score-grid-wrapper {
+        position: relative;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(95vh - 280px); /* Leave room for header and input pad */
+        margin: 0;
+        padding: 0;
+        /* Fix for first column visibility */
+        display: block;
+        width: 100%;
+      }
+
+      .score-grid-table {
+        display: grid;
+        width: max-content;
+        min-width: 100%;
+        margin: 0;
+        padding: 0;
+        /* Ensure grid starts at left edge */
+        justify-content: start;
+      }
+
+      /* Holes Header Row */
+      .holes-header {
+        display: contents;
+      }
+
+      .player-col-header {
+        grid-column: 1;
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        padding: 10px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        min-width: 100px;
+      }
+
+      .hole-col-header {
+        padding: 10px 4px;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1e293b;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        min-width: 44px;
+      }
+
+      .hole-col-header .par-label {
+        font-size: 9px;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+
+      /* Player Score Rows */
+      .player-score-row {
+        display: contents;
+      }
+
+      .player-col {
+        grid-column: 1;
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        padding: 10px 12px;
+        background: white;
+        border-bottom: 1px solid #f1f5f9;
+        min-width: 100px;
+      }
+
+      .player-score-row:nth-child(odd) .player-col {
+        background: #fafafa;
+      }
+
+      .player-score-row.active .player-col {
+        background: #f0fdf4;
+      }
+
+      .player-col-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-col-hcp {
+        font-size: 10px;
+        color: #64748b;
+      }
+
+      .score-cell-wrapper {
+        padding: 4px 2px;
+        background: white;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .player-score-row:nth-child(odd) .score-cell-wrapper {
+        background: #fafafa;
+      }
+
+      .player-score-row.active .score-cell-wrapper {
+        background: #f0fdf4;
+      }
+
+      .score-cell {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 2px solid transparent;
+        /* Disable double-tap zoom on mobile */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .score-cell.empty {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border: 2px dashed #cbd5e1;
+      }
+
+      .score-cell.has-score {
+        background: #d1fae5;
+        color: #065f46;
+        border-color: #10b981;
+      }
+
+      .score-cell.active-input {
+        background: #fef3c7;
+        border-color: #f59e0b;
+        animation: pulseInput 1s infinite;
+      }
+
+      .score-cell.birdie { background: #dc2626; color: white; border-color: #b91c1c; }
+      .score-cell.eagle { background: #fbbf24; color: #78350f; border-color: #f59e0b; }
+      .score-cell.par { background: #f8fafc; color: #1e293b; border-color: #e2e8f0; }
+      .score-cell.bogey { background: #1e293b; color: white; border-color: #0f172a; }
+      .score-cell.double-plus { background: #3b82f6; color: white; border-color: #2563eb; }
+      .score-cell.dnf { background: #6b7280; color: white; border-color: #4b5563; font-style: italic; }
+
+      @keyframes pulseInput {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      }
+
+      /* Number Input Pad */
+      .input-pad-container {
+        background: #f8fafc;
+        padding: 16px;
+        border-top: 2px solid #e2e8f0;
+        position: sticky;
+        bottom: 0;
+      }
+
+      .current-input-display {
+        background: white;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 2px solid #e2e8f0;
+      }
+
+      .current-input-label {
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .current-input-player {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .current-input-hole {
+        font-size: 12px;
+        color: #059669;
+        font-weight: 600;
+      }
+
+      .current-input-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #1e293b;
+        min-width: 50px;
+        text-align: center;
+      }
+
+      .number-pad {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+      }
+
+      .num-btn {
+        height: 52px;
+        border-radius: 10px;
+        border: none;
+        background: white;
+        font-size: 22px;
+        font-weight: 700;
+        color: #1e293b;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        transition: all 0.1s;
+        /* Disable double-tap zoom on mobile */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .num-btn:active {
+        transform: scale(0.95);
+        background: #f1f5f9;
+      }
+
+      .num-btn.action {
+        background: #059669;
+        color: white;
+      }
+
+      .num-btn.action:active {
+        background: #047857;
+      }
+
+      .num-btn.clear {
+        background: #ef4444;
+        color: white;
+        font-size: 14px;
+      }
+
+      .num-btn.skip {
+        background: #64748b;
+        color: white;
+        font-size: 12px;
+      }
+
+      /* Quick Entry Buttons */
+      .quick-scores {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+
+      .quick-score-btn {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .quick-score-btn.birdie { border-color: #dc2626; color: #dc2626; }
+      .quick-score-btn.par { border-color: #10b981; color: #10b981; }
+      .quick-score-btn.bogey { border-color: #1e293b; color: #1e293b; }
+
+      /* Group click area for volunteer mode */
+      .group-header.clickable {
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .group-header.clickable:hover {
+        filter: brightness(1.1);
+      }
+
+      .group-header.clickable:active {
+        filter: brightness(0.95);
+      }
+
+      .tap-hint {
+        font-size: 11px;
+        opacity: 0.8;
+        margin-top: 2px;
+      }
+
+      /* Completed group styling */
+      .group-card.completed {
+        opacity: 0.6;
+      }
+
+      .group-card.completed .group-header {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      }
+
+      .group-header.completed {
+        cursor: default;
+      }
+
+      /* Group status badge */
+      .group-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .group-status.pending {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+
+      .group-status.completed {
+        background: white;
+        color: #059669;
+      }
+
+      .group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Save feedback animation */
+      .save-flash {
+        animation: flashGreen 0.3s ease-out;
+      }
+
+      @keyframes flashGreen {
+        0% { background-color: #d1fae5; }
+        100% { background-color: transparent; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-nav">
+      <h1>⛳ Live Scoring</h1>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="live-badge">
+          <span style="width: 6px; height: 6px; background: white; border-radius: 50%;"></span>
+          LIVE
+        </span>
+        <a href="index.html" class="btn-back-top">← Back</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Connection Status -->
+      <div id="connection-status" class="connection-status connected">
+        <span class="status-dot"></span>
+        <span id="connection-text">Connected to cloud</span>
+      </div>
+
+      <!-- Tournament & Round Selection -->
+      <div class="selector-card" id="tournament-selector">
+        <label>Tournament</label>
+        <select id="tournament-select">
+          <option value="">-- Select Tournament --</option>
+        </select>
+      </div>
+
+      <div class="selector-card" id="round-selector" style="display: none;">
+        <label>Round</label>
+        <select id="round-select">
+          <option value="">-- Select Round --</option>
+        </select>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="quick-stats" id="quick-stats" style="display: none;">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-players">0</div>
+          <div class="stat-label">Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-scored">0</div>
+          <div class="stat-label">Scored</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-leader">-</div>
+          <div class="stat-label">Leader</div>
+        </div>
+      </div>
+
+      <!-- Status Message -->
+      <div id="status-message" class="status-message" style="display: none;"></div>
+
+      <!-- Search Box -->
+      <div class="search-box" id="search-container" style="display: none;">
+        <input type="text" id="player-search" placeholder="Search player name...">
+      </div>
+
+      <!-- Groups List -->
+      <div id="groups-container">
+        <div class="empty-state">
+          <div class="empty-state-icon">⛳</div>
+          <div class="empty-state-title">Select a tournament</div>
+          <div class="empty-state-text">Choose a tournament and round to start live scoring</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score Entry Modal -->
+    <div id="score-modal" class="modal-overlay">
+      <div class="score-modal">
+        <div class="modal-header">
+          <div>
+            <div class="modal-player-name" id="modal-player-name">Player Name</div>
+            <div class="modal-player-details" id="modal-player-details">HCP: 10.2 | Playing HCP: 12</div>
+          </div>
+          <button class="modal-close" onclick="closeScoreModal()">×</button>
+        </div>
+
+        <!-- Running Score -->
+        <div class="running-score">
+          <div class="running-stat">
+            <div class="running-stat-label">Gross</div>
+            <div class="running-stat-value" id="running-gross">-</div>
+          </div>
+          <div class="running-stat">
+            <div class="running-stat-label">To Par</div>
+            <div class="running-stat-value" id="running-topar">E</div>
+          </div>
+          <div class="running-stat">
+            <div class="running-stat-label">Thru</div>
+            <div class="running-stat-value" id="running-thru">0</div>
+          </div>
+        </div>
+
+        <!-- Hole Navigation -->
+        <div class="hole-nav" id="hole-nav">
+          <!-- Holes 1-18 generated dynamically -->
+        </div>
+
+        <!-- Current Hole Info -->
+        <div class="current-hole">
+          <div class="hole-number" id="current-hole-number">1</div>
+          <div class="hole-info">
+            <div class="hole-stat">
+              <div class="hole-stat-label">Par</div>
+              <div class="hole-stat-value" id="current-hole-par">4</div>
+            </div>
+            <div class="hole-stat">
+              <div class="hole-stat-label">SI</div>
+              <div class="hole-stat-value" id="current-hole-si">7</div>
+            </div>
+            <div class="hole-stat">
+              <div class="hole-stat-label">Meters</div>
+              <div class="hole-stat-value" id="current-hole-length">380</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score Input -->
+        <div class="score-input-grid" id="score-input-grid">
+          <!-- Score buttons generated dynamically -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modal-actions">
+          <button class="btn-clear" onclick="clearCurrentHole()">Clear</button>
+          <button class="btn-save-score" id="btn-save-score" onclick="saveAndNext()">Save & Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Scoring Modal (for Volunteers) -->
+    <div id="group-score-modal" class="modal-overlay">
+      <div class="group-score-modal">
+        <div class="group-modal-header">
+          <div>
+            <div class="group-modal-title" id="group-modal-title">Group 1</div>
+            <div class="group-modal-subtitle" id="group-modal-subtitle">Holes 1-3 • 4 players</div>
+          </div>
+          <button class="group-modal-close" onclick="closeGroupScoreModal()">×</button>
+        </div>
+
+        <!-- Score Grid with synchronized scrolling -->
+        <div class="score-grid-wrapper">
+          <div class="score-grid-table" id="score-grid-table">
+            <!-- Holes Header Row -->
+            <div class="holes-header">
+              <div class="player-col-header">Player</div>
+              <!-- Hole columns dynamically filled -->
+            </div>
+            <!-- Player rows dynamically filled -->
+          </div>
+        </div>
+
+        <!-- Number Input Pad -->
+        <div class="input-pad-container">
+          <div class="current-input-display">
+            <div>
+              <div class="current-input-label">Entering score for:</div>
+              <div class="current-input-player" id="input-current-player">Select a cell</div>
+              <div class="current-input-hole" id="input-current-hole"></div>
+            </div>
+            <div class="current-input-value" id="input-current-value">-</div>
+          </div>
+
+          <!-- Quick Score Buttons -->
+          <div class="quick-scores" id="quick-scores">
+            <button class="quick-score-btn birdie" onclick="quickScore(-1)">Birdie</button>
+            <button class="quick-score-btn par" onclick="quickScore(0)">Par</button>
+            <button class="quick-score-btn bogey" onclick="quickScore(1)">Bogey</button>
+            <button class="quick-score-btn" onclick="quickScore(2)">+2</button>
+            <button class="quick-score-btn" onclick="quickScore(3)">+3</button>
+          </div>
+
+          <!-- Number Pad -->
+          <div class="number-pad">
+            <button class="num-btn" onclick="inputScore(1)">1</button>
+            <button class="num-btn" onclick="inputScore(2)">2</button>
+            <button class="num-btn" onclick="inputScore(3)">3</button>
+            <button class="num-btn" onclick="inputScore(4)">4</button>
+            <button class="num-btn" onclick="inputScore(5)">5</button>
+            <button class="num-btn" onclick="inputScore(6)">6</button>
+            <button class="num-btn" onclick="inputScore(7)">7</button>
+            <button class="num-btn" onclick="inputScore(8)">8</button>
+            <button class="num-btn" onclick="inputScore(9)">9</button>
+            <button class="num-btn" onclick="inputScore('X')" style="font-size: 18px;">X</button>
+            <button class="num-btn clear" onclick="clearInput()">✕</button>
+            <button class="num-btn skip" onclick="skipToNext()">Skip</button>
+            <button class="num-btn action" onclick="saveGroupScores()" style="grid-column: span 3;">💾 Save All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+
+    <script>
+      // State
+      let currentTournament = null;
+      let currentRoundId = null;
+      let currentCourse = null;
+      let drawData = null;
+      let liveScores = {};
+      let admittedPlayers = [];
+      
+      // Modal state
+      let currentPlayer = null;
+      let currentHole = 1;
+      let tempScores = [];
+      let firebaseListener = null;
+      
+      // Volunteer mode state
+      let scoringMode = 'full'; // 'full', 'volunteers', 'players', 'walking', 'player-group'
+      let volunteerStation = null; // The hole number where volunteer is stationed
+      let allowedHoles = []; // Holes this volunteer can enter scores for
+      
+      // Player group mode state
+      let playerGroupNumber = null; // The group number this scorer is responsible for
+      let scoringForGroup = false; // Flag for player-group scoring mode
+
+      // Group scoring modal state
+      let groupScoreModalOpen = false;
+      let currentGroupPlayers = []; // Players in current group
+      let groupTempScores = {}; // { playerKey: { holes: [...] } }
+      let activeCell = { playerIndex: 0, holeIndex: 0 }; // Current input position
+      
+      // Auto-save state
+      let autoSaveTimer = null;
+      let pendingSavePlayerKeys = new Set(); // Track which players have pending changes
+      let isOnline = true; // Track connection status
+      let offlineQueue = []; // Queue of saves that failed while offline
+
+      // Initialize Firebase connection monitoring
+      function initConnectionMonitoring() {
+        if (!db) return;
+        
+        const connectedRef = db.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+          const wasOffline = !isOnline;
+          isOnline = snap.val() === true;
+          
+          const statusEl = document.getElementById('connection-status');
+          const textEl = document.getElementById('connection-text');
+          
+          if (isOnline) {
+            statusEl.className = 'connection-status connected';
+            textEl.textContent = 'Connected to cloud';
+            
+            // If we just came back online, sync any pending offline scores
+            if (wasOffline && offlineQueue.length > 0) {
+              textEl.textContent = 'Syncing offline scores...';
+              syncOfflineScores();
+            }
+          } else {
+            statusEl.className = 'connection-status disconnected';
+            textEl.textContent = 'Offline - scores saved locally';
+          }
+        });
+      }
+      
+      // Sync scores that were saved while offline
+      async function syncOfflineScores() {
+        if (offlineQueue.length === 0) return;
+        
+        const toSync = [...offlineQueue];
+        offlineQueue = [];
+        
+        console.log('[Offline Sync] Syncing', toSync.length, 'offline saves');
+        
+        for (const item of toSync) {
+          try {
+            const playerRef = db.ref(`liveScores/${item.roundId}/${item.playerKey}`);
+            await playerRef.transaction((currentData) => {
+              const existingHoles = currentData?.holes || new Array(18).fill('');
+              const mergedHoles = [...existingHoles];
+              
+              // Merge offline scores - only update if offline score is newer or cell was empty
+              item.holes.forEach((score, idx) => {
+                if (score !== '' && score !== null) {
+                  mergedHoles[idx] = score;
+                }
+              });
+              
+              return {
+                ...currentData,
+                holes: mergedHoles,
+                firstName: item.firstName,
+                lastName: item.lastName,
+                club: item.club || currentData?.club || '',
+                categories: item.categories || currentData?.categories || [],
+                hcp: item.hcp || currentData?.hcp || 0,
+                playingHcp: item.playingHcp || currentData?.playingHcp || 0,
+                updatedAt: Date.now(),
+                updatedBy: item.updatedBy
+              };
+            });
+          } catch (error) {
+            console.error('[Offline Sync] Failed to sync:', item.playerKey, error);
+            // Re-queue failed item
+            offlineQueue.push(item);
+          }
+        }
+        
+        if (offlineQueue.length === 0) {
+          showStatus('✓ All offline scores synced!', 'success');
+          setTimeout(() => hideStatus(), 2000);
+        } else {
+          showStatus(`⚠️ ${offlineQueue.length} scores pending sync`, 'info');
+        }
+        
+        // Update connection text
+        const textEl = document.getElementById('connection-text');
+        if (textEl && isOnline) {
+          textEl.textContent = 'Connected to cloud';
+        }
+      }
+      
+      // Save scores to localStorage as backup
+      function saveScoresToLocalStorage(playerKey, scores, player) {
+        try {
+          const localKey = `offlineScores_${currentRoundId}`;
+          const existing = JSON.parse(localStorage.getItem(localKey) || '{}');
+          existing[playerKey] = {
+            holes: scores.holes,
+            firstName: player.firstName,
+            lastName: player.lastName,
+            club: player.club || player.homeClub || '',
+            hcp: player.hcp || 0,
+            playingHcp: player.playingHcp || player.hcp || 0,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(localKey, JSON.stringify(existing));
+        } catch (e) {
+          console.error('Failed to save to localStorage:', e);
+        }
+      }
+      
+      // Load offline scores on startup
+      function loadOfflineScores() {
+        if (!currentRoundId) return;
+        
+        try {
+          const localKey = `offlineScores_${currentRoundId}`;
+          const offlineScores = JSON.parse(localStorage.getItem(localKey) || '{}');
+          
+          // Add any offline scores to the queue for syncing
+          for (const playerKey in offlineScores) {
+            const data = offlineScores[playerKey];
+            offlineQueue.push({
+              roundId: currentRoundId,
+              playerKey,
+              holes: data.holes,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              club: data.club,
+              categories: data.categories || [],
+              hcp: data.hcp,
+              playingHcp: data.playingHcp,
+              updatedBy: 'offline-sync'
+            });
+          }
+          
+          if (offlineQueue.length > 0 && isOnline) {
+            syncOfflineScores();
+          }
+        } catch (e) {
+          console.error('Failed to load offline scores:', e);
+        }
+      }
+      
+      // Clear synced offline scores
+      function clearOfflineScores() {
+        if (!currentRoundId) return;
+        try {
+          localStorage.removeItem(`offlineScores_${currentRoundId}`);
+        } catch (e) {
+          console.error('Failed to clear offline scores:', e);
+        }
+      }
+
+      // Load tournaments
+      function loadTournaments() {
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const select = document.getElementById('tournament-select');
+        
+        // Get today's date (without time) for comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        console.log('[Live Scoring] Today:', today.toISOString());
+        
+        // Filter to only show tournaments with rounds that haven't been played yet
+        const availableTournaments = tournaments
+          .filter(t => {
+            // Get last round date for this tournament
+            const lastRoundDate = getLastRoundDate(t);
+            
+            console.log(`[Live Scoring] Tournament: ${t.name}, lastRoundDate:`, lastRoundDate?.toISOString(), 'today:', today.toISOString(), 'include:', !lastRoundDate || lastRoundDate >= today);
+            
+            if (!lastRoundDate) return true; // If no date, show it
+            
+            // Tournament is available if last round date is today or in the future
+            return lastRoundDate >= today;
+          })
+          .sort((a, b) => {
+            // Sort by first available round date
+            const dateA = getFirstAvailableRoundDate(a) || new Date('2099-12-31');
+            const dateB = getFirstAvailableRoundDate(b) || new Date('2099-12-31');
+            return dateA - dateB;
+          });
+        
+        console.log('[Live Scoring] Available tournaments:', availableTournaments.length, 'of', tournaments.length);
+        
+        select.innerHTML = '<option value="">-- Select Tournament --</option>';
+        
+        availableTournaments.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t.tournamentId;
+          const dateStr = getTournamentDateDisplay(t);
+          option.textContent = `${t.name}${dateStr ? ' (' + dateStr + ')' : ''}`;
+          select.appendChild(option);
+        });
+      }
+      
+      // Get the last round date for a tournament
+      function getLastRoundDate(tournament) {
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          // Multi-round tournament - get last round date
+          const lastRound = roundsData[roundsData.length - 1];
+          if (lastRound?.date) {
+            const date = new Date(lastRound.date);
+            date.setHours(0, 0, 0, 0);
+            return date;
+          }
+          return null;
+        } else if (tournament.date) {
+          // Single round tournament
+          const date = new Date(tournament.date);
+          date.setHours(0, 0, 0, 0);
+          return date;
+        }
+        return null;
+      }
+      
+      // Get the first available (not yet played) round date
+      function getFirstAvailableRoundDate(tournament) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          for (const round of roundsData) {
+            if (round?.date) {
+              const roundDate = new Date(round.date);
+              roundDate.setHours(0, 0, 0, 0);
+              if (roundDate >= today) {
+                return roundDate;
+              }
+            }
+          }
+        } else if (tournament.date) {
+          const tDate = new Date(tournament.date);
+          tDate.setHours(0, 0, 0, 0);
+          if (tDate >= today) {
+            return tDate;
+          }
+        }
+        return null;
+      }
+      
+      // Get display string for tournament date
+      function getTournamentDateDisplay(tournament) {
+        const roundsData = tournament.meta?.roundsData;
+        if (roundsData && roundsData.length > 0) {
+          const dates = roundsData.filter(r => r?.date).map(r => r.date);
+          if (dates.length === 1) {
+            return formatDateShort(dates[0]);
+          } else if (dates.length > 1) {
+            return `${formatDateShort(dates[0])} - ${formatDateShort(dates[dates.length - 1])}`;
+          }
+        } else if (tournament.date) {
+          return formatDateShort(tournament.date);
+        }
+        return '';
+      }
+      
+      // Format date as short string (e.g., "18 Dec")
+      function formatDateShort(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      }
+
+      // Tournament selected
+      document.getElementById('tournament-select').addEventListener('change', function() {
+        const tournamentId = this.value;
+        
+        if (!tournamentId) {
+          document.getElementById('round-selector').style.display = 'none';
+          document.getElementById('quick-stats').style.display = 'none';
+          document.getElementById('search-container').style.display = 'none';
+          showEmptyState();
+          return;
+        }
+        
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+        
+        if (!currentTournament) return;
+        
+        // Get today's date for filtering rounds
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Populate rounds - only show rounds that are today or in the future
+        const roundSelect = document.getElementById('round-select');
+        roundSelect.innerHTML = '<option value="">-- Select Round --</option>';
+        
+        const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
+        const roundsData = currentTournament.meta?.roundsData || [];
+        
+        let availableRounds = [];
+        
+        roundIds.forEach((roundId, idx) => {
+          // Get round date
+          let roundDate = null;
+          if (roundsData[idx]?.date) {
+            roundDate = new Date(roundsData[idx].date);
+            roundDate.setHours(0, 0, 0, 0);
+          } else if (idx === 0 && currentTournament.date) {
+            // Single round tournament or first round uses tournament date
+            roundDate = new Date(currentTournament.date);
+            roundDate.setHours(0, 0, 0, 0);
+          }
+          
+          // Only include rounds that are today or in the future (or have no date)
+          if (!roundDate || roundDate >= today) {
+            const option = document.createElement('option');
+            option.value = roundId;
+            const dateStr = roundDate ? ` (${formatDateShort(roundDate)})` : '';
+            option.textContent = `Round ${idx + 1}${dateStr}`;
+            roundSelect.appendChild(option);
+            availableRounds.push(roundId);
+          }
+        });
+        
+        document.getElementById('round-selector').style.display = 'block';
+        
+        // Auto-select if single available round
+        if (availableRounds.length === 1) {
+          roundSelect.value = availableRounds[0];
+          roundSelect.dispatchEvent(new Event('change'));
+        }
+      });
+
+      // Round selected
+      document.getElementById('round-select').addEventListener('change', function() {
+        currentRoundId = this.value;
+        
+        if (!currentRoundId) {
+          document.getElementById('quick-stats').style.display = 'none';
+          document.getElementById('search-container').style.display = 'none';
+          showEmptyState();
+          return;
+        }
+        
+        loadRoundData();
+      });
+
+      // Load round data
+      async function loadRoundData() {
+        showStatus('Loading round data...', 'info');
+        
+        try {
+          console.log('Loading data for round:', currentRoundId);
+          console.log('Tournament:', currentTournament);
+          
+          // Load course data
+          const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+          const courseId = currentTournament.meta?.courses?.[0] || currentTournament.courseId;
+          currentCourse = courses.find(c => c.id === courseId || c.name === courseId);
+          console.log('Course:', currentCourse);
+          
+          // Load draw data - try multiple key formats
+          const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+          drawData = draws[currentRoundId];
+          console.log('Draw data for', currentRoundId, ':', drawData);
+          console.log('All draw keys:', Object.keys(draws));
+          
+          // Load admitted players - try multiple key formats
+          const admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          admittedPlayers = admittedData[currentRoundId] || [];
+          console.log('Admitted players for', currentRoundId, ':', admittedPlayers.length);
+          console.log('All admitted keys:', Object.keys(admittedData));
+          
+          // If no data found, try alternative round ID format
+          if (admittedPlayers.length === 0 && (!drawData || !drawData.groups)) {
+            // Try without prefix (e.g., T0003-1 instead of KLA-T0003-1)
+            const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+            console.log('Trying alternative roundId:', altRoundId);
+            
+            if (!admittedPlayers.length && admittedData[altRoundId]) {
+              admittedPlayers = admittedData[altRoundId];
+              console.log('Found admitted players with alt key:', admittedPlayers.length);
+            }
+            if (!drawData && draws[altRoundId]) {
+              drawData = draws[altRoundId];
+              console.log('Found draw data with alt key');
+            }
+          }
+          
+          // Load scores from localStorage first
+          const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+          liveScores = scoresData[currentRoundId] || {};
+          console.log('Local scores for', currentRoundId, ':', Object.keys(liveScores).length);
+          console.log('All score keys:', Object.keys(scoresData));
+          
+          // Try alternative score key
+          if (Object.keys(liveScores).length === 0) {
+            const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+            if (scoresData[altRoundId]) {
+              liveScores = scoresData[altRoundId];
+              console.log('Found scores with alt key:', Object.keys(liveScores).length);
+            }
+          }
+          
+          // Also try to load from Firebase
+          await loadLiveScores();
+          
+          // Setup real-time listener
+          setupFirebaseListener();
+          
+          // Check for any offline scores that need syncing
+          loadOfflineScores();
+          
+          // Show UI
+          document.getElementById('quick-stats').style.display = 'grid';
+          document.getElementById('search-container').style.display = 'block';
+          
+          // Render groups
+          renderGroups();
+          updateStats();
+          
+          // Setup player group mode UI after data is loaded
+          if (scoringForGroup && playerGroupNumber !== null) {
+            setupPlayerGroupMode();
+          }
+          
+          hideStatus();
+          
+        } catch (error) {
+          console.error('Error loading round data:', error);
+          // Don't show error for empty data - that's normal for a new tournament
+          // Only show error for actual failures
+          hideStatus();
+        }
+      }
+
+      // Load live scores from Firebase
+      async function loadLiveScores() {
+        if (!db || !currentRoundId) return;
+        
+        try {
+          // Load from liveScores path for real-time updates
+          const snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
+          liveScores = snapshot.val() || {};
+          
+          // Also check regular scores
+          const scoresSnapshot = await db.ref(`scores/${currentRoundId}`).once('value');
+          const regularScores = scoresSnapshot.val() || {};
+          
+          // Merge - live scores take precedence
+          for (const playerId in regularScores) {
+            if (!liveScores[playerId]) {
+              liveScores[playerId] = regularScores[playerId];
+            }
+          }
+          
+        } catch (error) {
+          console.error('Error loading live scores:', error);
+          // Fall back to localStorage
+          const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+          liveScores = scoresData[currentRoundId] || {};
+        }
+      }
+
+      // Setup Firebase real-time listener
+      function setupFirebaseListener() {
+        // First, remove any existing listener
+        if (firebaseListener && db) {
+          try {
+            db.ref(`liveScores/${currentRoundId}`).off('value', firebaseListener);
+          } catch (e) {
+            console.log('Error removing listener:', e);
+          }
+          firebaseListener = null;
+        }
+        
+        if (!db || !currentRoundId) {
+          console.log('Cannot setup listener - db or roundId missing');
+          return;
+        }
+        
+        try {
+          const liveScoresRef = db.ref(`liveScores/${currentRoundId}`);
+          
+          // Use both callback and error handler
+          firebaseListener = liveScoresRef.on('value', 
+            function onSuccess(snapshot) {
+              try {
+                if (!snapshot || typeof snapshot.val !== 'function') {
+                  console.log('Invalid snapshot received:', snapshot);
+                  return;
+                }
+                
+                const newScores = snapshot.val() || {};
+                
+                // Update local state
+                liveScores = newScores;
+                
+                // Re-render affected parts
+                renderGroups();
+                updateStats();
+                
+                // Update modal if open
+                if (currentPlayer) {
+                  updateModalScores();
+                }
+              } catch (callbackError) {
+                console.error('Error in Firebase callback:', callbackError);
+              }
+            }, 
+            function onError(error) {
+              console.error('Firebase listener error:', error);
+            }
+          );
+          
+          console.log('Firebase listener setup successfully');
+        } catch (error) {
+          console.error('Error setting up Firebase listener:', error);
+        }
+      }
+
+      // Track completed groups for this station (stored by group index)
+      let completedGroups = new Set();
+
+      // Extract hole number from tee string like "Hole 6", "1st Tee", "10th Tee", or numeric
+      function extractHoleNumber(tee) {
+        if (!tee) return 1;
+        if (typeof tee === 'number') return tee;
+        const str = String(tee);
+        
+        // Handle "Hole X" format (shotgun)
+        const holeMatch = str.match(/Hole\s*(\d+)/i);
+        if (holeMatch) return parseInt(holeMatch[1]);
+        
+        // Handle "1st Tee", "10th Tee" format
+        const teeMatch = str.match(/(\d+)(?:st|nd|rd|th)?\s*Tee/i);
+        if (teeMatch) return parseInt(teeMatch[1]);
+        
+        // Try direct parse
+        const num = parseInt(str);
+        return isNaN(num) ? 1 : num;
+      }
+      
+      // Calculate how many holes a group plays before meeting scorer at END of station hole
+      function calculateHolesUntilArrival(startingHole, stationHole) {
+        // Convert tee to number (handles "Hole 6", "1st Tee", 1, etc.)
+        const start = extractHoleNumber(startingHole);
+        const station = parseInt(stationHole) || 1;
+        
+        // Scorer is at END of station hole, so group plays FROM start TO station (inclusive)
+        // They must COMPLETE the station hole to meet the scorer.
+        // Example: Station 6 (scorer at end of hole 6)
+        //   - Start hole 6: Play hole 6, meet scorer = 1 hole played
+        //   - Start hole 5: Play holes 5,6, meet scorer = 2 holes played  
+        //   - Start hole 1: Play holes 1,2,3,4,5,6, meet scorer = 6 holes played
+        //   - Start hole 7: Play 7,8,9,10,11,12,13,14,15,16,17,18,1,2,3,4,5,6 = 18 holes
+        // Formula: ((station - start + 18) % 18) + 1, but if result > 18 it's 18
+        let holes = ((station - start) % 18 + 18) % 18;
+        // Add 1 because they must COMPLETE the station hole (not just arrive at it)
+        holes = holes + 1;
+        // If same hole (holes would be 1), that's correct - they play that 1 hole
+        // Maximum is 18 holes (full round)
+        if (holes > 18) holes = 18;
+        
+        return holes;
+      }
+
+      // Get the holes a group has ACTUALLY played when they meet scorer at station
+      function getPlayedHolesForGroup(startingHole, allowedHolesList) {
+        // If all 18 holes are allowed, return all 18 in correct order (1-18)
+        if (allowedHolesList.length === 18) {
+          return Array.from({length: 18}, (_, i) => i + 1);
+        }
+        
+        // Scorer is at END of station hole. Group has played from startingHole to stationHole.
+        // Only return holes from allowedHolesList that the group has actually played.
+        // 
+        // Example: Station covers holes 4,5,6 (scorer at end of hole 6)
+        //   - Group starts hole 6: played [6] → can score [6]
+        //   - Group starts hole 5: played [5,6] → can score [5,6]  
+        //   - Group starts hole 4: played [4,5,6] → can score [4,5,6]
+        //   - Group starts hole 3: played [3,4,5,6] → can score [4,5,6] (3 not in allowed)
+        //   - Group starts hole 7: played [7,8,...,6] → can score [4,5,6] (full round)
+        
+        const start = extractHoleNumber(startingHole);
+        // Station hole is the highest hole in allowedHolesList (where scorer sits)
+        const stationHole = Math.max(...allowedHolesList);
+        
+        // Calculate which holes this group has played (from start to station, wrapping at 18)
+        const playedHoles = [];
+        let hole = start;
+        for (let i = 0; i < 18; i++) {
+          playedHoles.push(hole);
+          if (hole === stationHole) break;
+          hole = (hole % 18) + 1;
+        }
+        
+        // Return only the allowed holes that are in the played holes
+        return allowedHolesList.filter(h => playedHoles.includes(h));
+      }
+
+      // Check if a group has completed scoring for this station
+      function isGroupCompleted(group) {
+        if (!group.players || group.players.length === 0) return false;
+        
+        const startingHole = extractHoleNumber(group.tee);
+        const playedHoles = getPlayedHolesForGroup(startingHole, allowedHoles);
+        
+        // Check if all players have scores for all played holes
+        return group.players.every(player => {
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          const playerScores = liveScores[playerKey]?.holes || [];
+          
+          return playedHoles.every(hole => {
+            const score = playerScores[hole - 1];
+            return score && score !== '';
+          });
+        });
+      }
+
+      // Render groups
+      function renderGroups() {
+        const container = document.getElementById('groups-container');
+        const searchTerm = document.getElementById('player-search').value.toLowerCase();
+        
+        if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+          // No draw - show all admitted players as a single group
+          if (admittedPlayers.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-title">No players found</div>
+                <div class="empty-state-text">No draw or admitted players for this round</div>
+              </div>
+            `;
+            return;
+          }
+          
+          // Filter players by search
+          const filteredPlayers = admittedPlayers.filter(p => {
+            const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+            return fullName.includes(searchTerm);
+          });
+          
+          container.innerHTML = renderGroupCard({
+            time: '-',
+            tee: '-',
+            players: filteredPlayers
+          }, 0, []);
+          return;
+        }
+        
+        // Build groups with arrival info
+        const isVolunteerMode = scoringMode === 'volunteers' && allowedHoles.length > 0;
+        let groupsWithInfo = [];
+        
+        console.log('[renderGroups] isVolunteerMode:', isVolunteerMode);
+        console.log('[renderGroups] scoringMode:', scoringMode);
+        console.log('[renderGroups] allowedHoles:', allowedHoles);
+        console.log('[renderGroups] volunteerStation:', volunteerStation);
+        
+        drawData.groups.forEach((group, originalIndex) => {
+          if (!group.players || group.players.length === 0) return;
+          
+          // In player-group mode, only show the assigned group
+          if (scoringForGroup && playerGroupNumber !== null) {
+            const groupNum = originalIndex + 1; // Groups are 1-indexed
+            if (groupNum !== playerGroupNumber) return;
+          }
+          
+          // Check if any player matches search
+          const matchingPlayers = group.players.filter(p => {
+            const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+            return fullName.includes(searchTerm);
+          });
+          
+          if (searchTerm && matchingPlayers.length === 0) return;
+          
+          const startingHole = extractHoleNumber(group.tee);
+          const holesUntilArrival = isVolunteerMode 
+            ? calculateHolesUntilArrival(startingHole, volunteerStation)
+            : originalIndex; // Non-volunteer mode: keep original order
+          
+          const playedHoles = isVolunteerMode 
+            ? getPlayedHolesForGroup(startingHole, allowedHoles)
+            : allowedHoles;
+          
+          const completed = isVolunteerMode ? isGroupCompleted(group) : false;
+          
+          if (isVolunteerMode && originalIndex < 3) {
+            console.log(`[renderGroups] Group ${originalIndex + 1}: tee="${group.tee}" => startingHole=${startingHole}, holesUntilArrival=${holesUntilArrival}, playedHoles=`, playedHoles);
+          }
+          
+          groupsWithInfo.push({
+            group,
+            originalIndex,
+            holesUntilArrival,
+            playedHoles,
+            completed,
+            time: group.time || '00:00'
+          });
+        });
+        
+        // Sort groups in volunteer mode
+        if (isVolunteerMode) {
+          console.log('[renderGroups] BEFORE sort:', groupsWithInfo.map(g => `Group${g.originalIndex+1}(hole ${extractHoleNumber(g.group.tee)}, arrival=${g.holesUntilArrival})`));
+          
+          groupsWithInfo.sort((a, b) => {
+            // Completed groups go to bottom
+            if (a.completed !== b.completed) {
+              return a.completed ? 1 : -1;
+            }
+            // Then by arrival order (fewer holes = arrives sooner)
+            if (a.holesUntilArrival !== b.holesUntilArrival) {
+              return a.holesUntilArrival - b.holesUntilArrival;
+            }
+            // Then by tee time
+            return a.time.localeCompare(b.time);
+          });
+          
+          console.log('[renderGroups] AFTER sort:', groupsWithInfo.map(g => `Group${g.originalIndex+1}(hole ${extractHoleNumber(g.group.tee)}, arrival=${g.holesUntilArrival})`));
+        }
+        
+        // Render sorted groups
+        let html = '';
+        groupsWithInfo.forEach((info, displayIndex) => {
+          html += renderGroupCard(info.group, info.originalIndex, info.playedHoles, info.completed, info.holesUntilArrival);
+        });
+        
+        if (!html) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div class="empty-state-title">No matches found</div>
+              <div class="empty-state-text">Try a different search term</div>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = html;
+      }
+
+      // Render single group card
+      function renderGroupCard(group, index, playedHoles = [], completed = false, holesUntilArrival = 0) {
+        let playersHtml = '';
+        const isVolunteerMode = scoringMode === 'volunteers' && allowedHoles.length > 0;
+        
+        group.players.forEach(player => {
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          const playerScore = liveScores[playerKey];
+          
+          let scoreHtml = '';
+          let thruHtml = '';
+          
+          if (playerScore && playerScore.holes) {
+            const { gross, toPar, thru } = calculatePlayerScore(playerScore, player);
+            
+            if (thru > 0) {
+              let scoreClass = 'even-par';
+              if (toPar < 0) scoreClass = 'under-par';
+              else if (toPar > 0) scoreClass = 'over-par';
+              
+              const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+              scoreHtml = `<div class="score-badge ${scoreClass}">${toParStr}</div>`;
+              thruHtml = `<div class="thru-badge">${thru === 18 ? 'F' : `Thru ${thru}`}</div>`;
+            } else {
+              scoreHtml = '<div class="score-badge no-score">-</div>';
+            }
+          } else {
+            scoreHtml = '<div class="score-badge no-score">-</div>';
+          }
+          
+          // Players are not individually clickable - use group header to open group scoring modal
+          playersHtml += `
+            <div class="player-row" style="cursor: default;">
+              <div class="player-info">
+                <div class="player-name">${player.firstName} ${player.lastName}</div>
+                <div class="player-details">HCP: ${player.hcp || '-'} | P.HCP: ${player.playingHcp || player.hcp || '-'}</div>
+              </div>
+              <div class="player-score">
+                ${thruHtml}
+                ${scoreHtml}
+              </div>
+            </div>
+          `;
+        });
+        
+        // Serialize group data for group scoring modal
+        // In volunteer mode, include played holes info
+        // In full mode, use all 18 holes
+        const groupDataWithHoles = {
+          ...group,
+          _playedHoles: isVolunteerMode ? playedHoles : Array.from({length: 18}, (_, i) => i + 1)
+        };
+        const groupDataStr = encodeURIComponent(JSON.stringify(groupDataWithHoles));
+        
+        // Make group header clickable (except for completed groups in volunteer mode)
+        const isClickable = !(isVolunteerMode && completed);
+        const headerClickHandler = isClickable
+          ? `onclick="openGroupScoreModal(${index}, '${groupDataStr}')"` 
+          : '';
+        
+        // Build header class
+        let headerClass = 'group-header';
+        if (isClickable) headerClass += ' clickable';
+        if (completed) headerClass += ' completed';
+        
+        // Build status indicator for volunteer mode
+        let statusHtml = '';
+        if (isVolunteerMode) {
+          if (completed) {
+            statusHtml = '<div class="group-status completed">✓ Done</div>';
+          } else {
+            const holesText = playedHoles.length === 1 
+              ? `${playedHoles.length} hole` 
+              : `${playedHoles.length} holes`;
+            statusHtml = `<div class="group-status pending">${holesText} to collect</div>`;
+          }
+        }
+        
+        // Card class
+        const cardClass = completed ? 'group-card completed' : 'group-card';
+        
+        return `
+          <div class="${cardClass}">
+            <div class="${headerClass}" ${headerClickHandler}>
+              <div>
+                <div class="group-info">Group ${index + 1} - ${group.time || 'TBA'}</div>
+                <div class="group-tee">Started: Hole ${group.tee || '1'}</div>
+                ${isClickable ? '<div class="tap-hint">👆 Tap to enter scores</div>' : ''}
+              </div>
+              ${statusHtml}
+            </div>
+            <div class="group-players">
+              ${playersHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      // Calculate player score
+      function calculatePlayerScore(scoreData, player) {
+        if (!scoreData || !scoreData.holes) {
+          return { gross: 0, toPar: 0, thru: 0 };
+        }
+        
+        let gross = 0;
+        let coursePar = 0;
+        let thru = 0;
+        
+        const holes = scoreData.holes;
+        const coursePars = getCoursePars();
+        const strokeIndexes = getCourseStrokeIndexes();
+        
+        for (let i = 0; i < 18; i++) {
+          if (holes[i] && holes[i] !== '' && holes[i] !== null) {
+            const par = coursePars[i];
+            let holeScore;
+            
+            // Handle 'X' (DNF) - use max score or net double bogey
+            if (holes[i] === 'X' || holes[i] === 'x') {
+              holeScore = getMaxScoreForHole(i, player, par, strokeIndexes[i]);
+            } else {
+              holeScore = parseInt(holes[i]);
+            }
+            
+            gross += holeScore;
+            coursePar += par;
+            thru = i + 1;
+          }
+        }
+        
+        const toPar = gross - coursePar;
+        
+        return { gross, toPar, thru };
+      }
+
+      // Get max score for a hole (used when X is entered)
+      // Returns: tournament max score setting, or net double bogey if not defined
+      function getMaxScoreForHole(holeIndex, player, par, strokeIndex) {
+        const maxScoreSetting = currentTournament?.meta?.maxScore;
+        
+        // If max score is defined in tournament settings
+        if (maxScoreSetting && maxScoreSetting !== 'na') {
+          const phcp = player?.playingHcp || player?.hcp || 0;
+          
+          switch(maxScoreSetting) {
+            case 'net_double_bogey':
+              const strokesReceived = getStrokesForHole(phcp, strokeIndex);
+              return par + 2 + strokesReceived;
+            case 'par_plus_4':
+              return par + 4;
+            case 'double_par':
+              return par * 2;
+            case '10':
+              return 10;
+          }
+        }
+        
+        // Default: Net double bogey
+        const phcp = player?.playingHcp || player?.hcp || 0;
+        const strokesReceived = getStrokesForHole(phcp, strokeIndex);
+        return par + 2 + strokesReceived;
+      }
+
+      // Calculate strokes received on a hole based on playing handicap and stroke index
+      function getStrokesForHole(playingHcp, strokeIndex) {
+        if (!playingHcp || playingHcp <= 0) return 0;
+        
+        let strokes = 0;
+        
+        // First 18 strokes: 1 stroke on holes where SI <= hcp
+        if (playingHcp >= strokeIndex) {
+          strokes = 1;
+        }
+        
+        // Additional strokes for hcp > 18
+        if (playingHcp > 18) {
+          const extraStrokes = playingHcp - 18;
+          if (extraStrokes >= strokeIndex) {
+            strokes += 1;
+          }
+        }
+        
+        // Additional strokes for hcp > 36
+        if (playingHcp > 36) {
+          const extraStrokes = playingHcp - 36;
+          if (extraStrokes >= strokeIndex) {
+            strokes += 1;
+          }
+        }
+        
+        return strokes;
+      }
+
+      // Get course pars array (handles different data formats)
+      function getCoursePars() {
+        const defaultPars = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5];
+        
+        if (!currentCourse) return defaultPars;
+        
+        // Check if course has pars array (new format)
+        if (currentCourse.pars && Array.isArray(currentCourse.pars)) {
+          return currentCourse.pars;
+        }
+        
+        // Check if course has holes array (old format)
+        if (currentCourse.holes && Array.isArray(currentCourse.holes)) {
+          return currentCourse.holes.map(h => h.par || 4);
+        }
+        
+        return defaultPars;
+      }
+
+      // Get course stroke indexes
+      function getCourseStrokeIndexes() {
+        const defaultSI = [1, 3, 5, 7, 9, 11, 13, 15, 17, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+        
+        if (!currentCourse) return defaultSI;
+        
+        // Check if course has strokeIndexes array
+        if (currentCourse.strokeIndexes && Array.isArray(currentCourse.strokeIndexes)) {
+          return currentCourse.strokeIndexes;
+        }
+        
+        // Check if course has holes array with si
+        if (currentCourse.holes && Array.isArray(currentCourse.holes)) {
+          return currentCourse.holes.map(h => h.si || 1);
+        }
+        
+        return defaultSI;
+      }
+
+      // Get hole length from tee data
+      function getHoleLength(holeIndex) {
+        if (!currentCourse || !currentCourse.teeData) return '-';
+        
+        // Use first tee's yards if available
+        const firstTee = currentCourse.teeData[0];
+        if (firstTee && firstTee.yards && firstTee.yards[holeIndex]) {
+          return firstTee.yards[holeIndex];
+        }
+        
+        return '-';
+      }
+
+      // Update quick stats
+      function updateStats() {
+        const totalPlayers = admittedPlayers.length || (drawData?.groups?.reduce((sum, g) => sum + (g.players?.length || 0), 0) || 0);
+        const scoredPlayers = Object.keys(liveScores).filter(key => {
+          const s = liveScores[key];
+          return s && s.holes && s.holes.some(h => h !== '' && h !== null);
+        }).length;
+        
+        document.getElementById('stat-players').textContent = totalPlayers;
+        document.getElementById('stat-scored').textContent = scoredPlayers;
+        
+        // Find leader
+        let leader = '-';
+        let bestScore = Infinity;
+        
+        for (const playerKey in liveScores) {
+          const playerScore = liveScores[playerKey];
+          if (!playerScore || !playerScore.holes) continue;
+          
+          const { toPar, thru } = calculatePlayerScore(playerScore, {});
+          if (thru >= 1 && toPar < bestScore) {
+            bestScore = toPar;
+            leader = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+          }
+        }
+        
+        document.getElementById('stat-leader').textContent = leader;
+      }
+
+      // Open score modal
+      function openScoreModal(playerKey, firstName, lastName, hcp, playingHcp) {
+        currentPlayer = {
+          key: playerKey,
+          firstName,
+          lastName,
+          hcp,
+          playingHcp
+        };
+        
+        // Load existing scores
+        tempScores = [];
+        if (liveScores[playerKey] && liveScores[playerKey].holes) {
+          tempScores = [...liveScores[playerKey].holes];
+        }
+        
+        // Ensure 18 holes
+        while (tempScores.length < 18) {
+          tempScores.push('');
+        }
+        
+        // Set modal content
+        document.getElementById('modal-player-name').textContent = `${firstName} ${lastName}`;
+        document.getElementById('modal-player-details').textContent = `HCP: ${hcp || '-'} | Playing HCP: ${playingHcp || '-'}`;
+        
+        // In volunteer mode, find first empty hole within allowed holes
+        if (scoringMode === 'volunteers' && allowedHoles.length > 0) {
+          // Default to first allowed hole
+          currentHole = allowedHoles[0];
+          
+          // Find first empty hole within allowed holes
+          for (const holeNum of allowedHoles) {
+            if (!tempScores[holeNum - 1] || tempScores[holeNum - 1] === '') {
+              currentHole = holeNum;
+              break;
+            }
+          }
+        } else {
+          // Standard mode: find first empty hole or start from 1
+          currentHole = 1;
+          for (let i = 0; i < 18; i++) {
+            if (!tempScores[i] || tempScores[i] === '') {
+              currentHole = i + 1;
+              break;
+            }
+            if (i === 17) currentHole = 18;
+          }
+        }
+        
+        // Render hole navigation
+        renderHoleNav();
+        
+        // Render current hole
+        renderCurrentHole();
+        
+        // Update running totals
+        updateModalScores();
+        
+        // Show modal
+        document.getElementById('score-modal').classList.add('active');
+      }
+
+      // Close score modal
+      function closeScoreModal() {
+        document.getElementById('score-modal').classList.remove('active');
+        currentPlayer = null;
+        tempScores = [];
+      }
+
+      // Render hole navigation
+      function renderHoleNav() {
+        const nav = document.getElementById('hole-nav');
+        let html = '';
+        
+        // In volunteer mode, only show allowed holes
+        const holesToShow = (scoringMode === 'volunteers' && allowedHoles.length > 0) 
+          ? allowedHoles 
+          : Array.from({ length: 18 }, (_, i) => i + 1);
+        
+        for (const i of holesToShow) {
+          const hasScore = tempScores[i - 1] && tempScores[i - 1] !== '';
+          const isActive = i === currentHole;
+          
+          let className = 'hole-btn';
+          if (isActive) className += ' active';
+          if (hasScore) className += ' has-score';
+          
+          html += `<button class="${className}" onclick="selectHole(${i})">${i}</button>`;
+        }
+        
+        nav.innerHTML = html;
+        
+        // Scroll to active hole
+        setTimeout(() => {
+          const activeBtn = nav.querySelector('.hole-btn.active');
+          if (activeBtn) {
+            activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+          }
+        }, 50);
+      }
+
+      // Select hole
+      function selectHole(holeNum) {
+        // In volunteer mode, ensure the hole is in allowed list
+        if (scoringMode === 'volunteers' && allowedHoles.length > 0) {
+          if (!allowedHoles.includes(holeNum)) {
+            return; // Don't allow selecting non-allowed holes
+          }
+        }
+        currentHole = holeNum;
+        renderHoleNav();
+        renderCurrentHole();
+      }
+
+      // Render current hole
+      function renderCurrentHole() {
+        const pars = getCoursePars();
+        const strokeIndexes = getCourseStrokeIndexes();
+        
+        const par = pars[currentHole - 1] || 4;
+        const si = strokeIndexes[currentHole - 1] || currentHole;
+        const length = getHoleLength(currentHole - 1);
+        
+        document.getElementById('current-hole-number').textContent = currentHole;
+        document.getElementById('current-hole-par').textContent = par;
+        document.getElementById('current-hole-si').textContent = si;
+        document.getElementById('current-hole-length').textContent = length;
+        
+        // Generate score buttons
+        const grid = document.getElementById('score-input-grid');
+        let html = '';
+        
+        // Score range: par-3 to par+4 (covering HIO to quad bogey)
+        const minScore = Math.max(1, par - 3);
+        const maxScore = par + 4;
+        
+        for (let score = minScore; score <= maxScore; score++) {
+          const diff = score - par;
+          let className = 'score-btn';
+          let label = '';
+          
+          if (diff <= -2) { className += ' eagle'; label = diff === -3 ? 'Albatross' : 'Eagle'; }
+          else if (diff === -1) { className += ' birdie'; label = 'Birdie'; }
+          else if (diff === 0) { className += ' par'; label = 'Par'; }
+          else if (diff === 1) { className += ' bogey'; label = 'Bogey'; }
+          else if (diff >= 2) { className += ' double'; label = diff === 2 ? 'Double' : `+${diff}`; }
+          
+          // Check if this is the selected score
+          if (tempScores[currentHole - 1] === score.toString()) {
+            className += ' selected';
+          }
+          
+          html += `
+            <button class="${className}" onclick="selectScore(${score})">
+              ${score}
+              <div class="score-label">${label}</div>
+            </button>
+          `;
+        }
+        
+        grid.innerHTML = html;
+      }
+
+      // Select score
+      function selectScore(score) {
+        tempScores[currentHole - 1] = score.toString();
+        
+        // Update UI
+        renderCurrentHole();
+        renderHoleNav();
+        updateModalScores();
+        
+        // Auto-save to Firebase
+        saveScoreToFirebase();
+      }
+
+      // Clear current hole
+      function clearCurrentHole() {
+        tempScores[currentHole - 1] = '';
+        renderCurrentHole();
+        renderHoleNav();
+        updateModalScores();
+        saveScoreToFirebase();
+      }
+
+      // Save and go to next hole
+      function saveAndNext() {
+        // Save is automatic, just go to next hole
+        if (currentHole < 18) {
+          currentHole++;
+          renderHoleNav();
+          renderCurrentHole();
+        } else {
+          // Finished all holes
+          showStatus('All 18 holes completed! 🎉', 'success');
+          setTimeout(() => {
+            closeScoreModal();
+            hideStatus();
+          }, 1500);
+        }
+      }
+
+      // Save score to Firebase
+      async function saveScoreToFirebase() {
+        if (!currentPlayer || !currentRoundId) return;
+        
+        try {
+          const scoreData = {
+            holes: tempScores,
+            firstName: currentPlayer.firstName,
+            lastName: currentPlayer.lastName,
+            club: currentPlayer.club || currentPlayer.homeClub || '',
+            hcp: currentPlayer.hcp || 0,
+            playingHcp: currentPlayer.playingHcp || currentPlayer.hcp || 0,
+            categories: currentPlayer.categories || [],
+            lastUpdated: new Date().toISOString(),
+            scoredBy: 'live-scoring'
+          };
+          
+          // Update local state
+          liveScores[currentPlayer.key] = scoreData;
+          
+          // Save to Firebase liveScores path
+          if (db) {
+            await db.ref(`liveScores/${currentRoundId}/${currentPlayer.key}`).set(scoreData);
+            
+            // Also update regular scores for compatibility
+            await db.ref(`scores/${currentRoundId}/${currentPlayer.key}`).set(scoreData);
+          }
+          
+          // Update localStorage
+          const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+          if (!scoresData[currentRoundId]) scoresData[currentRoundId] = {};
+          scoresData[currentRoundId][currentPlayer.key] = scoreData;
+          localStorage.setItem('scores', JSON.stringify(scoresData));
+          
+          // Update groups display
+          renderGroups();
+          updateStats();
+          
+        } catch (error) {
+          console.error('Error saving score:', error);
+          showStatus('Error saving. Will retry...', 'error');
+        }
+      }
+
+      // Update modal running scores
+      function updateModalScores() {
+        const { gross, toPar, thru } = calculatePlayerScore({ holes: tempScores }, currentPlayer);
+        
+        document.getElementById('running-gross').textContent = gross || '-';
+        
+        const toParEl = document.getElementById('running-topar');
+        if (thru === 0) {
+          toParEl.textContent = 'E';
+          toParEl.className = 'running-stat-value';
+        } else {
+          toParEl.textContent = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+          toParEl.className = 'running-stat-value ' + (toPar < 0 ? 'under' : 'over');
+        }
+        
+        document.getElementById('running-thru').textContent = thru;
+      }
+
+      // Show/hide status message
+      function showStatus(message, type) {
+        const el = document.getElementById('status-message');
+        el.className = `status-message ${type}`;
+        el.innerHTML = message;
+        el.style.display = 'flex';
+      }
+
+      function hideStatus() {
+        document.getElementById('status-message').style.display = 'none';
+      }
+
+      // Show empty state
+      function showEmptyState() {
+        document.getElementById('groups-container').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⛳</div>
+            <div class="empty-state-title">Select a tournament</div>
+            <div class="empty-state-text">Choose a tournament and round to start live scoring</div>
+          </div>
+        `;
+      }
+
+      // ==========================================
+      // GROUP SCORING MODAL FUNCTIONS (Volunteer Mode)
+      // ==========================================
+
+      // Open group score modal
+      // Current group's allowed holes (may be subset of station's allowed holes for shotgun)
+      let currentGroupAllowedHoles = [];
+
+      function openGroupScoreModal(groupIndex, encodedGroupData) {
+        const group = JSON.parse(decodeURIComponent(encodedGroupData));
+        currentGroupPlayers = group.players || [];
+        
+        if (currentGroupPlayers.length === 0) {
+          showStatus('No players in this group', 'error');
+          return;
+        }
+        
+        // Use played holes if available (for shotgun where group may not have played all station holes)
+        currentGroupAllowedHoles = group._playedHoles && group._playedHoles.length > 0 
+          ? group._playedHoles 
+          : allowedHoles;
+        
+        // Initialize temp scores for all players
+        groupTempScores = {};
+        currentGroupPlayers.forEach(player => {
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          // Load existing scores from liveScores
+          if (liveScores[playerKey] && liveScores[playerKey].holes) {
+            groupTempScores[playerKey] = { holes: [...liveScores[playerKey].holes] };
+          } else {
+            groupTempScores[playerKey] = { holes: new Array(18).fill('') };
+          }
+        });
+        
+        // Set modal header
+        let holesText;
+        if (currentGroupAllowedHoles.length === 18) {
+          holesText = 'All 18 holes';
+        } else if (currentGroupAllowedHoles.length === 1) {
+          holesText = `Hole ${currentGroupAllowedHoles[0]}`;
+        } else {
+          holesText = `Holes ${currentGroupAllowedHoles[0]}-${currentGroupAllowedHoles[currentGroupAllowedHoles.length - 1]}`;
+        }
+        document.getElementById('group-modal-title').textContent = `Group ${groupIndex + 1} - ${group.time || 'TBA'}`;
+        document.getElementById('group-modal-subtitle').textContent = 
+          `${holesText} • ${currentGroupPlayers.length} players`;
+        
+        // Render holes header
+        renderGroupHolesHeader();
+        
+        // Render players grid
+        renderGroupPlayersGrid();
+        
+        // Set first cell as active (but don't call updateActiveCell yet - wait until after scroll reset)
+        activeCell = { playerIndex: 0, holeIndex: 0 };
+        
+        // Show modal
+        groupScoreModalOpen = true;
+        const modalEl = document.getElementById('group-score-modal');
+        
+        // Add full-holes class for 18-hole mode to adjust styling
+        if (currentGroupAllowedHoles.length > 9) {
+          modalEl.classList.add('full-holes');
+        } else {
+          modalEl.classList.remove('full-holes');
+        }
+        
+        modalEl.classList.add('active');
+        
+        // Reset scroll position to start (left edge) after modal is visible
+        // Use multiple attempts to ensure it takes effect after CSS transitions
+        const resetScroll = () => {
+          const wrapper = document.querySelector('.score-grid-wrapper');
+          if (wrapper) {
+            wrapper.scrollLeft = 0;
+            wrapper.scrollTop = 0;
+          }
+        };
+        
+        // Reset immediately and after animation completes
+        resetScroll();
+        setTimeout(resetScroll, 100);
+        setTimeout(resetScroll, 300);
+        
+        // Then update active cell
+        setTimeout(() => updateActiveCell(), 350);
+      }
+
+      // Close group score modal
+      function closeGroupScoreModal() {
+        groupScoreModalOpen = false;
+        const modalEl = document.getElementById('group-score-modal');
+        modalEl.classList.remove('active', 'full-holes');
+        currentGroupPlayers = [];
+        groupTempScores = {};
+        
+        // In player-group mode, re-open the modal after a brief moment
+        // since the scorer can only work with their assigned group
+        if (scoringForGroup && playerGroupNumber) {
+          setTimeout(() => {
+            autoOpenGroupScoringModal();
+          }, 300);
+        }
+      }
+
+      // Render the entire score grid (header + players)
+      function renderScoreGrid() {
+        const table = document.getElementById('score-grid-table');
+        const pars = getCoursePars();
+        
+        // Use currentGroupAllowedHoles (may be subset for shotgun)
+        const holesToShow = currentGroupAllowedHoles.length > 0 ? currentGroupAllowedHoles : allowedHoles;
+        
+        // Set grid columns: player column + hole columns
+        // Use smaller sizes for 18-hole mode to fit more holes on screen
+        const isFullMode = holesToShow.length > 9;
+        const playerColWidth = isFullMode ? '100px' : '100px';
+        const holeColWidth = isFullMode ? '42px' : '44px';
+        const gridColumns = `${playerColWidth} repeat(${holesToShow.length}, ${holeColWidth})`;
+        table.style.gridTemplateColumns = gridColumns;
+        
+        let html = '';
+        
+        // Header row
+        html += '<div class="holes-header">';
+        html += '<div class="player-col-header">Player</div>';
+        holesToShow.forEach(holeNum => {
+          html += `
+            <div class="hole-col-header">
+              <div>${holeNum}</div>
+              <div class="par-label">P${pars[holeNum - 1]}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        
+        // Player rows
+        currentGroupPlayers.forEach((player, playerIndex) => {
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          const playerScores = groupTempScores[playerKey]?.holes || [];
+          
+          // Shorten name for mobile
+          const shortName = player.firstName.charAt(0) + '. ' + player.lastName.substring(0, 8);
+          
+          html += `<div class="player-score-row" data-player-index="${playerIndex}">`;
+          html += `
+            <div class="player-col">
+              <div class="player-col-name">${shortName}</div>
+              <div class="player-col-hcp">HCP ${player.hcp || '-'}</div>
+            </div>
+          `;
+          
+          holesToShow.forEach((holeNum, holeIndex) => {
+            const score = playerScores[holeNum - 1];
+            const par = pars[holeNum - 1];
+            let cellClass = 'score-cell';
+            
+            if (score && score !== '') {
+              cellClass += ' has-score';
+              
+              // Handle X (DNF) - special styling
+              if (score === 'X') {
+                cellClass += ' dnf';
+              } else {
+                const diff = parseInt(score) - par;
+                if (diff <= -2) cellClass += ' eagle';
+                else if (diff === -1) cellClass += ' birdie';
+                else if (diff === 0) cellClass += ' par';
+                else if (diff === 1) cellClass += ' bogey';
+                else if (diff >= 2) cellClass += ' double-plus';
+              }
+            } else {
+              cellClass += ' empty';
+            }
+            
+            html += `
+              <div class="score-cell-wrapper">
+                <div class="${cellClass}" 
+                     onclick="selectCell(${playerIndex}, ${holeIndex})"
+                     data-player="${playerIndex}" 
+                     data-hole="${holeIndex}">
+                  ${score || '-'}
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div>';
+        });
+        
+        table.innerHTML = html;
+      }
+
+      // Legacy function names for compatibility - now just call renderScoreGrid
+      function renderGroupHolesHeader() {
+        renderScoreGrid();
+      }
+
+      function renderGroupPlayersGrid() {
+        renderScoreGrid();
+      }
+
+      // Helper to get the current group's allowed holes
+      function getGroupHoles() {
+        return currentGroupAllowedHoles.length > 0 ? currentGroupAllowedHoles : allowedHoles;
+      }
+
+      // Select a cell for input
+      function selectCell(playerIndex, holeIndex) {
+        activeCell = { playerIndex, holeIndex };
+        updateActiveCell();
+      }
+
+      // Update active cell highlight
+      function updateActiveCell() {
+        // Remove all active classes
+        document.querySelectorAll('.score-cell.active-input').forEach(el => {
+          el.classList.remove('active-input');
+        });
+        document.querySelectorAll('.player-score-row.active').forEach(el => {
+          el.classList.remove('active');
+        });
+        
+        // Add active class to current cell
+        const cells = document.querySelectorAll(`.score-cell[data-player="${activeCell.playerIndex}"][data-hole="${activeCell.holeIndex}"]`);
+        cells.forEach(cell => cell.classList.add('active-input'));
+        
+        // Add active class to current row
+        const rows = document.querySelectorAll(`.player-score-row[data-player-index="${activeCell.playerIndex}"]`);
+        rows.forEach(row => row.classList.add('active'));
+        
+        // Update input display
+        const player = currentGroupPlayers[activeCell.playerIndex];
+        const groupHoles = getGroupHoles();
+        const holeNum = groupHoles[activeCell.holeIndex];
+        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        const currentScore = groupTempScores[playerKey]?.holes[holeNum - 1] || '';
+        
+        document.getElementById('input-current-player').textContent = `${player.firstName} ${player.lastName}`;
+        document.getElementById('input-current-hole').textContent = `Hole ${holeNum} (Par ${getCoursePars()[holeNum - 1]})`;
+        document.getElementById('input-current-value').textContent = currentScore || '-';
+        
+        // Scroll cell into view
+        const activeCell_el = document.querySelector(`.score-cell[data-player="${activeCell.playerIndex}"][data-hole="${activeCell.holeIndex}"]`);
+        if (activeCell_el) {
+          // Scroll vertically to show the row
+          const activeRow = document.querySelector(`.player-score-row[data-player-index="${activeCell.playerIndex}"]`);
+          if (activeRow) {
+            activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+          
+          // Scroll horizontally within the wrapper to show the cell
+          // Skip horizontal scroll adjustment for first hole - it should be visible at scrollLeft=0
+          if (activeCell.holeIndex > 0) {
+            const wrapper = document.querySelector('.score-grid-wrapper');
+            if (wrapper) {
+              const cellRect = activeCell_el.getBoundingClientRect();
+              const wrapperRect = wrapper.getBoundingClientRect();
+              const playerColWidth = 80; // Width of sticky player column in full-holes mode
+              
+              // If cell is hidden behind the player column
+              if (cellRect.left < wrapperRect.left + playerColWidth) {
+                wrapper.scrollLeft -= (wrapperRect.left + playerColWidth - cellRect.left + 10);
+              }
+              // If cell is beyond the right edge
+              else if (cellRect.right > wrapperRect.right) {
+                wrapper.scrollLeft += (cellRect.right - wrapperRect.right + 10);
+              }
+            }
+          }
+        }
+      }
+
+      // Waiting for double digit input
+      let waitingForDoubleDigit = false;
+      let pendingFirstDigit = null;
+
+      // Input score via number pad
+      function inputScore(score) {
+        const player = currentGroupPlayers[activeCell.playerIndex];
+        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        const groupHoles = getGroupHoles();
+        const holeNum = groupHoles[activeCell.holeIndex];
+        
+        // Handle X (DNF)
+        if (score === 'X') {
+          setScoreAndAdvance(playerKey, holeNum, 'X');
+          return;
+        }
+        
+        // Handle score of 1 - ask if hole-in-one or double digit
+        if (score === 1 && !waitingForDoubleDigit) {
+          showHoleInOneConfirm(playerKey, holeNum);
+          return;
+        }
+        
+        // If waiting for second digit of double-digit score
+        if (waitingForDoubleDigit) {
+          const finalScore = parseInt(`${pendingFirstDigit}${score}`);
+          waitingForDoubleDigit = false;
+          pendingFirstDigit = null;
+          hideDoubleDigitPrompt();
+          setScoreAndAdvance(playerKey, holeNum, finalScore);
+          return;
+        }
+        
+        // Normal score entry
+        setScoreAndAdvance(playerKey, holeNum, score);
+      }
+
+      // Set score and auto-advance to next cell
+      function setScoreAndAdvance(playerKey, holeNum, score) {
+        // Set score
+        if (!groupTempScores[playerKey]) {
+          groupTempScores[playerKey] = { holes: new Array(18).fill('') };
+        }
+        groupTempScores[playerKey].holes[holeNum - 1] = score;
+        
+        // Update display
+        document.getElementById('input-current-value').textContent = score;
+        
+        // Re-render grid to show the score
+        renderScoreGrid();
+        
+        // Re-apply active cell highlight
+        updateActiveCell();
+        
+        // Haptic feedback on mobile
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+        
+        // Trigger auto-save (debounced)
+        triggerAutoSave(playerKey);
+        
+        // Auto-advance to next cell after brief delay
+        setTimeout(() => {
+          moveToNextCell();
+        }, 150);
+      }
+
+      // Show hole-in-one confirmation
+      function showHoleInOneConfirm(playerKey, holeNum) {
+        const player = currentGroupPlayers[activeCell.playerIndex];
+        const confirmHtml = `
+          <div id="hole-in-one-confirm" style="
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+          ">
+            <div style="
+              background: white;
+              border-radius: 16px;
+              padding: 24px;
+              max-width: 320px;
+              text-align: center;
+            ">
+              <div style="font-size: 48px; margin-bottom: 12px;">🏌️‍♂️</div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Hole in One?</div>
+              <div style="font-size: 14px; color: #64748b; margin-bottom: 20px;">
+                ${player.firstName} ${player.lastName} on Hole ${holeNum}
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <button onclick="confirmHoleInOne('${playerKey}', ${holeNum})" style="
+                  flex: 1;
+                  padding: 14px;
+                  border: none;
+                  border-radius: 10px;
+                  background: #dc2626;
+                  color: white;
+                  font-size: 16px;
+                  font-weight: 700;
+                  cursor: pointer;
+                ">🎉 Yes!</button>
+                <button onclick="startDoubleDigit()" style="
+                  flex: 1;
+                  padding: 14px;
+                  border: 2px solid #e2e8f0;
+                  border-radius: 10px;
+                  background: white;
+                  color: #1e293b;
+                  font-size: 16px;
+                  font-weight: 600;
+                  cursor: pointer;
+                ">10+ Score</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', confirmHtml);
+      }
+
+      // Confirm hole in one
+      function confirmHoleInOne(playerKey, holeNum) {
+        document.getElementById('hole-in-one-confirm')?.remove();
+        setScoreAndAdvance(playerKey, holeNum, 1);
+      }
+
+      // Start double digit input (1X)
+      function startDoubleDigit() {
+        document.getElementById('hole-in-one-confirm')?.remove();
+        waitingForDoubleDigit = true;
+        pendingFirstDigit = 1;
+        showDoubleDigitPrompt();
+      }
+
+      // Show prompt for second digit
+      function showDoubleDigitPrompt() {
+        document.getElementById('input-current-value').textContent = '1_';
+        document.getElementById('input-current-value').style.color = '#f59e0b';
+      }
+
+      // Hide double digit prompt
+      function hideDoubleDigitPrompt() {
+        document.getElementById('input-current-value').style.color = '#1e293b';
+      }
+
+      // Quick score (relative to par)
+      function quickScore(relativeToPar) {
+        const player = currentGroupPlayers[activeCell.playerIndex];
+        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        const groupHoles = getGroupHoles();
+        const holeNum = groupHoles[activeCell.holeIndex];
+        const par = getCoursePars()[holeNum - 1];
+        const score = par + relativeToPar;
+        
+        // Quick scores bypass hole-in-one check and auto-advance
+        setScoreAndAdvance(playerKey, holeNum, score);
+      }
+
+      // Clear current input
+      function clearInput() {
+        // Cancel any pending double-digit input
+        waitingForDoubleDigit = false;
+        pendingFirstDigit = null;
+        hideDoubleDigitPrompt();
+        
+        const player = currentGroupPlayers[activeCell.playerIndex];
+        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        const groupHoles = getGroupHoles();
+        const holeNum = groupHoles[activeCell.holeIndex];
+        
+        if (groupTempScores[playerKey]) {
+          groupTempScores[playerKey].holes[holeNum - 1] = '';
+        }
+        
+        document.getElementById('input-current-value').textContent = '-';
+        renderGroupPlayersGrid();
+        updateActiveCell();
+        
+        // Trigger auto-save for the cleared score
+        triggerAutoSave(playerKey);
+      }
+
+      // Confirm and move to next cell
+      function confirmAndNext() {
+        // Move to next cell
+        moveToNextCell();
+      }
+
+      // Skip to next cell without entering
+      function skipToNext() {
+        moveToNextCell();
+      }
+
+      // Move to next empty cell
+      // In player-group mode: advance to next player (same hole), then next hole
+      // In volunteer mode: advance to next hole (same player), then next player
+      function moveToNextCell() {
+        const totalPlayers = currentGroupPlayers.length;
+        const groupHoles = getGroupHoles();
+        const totalHoles = groupHoles.length;
+        
+        if (scoringForGroup) {
+          // Player-group mode: score all players for current hole, then move to next hole
+          // Try next player for same hole
+          if (activeCell.playerIndex < totalPlayers - 1) {
+            activeCell.playerIndex++;
+          } else {
+            // Move to next hole, first player
+            if (activeCell.holeIndex < totalHoles - 1) {
+              activeCell.holeIndex++;
+              activeCell.playerIndex = 0;
+            } else {
+              // We've reached the end - wrap to first player, first hole
+              activeCell.playerIndex = 0;
+              activeCell.holeIndex = 0;
+            }
+          }
+        } else {
+          // Volunteer mode: score all holes for current player, then move to next player
+          // Try next hole for same player
+          if (activeCell.holeIndex < totalHoles - 1) {
+            activeCell.holeIndex++;
+          } else {
+            // Move to next player, first hole
+            if (activeCell.playerIndex < totalPlayers - 1) {
+              activeCell.playerIndex++;
+              activeCell.holeIndex = 0;
+            } else {
+              // We've reached the end - wrap to first player
+              activeCell.playerIndex = 0;
+              activeCell.holeIndex = 0;
+            }
+          }
+        }
+        
+        updateActiveCell();
+      }
+
+      // Save all group scores to Firebase
+      async function saveGroupScores() {
+        if (!db || !currentRoundId) {
+          showStatus('Not connected - please try again', 'error');
+          return;
+        }
+        
+        try {
+          showStatus('Saving scores...', 'info');
+          let savedCount = 0;
+          const groupHoles = getGroupHoles();
+          
+          for (const player of currentGroupPlayers) {
+            const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+            const scores = groupTempScores[playerKey];
+            
+            if (scores && scores.holes) {
+              // Check if any group's allowed holes have scores
+              const hasScores = groupHoles.some(h => scores.holes[h - 1] && scores.holes[h - 1] !== '');
+              
+              if (hasScores) {
+                // Use Firebase transaction to safely merge scores
+                const playerRef = db.ref(`liveScores/${currentRoundId}/${playerKey}`);
+                
+                await playerRef.transaction((currentData) => {
+                  // Get existing holes or create new array
+                  const existingHoles = currentData?.holes || new Array(18).fill('');
+                  const mergedHoles = [...existingHoles];
+                  
+                  // Only update the group's allowed holes
+                  groupHoles.forEach(holeNum => {
+                    if (scores.holes[holeNum - 1] !== '') {
+                      mergedHoles[holeNum - 1] = scores.holes[holeNum - 1];
+                    }
+                  });
+                  
+                  return {
+                    ...currentData,
+                    holes: mergedHoles,
+                    firstName: player.firstName,
+                    lastName: player.lastName,
+                    club: player.club || player.homeClub || currentData?.club || '',
+                    categories: player.categories || currentData?.categories || [],
+                    hcp: player.hcp || currentData?.hcp || 0,
+                    playingHcp: player.playingHcp || player.hcp || currentData?.playingHcp || 0,
+                    updatedAt: Date.now(),
+                    updatedBy: volunteerStation ? 'volunteer-station-' + volunteerStation : 'tournament-organizer'
+                  };
+                });
+                
+                savedCount++;
+              }
+            }
+          }
+          
+          if (savedCount > 0) {
+            showStatus(`✓ Saved scores for ${savedCount} player(s)`, 'success');
+            
+            // Flash animation
+            document.querySelectorAll('.player-score-row').forEach(row => {
+              row.classList.add('save-flash');
+              setTimeout(() => row.classList.remove('save-flash'), 500);
+            });
+            
+            // In player-group mode, keep the modal open (scorer continues entering scores)
+            // In volunteer mode, close the modal after saving
+            if (!scoringForGroup) {
+              setTimeout(() => {
+                closeGroupScoreModal();
+              }, 800);
+            }
+          } else {
+            showStatus('No scores to save', 'info');
+          }
+        } catch (error) {
+          console.error('Save error:', error);
+          showStatus('Error saving scores: ' + error.message, 'error');
+        }
+      }
+      
+      // Auto-save a single player's score (debounced)
+      function triggerAutoSave(playerKey) {
+        // Add to pending saves
+        pendingSavePlayerKeys.add(playerKey);
+        
+        // Clear existing timer
+        if (autoSaveTimer) {
+          clearTimeout(autoSaveTimer);
+        }
+        
+        // Set new timer - save after 1.5 seconds of no new input
+        autoSaveTimer = setTimeout(() => {
+          autoSavePendingScores();
+        }, 1500);
+      }
+      
+      // Save all pending player scores
+      async function autoSavePendingScores() {
+        if (!currentRoundId || pendingSavePlayerKeys.size === 0) return;
+        
+        const playersToSave = [...pendingSavePlayerKeys];
+        pendingSavePlayerKeys.clear();
+        
+        const groupHoles = getGroupHoles();
+        
+        for (const playerKey of playersToSave) {
+          const player = currentGroupPlayers.find(p => 
+            (p.reg || `${p.firstName}-${p.lastName}`) === playerKey
+          );
+          if (!player) continue;
+          
+          const scores = groupTempScores[playerKey];
+          if (!scores || !scores.holes) continue;
+          
+          // Check if any holes have scores
+          const hasScores = groupHoles.some(h => scores.holes[h - 1] && scores.holes[h - 1] !== '');
+          if (!hasScores) continue;
+          
+          // Always save to localStorage as backup first
+          saveScoresToLocalStorage(playerKey, scores, player);
+          
+          // If offline, queue for later sync
+          if (!isOnline || !db) {
+            offlineQueue.push({
+              roundId: currentRoundId,
+              playerKey,
+              holes: [...scores.holes],
+              firstName: player.firstName,
+              lastName: player.lastName,
+              club: player.club || player.homeClub || '',
+              categories: player.categories || [],
+              hcp: player.hcp || 0,
+              playingHcp: player.playingHcp || player.hcp || 0,
+              updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
+                         (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
+            });
+            showStatus('📱 Saved offline - will sync when connected', 'info');
+            setTimeout(() => hideStatus(), 2000);
+            continue;
+          }
+          
+          // Online - save to Firebase
+          try {
+            const playerRef = db.ref(`liveScores/${currentRoundId}/${playerKey}`);
+            
+            await playerRef.transaction((currentData) => {
+              const existingHoles = currentData?.holes || new Array(18).fill('');
+              const mergedHoles = [...existingHoles];
+              
+              // Only update holes that have scores
+              groupHoles.forEach(holeNum => {
+                if (scores.holes[holeNum - 1] !== '') {
+                  mergedHoles[holeNum - 1] = scores.holes[holeNum - 1];
+                }
+              });
+              
+              return {
+                ...currentData,
+                holes: mergedHoles,
+                firstName: player.firstName,
+                lastName: player.lastName,
+                club: player.club || player.homeClub || currentData?.club || '',
+                categories: player.categories || currentData?.categories || [],
+                hcp: player.hcp || currentData?.hcp || 0,
+                playingHcp: player.playingHcp || player.hcp || currentData?.playingHcp || 0,
+                updatedAt: Date.now(),
+                updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
+                           (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
+              };
+            });
+            
+            // Clear from localStorage since it's now synced
+            clearOfflineScores();
+            
+            // Brief subtle indicator
+            showStatus(`✓ Saved`, 'success');
+            setTimeout(() => hideStatus(), 1000);
+            
+          } catch (error) {
+            console.error('Auto-save error for', playerKey, ':', error);
+            
+            // Queue for offline sync
+            offlineQueue.push({
+              roundId: currentRoundId,
+              playerKey,
+              holes: [...scores.holes],
+              firstName: player.firstName,
+              lastName: player.lastName,
+              club: player.club || player.homeClub || '',
+              categories: player.categories || [],
+              hcp: player.hcp || 0,
+              playingHcp: player.playingHcp || player.hcp || 0,
+              updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
+                         (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
+            });
+            
+            showStatus('📱 Saved locally - will sync when connected', 'info');
+            setTimeout(() => hideStatus(), 2000);
+          }
+        }
+      }
+
+      // Search handler
+      document.getElementById('player-search').addEventListener('input', function() {
+        renderGroups();
+      });
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async function() {
+        // Wait for Firebase
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (typeof initFirebase === 'function') {
+          initFirebase();
+        }
+        
+        // Load data from Firebase first
+        if (typeof loadTournamentsFromFirebase === 'function') {
+          await loadTournamentsFromFirebase();
+        }
+        if (typeof loadCoursesFromFirebase === 'function') {
+          await loadCoursesFromFirebase();
+        }
+        
+        initConnectionMonitoring();
+        loadTournaments();
+        
+        // Check URL params for direct access
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        const roundId = urlParams.get('roundId');
+        const mode = urlParams.get('mode');
+        const station = urlParams.get('station');
+        const holes = urlParams.get('holes');
+        const groupParam = urlParams.get('group');
+        
+        console.log('[Live Scoring] URL params:', { tournamentId, roundId, mode, station, holes, group: groupParam });
+        
+        // Hide back button if accessed via scorer link (has tournamentId in URL)
+        if (tournamentId) {
+          const backBtn = document.querySelector('.btn-back-top');
+          if (backBtn) {
+            backBtn.style.display = 'none';
+          }
+        }
+        
+        // Set volunteer mode if specified
+        if (mode) {
+          scoringMode = mode;
+        }
+        
+        if (mode === 'volunteers' && station && holes) {
+          volunteerStation = parseInt(station);
+          allowedHoles = holes.split(',').map(h => parseInt(h));
+          
+          console.log('[Live Scoring] Volunteer mode initialized:', { 
+            station: volunteerStation, 
+            allowedHoles: allowedHoles 
+          });
+          
+          // Update UI for volunteer mode
+          setupVolunteerMode();
+        } else if (mode === 'volunteers') {
+          // Volunteer mode without station/holes - show warning
+          console.warn('[Live Scoring] Volunteer mode requested but missing station or holes parameter!');
+          console.warn('[Live Scoring] URL is missing required parameters. User will have full access.');
+        } else if (mode === 'player-group' && groupParam) {
+          // Player group mode - one player enters scores for entire group
+          playerGroupNumber = parseInt(groupParam);
+          scoringForGroup = true;
+          console.log('[Live Scoring] Player group mode initialized:', { group: playerGroupNumber });
+          
+          // Update UI for player group mode
+          setupPlayerGroupMode();
+        }
+        
+        if (tournamentId) {
+          // Direct loading from URL params - bypass the dropdowns entirely
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          currentTournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (currentTournament && roundId) {
+            currentRoundId = roundId;
+            
+            // Hide tournament/round selectors - scorer shouldn't change these
+            document.getElementById('tournament-selector').style.display = 'none';
+            document.getElementById('round-selector').style.display = 'none';
+            
+            // Load the round data directly
+            loadRoundData();
+          } else if (currentTournament) {
+            // Tournament found but no round specified - show round selector
+            document.getElementById('tournament-select').value = tournamentId;
+            document.getElementById('tournament-select').dispatchEvent(new Event('change'));
+            document.getElementById('tournament-selector').style.display = 'none';
+          } else {
+            console.error('[Live Scoring] Tournament not found:', tournamentId);
+          }
+        }
+      });
+      
+      // Setup volunteer mode UI
+      function setupVolunteerMode() {
+        // Update header
+        const header = document.querySelector('.top-nav h1');
+        if (header) {
+          header.innerHTML = `🏁 Hole ${volunteerStation} Station`;
+        }
+        
+        // Update the live badge to show which holes
+        const liveBadge = document.querySelector('.live-badge');
+        if (liveBadge) {
+          const holesText = allowedHoles.length === 1 
+            ? `Hole ${allowedHoles[0]}` 
+            : `Holes ${allowedHoles[0]}-${allowedHoles[allowedHoles.length - 1]}`;
+          liveBadge.innerHTML = `<span class="live-dot"></span> ${holesText}`;
+        }
+        
+        // Hide tournament/round selectors in volunteer mode (they come from URL)
+        document.getElementById('tournament-selector').style.display = 'none';
+        document.getElementById('round-selector').style.display = 'none';
+        
+        // Add volunteer info banner
+        const container = document.querySelector('.container');
+        const banner = document.createElement('div');
+        banner.className = 'volunteer-banner';
+        banner.innerHTML = `
+          <div class="volunteer-banner-icon">🏁</div>
+          <div class="volunteer-banner-content">
+            <div class="volunteer-banner-title">Volunteer Station - Hole ${volunteerStation}</div>
+            <div class="volunteer-banner-subtitle">
+              Collecting scores for ${allowedHoles.length === 1 ? 'hole ' + allowedHoles[0] : 'holes ' + allowedHoles[0] + '-' + allowedHoles[allowedHoles.length - 1]}
+            </div>
+          </div>
+        `;
+        container.insertBefore(banner, container.firstChild);
+      }
+      
+      // Setup player group mode UI
+      function setupPlayerGroupMode() {
+        // Update header
+        const header = document.querySelector('.top-nav h1');
+        if (header) {
+          header.innerHTML = `👥 Group ${playerGroupNumber} Scorer`;
+        }
+        
+        // Update the live badge
+        const liveBadge = document.querySelector('.live-badge');
+        if (liveBadge) {
+          liveBadge.innerHTML = `<span class="live-dot"></span> All 18 Holes`;
+        }
+        
+        // Hide tournament/round selectors (they come from URL)
+        document.getElementById('tournament-selector').style.display = 'none';
+        document.getElementById('round-selector').style.display = 'none';
+        
+        // Set allowed holes to all 18
+        allowedHoles = Array.from({length: 18}, (_, i) => i + 1);
+        
+        // Hide the group selection UI - we'll go directly to score entry
+        document.getElementById('quick-stats').style.display = 'none';
+        document.getElementById('search-container').style.display = 'none';
+        document.getElementById('groups-container').style.display = 'none';
+        
+        // Auto-open the scoring modal for the assigned group
+        autoOpenGroupScoringModal();
+      }
+      
+      // Auto-open the scoring modal for player-group mode
+      function autoOpenGroupScoringModal() {
+        if (!drawData || !drawData.groups || !playerGroupNumber) {
+          console.error('[Player Group Mode] Cannot open modal - missing data');
+          return;
+        }
+        
+        const groupIndex = playerGroupNumber - 1;
+        if (groupIndex < 0 || groupIndex >= drawData.groups.length) {
+          console.error('[Player Group Mode] Invalid group number:', playerGroupNumber);
+          return;
+        }
+        
+        const group = drawData.groups[groupIndex];
+        if (!group || !group.players || group.players.length === 0) {
+          console.error('[Player Group Mode] Group has no players');
+          return;
+        }
+        
+        // Open the scoring modal directly
+        const encodedGroupData = encodeURIComponent(JSON.stringify(group));
+        openGroupScoreModal(groupIndex, encodedGroupData);
+      }
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', () => {
+        if (firebaseListener && db) {
+          db.ref(`liveScores/${currentRoundId}`).off('value', firebaseListener);
+        }
+      });
+    </script>
+  </body>
+</html>

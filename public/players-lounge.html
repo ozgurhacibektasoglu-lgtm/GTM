@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Players Lounge - Golf Tournament Management</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      /* Login Screen */
+      .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      
+      .login-card {
+        background: white;
+        border-radius: 16px;
+        padding: 48px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 440px;
+        width: 100%;
+      }
+      
+      .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      
+      .login-header h1 {
+        font-size: 32px;
+        color: #0f172a;
+        margin-bottom: 8px;
+      }
+      
+      .login-header p {
+        color: #64748b;
+        font-size: 16px;
+      }
+      
+      .login-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #334155;
+      }
+      
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.2s;
+      }
+      
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      .login-btn {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      }
+      
+      .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .error-message {
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #fecaca;
+        display: none;
+      }
+      
+      .error-message.show {
+        display: block;
+      }
+      
+      /* Main Content */
+      .main-content {
+        display: none;
+      }
+      
+      .main-content.active {
+        display: block;
+      }
+      
+      .header {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      
+      .header-left h1 {
+        font-size: 28px;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      
+      .header-left p {
+        color: #64748b;
+      }
+      
+      .logout-btn {
+        padding: 10px 20px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .logout-btn:hover {
+        background: #dc2626;
+      }
+      
+      .welcome-card {
+        background: white;
+        color: #0f172a;
+        padding: 32px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+      
+      .welcome-card h2 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+      }
+      
+      .welcome-card p {
+        margin: 0;
+        color: #64748b;
+      }
+      
+      .lounge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      
+      .info-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+      
+      .info-card h3 {
+        margin: 0 0 16px 0;
+        color: #0f172a;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .info-row:last-child {
+        border-bottom: none;
+      }
+      
+      .info-label {
+        font-weight: 600;
+        color: #64748b;
+      }
+      
+      .info-value {
+        color: #0f172a;
+        text-align: right;
+      }
+      
+      .edit-profile-btn {
+        width: 100%;
+        padding: 12px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 16px;
+        transition: background 0.2s;
+      }
+      
+      .edit-profile-btn:hover {
+        background: #2563eb;
+      }
+      
+      .tournaments-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+      
+      .tournaments-card h3 {
+        margin: 0 0 16px 0;
+        color: #0f172a;
+        font-size: 20px;
+      }
+      
+      .tournament-item {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+      }
+      
+      .tournament-item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+      }
+      
+      .tournament-name {
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 8px;
+      }
+      
+      .tournament-info {
+        display: flex;
+        gap: 16px;
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      
+      .tournament-status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .status-open {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      .status-registered {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      .status-closed {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+      
+      .register-btn {
+        padding: 8px 16px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      
+      .register-btn:hover {
+        background: #059669;
+      }
+      
+      .register-btn:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+      }
+      
+      .no-tournaments {
+        text-align: center;
+        padding: 32px;
+        color: #94a3b8;
+      }
+      
+      /* Edit Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        align-items: center;
+        justify-content: center;
+        z-index: 60;
+      }
+      
+      .modal.active {
+        display: flex;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 600px;
+        width: 92%;
+        padding: 24px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .modal-header h3 {
+        margin: 0;
+        font-size: 24px;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #64748b;
+        padding: 0;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+      
+      .close-btn:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+      
+      .field {
+        margin-bottom: 16px;
+      }
+      
+      .field label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #334155;
+      }
+      
+      .field input,
+      .field select {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        font-size: 14px;
+      }
+      
+      .field input:disabled,
+      .field input:read-only {
+        background-color: #f1f5f9;
+        cursor: not-allowed;
+      }
+      
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+      
+      .btn-cancel {
+        padding: 10px 20px;
+        background: white;
+        border: 2px solid #cbd5e1;
+        color: #0f172a;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-cancel:hover {
+        background: #f1f5f9;
+      }
+      
+      .btn-save {
+        padding: 10px 20px;
+        background: #3b82f6;
+        border: none;
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .btn-save:hover {
+        background: #2563eb;
+      }
+      
+      .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        display: none;
+      }
+      
+      .message.success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+        display: block;
+      }
+      
+      .message.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        display: block;
+      }
+      
+      @media (max-width: 768px) {
+        .login-card {
+          padding: 32px 24px;
+        }
+        
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .lounge-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-icon">🏌️</div>
+          <h1>Players Lounge</h1>
+          <p>Sign in to access your player profile</p>
+        </div>
+        
+        <div id="loginError" class="error-message"></div>
+        
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Email or Registration Number</label>
+            <input type="text" id="loginEmail" required autocomplete="username" />
+          </div>
+          
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password" />
+          </div>
+          
+          <button type="submit" class="login-btn" id="loginBtn">
+            Sign In
+          </button>
+          
+          <div style="text-align: center; margin-top: 16px; color: #64748b;">
+            Don't have an account? 
+            <a href="#" onclick="showSignupScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Sign Up</a>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Sign Up Screen - Step 1: Enter Registration Number -->
+    <div id="signupScreen" class="login-container" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-icon">🏌️</div>
+          <h1>Create Account</h1>
+          <p>Enter your registration number to get started</p>
+        </div>
+        
+        <div id="signupError" class="error-message"></div>
+        
+        <form id="signupStep1Form">
+          <div class="form-group">
+            <label for="signupRegNo">Player Registration Number *</label>
+            <input type="text" id="signupRegNo" required placeholder="e.g. P001" />
+            <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">Enter your GTM registration number</small>
+          </div>
+          
+          <button type="submit" class="login-btn" id="step1Btn">
+            Continue
+          </button>
+          
+          <div style="text-align: center; margin-top: 16px; color: #64748b;">
+            Already have an account? 
+            <a href="#" onclick="showLoginScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Sign In</a>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Sign Up Screen - Step 2: Choose Verification Method -->
+    <div id="signupStep2Screen" class="login-container" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-icon">✉️</div>
+          <h1>Verify Your Identity</h1>
+          <p>Choose how you'd like to receive your verification code</p>
+        </div>
+        
+        <div id="step2Error" class="error-message"></div>
+        
+        <div style="margin-bottom: 24px; padding: 16px; background: #f1f5f9; border-radius: 8px;">
+          <div style="font-weight: 600; color: #334155; margin-bottom: 8px;">Player Found:</div>
+          <div style="color: #64748b;" id="playerInfoDisplay"></div>
+        </div>
+        
+        <div class="form-group">
+          <label>Select verification method:</label>
+          <div id="verificationOptions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+            <!-- Options will be populated dynamically -->
+          </div>
+        </div>
+        
+        <button type="button" class="login-btn" id="sendCodeBtn" onclick="sendVerificationCode()">
+          Send Verification Code
+        </button>
+        
+        <div style="text-align: center; margin-top: 16px;">
+          <a href="#" onclick="showSignupScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">← Back</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sign Up Screen - Step 3: Enter Verification Code -->
+    <div id="signupStep3Screen" class="login-container" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-icon">🔐</div>
+          <h1>Enter Verification Code</h1>
+          <p>We sent a code to <span id="sentToDisplay"></span></p>
+        </div>
+        
+        <div id="step3Error" class="error-message"></div>
+        <div id="step3Success" class="message success" style="display: none;"></div>
+        
+        <form id="signupStep3Form">
+          <div class="form-group">
+            <label for="verificationCode">Verification Code *</label>
+            <input type="text" id="verificationCode" required placeholder="Enter 6-digit code" maxlength="6" 
+                   style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;" />
+          </div>
+          
+          <button type="submit" class="login-btn" id="verifyCodeBtn">
+            Verify Code
+          </button>
+          
+          <div style="text-align: center; margin-top: 16px; color: #64748b;">
+            Didn't receive the code? 
+            <a href="#" onclick="resendVerificationCode(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Resend</a>
+          </div>
+          
+          <div style="text-align: center; margin-top: 12px;">
+            <a href="#" onclick="showStep2Screen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">← Back</a>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Sign Up Screen - Step 4: Set Password -->
+    <div id="signupStep4Screen" class="login-container" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-icon">🔒</div>
+          <h1>Set Your Password</h1>
+          <p>Create a secure password for your account</p>
+        </div>
+        
+        <div id="step4Error" class="error-message"></div>
+        
+        <form id="signupStep4Form">
+          <div class="form-group">
+            <label for="newPassword">Password *</label>
+            <input type="password" id="newPassword" required minlength="6" autocomplete="new-password" />
+            <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">At least 6 characters</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="confirmPassword">Re-enter Password *</label>
+            <input type="password" id="confirmPassword" required minlength="6" autocomplete="new-password" />
+          </div>
+          
+          <button type="submit" class="login-btn" id="completeSignupBtn">
+            Complete Sign Up
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div id="mainContent" class="main-content">
+      <div class="container">
+        <!-- Header -->
+        <div class="header">
+          <div class="header-left">
+            <h1>🏌️ Players Lounge</h1>
+            <p>Welcome back, <span id="headerPlayerName">Player</span></p>
+          </div>
+          <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+        
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+          <h2>Hello, <span id="playerName">Player</span>! 👋</h2>
+          <p>Manage your profile and register for upcoming tournaments</p>
+        </div>
+        
+        <!-- Profile Grid -->
+        <div class="lounge-grid">
+          <!-- Personal Information -->
+          <div class="info-card">
+            <h3>📋 Personal Information</h3>
+            <div id="personalInfo">
+              <div class="info-row">
+                <span class="info-label">Registration No:</span>
+                <span class="info-value" id="regNo">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value" id="fullName">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Date of Birth:</span>
+                <span class="info-value" id="dob">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Age Group:</span>
+                <span class="info-value" id="ageGroup">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Gender:</span>
+                <span class="info-value" id="gender">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Nationality:</span>
+                <span class="info-value" id="nationality">-</span>
+              </div>
+            </div>
+            <button class="edit-profile-btn" onclick="openEditModal()">✏️ Edit Profile</button>
+          </div>
+          
+          <!-- Golf Information -->
+          <div class="info-card">
+            <h3>⛳ Golf Information</h3>
+            <div id="golfInfo">
+              <div class="info-row">
+                <span class="info-label">Home Club:</span>
+                <span class="info-value" id="homeClub">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Handicap:</span>
+                <span class="info-value" id="handicap">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Player Type:</span>
+                <span class="info-value" id="playerType">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Admission Date:</span>
+                <span class="info-value" id="admissionDate">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contact Information -->
+          <div class="info-card">
+            <h3>📞 Contact Information</h3>
+            <div id="contactInfo">
+              <div class="info-row">
+                <span class="info-label">ID Number:</span>
+                <span class="info-value" id="idNo">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value" id="email">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Mobile:</span>
+                <span class="info-value" id="mobile">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Address:</span>
+                <span class="info-value" id="address">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tournament Stats -->
+          <div class="info-card">
+            <h3>🏆 Tournament Stats</h3>
+            <div id="tournamentStats">
+              <div class="info-row">
+                <span class="info-label">Tournaments Played:</span>
+                <span class="info-value">0</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Wins:</span>
+                <span class="info-value">0</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Top 3 Finishes:</span>
+                <span class="info-value">0</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Best Score:</span>
+                <span class="info-value">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Available Tournaments -->
+        <div class="tournaments-card">
+          <h3>🏌️ Available Tournaments</h3>
+          <div id="tournamentsList">
+            <div class="no-tournaments">
+              <p>📅 No tournaments available at the moment</p>
+              <p style="font-size: 14px;">Check back soon for upcoming events!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Profile</h3>
+          <button class="close-btn" onclick="closeEditModal()">×</button>
+        </div>
+        
+        <div id="modalMessage" class="message"></div>
+        
+        <form id="editForm">
+          <div class="field">
+            <label>Registration No</label>
+            <input type="text" id="editRegNo" disabled />
+          </div>
+          
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" id="editFirstName" disabled />
+          </div>
+          
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" id="editLastName" disabled />
+          </div>
+          
+          <div class="field">
+            <label>Date of Birth</label>
+            <input type="date" id="editDob" disabled />
+          </div>
+          
+          <div class="field">
+            <label>Handicap</label>
+            <input type="number" step="0.1" id="editHandicap" />
+          </div>
+          
+          <div class="field">
+            <label>ID Number</label>
+            <input type="text" id="editIdNo" />
+          </div>
+          
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="editEmail" />
+          </div>
+          
+          <div class="field">
+            <label>Mobile</label>
+            <input type="tel" id="editMobile" />
+          </div>
+          
+          <div class="field">
+            <label>Address</label>
+            <input type="text" id="editAddress" />
+          </div>
+          
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+            <button type="submit" class="btn-save">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <script>
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCS5xw35GRf3OjN0_MF0E9CIpqZFN7nqSY",
+        authDomain: "gtm-management-6350e.firebaseapp.com",
+        databaseURL: "https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "gtm-management-6350e",
+        storageBucket: "gtm-management-6350e.firebasestorage.app",
+        messagingSenderId: "62680867005",
+        appId: "1:62680867005:web:84a1b2f1e35a51e92c06c9"
+      };
+      
+      // Initialize Firebase
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      
+      const auth = firebase.auth();
+      const database = firebase.database();
+      
+      let currentPlayer = null;
+      let allPlayers = [];
+      
+      // Check authentication state
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          showMainContent();
+          loadPlayerData();
+        } else {
+          showLoginScreen();
+        }
+      });
+      
+      // Login form handler
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const loginBtn = document.getElementById('loginBtn');
+        const errorDiv = document.getElementById('loginError');
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Signing in...';
+        errorDiv.classList.remove('show');
+        
+        try {
+          // Check if input is an email or registration number
+          let loginEmail = email;
+          
+          // If not an email format, search for player with this reg number
+          if (!email.includes('@')) {
+            const playersSnapshot = await database.ref('players').once('value');
+            const playersData = playersSnapshot.val();
+            
+            if (playersData) {
+              const players = typeof playersData === 'object' && !Array.isArray(playersData) 
+                ? Object.values(playersData) 
+                : playersData;
+              
+              const player = players.find(p => p.reg === email);
+              
+              if (player && player.email) {
+                loginEmail = player.email;
+              } else {
+                throw new Error('Registration number not found or no email associated');
+              }
+            } else {
+              throw new Error('No player data found');
+            }
+          }
+          
+          await auth.signInWithEmailAndPassword(loginEmail, password);
+          
+        } catch (error) {
+          console.error('Login error:', error);
+          errorDiv.textContent = getErrorMessage(error.code);
+          errorDiv.classList.add('show');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Sign In';
+        }
+      });
+      
+      // Load player data
+      async function loadPlayerData() {
+        try {
+          const user = auth.currentUser;
+          if (!user) return;
+          
+          const playersSnapshot = await database.ref('players').once('value');
+          const playersData = playersSnapshot.val();
+          
+          if (!playersData) {
+            showError('No player data found');
+            return;
+          }
+          
+          // Convert to array
+          allPlayers = typeof playersData === 'object' && !Array.isArray(playersData)
+            ? Object.values(playersData)
+            : playersData;
+          
+          // Find player by email
+          currentPlayer = allPlayers.find(p => p.email === user.email);
+          
+          if (!currentPlayer) {
+            showError('Player profile not found');
+            return;
+          }
+          
+          displayPlayerData();
+          
+        } catch (error) {
+          console.error('Error loading player data:', error);
+          showError('Failed to load player data');
+        }
+      }
+      
+      // Display player data
+      function displayPlayerData() {
+        if (!currentPlayer) return;
+        
+        // Welcome messages
+        document.getElementById('playerName').textContent = currentPlayer.firstName || 'Player';
+        document.getElementById('headerPlayerName').textContent = currentPlayer.firstName || 'Player';
+        
+        // Personal Information
+        document.getElementById('regNo').textContent = currentPlayer.reg || '-';
+        document.getElementById('fullName').textContent = 
+          `${currentPlayer.firstName || ''} ${currentPlayer.lastName || ''}`.trim() || '-';
+        document.getElementById('dob').textContent = currentPlayer.dob || '-';
+        document.getElementById('ageGroup').textContent = currentPlayer.ageGroup || '-';
+        document.getElementById('gender').textContent = 
+          currentPlayer.gender ? currentPlayer.gender.charAt(0).toUpperCase() + currentPlayer.gender.slice(1) : '-';
+        document.getElementById('nationality').textContent = currentPlayer.nationality || '-';
+        
+        // Golf Information
+        document.getElementById('homeClub').textContent = currentPlayer.homeClub || '-';
+        document.getElementById('handicap').textContent = 
+          currentPlayer.hcp !== undefined ? currentPlayer.hcp : '-';
+        document.getElementById('playerType').textContent = 
+          currentPlayer.playerType ? currentPlayer.playerType.charAt(0).toUpperCase() + currentPlayer.playerType.slice(1) : '-';
+        document.getElementById('admissionDate').textContent = currentPlayer.admissionDate || '-';
+        
+        // Contact Information
+        document.getElementById('idNo').textContent = currentPlayer.idNo || '-';
+        document.getElementById('email').textContent = currentPlayer.email || '-';
+        document.getElementById('mobile').textContent = currentPlayer.mobile || '-';
+        document.getElementById('address').textContent = currentPlayer.address || '-';
+      }
+      
+      // Open edit modal
+      function openEditModal() {
+        if (!currentPlayer) return;
+        
+        document.getElementById('editRegNo').value = currentPlayer.reg || '';
+        document.getElementById('editFirstName').value = currentPlayer.firstName || '';
+        document.getElementById('editLastName').value = currentPlayer.lastName || '';
+        document.getElementById('editDob').value = currentPlayer.dob || '';
+        document.getElementById('editHandicap').value = currentPlayer.hcp || '';
+        document.getElementById('editIdNo').value = currentPlayer.idNo || '';
+        document.getElementById('editEmail').value = currentPlayer.email || '';
+        document.getElementById('editMobile').value = currentPlayer.mobile || '';
+        document.getElementById('editAddress').value = currentPlayer.address || '';
+        
+        document.getElementById('editModal').classList.add('active');
+        document.getElementById('modalMessage').style.display = 'none';
+      }
+      
+      // Close edit modal
+      function closeEditModal() {
+        document.getElementById('editModal').classList.remove('active');
+      }
+      
+      // Handle edit form submission
+      document.getElementById('editForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+          // Update editable fields
+          currentPlayer.hcp = parseFloat(document.getElementById('editHandicap').value) || 0;
+          currentPlayer.idNo = document.getElementById('editIdNo').value;
+          currentPlayer.email = document.getElementById('editEmail').value;
+          currentPlayer.mobile = document.getElementById('editMobile').value;
+          currentPlayer.address = document.getElementById('editAddress').value;
+          
+          // Update in array
+          const playerIndex = allPlayers.findIndex(p => p.reg === currentPlayer.reg);
+          if (playerIndex !== -1) {
+            allPlayers[playerIndex] = currentPlayer;
+          }
+          
+          // Save to Firebase
+          const playersObject = {};
+          allPlayers.forEach(player => {
+            playersObject[player.reg] = player;
+          });
+          
+          await database.ref('players').set(playersObject);
+          
+          // Update display
+          displayPlayerData();
+          
+          // Show success
+          showModalMessage('success', 'Profile updated successfully!');
+          setTimeout(() => {
+            closeEditModal();
+          }, 1500);
+          
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          showModalMessage('error', 'Failed to update profile. Please try again.');
+        }
+      });
+      
+      // Logout
+      async function handleLogout() {
+        try {
+          await auth.signOut();
+          showLoginScreen();
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      }
+      
+      // UI helpers
+      function showLoginScreen() {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainContent').classList.remove('active');
+      }
+      
+      function showMainContent() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainContent').classList.add('active');
+      }
+      
+      function showModalMessage(type, message) {
+        const msgDiv = document.getElementById('modalMessage');
+        msgDiv.className = `message ${type}`;
+        msgDiv.textContent = message;
+        msgDiv.style.display = 'block';
+      }
+      
+      function showError(message) {
+        alert(message);
+      }
+      
+      function getErrorMessage(code) {
+        switch (code) {
+          case 'auth/invalid-email':
+            return 'Invalid email address';
+          case 'auth/user-disabled':
+            return 'This account has been disabled';
+          case 'auth/user-not-found':
+            return 'No account found with this email or registration number';
+          case 'auth/wrong-password':
+            return 'Incorrect password';
+          case 'auth/invalid-credential':
+            return 'Invalid login credentials';
+          default:
+            return 'Login failed. Please try again.';
+        }
+      }
+    </script>
+  </body>
+</html>

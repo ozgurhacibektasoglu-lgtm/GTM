@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tournament Registration</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+      border-radius: 16px 16px 0 0;
+      padding: 24px;
+      color: white;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .header .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .card-body {
+      padding: 24px;
+    }
+    
+    /* Status Banner */
+    .status-banner {
+      padding: 12px 24px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .status-banner.open { background: #dcfce7; color: #166534; }
+    .status-banner.closed { background: #fee2e2; color: #991b1b; }
+    .status-banner.scheduled { background: #fef3c7; color: #92400e; }
+    
+    /* Login Section */
+    .login-section {
+      text-align: center;
+      padding: 40px 24px;
+    }
+    
+    .login-section .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .login-section h2 {
+      font-size: 18px;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    
+    .login-section p {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(180deg, #0b6efd, #0a58d1);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #0a58d1, #084298);
+      transform: translateY(-1px);
+    }
+    
+    .btn-success {
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: linear-gradient(180deg, #16a34a, #15803d);
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(180deg, #ef4444, #dc2626);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: linear-gradient(180deg, #dc2626, #b91c1c);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Player Info */
+    .player-info-card {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .player-info-card h3 {
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .player-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .detail-item {
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+    
+    .detail-item .label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .detail-item .value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2px;
+    }
+    
+    /* Criteria Check */
+    .criteria-section {
+      margin-bottom: 20px;
+    }
+    
+    .criteria-section h3 {
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 12px;
+    }
+    
+    .criteria-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .criteria-item.pass {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .criteria-item.fail {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+    
+    .criteria-item .icon {
+      font-size: 18px;
+    }
+    
+    .criteria-item .text {
+      flex: 1;
+      font-size: 14px;
+    }
+    
+    .criteria-item.pass .text { color: #166534; }
+    .criteria-item.fail .text { color: #991b1b; }
+    
+    /* Capacity Info */
+    .capacity-info {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .capacity-info .spots {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0b6efd;
+    }
+    
+    .capacity-info .spots.low { color: #f59e0b; }
+    .capacity-info .spots.full { color: #ef4444; }
+    
+    .capacity-info .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    /* Already Registered */
+    .already-registered {
+      text-align: center;
+      padding: 20px;
+      background: #dbeafe;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .already-registered .icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    
+    .already-registered h3 {
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+    
+    .already-registered p {
+      color: #3b82f6;
+      font-size: 14px;
+    }
+    
+    /* Success State */
+    .success-state {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .success-state .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .success-state h2 {
+      color: #166534;
+      margin-bottom: 8px;
+    }
+    
+    .success-state p {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .success-state .reg-id {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 20px;
+    }
+    
+    /* Error State */
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    /* Footer */
+    .footer-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .footer-actions .btn {
+      flex: 1;
+    }
+    
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+    
+    .loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #0b6efd;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Hidden */
+    .hidden { display: none !important; }
+    
+    /* Register Another Player Section */
+    .register-another-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px dashed #e2e8f0;
+    }
+    
+    .register-another-section h3 {
+      font-size: 16px;
+      color: #1e293b;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .player-search-box {
+      position: relative;
+    }
+    
+    .player-search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    
+    .player-search-input:focus {
+      outline: none;
+      border-color: #0b6efd;
+    }
+    
+    .player-search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 4px;
+      max-height: 240px;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 100;
+    }
+    
+    .search-result-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s;
+    }
+    
+    .search-result-item:hover {
+      background: #f0f9ff;
+    }
+    
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+    
+    .search-result-item .player-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 14px;
+    }
+    
+    .search-result-item .player-info {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    
+    .search-result-item.already-registered {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .search-result-item.already-registered:hover {
+      background: #fef2f2;
+    }
+    
+    .selected-player-card {
+      background: #f0f9ff;
+      border: 2px solid #3b82f6;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    
+    .selected-player-card .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    
+    .selected-player-card h4 {
+      font-size: 16px;
+      color: #1e40af;
+    }
+    
+    .selected-player-card .remove-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: 0.6;
+    }
+    
+    .selected-player-card .remove-btn:hover {
+      opacity: 1;
+    }
+    
+    .selected-player-card .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 13px;
+      color: #475569;
+    }
+    
+    .selected-player-card .criteria-warning {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    
+    .btn-register-other {
+      margin-top: 12px;
+      width: 100%;
+    }
+    
+    .other-player-success-message {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1 id="tournament-name">Loading...</h1>
+      <div class="subtitle" id="tournament-date"></div>
+    </div>
+    
+    <!-- Card -->
+    <div class="card">
+      <!-- Status Banner -->
+      <div class="status-banner" id="status-banner">Loading...</div>
+      
+      <!-- Loading State -->
+      <div class="card-body" id="loading-state">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading tournament...</p>
+        </div>
+      </div>
+      
+      <!-- Login Required -->
+      <div class="card-body hidden" id="login-section">
+        <div class="login-section">
+          <div class="icon">🔐</div>
+          <h2>Login Required</h2>
+          <p>Please log in with your Players Lounge account to register for this tournament.</p>
+          <a href="../auth/player-login.html" class="btn btn-primary" id="login-btn">Login to Register</a>
+          <script>
+            // Set return URL immediately so it's ready before user clicks
+            (function() {
+              const returnUrl = encodeURIComponent(window.location.href);
+              document.getElementById('login-btn').href = '../auth/player-login.html?return=' + returnUrl;
+            })();
+          </script>
+        </div>
+      </div>
+      
+      <!-- Registration Form -->
+      <div class="card-body hidden" id="registration-section">
+        <!-- Player Info -->
+        <div class="player-info-card">
+          <h3>✅ Logged in as</h3>
+          <div class="player-details">
+            <div class="detail-item">
+              <div class="label">Name</div>
+              <div class="value" id="player-name">-</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">Reg No</div>
+              <div class="value" id="player-reg">-</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">Handicap</div>
+              <div class="value" id="player-hcp">-</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">Club</div>
+              <div class="value" id="player-club">-</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Criteria Check -->
+        <div class="criteria-section" id="criteria-section">
+          <h3>Admission Criteria</h3>
+          <div id="criteria-list">
+            <!-- Criteria items will be added here -->
+          </div>
+        </div>
+        
+        <!-- Error Message -->
+        <div class="error-message hidden" id="error-message"></div>
+        
+        <!-- Capacity Info -->
+        <div class="capacity-info">
+          <div class="spots" id="spots-left">-</div>
+          <div class="label" id="spots-label">spots available</div>
+        </div>
+        
+        <!-- Already Registered -->
+        <div class="already-registered hidden" id="already-registered">
+          <div class="icon">✅</div>
+          <h3>Already Registered</h3>
+          <p>You are already registered for this tournament.</p>
+          <p style="margin-top: 8px;"><strong>Position:</strong> <span id="existing-position">-</span></p>
+          <button class="btn btn-danger hidden" id="cancel-registration-btn" style="margin-top: 16px; width: 100%;">
+            Cancel My Registration
+          </button>
+          <p class="cancel-info hidden" id="cancel-info" style="margin-top: 8px; font-size: 12px; color: #64748b;"></p>
+        </div>
+        
+        <!-- Register Another Player Section (for already registered users) -->
+        <div class="register-another-section hidden" id="register-another-inline-section">
+          <h3>👥 Register Another Player</h3>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Search for a player to register them for this tournament.</p>
+          
+          <div class="player-search-box">
+            <input type="text" class="player-search-input" id="other-player-search-inline" placeholder="Search by name or registration number..." autocomplete="off" />
+            <div class="player-search-results hidden" id="other-player-search-results-inline"></div>
+          </div>
+          
+          <!-- Selected Player Card -->
+          <div class="selected-player-card hidden" id="selected-other-player-card-inline">
+            <div class="header-row">
+              <h4 id="selected-other-player-name-inline">Player Name</h4>
+              <button class="remove-btn" onclick="clearSelectedOtherPlayerInline()">✕</button>
+            </div>
+            <div class="details">
+              <div><strong>Reg No:</strong> <span id="selected-other-player-reg-inline">-</span></div>
+              <div><strong>HCP:</strong> <span id="selected-other-player-hcp-inline">-</span></div>
+              <div><strong>Club:</strong> <span id="selected-other-player-club-inline">-</span></div>
+              <div><strong>Gender:</strong> <span id="selected-other-player-gender-inline">-</span></div>
+            </div>
+            <div class="criteria-warning hidden" id="other-player-criteria-warning-inline"></div>
+            <button class="btn btn-success btn-register-other" id="register-other-player-btn-inline" onclick="registerOtherPlayerInline()">
+              Register This Player
+            </button>
+          </div>
+          
+          <!-- Success message -->
+          <div class="other-player-success-message hidden" id="other-player-success-message-inline"></div>
+        </div>
+        
+        <!-- Register Button -->
+        <button class="btn btn-success" id="register-btn" style="width: 100%; padding: 14px;">
+          Register for Tournament
+        </button>
+        
+        <div class="footer-actions">
+          <a href="#" class="btn btn-secondary" id="view-list-btn">View Registered Players</a>
+          <button class="btn btn-secondary" onclick="window.Auth.signOut(); location.reload();">Logout</button>
+        </div>
+      </div>
+      
+      <!-- Success State -->
+      <div class="card-body hidden" id="success-section">
+        <div class="success-state">
+          <div class="icon">🎉</div>
+          <h2>Registration Successful!</h2>
+          <p>You have been registered for this tournament.</p>
+          <div class="reg-id" id="success-reg-id">REG-123456</div>
+          <p><strong>Status:</strong> <span id="success-status">Admitted</span></p>
+          <p><strong>Position:</strong> <span id="success-position">#1</span></p>
+          <div class="footer-actions" style="margin-top: 24px;">
+            <a href="#" class="btn btn-primary" id="success-view-list">View All Players</a>
+          </div>
+        </div>
+        
+        <!-- Register Another Player Section -->
+        <div class="register-another-section hidden" id="register-another-section">
+          <h3>👥 Register Another Player</h3>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Search for a player to register them for this tournament.</p>
+          
+          <div class="player-search-box">
+            <input type="text" class="player-search-input" id="other-player-search" placeholder="Search by name or registration number..." autocomplete="off" />
+            <div class="player-search-results hidden" id="other-player-search-results"></div>
+          </div>
+          
+          <!-- Selected Player Card -->
+          <div class="selected-player-card hidden" id="selected-other-player-card">
+            <div class="header-row">
+              <h4 id="selected-other-player-name">Player Name</h4>
+              <button class="remove-btn" onclick="clearSelectedOtherPlayer()">✕</button>
+            </div>
+            <div class="details">
+              <div><strong>Reg No:</strong> <span id="selected-other-player-reg">-</span></div>
+              <div><strong>HCP:</strong> <span id="selected-other-player-hcp">-</span></div>
+              <div><strong>Club:</strong> <span id="selected-other-player-club">-</span></div>
+              <div><strong>Gender:</strong> <span id="selected-other-player-gender">-</span></div>
+            </div>
+            <div class="criteria-warning hidden" id="other-player-criteria-warning"></div>
+            <button class="btn btn-success btn-register-other" id="register-other-player-btn" onclick="registerOtherPlayer()">
+              Register This Player
+            </button>
+          </div>
+          
+          <!-- Success message for other player registration -->
+          <div class="other-player-success-message hidden" id="other-player-success-message"></div>
+        </div>
+      </div>
+      
+      <!-- Closed State -->
+      <div class="card-body hidden" id="closed-section">
+        <div class="login-section">
+          <div class="icon">🚫</div>
+          <h2>Registration Closed</h2>
+          <p id="closed-message">Online registration is not available for this tournament.</p>
+          <a href="#" class="btn btn-secondary" id="closed-view-list">View Registered Players</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('t') || urlParams.get('tournamentId');
+    const roundNum = parseInt(urlParams.get('r') || urlParams.get('round')) || 1;
+    const admitOtherMode = urlParams.get('admitOther') === '1';
+    
+    // State
+    let tournament = null;
+    let admissionsConfig = null;
+    let registrations = [];
+    let currentPlayer = null;
+    let currentUser = null;
+    let admissionCriteria = null;
+    
+    // Initialize Firebase
+    function initFirebaseApp() {
+      try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+          firebase.initializeApp(window.firebaseConfig);
+        }
+      } catch (e) {
+        console.warn('Firebase init error:', e);
+      }
+    }
+    
+    // Format date
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch (e) {
+        return dateStr;
+      }
+    }
+    
+    // Show section
+    function showSection(sectionId) {
+      ['loading-state', 'login-section', 'registration-section', 'success-section', 'closed-section'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(sectionId).classList.remove('hidden');
+    }
+    
+    // Load tournament
+    async function loadTournament() {
+      try {
+        // Try localStorage first (faster)
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        tournament = tournaments.find(t => t.tournamentId === tournamentId);
+        
+        if (tournament) {
+          document.getElementById('tournament-name').textContent = tournament.name || 'Tournament';
+          document.getElementById('tournament-date').textContent = formatDate(tournament.date || tournament.startDate);
+        }
+      } catch (e) {
+        console.error('Error loading tournament:', e);
+      }
+    }
+    
+    // Load admissions config
+    async function loadAdmissionsConfig() {
+      try {
+        const configKey = `onlineAdmissions_${tournamentId}_round${roundNum}`;
+        
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/config`).once('value');
+          admissionsConfig = snapshot.val();
+          console.log('Loaded config from Firebase:', admissionsConfig);
+        }
+        
+        // Fallback to localStorage
+        if (!admissionsConfig) {
+          admissionsConfig = JSON.parse(localStorage.getItem(configKey) || 'null');
+          console.log('Loaded config from localStorage:', admissionsConfig);
+        }
+      } catch (e) {
+        console.error('Error loading config:', e);
+        // Fallback to localStorage on error
+        const configKey = `onlineAdmissions_${tournamentId}_round${roundNum}`;
+        admissionsConfig = JSON.parse(localStorage.getItem(configKey) || 'null');
+      }
+    }
+    
+    // Load registrations
+    async function loadRegistrations() {
+      try {
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).once('value');
+          const data = snapshot.val();
+          if (data) {
+            registrations = Object.values(data);
+            console.log('Loaded registrations from Firebase:', registrations);
+          }
+        }
+        
+        // Fallback to localStorage
+        if (registrations.length === 0) {
+          registrations = JSON.parse(localStorage.getItem(regKey) || '[]');
+          console.log('Loaded registrations from localStorage:', registrations);
+        }
+      } catch (e) {
+        console.error('Error loading registrations:', e);
+        registrations = [];
+      }
+    }
+    
+    // Load admission criteria
+    async function loadAdmissionCriteria() {
+      try {
+        // First try to get from admissionsConfig (embedded)
+        if (admissionsConfig && admissionsConfig.admissionCriteria) {
+          admissionCriteria = admissionsConfig.admissionCriteria;
+          console.log('Loaded criteria from config:', admissionCriteria);
+          return;
+        }
+        
+        // Try Firebase next
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref(`admissionCriteria/${tournamentId}`).once('value');
+          admissionCriteria = snapshot.val();
+          console.log('Loaded criteria from Firebase:', admissionCriteria);
+        }
+        
+        // Fallback to localStorage
+        if (!admissionCriteria) {
+          const raw = localStorage.getItem('admissionCriteria');
+          const allCriteria = raw ? JSON.parse(raw) : {};
+          admissionCriteria = allCriteria[tournamentId] || null;
+          console.log('Loaded criteria from localStorage:', admissionCriteria);
+        }
+      } catch (e) {
+        console.error('Error loading criteria:', e);
+      }
+    }
+    
+    // Check registration status (open/closed/scheduled)
+    function checkRegistrationStatus() {
+      const banner = document.getElementById('status-banner');
+      const now = new Date();
+      
+      if (!admissionsConfig || !admissionsConfig.isActive) {
+        banner.textContent = 'Registration Closed';
+        banner.className = 'status-banner closed';
+        return 'closed';
+      }
+      
+      // Check if clubs-only mode is enabled
+      if (admissionsConfig.requireLogin === true) {
+        banner.textContent = '🏢 Club Registration Only';
+        banner.className = 'status-banner scheduled';
+        return 'clubs-only';
+      }
+      
+      const startDate = admissionsConfig.startDate ? new Date(admissionsConfig.startDate) : null;
+      const endDate = admissionsConfig.endDate ? new Date(admissionsConfig.endDate) : null;
+      
+      if (startDate && now < startDate) {
+        banner.textContent = `Registration opens ${formatDate(admissionsConfig.startDate)}`;
+        banner.className = 'status-banner scheduled';
+        return 'scheduled';
+      }
+      
+      if (endDate && now > endDate) {
+        banner.textContent = 'Registration Closed';
+        banner.className = 'status-banner closed';
+        return 'closed';
+      }
+      
+      banner.textContent = '✅ Registration Open';
+      banner.className = 'status-banner open';
+      return 'open';
+    }
+    
+    // Get player from localStorage by reg number
+    function getPlayerByReg(regNumber) {
+      try {
+        const players = JSON.parse(localStorage.getItem('players') || '[]');
+        return players.find(p => p.reg && p.reg.toUpperCase() === regNumber.toUpperCase());
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Get player from Firebase by reg number
+    async function getPlayerByRegFromFirebase(regNumber) {
+      try {
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+          const snapshot = await firebase.database().ref(`players/${regNumber.toUpperCase()}`).once('value');
+          const player = snapshot.val();
+          if (player) {
+            // Ensure reg field is set (might be stored as key only)
+            if (!player.reg) {
+              player.reg = regNumber.toUpperCase();
+            }
+            console.log('Found player in Firebase:', player.firstName, player.lastName, 'Reg:', player.reg);
+            return player;
+          }
+        }
+        return null;
+      } catch (e) {
+        console.warn('Firebase player lookup error:', e);
+        return null;
+      }
+    }
+    
+    // Calculate age based on January 1st of current year (golf age calculation)
+    function calculateAge(dob) {
+      if (!dob) return null;
+      try {
+        const birthDate = new Date(dob);
+        if (isNaN(birthDate.getTime())) return null;
+        const referenceDate = new Date(new Date().getFullYear(), 0, 1); // January 1st of current year
+        let age = referenceDate.getFullYear() - birthDate.getFullYear();
+        return age;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    // Check if player meets criteria
+    function checkCriteria(player) {
+      const results = [];
+      let allPassed = true;
+      
+      console.log('Checking criteria for player:', player);
+      console.log('Criteria object:', admissionCriteria);
+      
+      if (!admissionCriteria) {
+        results.push({ pass: true, text: 'No specific criteria - All players welcome' });
+        return { passed: true, results };
+      }
+      
+      const playerGender = (player.gender || '').toUpperCase();
+      const isMale = playerGender === 'M' || playerGender === 'MALE';
+      const isFemale = playerGender === 'F' || playerGender === 'FEMALE';
+      
+      console.log('Player gender:', playerGender, 'isMale:', isMale, 'isFemale:', isFemale);
+      
+      // Check HCP for men
+      if (isMale && admissionCriteria.hcpMen && admissionCriteria.hcpMen !== 'NA') {
+        const playerHcp = parseFloat(player.hcp) || 54;
+        const limitHcp = parseFloat(admissionCriteria.hcpMenValue) || 54;
+        
+        console.log('Men HCP check:', admissionCriteria.hcpMen, 'limit:', limitHcp, 'player:', playerHcp);
+        
+        if (admissionCriteria.hcpMen.includes('Limit')) {
+          const passed = playerHcp <= limitHcp;
+          results.push({
+            pass: passed,
+            text: `Handicap ≤ ${limitHcp} (yours: ${playerHcp})`
+          });
+          if (!passed) allPassed = false;
+        } else if (admissionCriteria.hcpMen.includes('Adjust')) {
+          results.push({
+            pass: true,
+            text: `Playing HCP adjusted to max ${limitHcp} if needed`
+          });
+        }
+      }
+      
+      // Check HCP for women
+      if (isFemale && admissionCriteria.hcpWomen && admissionCriteria.hcpWomen !== 'NA') {
+        const playerHcp = parseFloat(player.hcp) || 54;
+        const limitHcp = parseFloat(admissionCriteria.hcpWomenValue) || 54;
+        
+        console.log('Women HCP check:', admissionCriteria.hcpWomen, 'limit:', limitHcp, 'player:', playerHcp);
+        
+        if (admissionCriteria.hcpWomen.includes('Limit')) {
+          const passed = playerHcp <= limitHcp;
+          results.push({
+            pass: passed,
+            text: `Handicap ≤ ${limitHcp} (yours: ${playerHcp})`
+          });
+          if (!passed) allPassed = false;
+        } else if (admissionCriteria.hcpWomen.includes('Adjust')) {
+          results.push({
+            pass: true,
+            text: `Playing HCP adjusted to max ${limitHcp} if needed`
+          });
+        }
+      }
+      
+      // Check age criteria
+      if (admissionCriteria.ageMin || admissionCriteria.ageMax) {
+        const age = calculateAge(player.dob || player.dateOfBirth || player.birthDate);
+        if (age !== null) {
+          let agePassed = true;
+          let ageText = `Age ${age}`;
+          
+          if (admissionCriteria.ageMin && age < parseInt(admissionCriteria.ageMin)) {
+            agePassed = false;
+            ageText += ` is below minimum ${admissionCriteria.ageMin}`;
+          }
+          if (admissionCriteria.ageMax && age > parseInt(admissionCriteria.ageMax)) {
+            agePassed = false;
+            ageText += ` is above maximum ${admissionCriteria.ageMax}`;
+          }
+          if (agePassed) {
+            if (admissionCriteria.ageMin && admissionCriteria.ageMax) {
+              ageText = `Age ${age} ✓ (required: ${admissionCriteria.ageMin}-${admissionCriteria.ageMax})`;
+            } else if (admissionCriteria.ageMin) {
+              ageText = `Age ${age} ✓ (min: ${admissionCriteria.ageMin})`;
+            } else {
+              ageText = `Age ${age} ✓ (max: ${admissionCriteria.ageMax})`;
+            }
+          }
+          
+          results.push({ pass: agePassed, text: ageText });
+          if (!agePassed) allPassed = false;
+        } else {
+          // No DOB available - show warning but don't fail
+          let ageRangeText = 'Age: ';
+          if (admissionCriteria.ageMin && admissionCriteria.ageMax) {
+            ageRangeText += `${admissionCriteria.ageMin} - ${admissionCriteria.ageMax} years`;
+          } else if (admissionCriteria.ageMin) {
+            ageRangeText += `Minimum ${admissionCriteria.ageMin} years`;
+          } else {
+            ageRangeText += `Maximum ${admissionCriteria.ageMax} years`;
+          }
+          results.push({ pass: true, text: ageRangeText + ' (DOB not in profile)' });
+        }
+      }
+      
+      // Check gender restriction
+      if (admissionCriteria.gender && admissionCriteria.gender !== 'both' && admissionCriteria.gender !== '') {
+        let passed = false;
+        if (admissionCriteria.gender === 'M' && isMale) passed = true;
+        if (admissionCriteria.gender === 'F' && isFemale) passed = true;
+        
+        const genderText = admissionCriteria.gender === 'M' ? 'Men only' : 'Women only';
+        results.push({
+          pass: passed,
+          text: genderText
+        });
+        if (!passed) allPassed = false;
+      }
+      
+      // Check members only
+      if (admissionCriteria.membersOnly === 'yes') {
+        results.push({ pass: true, text: 'Club membership required ✓' });
+      }
+      
+      // If no criteria matched, show all welcome
+      if (results.length === 0) {
+        results.push({ pass: true, text: 'All criteria met - You are eligible!' });
+      }
+      
+      console.log('Criteria results:', results);
+      return { passed: allPassed, results };
+    }
+    
+    // Render criteria check results
+    function renderCriteriaCheck(criteriaResults) {
+      const container = document.getElementById('criteria-list');
+      
+      if (criteriaResults.results.length === 0) {
+        container.innerHTML = '<div class="criteria-item pass"><span class="icon">✅</span><span class="text">No restrictions</span></div>';
+        return;
+      }
+      
+      container.innerHTML = criteriaResults.results.map(r => `
+        <div class="criteria-item ${r.pass ? 'pass' : 'fail'}">
+          <span class="icon">${r.pass ? '✅' : '❌'}</span>
+          <span class="text">${r.text}</span>
+        </div>
+      `).join('');
+    }
+    
+    // Update capacity display
+    function updateCapacity() {
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      const admitted = registrations.filter(r => r.status === 'admitted').length;
+      const spotsLeft = Math.max(0, maxPlayers - admitted);
+      
+      const spotsEl = document.getElementById('spots-left');
+      spotsEl.textContent = spotsLeft;
+      
+      if (spotsLeft === 0) {
+        spotsEl.className = 'spots full';
+        document.getElementById('spots-label').textContent = 'Field is full (reserve list available)';
+      } else if (spotsLeft <= 5) {
+        spotsEl.className = 'spots low';
+        document.getElementById('spots-label').textContent = 'spots remaining';
+      } else {
+        spotsEl.className = 'spots';
+        document.getElementById('spots-label').textContent = 'spots available';
+      }
+    }
+    
+    // Check if already registered
+    function checkAlreadyRegistered(player) {
+      console.log('Checking if already registered:', player.reg);
+      console.log('Registrations to check:', registrations.map(r => r.playerReg));
+      
+      // Only check by playerReg - this is the reliable unique identifier
+      const existing = registrations.find(r => 
+        r.playerReg && player.reg && r.playerReg.toUpperCase() === player.reg.toUpperCase()
+      );
+      
+      console.log('Found existing registration:', existing);
+      
+      if (existing) {
+        document.getElementById('already-registered').classList.remove('hidden');
+        document.getElementById('register-btn').classList.add('hidden');
+        document.getElementById('existing-position').textContent = 
+          existing.status === 'admitted' ? `#${existing.position} (Admitted)` : `Reserve #${existing.position}`;
+        
+        // Show cancel button if allowed in config
+        const cancelBtn = document.getElementById('cancel-registration-btn');
+        const cancelInfo = document.getElementById('cancel-info');
+        
+        if (admissionsConfig?.allowCancel) {
+          cancelBtn.classList.remove('hidden');
+          
+          // Check if there's a deadline
+          if (admissionsConfig.cancelDeadline) {
+            const tournamentDate = tournament?.date || tournament?.startDate;
+            if (tournamentDate) {
+              const deadline = new Date(tournamentDate);
+              deadline.setHours(deadline.getHours() - admissionsConfig.cancelDeadline);
+              const now = new Date();
+              
+              if (now > deadline) {
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Cancellation Deadline Passed';
+                cancelInfo.textContent = `Cancellation was allowed until ${admissionsConfig.cancelDeadline} hours before the tournament.`;
+                cancelInfo.classList.remove('hidden');
+              } else {
+                cancelInfo.textContent = `You can cancel until ${deadline.toLocaleString()}.`;
+                cancelInfo.classList.remove('hidden');
+              }
+            }
+          }
+        }
+        
+        // Store the existing registration for cancel function
+        window.existingRegistration = existing;
+        
+        // Show "Register Another Player" section if allowed
+        if (admissionsConfig?.allowAdmitOthers !== false) {
+          document.getElementById('register-another-inline-section').classList.remove('hidden');
+          setupOtherPlayerSearchInline();
+          
+          // If coming from "Register Another Player" button, scroll to that section
+          if (admitOtherMode) {
+            setTimeout(() => {
+              document.getElementById('register-another-inline-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+              document.getElementById('other-player-search-inline').focus();
+            }, 300);
+          }
+        }
+        
+        return true;
+      }
+      
+      return false;
+    }
+    
+    // Cancel registration
+    async function cancelRegistration() {
+      if (!window.existingRegistration || !currentPlayer) return;
+      
+      if (!confirm('Are you sure you want to cancel your registration for this tournament?')) {
+        return;
+      }
+      
+      const btn = document.getElementById('cancel-registration-btn');
+      btn.disabled = true;
+      btn.textContent = 'Cancelling...';
+      
+      try {
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        
+        // Remove from registrations array
+        const index = registrations.findIndex(r => 
+          r.playerReg && r.playerReg.toUpperCase() === currentPlayer.reg.toUpperCase()
+        );
+        
+        if (index > -1) {
+          registrations.splice(index, 1);
+          
+          // Recalculate positions
+          let admittedCount = 0;
+          let reserveCount = 0;
+          const maxPlayers = admissionsConfig?.maxPlayers || 72;
+          
+          registrations.forEach(r => {
+            if (admittedCount < maxPlayers) {
+              r.status = 'admitted';
+              r.position = ++admittedCount;
+            } else {
+              r.status = 'reserve';
+              r.position = ++reserveCount;
+            }
+          });
+          
+          // Save to localStorage
+          localStorage.setItem(regKey, JSON.stringify(registrations));
+          
+          // Sync to Firebase
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            try {
+              const regObj = {};
+              registrations.forEach(r => {
+                regObj[r.registrationId] = r;
+              });
+              await firebase.database().ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regObj);
+            } catch (fbErr) {
+              console.warn('Firebase sync error:', fbErr);
+            }
+          }
+          
+          // Show success
+          alert('Your registration has been cancelled successfully.');
+          
+          // Go back to the admitted players list
+          window.location.href = `online_admissions_list.html?t=${tournamentId}&r=${roundNum}`;
+        }
+      } catch (error) {
+        console.error('Error cancelling registration:', error);
+        alert('Failed to cancel registration. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Cancel My Registration';
+      }
+    }
+    
+    // Register player
+    async function registerPlayer() {
+      if (!currentPlayer) return;
+      
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.textContent = 'Registering...';
+      
+      try {
+        const maxPlayers = admissionsConfig?.maxPlayers || 72;
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+        const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+        
+        // Get player reg - could be in 'reg' or 'id' field
+        const playerReg = currentPlayer.reg || currentPlayer.id;
+        
+        const registration = {
+          registrationId: 'REG-' + Date.now(),
+          playerId: currentPlayer.playerId || playerReg,
+          playerReg: playerReg,
+          firstName: currentPlayer.firstName,
+          lastName: currentPlayer.lastName,
+          handicap: currentPlayer.hcp || currentPlayer.handicap,
+          club: currentPlayer.homeClub || currentPlayer.club,
+          gender: currentPlayer.gender,
+          email: currentPlayer.email,
+          status: status,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          tournamentId: tournamentId,
+          round: roundNum
+        };
+        
+        console.log('Creating registration:', registration);
+        
+        // Add to registrations
+        registrations.push(registration);
+        
+        // Sort and reorder
+        reorderRegistrations();
+        
+        // Get updated registration after reorder
+        const updatedReg = registrations.find(r => r.registrationId === registration.registrationId);
+        
+        // Save to localStorage
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        // Sync to Firebase
+        try {
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+            const db = firebase.database();
+            const regsObj = {};
+            registrations.forEach(r => regsObj[r.registrationId] = r);
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+          }
+        } catch (e) {
+          console.warn('Firebase sync failed:', e);
+        }
+        
+        // Show success
+        document.getElementById('success-reg-id').textContent = updatedReg.registrationId;
+        document.getElementById('success-status').textContent = updatedReg.status === 'admitted' ? '✅ Admitted' : '⏳ Reserve List';
+        document.getElementById('success-position').textContent = updatedReg.status === 'admitted' ? `#${updatedReg.position}` : `Reserve #${updatedReg.position}`;
+        showSection('success-section');
+        
+        // Show "Register Another Player" section if allowed
+        if (admissionsConfig?.allowAdmitOthers !== false) {
+          document.getElementById('register-another-section').classList.remove('hidden');
+          setupOtherPlayerSearch();
+        }
+        
+      } catch (e) {
+        console.error('Registration error:', e);
+        document.getElementById('error-message').textContent = 'Registration failed. Please try again.';
+        document.getElementById('error-message').classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Register for Tournament';
+      }
+    }
+    
+    // Reorder registrations based on sort method
+    function reorderRegistrations() {
+      const sortMethod = admissionsConfig?.sortMethod || 'registration_order';
+      const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      
+      if (sortMethod === 'handicap') {
+        registrations.sort((a, b) => {
+          const hcpA = parseFloat(a.handicap) || 999;
+          const hcpB = parseFloat(b.handicap) || 999;
+          if (hcpA !== hcpB) return hcpA - hcpB;
+          return new Date(a.registeredAt) - new Date(b.registeredAt);
+        });
+      } else {
+        registrations.sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+      }
+      
+      let admittedCount = 0;
+      let reserveCount = 0;
+      
+      registrations.forEach(r => {
+        if (admittedCount < maxPlayers) {
+          r.status = 'admitted';
+          admittedCount++;
+          r.position = admittedCount;
+        } else {
+          r.status = 'reserve';
+          reserveCount++;
+          r.position = reserveCount;
+        }
+      });
+    }
+    
+    // ====== Register Another Player Functions ======
+    let allPlayers = [];
+    let selectedOtherPlayer = null;
+    
+    // Setup search for other players
+    function setupOtherPlayerSearch() {
+      loadAllPlayers();
+      
+      const searchInput = document.getElementById('other-player-search');
+      const resultsContainer = document.getElementById('other-player-search-results');
+      
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length < 2) {
+          resultsContainer.classList.add('hidden');
+          return;
+        }
+        
+        const results = searchPlayers(query);
+        renderSearchResults(results, resultsContainer);
+      });
+      
+      // Hide results when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.player-search-box')) {
+          resultsContainer.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Load all players from Firebase/localStorage
+    async function loadAllPlayers() {
+      try {
+        // Try Firebase first
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+          const db = firebase.database();
+          const snapshot = await db.ref('players').once('value');
+          const data = snapshot.val();
+          if (data) {
+            allPlayers = Object.values(data);
+            console.log('Loaded players from Firebase:', allPlayers.length);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Firebase load error:', e);
+      }
+      
+      // Fallback to localStorage
+      allPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+      console.log('Loaded players from localStorage:', allPlayers.length);
+    }
+    
+    // Search players by name or reg number
+    function searchPlayers(query) {
+      return allPlayers.filter(p => {
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+        const reg = (p.reg || p.id || '').toLowerCase();
+        return name.includes(query) || reg.includes(query);
+      }).slice(0, 10); // Limit to 10 results
+    }
+    
+    // Render search results
+    function renderSearchResults(results, container) {
+      if (results.length === 0) {
+        container.innerHTML = '<div class="search-result-item" style="color: #64748b;">No players found</div>';
+        container.classList.remove('hidden');
+        return;
+      }
+      
+      container.innerHTML = results.map(p => {
+        const reg = p.reg || p.id || '';
+        const regUpper = reg.toUpperCase();
+        const isRegistered = registrations.some(r => r.playerReg?.toUpperCase() === regUpper);
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
+        
+        return `
+          <div class="search-result-item ${isRegistered ? 'already-registered' : ''}" 
+               onclick="${isRegistered ? '' : `selectOtherPlayer('${reg}')`}">
+            <div class="player-name">${escapeHtml(name)}</div>
+            <div class="player-info">${escapeHtml(reg)} • HCP: ${p.hcp || '-'} • ${escapeHtml(p.homeClub || p.club || '-')}${isRegistered ? ' • <strong>Already Registered</strong>' : ''}</div>
+          </div>
+        `;
+      }).join('');
+      
+      container.classList.remove('hidden');
+    }
+    
+    // Select a player to register
+    function selectOtherPlayer(regNumber) {
+      // Use case-insensitive comparison
+      const normalizedReg = (regNumber || '').toUpperCase();
+      const player = allPlayers.find(p => {
+        const pReg = (p.reg || p.id || '').toUpperCase();
+        return pReg === normalizedReg;
+      });
+      if (!player) {
+        console.error('Player not found for reg:', regNumber);
+        return;
+      }
+      
+      console.log('Selected player for registration:', player);
+      selectedOtherPlayer = player;
+      
+      // Hide search results
+      document.getElementById('other-player-search-results').classList.add('hidden');
+      document.getElementById('other-player-search').value = '';
+      
+      // Show selected player card
+      const card = document.getElementById('selected-other-player-card');
+      document.getElementById('selected-other-player-name').textContent = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+      document.getElementById('selected-other-player-reg').textContent = player.reg || player.id || '-';
+      document.getElementById('selected-other-player-hcp').textContent = player.hcp || '-';
+      document.getElementById('selected-other-player-club').textContent = player.homeClub || player.club || '-';
+      document.getElementById('selected-other-player-gender').textContent = player.gender || '-';
+      
+      // Check criteria
+      const criteriaResults = checkCriteria(player);
+      const warningEl = document.getElementById('other-player-criteria-warning');
+      const registerBtn = document.getElementById('register-other-player-btn');
+      
+      if (!criteriaResults.passed) {
+        warningEl.textContent = '⚠️ This player does not meet the admission criteria and cannot be registered.';
+        warningEl.classList.remove('hidden');
+        registerBtn.disabled = true;
+        registerBtn.textContent = 'Does Not Meet Criteria';
+      } else {
+        warningEl.classList.add('hidden');
+        registerBtn.disabled = false;
+        registerBtn.textContent = 'Register This Player';
+      }
+      
+      card.classList.remove('hidden');
+    }
+    
+    // Clear selected player
+    function clearSelectedOtherPlayer() {
+      selectedOtherPlayer = null;
+      document.getElementById('selected-other-player-card').classList.add('hidden');
+      document.getElementById('other-player-success-message').classList.add('hidden');
+    }
+    
+    // Register the selected other player
+    async function registerOtherPlayer() {
+      if (!selectedOtherPlayer) return;
+      
+      const btn = document.getElementById('register-other-player-btn');
+      btn.disabled = true;
+      btn.textContent = 'Registering...';
+      
+      try {
+        const playerReg = selectedOtherPlayer.reg || selectedOtherPlayer.id;
+        
+        // Check if already registered
+        if (registrations.some(r => r.playerReg === playerReg)) {
+          alert('This player is already registered.');
+          btn.disabled = false;
+          btn.textContent = 'Register This Player';
+          return;
+        }
+        
+        const maxPlayers = admissionsConfig?.maxPlayers || 72;
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+        const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+        
+        const registration = {
+          registrationId: 'REG-' + Date.now(),
+          playerId: selectedOtherPlayer.playerId || playerReg,
+          playerReg: playerReg,
+          firstName: selectedOtherPlayer.firstName || '',
+          lastName: selectedOtherPlayer.lastName || '',
+          handicap: selectedOtherPlayer.hcp || selectedOtherPlayer.handicap || null,
+          club: selectedOtherPlayer.homeClub || selectedOtherPlayer.club || '',
+          gender: selectedOtherPlayer.gender || '',
+          email: selectedOtherPlayer.email || '',
+          status: status,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          registeredBy: currentPlayer?.reg || currentPlayer?.id || 'unknown', // Track who registered this player
+          tournamentId: tournamentId,
+          round: roundNum
+        };
+        
+        console.log('Registering other player:', registration);
+        
+        // Add to registrations
+        registrations.push(registration);
+        
+        // Sort and reorder
+        reorderRegistrations();
+        
+        // Get updated registration after reorder
+        const updatedReg = registrations.find(r => r.registrationId === registration.registrationId);
+        
+        // Save to localStorage
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        // Sync to Firebase
+        try {
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+            const db = firebase.database();
+            const regsObj = {};
+            registrations.forEach(r => regsObj[r.registrationId] = r);
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+          }
+        } catch (e) {
+          console.warn('Firebase sync failed:', e);
+        }
+        
+        // Show success message
+        const successMsg = document.getElementById('other-player-success-message');
+        const playerName = `${selectedOtherPlayer.firstName || ''} ${selectedOtherPlayer.lastName || ''}`.trim();
+        successMsg.innerHTML = `✅ <strong>${escapeHtml(playerName)}</strong> has been registered! Status: ${updatedReg.status === 'admitted' ? 'Admitted #' + updatedReg.position : 'Reserve #' + updatedReg.position}`;
+        successMsg.classList.remove('hidden');
+        
+        // Clear selection and reset for next registration
+        selectedOtherPlayer = null;
+        document.getElementById('selected-other-player-card').classList.add('hidden');
+        
+      } catch (e) {
+        console.error('Error registering other player:', e);
+        alert('Failed to register player. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Register This Player';
+      }
+    }
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // ====== Inline Version (for already registered users) ======
+    let selectedOtherPlayerInline = null;
+    
+    function setupOtherPlayerSearchInline() {
+      loadAllPlayers();
+      
+      const searchInput = document.getElementById('other-player-search-inline');
+      const resultsContainer = document.getElementById('other-player-search-results-inline');
+      
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length < 2) {
+          resultsContainer.classList.add('hidden');
+          return;
+        }
+        
+        const results = searchPlayers(query);
+        renderSearchResultsInline(results, resultsContainer);
+      });
+      
+      // Hide results when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.player-search-box')) {
+          resultsContainer.classList.add('hidden');
+        }
+      });
+    }
+    
+    function renderSearchResultsInline(results, container) {
+      if (results.length === 0) {
+        container.innerHTML = '<div class="search-result-item" style="color: #64748b;">No players found</div>';
+        container.classList.remove('hidden');
+        return;
+      }
+      
+      container.innerHTML = results.map(p => {
+        const reg = p.reg || p.id || '';
+        const regUpper = reg.toUpperCase();
+        const isRegistered = registrations.some(r => r.playerReg?.toUpperCase() === regUpper);
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
+        
+        return `
+          <div class="search-result-item ${isRegistered ? 'already-registered' : ''}" 
+               onclick="${isRegistered ? '' : `selectOtherPlayerInline('${reg}')`}">
+            <div class="player-name">${escapeHtml(name)}</div>
+            <div class="player-info">${escapeHtml(reg)} • HCP: ${p.hcp || '-'} • ${escapeHtml(p.homeClub || p.club || '-')}${isRegistered ? ' • <strong>Already Registered</strong>' : ''}</div>
+          </div>
+        `;
+      }).join('');
+      
+      container.classList.remove('hidden');
+    }
+    
+    function selectOtherPlayerInline(regNumber) {
+      // Use case-insensitive comparison
+      const normalizedReg = (regNumber || '').toUpperCase();
+      const player = allPlayers.find(p => {
+        const pReg = (p.reg || p.id || '').toUpperCase();
+        return pReg === normalizedReg;
+      });
+      if (!player) {
+        console.error('Player not found for reg:', regNumber);
+        return;
+      }
+      
+      console.log('Selected player for registration:', player);
+      selectedOtherPlayerInline = player;
+      
+      document.getElementById('other-player-search-results-inline').classList.add('hidden');
+      document.getElementById('other-player-search-inline').value = '';
+      
+      const card = document.getElementById('selected-other-player-card-inline');
+      document.getElementById('selected-other-player-name-inline').textContent = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+      document.getElementById('selected-other-player-reg-inline').textContent = player.reg || player.id || '-';
+      document.getElementById('selected-other-player-hcp-inline').textContent = player.hcp || '-';
+      document.getElementById('selected-other-player-club-inline').textContent = player.homeClub || player.club || '-';
+      document.getElementById('selected-other-player-gender-inline').textContent = player.gender || '-';
+      
+      const criteriaResults = checkCriteria(player);
+      const warningEl = document.getElementById('other-player-criteria-warning-inline');
+      const registerBtn = document.getElementById('register-other-player-btn-inline');
+      
+      if (!criteriaResults.passed) {
+        warningEl.textContent = '⚠️ This player does not meet the admission criteria and cannot be registered.';
+        warningEl.classList.remove('hidden');
+        registerBtn.disabled = true;
+        registerBtn.textContent = 'Does Not Meet Criteria';
+      } else {
+        warningEl.classList.add('hidden');
+        registerBtn.disabled = false;
+        registerBtn.textContent = 'Register This Player';
+      }
+      
+      card.classList.remove('hidden');
+    }
+    
+    function clearSelectedOtherPlayerInline() {
+      selectedOtherPlayerInline = null;
+      document.getElementById('selected-other-player-card-inline').classList.add('hidden');
+      document.getElementById('other-player-success-message-inline').classList.add('hidden');
+    }
+    
+    async function registerOtherPlayerInline() {
+      if (!selectedOtherPlayerInline) return;
+      
+      const btn = document.getElementById('register-other-player-btn-inline');
+      btn.disabled = true;
+      btn.textContent = 'Registering...';
+      
+      try {
+        const playerReg = (selectedOtherPlayerInline.reg || selectedOtherPlayerInline.id || '').toUpperCase();
+        
+        console.log('Registering other player:', playerReg, selectedOtherPlayerInline);
+        console.log('Current registrations:', registrations);
+        
+        if (registrations.some(r => r.playerReg?.toUpperCase() === playerReg)) {
+          alert('This player is already registered.');
+          btn.disabled = false;
+          btn.textContent = 'Register This Player';
+          return;
+        }
+        
+        const maxPlayers = admissionsConfig?.maxPlayers || 72;
+        const admitted = registrations.filter(r => r.status === 'admitted').length;
+        const status = admitted < maxPlayers ? 'admitted' : 'reserve';
+        const position = status === 'admitted' ? admitted + 1 : registrations.filter(r => r.status === 'reserve').length + 1;
+        
+        const registration = {
+          registrationId: 'REG-' + Date.now(),
+          playerId: selectedOtherPlayerInline.playerId || playerReg,
+          playerReg: playerReg,
+          firstName: selectedOtherPlayerInline.firstName || '',
+          lastName: selectedOtherPlayerInline.lastName || '',
+          handicap: selectedOtherPlayerInline.hcp || selectedOtherPlayerInline.handicap || null,
+          club: selectedOtherPlayerInline.homeClub || selectedOtherPlayerInline.club || '',
+          gender: selectedOtherPlayerInline.gender || '',
+          email: selectedOtherPlayerInline.email || '',
+          status: status,
+          position: position,
+          registeredAt: new Date().toISOString(),
+          registeredBy: currentPlayer?.reg || currentPlayer?.id || 'unknown',
+          tournamentId: tournamentId,
+          round: roundNum
+        };
+        
+        registrations.push(registration);
+        reorderRegistrations();
+        
+        const updatedReg = registrations.find(r => r.registrationId === registration.registrationId);
+        
+        const regKey = `onlineRegistrations_${tournamentId}_round${roundNum}`;
+        localStorage.setItem(regKey, JSON.stringify(registrations));
+        
+        console.log('Saving to Firebase path:', `onlineAdmissions/${tournamentId}/round${roundNum}/registrations`);
+        console.log('Updated registrations:', registrations);
+        
+        try {
+          if (typeof firebase !== 'undefined' && firebase.apps.length > 0 && typeof firebase.database === 'function') {
+            const db = firebase.database();
+            const regsObj = {};
+            registrations.forEach(r => regsObj[r.registrationId] = r);
+            await db.ref(`onlineAdmissions/${tournamentId}/round${roundNum}/registrations`).set(regsObj);
+            console.log('Firebase save successful!');
+          }
+        } catch (e) {
+          console.error('Firebase sync failed:', e);
+        }
+        
+        const successMsg = document.getElementById('other-player-success-message-inline');
+        const playerName = `${selectedOtherPlayerInline.firstName || ''} ${selectedOtherPlayerInline.lastName || ''}`.trim();
+        successMsg.innerHTML = `✅ <strong>${escapeHtml(playerName)}</strong> has been registered! Status: ${updatedReg.status === 'admitted' ? 'Admitted #' + updatedReg.position : 'Reserve #' + updatedReg.position}`;
+        successMsg.classList.remove('hidden');
+        
+        // Reset button for next use
+        btn.disabled = false;
+        btn.textContent = 'Register This Player';
+        
+        selectedOtherPlayerInline = null;
+        document.getElementById('selected-other-player-card-inline').classList.add('hidden');
+        
+      } catch (e) {
+        console.error('Error registering other player:', e);
+        alert('Failed to register player. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Register This Player';
+      }
+    }
+    
+    // Initialize
+    async function init() {
+      initFirebaseApp();
+      
+      if (!tournamentId) {
+        document.getElementById('tournament-name').textContent = 'Tournament Not Found';
+        showSection('closed-section');
+        document.getElementById('closed-message').textContent = 'No tournament specified.';
+        return;
+      }
+      
+      // Set view list links
+      const listUrl = `online_admissions_list.html?t=${tournamentId}&r=${roundNum}`;
+      document.getElementById('view-list-btn').href = listUrl;
+      document.getElementById('closed-view-list').href = listUrl;
+      document.getElementById('success-view-list').href = listUrl;
+      
+      // Set login return URL
+      const returnUrl = encodeURIComponent(window.location.href);
+      document.getElementById('login-btn').href = `../auth/player-login.html?return=${returnUrl}`;
+      
+      // Load data
+      await loadTournament();
+      await loadAdmissionsConfig();
+      await loadRegistrations();
+      await loadAdmissionCriteria();
+      
+      console.log('=== Registration Page Debug ===');
+      console.log('Tournament ID:', tournamentId);
+      console.log('Round:', roundNum);
+      console.log('Admissions Config:', admissionsConfig);
+      console.log('Config has criteria:', admissionsConfig?.admissionCriteria);
+      console.log('Admission Criteria:', admissionCriteria);
+      
+      // Check status
+      const status = checkRegistrationStatus();
+      
+      if (status === 'clubs-only') {
+        // Show clubs-only message with link to club registration
+        document.getElementById('closed-message').innerHTML = `
+          This tournament requires registration through your club.<br><br>
+          Please contact your club administrator to register for this tournament, 
+          or if you are a club representative, <a href="online_register_club.html?t=${tournamentId}&r=${roundNum}" style="color: #059669; font-weight: 600;">click here to access Club Registration</a>.
+        `;
+        showSection('closed-section');
+        return;
+      }
+      
+      if (status !== 'open') {
+        showSection('closed-section');
+        return;
+      }
+      
+      // Check auth
+      if (typeof window.Auth === 'undefined') {
+        setTimeout(init, 100);
+        return;
+      }
+      
+      window.Auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          showSection('login-section');
+          return;
+        }
+        
+        currentUser = user;
+        
+        // Reset UI state for new user
+        document.getElementById('already-registered').classList.add('hidden');
+        document.getElementById('register-btn').classList.remove('hidden');
+        document.getElementById('register-btn').disabled = false;
+        document.getElementById('register-btn').textContent = 'Register for Tournament';
+        document.getElementById('error-message').classList.add('hidden');
+        
+        // Reload registrations to get fresh data
+        await loadRegistrations();
+        console.log('Reloaded registrations:', registrations.length, 'entries');
+        
+        // Get user profile
+        const profile = await window.Auth.getUserProfile();
+        
+        console.log('Auth state changed - User profile:', profile);
+        
+        if (!profile || !profile.playerRegNumber) {
+          showSection('login-section');
+          return;
+        }
+        
+        // Get player data - try Firebase first, then localStorage
+        currentPlayer = await getPlayerByRegFromFirebase(profile.playerRegNumber);
+        if (!currentPlayer) {
+          currentPlayer = getPlayerByReg(profile.playerRegNumber);
+        }
+        
+        console.log('Current player:', currentPlayer);
+        
+        if (!currentPlayer) {
+          document.getElementById('error-message').textContent = 'Player profile not found. Please contact support.';
+          document.getElementById('error-message').classList.remove('hidden');
+          showSection('registration-section');
+          return;
+        }
+        
+        // Display player info
+        document.getElementById('player-name').textContent = `${currentPlayer.firstName} ${currentPlayer.lastName}`;
+        document.getElementById('player-reg').textContent = currentPlayer.reg;
+        document.getElementById('player-hcp').textContent = currentPlayer.hcp || '-';
+        document.getElementById('player-club').textContent = currentPlayer.homeClub || currentPlayer.club || '-';
+        
+        // Check criteria
+        const criteriaResults = checkCriteria(currentPlayer);
+        renderCriteriaCheck(criteriaResults);
+        
+        if (!criteriaResults.passed) {
+          document.getElementById('register-btn').disabled = true;
+          document.getElementById('register-btn').textContent = 'Does Not Meet Criteria';
+          document.getElementById('error-message').textContent = 'You do not meet the admission criteria for this tournament.';
+          document.getElementById('error-message').classList.remove('hidden');
+        }
+        
+        // Update capacity
+        updateCapacity();
+        
+        // Check if already registered
+        checkAlreadyRegistered(currentPlayer);
+        
+        // Show registration section
+        showSection('registration-section');
+      });
+    }
+    
+    // Event listeners
+    document.getElementById('register-btn').addEventListener('click', registerPlayer);
+    document.getElementById('cancel-registration-btn').addEventListener('click', cancelRegistration);
+    
+    // Start
+    init();
+  </script>
+</body>
+</html>

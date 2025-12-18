@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tournament Info</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { margin: 0; padding: 0; background: #f8fafc; }
+      
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .top-nav h1 { margin: 0; color: white; font-size: 24px; font-weight: 700; }
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-back-top:hover { background: rgba(255,255,255,0.3); }
+      
+      .container { max-width: 800px; margin: 24px auto; padding: 24px; }
+      
+      .info-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      
+      .info-card h2 {
+        margin: 0 0 20px 0;
+        font-size: 20px;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 12px;
+      }
+      
+      .tournament-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      
+      .detail-item {
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      
+      .detail-label {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      
+      .detail-value {
+        font-size: 16px;
+        color: #1e293b;
+        font-weight: 500;
+      }
+      
+      /* Upload Section */
+      .upload-section {
+        margin-top: 20px;
+      }
+      
+      .upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      
+      .upload-area:hover {
+        border-color: #0b6efd;
+        background: #eff6ff;
+      }
+      
+      .upload-area.dragging {
+        border-color: #0b6efd;
+        background: #dbeafe;
+      }
+      
+      .upload-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      
+      .upload-text {
+        font-size: 16px;
+        color: #475569;
+        margin-bottom: 8px;
+      }
+      
+      .upload-hint {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      
+      .file-input {
+        display: none;
+      }
+      
+      /* Current Document */
+      .current-doc {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      
+      .doc-icon {
+        font-size: 40px;
+      }
+      
+      .doc-info {
+        flex: 1;
+      }
+      
+      .doc-name {
+        font-weight: 600;
+        color: #166534;
+        font-size: 15px;
+      }
+      
+      .doc-meta {
+        font-size: 13px;
+        color: #16a34a;
+        margin-top: 4px;
+      }
+      
+      .doc-actions {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .btn-view {
+        background: linear-gradient(180deg, #0ea5e9, #0284c7);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      
+      .btn-delete {
+        background: linear-gradient(180deg, #ef4444, #dc2626);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      
+      /* Upload Progress */
+      .upload-progress {
+        display: none;
+        margin-top: 20px;
+      }
+      
+      .progress-bar {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #0b6efd, #0ea5e9);
+        width: 0%;
+        transition: width 0.3s;
+      }
+      
+      .progress-text {
+        text-align: center;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 8px;
+      }
+      
+      /* No Document State */
+      .no-doc {
+        text-align: center;
+        padding: 24px;
+        color: #94a3b8;
+        font-style: italic;
+      }
+      
+      /* Alert Messages */
+      .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        display: none;
+      }
+      
+      .alert-success {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        color: #166534;
+      }
+      
+      .alert-error {
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        color: #991b1b;
+      }
+      
+      @media (max-width: 600px) {
+        .tournament-details {
+          grid-template-columns: 1fr;
+        }
+        .doc-actions {
+          flex-direction: column;
+        }
+      }
+      
+      /* View-only mode styles */
+      .view-mode .upload-section { display: none; }
+      .view-mode .btn-delete { display: none; }
+      
+      /* PDF-only mode styles - hide everything except PDF */
+      .pdfonly-mode .top-nav { display: none; }
+      .pdfonly-mode .upload-section { display: none; }
+      .pdfonly-mode .btn-delete { display: none; }
+      .pdfonly-mode #tournamentDetails { display: none; }
+      .pdfonly-mode .info-card h2 { display: none; }
+      .pdfonly-mode .info-card:first-of-type { display: none; }
+      .pdfonly-mode .container { max-width: 100%; margin: 0; padding: 0; }
+      .pdfonly-mode .info-card { margin: 0; border-radius: 0; box-shadow: none; padding: 0; }
+      .pdfonly-mode .pdf-viewer-container { height: 100vh; min-height: 100vh; border: none; border-radius: 0; }
+      
+      .pdf-viewer-container {
+        width: 100%;
+        height: 70vh;
+        min-height: 500px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f8fafc;
+      }
+      
+      .pdf-viewer-container embed {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .no-document-view {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        color: #64748b;
+        text-align: center;
+      }
+      
+      .no-document-view .icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+      }
+      
+      .no-document-view .message {
+        font-size: 18px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <script src="../components/auth.js"></script>
+    
+    <div class="top-nav">
+      <h1>📄 Tournament Info</h1>
+      <a href="index.html" class="btn-back-top">← Back</a>
+    </div>
+    
+    <main class="container">
+      <div id="alert" class="alert"></div>
+      
+      <!-- Tournament Details -->
+      <div class="info-card">
+        <h2>Tournament Details</h2>
+        <div class="tournament-details" id="tournamentDetails">
+          <div class="detail-item">
+            <div class="detail-label">Tournament ID</div>
+            <div class="detail-value" id="detailId">-</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Tournament Name</div>
+            <div class="detail-value" id="detailName">-</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Date</div>
+            <div class="detail-value" id="detailDate">-</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Type</div>
+            <div class="detail-value" id="detailType">-</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Rounds</div>
+            <div class="detail-value" id="detailRounds">-</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Course(s)</div>
+            <div class="detail-value" id="detailCourses">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PDF Document Upload -->
+      <div class="info-card">
+        <h2>Tournament Information Document</h2>
+        
+        <div id="currentDocument">
+          <p class="no-doc">No document uploaded yet.</p>
+        </div>
+        
+        <div class="upload-section">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">Click to upload or drag & drop</div>
+            <div class="upload-hint">PDF files only (max 5MB)</div>
+            <input type="file" id="fileInput" class="file-input" accept=".pdf,application/pdf">
+          </div>
+          
+          <div class="upload-progress" id="uploadProgress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Uploading... 0%</div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <script>
+      let currentTournament = null;
+      let currentTournamentId = null;
+      let storage = null;
+      let isViewMode = false;
+      let isPdfOnlyMode = false;
+      
+      // Initialize
+      (async function() {
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        currentTournamentId = urlParams.get('tournamentId');
+        const mode = urlParams.get('mode');
+        isViewMode = mode === 'view' || mode === 'pdfonly';
+        isPdfOnlyMode = mode === 'pdfonly';
+        
+        if (!currentTournamentId) {
+          showAlert('No tournament specified.', 'error');
+          return;
+        }
+        
+        // In view/pdfonly mode, skip authentication and show read-only view
+        if (isViewMode) {
+          document.body.classList.add(isPdfOnlyMode ? 'pdfonly-mode' : 'view-mode');
+          // Update header for view mode
+          document.querySelector('.top-nav h1').textContent = '📄 Tournament Information';
+          document.querySelector('.btn-back-top').style.display = 'none';
+          
+          // Load tournament data (public access)
+          loadTournamentDetails();
+          loadDocumentViewOnly();
+        } else {
+          // Admin/club mode - require auth
+          await window.Auth.requireAuth();
+          
+          // Initialize Firebase Storage
+          if (typeof firebase !== 'undefined' && firebase.storage) {
+            storage = firebase.storage();
+            console.log('Firebase Storage initialized');
+          } else {
+            console.warn('Firebase Storage not available');
+          }
+          
+          // Load tournament data
+          loadTournamentDetails();
+          loadCurrentDocument();
+          
+          // Setup upload handlers
+          setupUploadHandlers();
+        }
+      })();
+      
+      function loadTournamentDetails() {
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        currentTournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+        
+        if (!currentTournament) {
+          showAlert('Tournament not found.', 'error');
+          return;
+        }
+        
+        // Display tournament ID (simplified)
+        const displayId = currentTournamentId.includes('-') 
+          ? currentTournamentId.split('-')[1] 
+          : currentTournamentId;
+        
+        document.getElementById('detailId').textContent = displayId;
+        document.getElementById('detailName').textContent = currentTournament.name || '-';
+        document.getElementById('detailDate').textContent = formatDate(currentTournament);
+        document.getElementById('detailType').textContent = formatType(currentTournament);
+        document.getElementById('detailRounds').textContent = getRoundsCount(currentTournament);
+        document.getElementById('detailCourses').textContent = getCoursesDisplay(currentTournament);
+      }
+      
+      function formatDate(t) {
+        if (!t.meta) return '-';
+        const roundsData = Array.isArray(t.meta.roundsData) ? t.meta.roundsData.filter(r => r && r.date) : [];
+        if (roundsData.length === 0 && t.date) {
+          return new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        if (roundsData.length === 1) {
+          return new Date(roundsData[0].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        if (roundsData.length > 1) {
+          const dates = roundsData.map(r => new Date(r.date)).sort((a, b) => a - b);
+          const first = dates[0].toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+          const last = dates[dates.length - 1].toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          return `${first} - ${last}`;
+        }
+        return '-';
+      }
+      
+      function formatType(t) {
+        if (t.type && (t.type.includes('Stroke') || t.type.includes('Match'))) {
+          return t.type;
+        }
+        if (t.type === 'match') {
+          const isTeams = t.meta && t.meta.teamsTournament === 'yes';
+          return isTeams ? 'Match Play (Teams)' : 'Match Play';
+        }
+        return t.type || '-';
+      }
+      
+      function getRoundsCount(t) {
+        if (t.meta && t.meta.rounds) return t.meta.rounds;
+        if (t.meta && Array.isArray(t.meta.roundsData)) return t.meta.roundsData.length;
+        return 1;
+      }
+      
+      function getCoursesDisplay(t) {
+        const coursesRaw = (t.meta && Array.isArray(t.meta.roundsData)) 
+          ? t.meta.roundsData.map(r => r.course).filter(Boolean) 
+          : (t.meta && Array.isArray(t.meta.courses) ? t.meta.courses : []);
+        
+        if (!coursesRaw.length) return '-';
+        
+        const seen = new Set();
+        const orderedUnique = [];
+        coursesRaw.forEach(c => {
+          const key = c.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            orderedUnique.push(c);
+          }
+        });
+        
+        let storedCourses = [];
+        try {
+          const raw = localStorage.getItem('courses');
+          storedCourses = raw ? JSON.parse(raw) : [];
+        } catch (e) {}
+        
+        const mapped = orderedUnique.map(id => {
+          const courseObj = storedCourses.find(c => c.courseId === id || c.fullName === id || c.name === id) || {};
+          return courseObj.shortName || courseObj.fullName || courseObj.name || id;
+        });
+        
+        return mapped.join(', ');
+      }
+      
+      function setupUploadHandlers() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // File selected
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files.length > 0) {
+            handleFileUpload(e.target.files[0]);
+          }
+        });
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          uploadArea.classList.add('dragging');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+          uploadArea.classList.remove('dragging');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          uploadArea.classList.remove('dragging');
+          if (e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files[0]);
+          }
+        });
+      }
+      
+      async function handleFileUpload(file) {
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+          showAlert('Please upload a PDF file only.', 'error');
+          return;
+        }
+        
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+          showAlert('File size must be less than 5MB.', 'error');
+          return;
+        }
+        
+        // Show progress
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        progressDiv.style.display = 'block';
+        progressFill.style.width = '10%';
+        progressText.textContent = 'Reading file...';
+        
+        try {
+          // Read file as base64
+          const base64Data = await readFileAsBase64(file);
+          
+          progressFill.style.width = '40%';
+          progressText.textContent = 'Uploading to cloud...';
+          
+          // Save document info with base64 data
+          const docInfo = {
+            fileName: file.name,
+            data: base64Data,
+            uploadedAt: new Date().toISOString(),
+            size: file.size,
+            type: file.type
+          };
+          
+          // Save to Firebase Realtime Database
+          try {
+            if (typeof firebase !== 'undefined' && firebase.database) {
+              const db = firebase.database();
+              await db.ref(`tournamentDocuments/${currentTournamentId}`).set({
+                fileName: docInfo.fileName,
+                data: docInfo.data,
+                uploadedAt: docInfo.uploadedAt,
+                size: docInfo.size,
+                type: docInfo.type
+              });
+              console.log('Saved to Firebase Realtime Database');
+              progressFill.style.width = '80%';
+              progressText.textContent = 'Saved to cloud!';
+            }
+          } catch (e) {
+            console.error('Firebase Database save error:', e);
+            showAlert('Cloud upload failed: ' + e.message, 'error');
+            progressDiv.style.display = 'none';
+            return;
+          }
+          
+          // Also save to localStorage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const index = tournaments.findIndex(t => t.tournamentId === currentTournamentId);
+          if (index !== -1) {
+            tournaments[index].infoDocument = {
+              fileName: docInfo.fileName,
+              uploadedAt: docInfo.uploadedAt,
+              size: docInfo.size
+              // Don't store base64 in localStorage to save space
+            };
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          }
+          
+          progressFill.style.width = '100%';
+          progressText.textContent = 'Complete!';
+          
+          setTimeout(() => {
+            progressDiv.style.display = 'none';
+            progressFill.style.width = '0%';
+          }, 1000);
+          
+          showAlert('Document uploaded successfully!', 'success');
+          loadCurrentDocument();
+          
+          // Clear file input
+          document.getElementById('fileInput').value = '';
+          
+        } catch (error) {
+          console.error('Upload error:', error);
+          progressDiv.style.display = 'none';
+          showAlert('Upload failed: ' + error.message, 'error');
+        }
+      }
+      
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      // View-only mode: Display PDF directly in the page
+      async function loadDocumentViewOnly() {
+        console.log('Loading document (view-only) for:', currentTournamentId);
+        
+        const docContainer = document.getElementById('currentDocument');
+        docContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px;">Loading document...</p>';
+        
+        let doc = null;
+        
+        // Try to load from Firebase first
+        try {
+          // Initialize Firebase if needed
+          if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(window.firebaseConfig);
+          }
+          
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            const snapshot = await db.ref(`tournamentDocuments/${currentTournamentId}`).once('value');
+            const firebaseDoc = snapshot.val();
+            
+            if (firebaseDoc && (firebaseDoc.url || firebaseDoc.data)) {
+              doc = firebaseDoc;
+              console.log('Loaded document from Firebase:', doc.fileName);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not load from Firebase:', e);
+        }
+        
+        // Fallback to localStorage
+        if (!doc) {
+          console.log('Trying localStorage fallback...');
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournament = tournaments.find(t => 
+            t.tournamentId === currentTournamentId ||
+            t.tournamentId?.toUpperCase() === currentTournamentId?.toUpperCase()
+          );
+          
+          if (tournament?.infoDocument) {
+            doc = tournament.infoDocument;
+            console.log('Loaded from localStorage');
+          }
+        }
+        
+        if (doc && doc.url) {
+          console.log('Displaying PDF from URL');
+          // Show embedded PDF viewer with URL
+          docContainer.innerHTML = `
+            <div class="pdf-viewer-container">
+              <embed src="${doc.url}" type="application/pdf" width="100%" height="100%">
+            </div>
+            <p style="text-align:center; margin-top:12px;">
+              <a href="${doc.url}" target="_blank" style="color:#0b6efd; text-decoration:none; font-weight:500;">
+                📥 Download PDF: ${escapeHtml(doc.fileName)}
+              </a>
+            </p>
+          `;
+        } else if (doc && doc.data) {
+          console.log('Displaying PDF from base64 data');
+          // Legacy: Show embedded PDF viewer with base64
+          docContainer.innerHTML = `
+            <div class="pdf-viewer-container">
+              <embed src="${doc.data}" type="application/pdf" width="100%" height="100%">
+            </div>
+          `;
+        } else {
+          console.log('No document available');
+          docContainer.innerHTML = `
+            <div class="no-document-view">
+              <div class="icon">📄</div>
+              <div class="message">No tournament information document available yet.</div>
+              <p style="font-size: 13px; color: #94a3b8; margin-top: 12px;">The club has not uploaded an information document for this tournament.</p>
+            </div>
+          `;
+        }
+      }
+      
+      async function saveDocumentInfo(docInfo) {
+        console.log('Saving document for tournament:', currentTournamentId);
+        console.log('Document info:', { fileName: docInfo.fileName, size: docInfo.size, url: docInfo.url });
+        
+        // Save to Firebase Realtime Database
+        try {
+          if (firebase.database) {
+            const db = firebase.database();
+            await db.ref(`tournamentDocuments/${currentTournamentId}`).set({
+              fileName: docInfo.fileName,
+              url: docInfo.url,
+              uploadedAt: docInfo.uploadedAt,
+              size: docInfo.size,
+              type: docInfo.type
+            });
+            console.log('Saved to Firebase Realtime Database');
+          }
+        } catch (e) {
+          console.error('Firebase save error:', e);
+        }
+        
+        // Also update tournament in localStorage
+        const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        const index = tournaments.findIndex(t => t.tournamentId === currentTournamentId);
+        
+        if (index !== -1) {
+          // Save without base64 data (just URL)
+          tournaments[index].infoDocument = {
+            fileName: docInfo.fileName,
+            url: docInfo.url,
+            uploadedAt: docInfo.uploadedAt,
+            size: docInfo.size
+          };
+          
+          try {
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            console.log('Saved to localStorage successfully');
+          } catch (e) {
+            console.warn('localStorage save error:', e);
+          }
+        }
+        
+        console.log('Document saved successfully');
+      }
+      
+      async function loadCurrentDocument() {
+        console.log('Loading document for:', currentTournamentId);
+        
+        let doc = null;
+        
+        // Try to load from Firebase first
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            const snapshot = await db.ref(`tournamentDocuments/${currentTournamentId}`).once('value');
+            const firebaseDoc = snapshot.val();
+            
+            if (firebaseDoc && (firebaseDoc.url || firebaseDoc.data)) {
+              doc = firebaseDoc;
+              console.log('Loaded document from Firebase:', doc.fileName);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not load from Firebase:', e);
+        }
+        
+        // Fallback to localStorage
+        if (!doc) {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+          doc = tournament?.infoDocument;
+        }
+        
+        console.log('Has document:', doc ? 'yes' : 'no');
+        
+        const docContainer = document.getElementById('currentDocument');
+        
+        if (doc && (doc.url || doc.data)) {
+          const uploadDate = new Date(doc.uploadedAt).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const fileSize = formatFileSize(doc.size);
+          
+          const html = `
+            <div class="current-doc" style="display:flex !important; background:#f0fdf4 !important; border:2px solid #22c55e !important; padding:16px !important; border-radius:10px !important; margin-top:16px !important;">
+              <div class="doc-icon" style="font-size:40px;">📄</div>
+              <div class="doc-info" style="flex:1; margin-left:16px;">
+                <div class="doc-name" style="font-weight:600; color:#166534; font-size:15px;">${escapeHtml(doc.fileName)}</div>
+                <div class="doc-meta" style="font-size:13px; color:#16a34a; margin-top:4px;">Uploaded: ${uploadDate} • ${fileSize}</div>
+              </div>
+              <div class="doc-actions" style="display:flex; gap:8px;">
+                <button class="btn-view" style="background:linear-gradient(180deg,#0ea5e9,#0284c7); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;" onclick="viewDocument()">View PDF</button>
+                <button class="btn-delete" style="background:linear-gradient(180deg,#ef4444,#dc2626); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;" onclick="deleteDocument()">Delete</button>
+              </div>
+            </div>
+          `;
+          docContainer.innerHTML = html;
+        } else {
+          docContainer.innerHTML = '<p class="no-doc">No document uploaded yet.</p>';
+        }
+      }
+      
+      async function viewDocument() {
+        let doc = null;
+        
+        // Try to load from Firebase first
+        try {
+          if (typeof firebase !== 'undefined' && firebase.database) {
+            const db = firebase.database();
+            const snapshot = await db.ref(`tournamentDocuments/${currentTournamentId}`).once('value');
+            doc = snapshot.val();
+          }
+        } catch (e) {
+          console.warn('Could not load from Firebase:', e);
+        }
+        
+        // Fallback to localStorage
+        if (!doc) {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+          doc = tournament?.infoDocument;
+        }
+        
+        if (doc && doc.url) {
+          window.open(doc.url, '_blank');
+        } else if (doc && doc.data) {
+          // Open base64 PDF in new window
+          const pdfWindow = window.open('', '_blank');
+          pdfWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>${escapeHtml(doc.fileName)}</title></head>
+            <body style="margin:0;padding:0;">
+              <embed src="${doc.data}" type="application/pdf" width="100%" height="100%" style="position:absolute;top:0;left:0;right:0;bottom:0;">
+            </body>
+            </html>
+          `);
+        } else {
+          showAlert('Document not found.', 'error');
+        }
+      }
+      
+      async function deleteDocument() {
+        if (!confirm('Are you sure you want to delete this document?')) {
+          return;
+        }
+        
+        try {
+          // Delete from Firebase Storage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournament = tournaments.find(t => t.tournamentId === currentTournamentId);
+          
+          if (tournament?.infoDocument?.url && storage) {
+            try {
+              // Get file reference from URL and delete
+              const fileRef = storage.refFromURL(tournament.infoDocument.url);
+              await fileRef.delete();
+              console.log('Deleted from Firebase Storage');
+            } catch (e) {
+              console.warn('Could not delete from Storage:', e);
+            }
+          }
+          
+          // Delete from Firebase Realtime Database
+          try {
+            if (firebase.database) {
+              await firebase.database().ref(`tournamentDocuments/${currentTournamentId}`).remove();
+              console.log('Deleted from Firebase Realtime Database');
+            }
+          } catch (e) {
+            console.warn('Could not delete from Database:', e);
+          }
+          
+          // Remove from localStorage
+          const index = tournaments.findIndex(t => t.tournamentId === currentTournamentId);
+          if (index !== -1) {
+            delete tournaments[index].infoDocument;
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          }
+          
+          showAlert('Document deleted successfully.', 'success');
+          loadCurrentDocument();
+        } catch (error) {
+          console.error('Delete error:', error);
+          showAlert('Failed to delete document.', 'error');
+        }
+      }
+      
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      }
+      
+      function showAlert(message, type) {
+        const alert = document.getElementById('alert');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.style.display = 'block';
+        
+        setTimeout(() => {
+          alert.style.display = 'none';
+        }, 5000);
+      }
+      
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&"'<>]/g, function (s) {
+          return ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[s];
+        });
+      }
+    </script>
+  </body>
+</html>
