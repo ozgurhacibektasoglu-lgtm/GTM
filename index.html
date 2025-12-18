@@ -235,13 +235,17 @@
           // Check if user is admin or club (not a player)
           try {
             const role = await window.Auth.getUserRole();
+            console.log('User role:', role, 'User UID:', user.uid);
             if (role !== 'admin' && role !== 'club') {
               // Players should not access admin dashboard
+              console.log('Access denied - role is not admin or club');
+              alert('Access denied. Your role is: ' + role + '. Only admin and club users can access this page.');
               await window.Auth.signOut();
               window.location.href = './auth/login.html';
             }
           } catch (e) {
             console.error('Role check error:', e);
+            alert('Error checking user role: ' + e.message);
             window.location.href = './auth/login.html';
           }
         });

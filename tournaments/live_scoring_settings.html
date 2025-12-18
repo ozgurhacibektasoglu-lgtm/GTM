@@ -1083,7 +1083,10 @@
     <!-- Firebase -->
     <script src="../firebase-config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../components/auth.js"></script>
 
     <script>
       // State
@@ -1092,10 +1095,24 @@
       let selectedScoringType = null;
       let selectedHoles = [];
       let liveSettings = null;
+      let currentUserId = null;
+      let currentUserRole = null;
       // db is declared in firebase-config.js
 
       // Initialize
       document.addEventListener('DOMContentLoaded', async function() {
+        // Gate: require authentication
+        try {
+          const { user, role } = await window.Auth.requireAuth();
+          currentUserId = user.uid;
+          currentUserRole = role;
+          console.log('Authenticated as:', role, user.uid);
+        } catch (e) {
+          console.error('Auth error:', e);
+          window.location.href = '../auth/login.html';
+          return;
+        }
+        
         // Init Firebase
         if (typeof initFirebase === 'function') {
           initFirebase();
@@ -1163,6 +1180,13 @@
         // Fall back to localStorage
         if (tournaments.length === 0) {
           tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+        }
+        
+        // Filter by owner for non-admin users
+        if (currentUserRole !== 'admin') {
+          // Show only tournaments created by this user
+          tournaments = (tournaments || []).filter(t => t && t.createdBy && (t.createdBy === currentUserId));
+          console.log('Filtered tournaments for club user:', tournaments.length);
         }
         
         // Get today's date (without time) for comparison
