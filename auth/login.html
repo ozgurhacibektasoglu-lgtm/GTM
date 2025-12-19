@@ -4,43 +4,148 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GTM Login</title>
-  <link rel="stylesheet" href="../styles.css" />
   <style>
-    body { background: #f8fafc; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #0f172a; }
-    .login-container { max-width: 380px; margin: 60px auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.08); }
-    .login-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; }
-    .login-header img { width: 36px; height: 36px; border-radius: 8px; }
-    .login-header h1 { font-size: 18px; margin: 0; }
-    .login-body { padding: 20px; }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #1e293b; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
-    .btn { display: inline-block; width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-weight: 600; }
-    .btn-primary { background: #1e293b; color: white; }
-    .btn-primary:hover { background: #0f172a; }
-    .error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
-    .small { font-size: 12px; color: #64748b; margin-top: 10px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #134e5e 0%, #1a3a2a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 440px;
+      width: 100%;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .login-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .login-header h1 {
+      font-size: 32px;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    
+    .login-header p {
+      color: #64748b;
+      font-size: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #166534;
+      box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #134e5e 0%, #1a3a2a 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(22, 101, 52, 0.4);
+    }
+    
+    .login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #fecaca;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    .help-text {
+      text-align: center;
+      margin-top: 24px;
+      color: #64748b;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div class="login-container">
+  <div class="login-card">
     <div class="login-header">
-      <img src="../logo.png" alt="GTM" onerror="this.style.display='none'" />
+      <div class="login-icon">⛳</div>
       <h1>GTM Login</h1>
+      <p>Golf Tournament Management</p>
     </div>
-    <div class="login-body">
-      <div id="error" class="error"></div>
-      <div class="form-group">
-        <label for="username">Login Name</label>
-        <input id="username" type="text" autocomplete="username" />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" />
-      </div>
-      <button id="loginBtn" class="btn btn-primary">Sign In</button>
-      <div class="small">Use credentials provided by your admin.</div>
+    
+    <div id="error" class="error-message"></div>
+    
+    <div class="form-group">
+      <label for="username">Login Name</label>
+      <input id="username" type="text" autocomplete="username" placeholder="Enter your login name" />
     </div>
+    
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
+    </div>
+    
+    <button id="loginBtn" class="login-btn">Sign In</button>
+    
+    <div class="help-text">Use credentials provided by your admin.</div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
