@@ -38,10 +38,9 @@ function initFirebase() {
     
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // IMPORTANT: Pass the regional URL directly to firebase.database()
-      // This ensures direct connection to europe-west1 without redirect delay
+      // IMPORTANT: Use app().database(url) for compat library to connect directly to regional database
       const dbUrl = window.firebaseConfig.databaseURL;
-      db = firebase.database(dbUrl);
+      db = firebase.app().database(dbUrl);
       syncEnabled = true;
       console.log('Database initialized with direct URL:', dbUrl);
     } else {
