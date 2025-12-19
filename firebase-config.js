@@ -31,22 +31,19 @@ function initFirebase() {
       return false;
     }
     
-    // Force the correct database URL in the config before initializing
+    // Initialize Firebase app if not already done
     if (!firebase.apps.length) {
-      // Ensure databaseURL ends with /
-      const config = Object.assign({}, window.firebaseConfig);
-      if (config.databaseURL && !config.databaseURL.endsWith('/')) {
-        config.databaseURL = config.databaseURL + '/';
-      }
-      firebase.initializeApp(config);
+      firebase.initializeApp(window.firebaseConfig);
     }
+    
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // Get database with explicit URL
+      // IMPORTANT: Pass the regional URL directly to firebase.database()
+      // This ensures direct connection to europe-west1 without redirect delay
       const dbUrl = window.firebaseConfig.databaseURL;
-      db = firebase.database();
+      db = firebase.database(dbUrl);
       syncEnabled = true;
-      console.log('Database initialized with URL:', dbUrl);
+      console.log('Database initialized with direct URL:', dbUrl);
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
