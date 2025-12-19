@@ -3,53 +3,186 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GTM Player Login</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <title>Players Lounge - Login</title>
+  
   <style>
-    body { background: #f8fafc; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #0f172a; }
-    .login-container { max-width: 380px; margin: 60px auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.08); }
-    .login-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%); border-radius: 12px 12px 0 0; }
-    .login-header img { width: 36px; height: 36px; border-radius: 8px; }
-    .login-header h1 { font-size: 18px; margin: 0; color: white; }
-    .login-body { padding: 20px; }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #1e293b; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-    .reg-input-wrapper { display: flex; align-items: center; gap: 8px; }
-    .reg-prefix { font-weight: 700; color: #1e293b; font-size: 16px; }
-    .reg-input-wrapper input { flex: 1; }
-    .btn { display: inline-block; width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-weight: 600; }
-    .btn-primary { background: #0b6efd; color: white; }
-    .btn-primary:hover { background: #0a58d1; }
-    .error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
-    .small { font-size: 12px; color: #64748b; margin-top: 10px; text-align: center; }
-    .small a { color: #0b6efd; text-decoration: none; font-weight: 600; }
-    .small a:hover { text-decoration: underline; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 440px;
+      width: 100%;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .login-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .login-header h1 {
+      font-size: 32px;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    
+    .login-header p {
+      color: #64748b;
+      font-size: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .reg-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .reg-prefix {
+      font-weight: 700;
+      color: #334155;
+      font-size: 18px;
+      background: #f1f5f9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .reg-input-wrapper input {
+      flex: 1;
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #fecaca;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    .signup-link {
+      text-align: center;
+      margin-top: 24px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    .signup-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <div class="login-container">
+  <div class="login-card">
     <div class="login-header">
-      <img src="../logo.png" alt="GTM" onerror="this.style.display='none'" />
-      <h1>Player Login</h1>
+      <div class="login-icon">🏌️</div>
+      <h1>Players Lounge</h1>
+      <p>Sign in to access your player profile</p>
     </div>
-    <div class="login-body">
-      <div id="error" class="error"></div>
+    
+    <div id="error" class="error-message"></div>
+    
+    <form id="loginForm">
       <div class="form-group">
-        <label for="regNumber">Reg No</label>
+        <label for="regNumber">Registration Number</label>
         <div class="reg-input-wrapper">
           <span class="reg-prefix">P</span>
-          <input id="regNumber" type="text" placeholder="10" inputmode="numeric" autocomplete="username" />
+          <input id="regNumber" type="text" placeholder="Enter your number" inputmode="numeric" autocomplete="username" required />
         </div>
       </div>
+      
       <div class="form-group">
         <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" />
+        <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
       </div>
-      <button id="loginBtn" class="btn btn-primary">Sign In</button>
-      <div class="small" style="margin-top: 16px;">
-        Don't have an account? <a href="signup.html" id="signup-link">Sign up here</a>
-      </div>
+      
+      <button type="submit" id="loginBtn" class="login-btn">Sign In</button>
+    </form>
+    
+    <div class="signup-link">
+      Don't have an account? <a href="signup.html" id="signup-link">Sign Up</a>
     </div>
   </div>
 
@@ -71,41 +204,41 @@
     
     // Wait for window.Auth to be defined
     function setupLoginHandler() {
-      console.log('setupLoginHandler called, Auth defined:', typeof window.Auth !== 'undefined');
       if (typeof window.Auth === 'undefined') {
         setTimeout(setupLoginHandler, 100);
         return;
       }
-      console.log('Auth is ready, setting up login handler');
       
       // Format registration number input - only allow digits
       document.getElementById('regNumber').addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/\D/g, '');
       });
       
-      document.getElementById('loginBtn').addEventListener('click', async () => {
-        console.log('Login button clicked');
+      // Handle form submission
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
         const regNumberInput = document.getElementById('regNumber').value.trim();
         const password = document.getElementById('password').value;
         const errorEl = document.getElementById('error');
         const loginBtn = document.getElementById('loginBtn');
-        errorEl.style.display = 'none';
+        
+        errorEl.classList.remove('show');
         
         if (!regNumberInput) {
           errorEl.textContent = 'Please enter your registration number';
-          errorEl.style.display = 'block';
+          errorEl.classList.add('show');
           return;
         }
         
         if (!password) {
           errorEl.textContent = 'Please enter your password';
-          errorEl.style.display = 'block';
+          errorEl.classList.add('show');
           return;
         }
         
         // Add P prefix (e.g., "10" becomes "P10")
         const username = 'P' + regNumberInput;
-        console.log('Attempting login for:', username);
         
         // Show loading state
         const originalText = loginBtn.textContent;
@@ -113,7 +246,6 @@
         loginBtn.disabled = true;
         
         try {
-          console.log('Calling Auth.signInWithUsername...');
           // Add timeout to prevent infinite hanging
           const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
@@ -130,31 +262,19 @@
           if (returnUrl) {
             window.location.href = decodeURIComponent(returnUrl);
           } else {
-            // Default: Players go to dashboard
-            window.location.href = '../players/dashboard.html';
+            // Default: Players go to players lounge
+            window.location.href = '../public/players-lounge.html';
           }
         } catch (err) {
           errorEl.textContent = err.message || 'Login failed';
-          errorEl.style.display = 'block';
+          errorEl.classList.add('show');
           // Reset button state
           loginBtn.textContent = originalText;
           loginBtn.disabled = false;
         }
       });
-      
-      // Allow Enter key to submit
-      document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('loginBtn').click();
-        }
-      });
-      
-      document.getElementById('regNumber').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('password').focus();
-        }
-      });
     }
+    
     setupLoginHandler();
   </script>
 </body>
