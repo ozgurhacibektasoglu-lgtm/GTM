@@ -164,22 +164,22 @@
     
     <div id="error" class="error-message"></div>
     
-    <form id="loginForm">
+    <div id="loginForm">
       <div class="form-group">
         <label for="regNumber">Registration Number</label>
         <div class="reg-input-wrapper">
           <span class="reg-prefix">P</span>
-          <input id="regNumber" type="text" placeholder="Enter your number" inputmode="numeric" autocomplete="username" required />
+          <input id="regNumber" type="text" placeholder="Enter your number" inputmode="numeric" autocomplete="off" />
         </div>
       </div>
       
       <div class="form-group">
         <label for="password">Password</label>
-        <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
+        <input id="password" type="password" placeholder="Enter your password" autocomplete="off" />
       </div>
       
       <button type="button" id="loginBtn" class="login-btn">Sign In</button>
-    </form>
+    </div>
     
     <div class="signup-link">
       Don't have an account? <a href="signup.html" id="signup-link">Sign Up</a>
@@ -193,12 +193,6 @@
   <script src="../firebase-config.js"></script>
   <script src="../components/auth.js"></script>
   <script>
-    // Prevent any form submission until ready
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      return false;
-    });
-    
     // Pass return URL to signup link if present
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -230,17 +224,19 @@
       });
       
       // Also handle Enter key on password field
-      document.getElementById('password').addEventListener('keypress', async (e) => {
+      document.getElementById('password').addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          e.stopPropagation();
           await handleLogin();
         }
       });
       
       // Enter on reg number moves to password
-      document.getElementById('regNumber').addEventListener('keypress', (e) => {
+      document.getElementById('regNumber').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          e.stopPropagation();
           document.getElementById('password').focus();
         }
       });
