@@ -4,7 +4,7 @@ if (typeof window.firebaseConfig === 'undefined') {
   window.firebaseConfig = {
     apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
     authDomain: "gtm-management-6350e.firebaseapp.com",
-    databaseURL: "https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app/",
+    databaseURL: "https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "gtm-management-6350e",
     storageBucket: "gtm-management-6350e.firebasestorage.app",
     messagingSenderId: "461806742170",
@@ -41,6 +41,7 @@ function initFirebase() {
       // Get the app instance and use database with explicit URL
       const app = firebase.app();
       db = app.database('https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app');
+      window.db = db; // Expose globally for other scripts
       syncEnabled = true;
       console.log('Database initialized with europe-west1 region');
     } else {

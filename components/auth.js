@@ -107,11 +107,13 @@
       let localPlayer = null;
       
       // Try Firebase Realtime Database FIRST (most up-to-date)
-      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+      // Use global db from firebase-config.js if available (already initialized with correct region)
+      const rtdb = window.db || (typeof firebase !== 'undefined' && firebase.apps.length > 0 
+        ? firebase.app().database('https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app')
+        : null);
+      
+      if (rtdb) {
         try {
-          // Use explicit database URL to avoid region warnings
-          const rtdb = firebase.app().database(window.firebaseConfig.databaseURL);
-          
           // Try exact key match first (e.g., "P4626")
           console.log('Looking up Firebase path: players/' + regNumber.toUpperCase());
           let snapshot = await rtdb.ref(`players/${regNumber.toUpperCase()}`).once('value');
