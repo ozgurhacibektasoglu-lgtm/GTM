@@ -1130,23 +1130,28 @@
       const tbody = document.getElementById('players-body');
       const maxPlayers = admissionsConfig?.maxPlayers || 72;
       const cutLineText = admissionsConfig?.cutLineText || '───── RESERVE LIST ─────';
+      const pendingApprovalText = '───── PENDING APPROVAL ─────';
       const showReservePublic = admissionsConfig?.showReservePublic !== false; // Default to true
       const requireApproval = admissionsConfig?.requireApproval === true;
       
-      // Filter registrations for public display
-      let displayRegistrations = registrations;
+      // Separate registrations based on approval status
+      let approvedPlayers = [];
+      let unapprovedPlayers = [];
       
-      // If approval is required, only show approved players
       if (requireApproval) {
-        displayRegistrations = registrations.filter(r => r.approved === true);
+        approvedPlayers = registrations.filter(r => r.approved === true);
+        unapprovedPlayers = registrations.filter(r => r.approved !== true);
+      } else {
+        approvedPlayers = registrations;
       }
       
-      // Update stats based on visible players
-      const admitted = displayRegistrations.filter(r => r.status === 'admitted').length;
-      const reserve = displayRegistrations.filter(r => r.status === 'reserve').length;
+      // Calculate stats
+      const admittedApproved = approvedPlayers.filter(r => r.status === 'admitted').length;
+      const reserveApproved = approvedPlayers.filter(r => r.status === 'reserve').length;
+      const pendingCount = unapprovedPlayers.length;
       
-      document.getElementById('stat-admitted').textContent = admitted;
-      document.getElementById('stat-reserve').textContent = showReservePublic ? reserve : '-';
+      document.getElementById('stat-admitted').textContent = admittedApproved;
+      document.getElementById('stat-reserve').textContent = showReservePublic ? reserveApproved : '-';
       document.getElementById('stat-capacity').textContent = maxPlayers;
       
       // Hide reserve stat card if not showing reserve list
@@ -1155,7 +1160,11 @@
         reserveStatCard.style.display = showReservePublic ? 'block' : 'none';
       }
       
-      if (displayRegistrations.length === 0) {
+      // Check if there's anything to show
+      const hasApprovedToShow = approvedPlayers.length > 0;
+      const hasPendingToShow = requireApproval && showReservePublic && unapprovedPlayers.length > 0;
+      
+      if (!hasApprovedToShow && !hasPendingToShow) {
         const message = requireApproval 
           ? 'Waiting for organiser approval...' 
           : 'No players registered yet';
@@ -1166,7 +1175,8 @@
       let html = '';
       let cutLineAdded = false;
       
-      displayRegistrations.forEach((r, index) => {
+      // Render approved players
+      approvedPlayers.forEach((r, index) => {
         // Skip reserve players if showReservePublic is false
         if (r.status === 'reserve' && !showReservePublic) {
           return;
@@ -1197,6 +1207,30 @@
           </tr>
         `;
       });
+      
+      // If showReservePublic is ON and requireApproval is ON, show unapproved players in pending section
+      if (requireApproval && showReservePublic && unapprovedPlayers.length > 0) {
+        html += `
+          <tr>
+            <td colspan="6" class="cut-line" style="color: #f59e0b;">${escapeHtml(pendingApprovalText)}</td>
+          </tr>
+        `;
+        
+        unapprovedPlayers.forEach((r, index) => {
+          const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+          
+          html += `
+            <tr class="reserve-player" style="opacity: 0.7;">
+              <td class="order-num">P${index + 1}</td>
+              <td class="reg-no">${escapeHtml(r.playerReg || '-')}</td>
+              <td class="player-name">${escapeHtml(name)}</td>
+              <td class="player-club">${escapeHtml(r.club || '-')}</td>
+              <td class="hcp">${r.handicap !== undefined && r.handicap !== null ? r.handicap : '-'}</td>
+              <td class="reg-date">${formatDateTime(r.registeredAt)}</td>
+            </tr>
+          `;
+        });
+      }
       
       tbody.innerHTML = html || '<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>No players to display</p></td></tr>';
     }
