@@ -85,13 +85,17 @@ function syncToFirebase(path, data) {
 }
 
 function syncFromFirebase(path) {
+  console.log('syncFromFirebase called for path:', path, 'syncEnabled:', syncEnabled, 'db:', !!db);
   if (!syncEnabled || !db) {
+    console.log('syncFromFirebase: sync disabled or no db');
     return Promise.resolve(null);
   }
   
   return db.ref(path).once('value')
     .then((snapshot) => {
-      return snapshot.val();
+      const val = snapshot.val();
+      console.log('syncFromFirebase result for', path, ':', val ? 'data found' : 'null');
+      return val;
     })
     .catch((error) => {
       console.error(`Firebase read error for ${path}:`, error);
@@ -231,13 +235,17 @@ function getTournamentsFromStorage() {
 }
 
 async function loadTournamentsFromFirebase() {
+  console.log('loadTournamentsFromFirebase called, syncEnabled:', syncEnabled, 'db:', !!db);
   const data = await syncFromFirebase('tournaments');
+  console.log('syncFromFirebase tournaments result:', data);
   if (data) {
     // Convert from object format to array (handles both legacy array and new object format)
     const tournamentsArray = tournamentsObjectToArray(data);
+    console.log('Converted to array, length:', tournamentsArray.length);
     localStorage.setItem('tournaments', JSON.stringify(tournamentsArray));
     return tournamentsArray;
   }
+  console.log('No data from Firebase, returning localStorage');
   return getTournamentsFromStorage();
 }
 
