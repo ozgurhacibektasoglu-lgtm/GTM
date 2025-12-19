@@ -282,6 +282,20 @@
       color: #92400e;
     }
     
+    /* Pending approval style */
+    tr.pending-approval {
+      background: #fef3c7 !important;
+      opacity: 0.85;
+    }
+    
+    tr.pending-approval:hover {
+      background: #fde68a !important;
+    }
+    
+    .approval-checkbox {
+      accent-color: #22c55e;
+    }
+    
     /* Registered by column */
     .registered-by {
       font-size: 12px;
@@ -544,6 +558,10 @@
         <div class="number" id="stat-reserve">0</div>
         <div class="label">Reserve</div>
       </div>
+      <div class="stat-card" id="stat-pending-card" style="display: none;">
+        <div class="number" id="stat-pending" style="color: #f59e0b;">0</div>
+        <div class="label">Pending Approval</div>
+      </div>
       <div class="stat-card">
         <div class="number" id="stat-capacity">72</div>
         <div class="label">Capacity</div>
@@ -575,6 +593,7 @@
           <table>
             <thead>
               <tr>
+                <th id="th-approve" style="display: none; width: 70px;">Approve</th>
                 <th>#</th>
                 <th>Player</th>
                 <th>HCP</th>
@@ -743,10 +762,19 @@
     function updateStats() {
       const admitted = registrations.filter(r => r.status === 'admitted').length;
       const reserve = registrations.filter(r => r.status === 'reserve').length;
+      const requireApproval = admissionsConfig?.requireApproval === true;
+      const pending = requireApproval ? registrations.filter(r => r.approved !== true).length : 0;
       
       document.getElementById('stat-total').textContent = registrations.length;
       document.getElementById('stat-admitted').textContent = admitted;
       document.getElementById('stat-reserve').textContent = reserve;
+      
+      // Show/hide pending approval stat
+      const pendingCard = document.getElementById('stat-pending-card');
+      if (pendingCard) {
+        pendingCard.style.display = requireApproval ? 'block' : 'none';
+        document.getElementById('stat-pending').textContent = pending;
+      }
     }
     
     // Escape HTML
@@ -818,15 +846,24 @@
       }
       
       const maxPlayers = admissionsConfig?.maxPlayers || 72;
+      const requireApproval = admissionsConfig?.requireApproval === true;
+      
+      // Show/hide approval column header
+      const thApprove = document.getElementById('th-approve');
+      if (thApprove) {
+        thApprove.style.display = requireApproval ? 'table-cell' : 'none';
+      }
+      
       let html = '';
       let cutLineInserted = false;
+      const colSpan = requireApproval ? 9 : 8;
       
       filteredRegs.forEach((r, idx) => {
         // Insert cut line between admitted and reserve
         if (!cutLineInserted && r.status === 'reserve') {
           html += `
             <tr class="cut-line-row">
-              <td colspan="8">───── RESERVE LIST ─────</td>
+              <td colspan="${colSpan}">───── RESERVE LIST ─────</td>
             </tr>
           `;
           cutLineInserted = true;
@@ -835,9 +872,24 @@
         const name = `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
         const statusClass = r.status === 'admitted' ? 'status-admitted' : 'status-reserve';
         const statusText = r.status === 'admitted' ? `Admitted` : `Reserve`;
+        const isApproved = r.approved === true;
+        const approvalCell = requireApproval ? `
+          <td style="text-align: center;">
+            <input type="checkbox" 
+                   class="approval-checkbox" 
+                   ${isApproved ? 'checked' : ''} 
+                   onchange="toggleApproval('${escapeHtml(r.registrationId)}', this.checked)"
+                   title="${isApproved ? 'Approved - visible on public list' : 'Not approved - hidden from public list'}"
+                   style="width: 18px; height: 18px; cursor: pointer;">
+          </td>
+        ` : '';
+        
+        // Add visual indicator for pending approval
+        const pendingClass = requireApproval && !isApproved ? 'pending-approval' : '';
         
         html += `
-          <tr>
+          <tr class="${pendingClass}">
+            ${approvalCell}
             <td><strong>${r.position || '-'}</strong></td>
             <td>
               <div class="player-name">${escapeHtml(name)}</div>
@@ -857,7 +909,33 @@
         `;
       });
       
-      tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">No players match your search</td></tr>';
+      tbody.innerHTML = html || `<tr><td colspan="${colSpan}" style="text-align: center; padding: 40px; color: #64748b;">No players match your search</td></tr>`;
+    }
+    
+    // Toggle player approval
+    async function toggleApproval(registrationId, approved) {
+      try {
+        const reg = registrations.find(r => r.registrationId === registrationId);
+        if (!reg) {
+          showToast('Registration not found', 'error');
+          return;
+        }
+        
+        reg.approved = approved;
+        
+        // Save to Firebase
+        await saveRegistrations();
+        
+        const name = `${reg.firstName || ''} ${reg.lastName || ''}`.trim();
+        showToast(approved ? `${name} approved - now visible on public list` : `${name} approval removed`);
+        
+        // Update stats
+        updateStats();
+        
+      } catch (e) {
+        console.error('Error toggling approval:', e);
+        showToast('Failed to update approval', 'error');
+      }
     }
     
     // Remove player

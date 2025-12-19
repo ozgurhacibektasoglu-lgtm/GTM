@@ -659,6 +659,15 @@
           </label>
         </div>
         <p class="hint">If unchecked, the reserve list will only be visible to you on this page, not on the public registration link.</p>
+        
+        <div class="toggle-group" style="margin-top: 16px;">
+          <label>Organiser Approval Required</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="require-approval" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <p class="hint">If checked, players who register online will not appear in the public list until you approve them. Use "View Registered Players" to approve registrations.</p>
       </div>
       
       <!-- Sorting Configuration -->
@@ -1138,6 +1147,7 @@
             document.getElementById('send-email').checked = currentConfig.sendEmail === true;
             document.getElementById('allow-cancel').checked = currentConfig.allowCancel !== false;
             document.getElementById('show-reserve-public').checked = currentConfig.showReservePublic !== false; // Default to true
+            document.getElementById('require-approval').checked = currentConfig.requireApproval === true; // Default to false
             
             // VIP players
             if (currentConfig.vipPlayers) {
@@ -1271,6 +1281,7 @@
           maxPlayers: parseInt(document.getElementById('max-players').value) || 72,
           cutLineText: document.getElementById('cut-line-text').value || '───── RESERVE LIST ─────',
           showReservePublic: document.getElementById('show-reserve-public').checked,
+          requireApproval: document.getElementById('require-approval').checked,
           sortMethod: document.getElementById('sort-method').value,
           priorityMembers: document.getElementById('priority-members').checked,
           prioritySelected: document.getElementById('priority-selected').checked,

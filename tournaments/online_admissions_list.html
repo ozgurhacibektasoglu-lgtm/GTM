@@ -1131,10 +1131,19 @@
       const maxPlayers = admissionsConfig?.maxPlayers || 72;
       const cutLineText = admissionsConfig?.cutLineText || '───── RESERVE LIST ─────';
       const showReservePublic = admissionsConfig?.showReservePublic !== false; // Default to true
+      const requireApproval = admissionsConfig?.requireApproval === true;
       
-      // Update stats
-      const admitted = registrations.filter(r => r.status === 'admitted').length;
-      const reserve = registrations.filter(r => r.status === 'reserve').length;
+      // Filter registrations for public display
+      let displayRegistrations = registrations;
+      
+      // If approval is required, only show approved players
+      if (requireApproval) {
+        displayRegistrations = registrations.filter(r => r.approved === true);
+      }
+      
+      // Update stats based on visible players
+      const admitted = displayRegistrations.filter(r => r.status === 'admitted').length;
+      const reserve = displayRegistrations.filter(r => r.status === 'reserve').length;
       
       document.getElementById('stat-admitted').textContent = admitted;
       document.getElementById('stat-reserve').textContent = showReservePublic ? reserve : '-';
@@ -1146,15 +1155,18 @@
         reserveStatCard.style.display = showReservePublic ? 'block' : 'none';
       }
       
-      if (registrations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>No players registered yet</p></td></tr>';
+      if (displayRegistrations.length === 0) {
+        const message = requireApproval 
+          ? 'Waiting for organiser approval...' 
+          : 'No players registered yet';
+        tbody.innerHTML = `<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>${message}</p></td></tr>`;
         return;
       }
       
       let html = '';
       let cutLineAdded = false;
       
-      registrations.forEach((r, index) => {
+      displayRegistrations.forEach((r, index) => {
         // Skip reserve players if showReservePublic is false
         if (r.status === 'reserve' && !showReservePublic) {
           return;
@@ -1186,7 +1198,7 @@
         `;
       });
       
-      tbody.innerHTML = html;
+      tbody.innerHTML = html || '<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>No players to display</p></td></tr>';
     }
     
     // Initialize Firebase
