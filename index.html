@@ -13,6 +13,10 @@
     
     <link rel="stylesheet" href="styles.css">
     <style>
+      * {
+        box-sizing: border-box;
+      }
+      
       body {
         margin: 0;
         min-height: 100vh;
@@ -23,7 +27,9 @@
         align-items: center;
         justify-content: center;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        overflow: hidden; /* Prevent scrollbars if not needed */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        overflow-y: auto; /* Allow vertical scroll */
+        padding: 20px;
       }
 
       /* Overlay for better text readability if needed, but user wants stunning design */
@@ -40,7 +46,7 @@
 
       .home-container {
         text-align: center;
-        padding: 40px;
+        padding: 20px;
         width: 100%;
         max-width: 1200px;
         z-index: 1;
@@ -49,10 +55,11 @@
       /* Navigation Cards - Glassmorphism */
       .nav-cards {
         display: flex;
-        gap: 30px;
+        gap: 20px;
         justify-content: center;
         flex-wrap: wrap;
-        margin-top: 200px; /* Push cards down to let the background logo shine */
+        margin-top: 150px; /* Push cards down to let the background logo shine */
+        padding-bottom: 20px;
       }
 
       .nav-card {
@@ -204,15 +211,78 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
+        body {
+          align-items: flex-start;
+          padding: 10px;
+        }
+        
         .nav-cards {
           flex-direction: column;
           align-items: center;
-          margin-top: 100px;
+          margin-top: 80px;
+          gap: 15px;
         }
+        
         .nav-card {
           width: 100%;
           max-width: 300px;
+          padding: 25px 20px;
+          min-width: unset;
+        }
+        
+        .nav-icon {
+          font-size: 40px;
+          margin-bottom: 12px;
+        }
+        
+        .nav-label {
+          font-size: 18px;
+        }
+        
+        .nav-desc {
+          font-size: 12px;
+        }
+        
+        .user-info-bar {
+          position: relative;
+          top: 0;
+          right: 0;
+          margin-bottom: 10px;
+          padding: 10px 15px;
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        
+        .user-info-text {
+          font-size: 12px;
+        }
+        
+        .footer {
+          margin-top: 30px;
+          padding: 10px 20px;
+          font-size: 11px;
+        }
+        
+        .home-container {
+          padding: 10px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .nav-cards {
+          margin-top: 60px;
+        }
+        
+        .nav-card {
+          padding: 20px 15px;
+        }
+        
+        .user-info-bar {
+          flex-direction: column;
+          border-radius: 16px;
         }
       }
     </style>
