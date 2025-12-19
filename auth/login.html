@@ -70,6 +70,19 @@
           errorEl.style.display = 'block';
         }
       });
+      
+      // Allow Enter key to submit
+      document.getElementById('password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('loginBtn').click();
+        }
+      });
+      
+      document.getElementById('username').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('password').focus();
+        }
+      });
     }
     setupLoginHandler();
   </script>
