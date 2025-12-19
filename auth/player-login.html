@@ -291,21 +291,20 @@
         console.log('Login successful, redirecting...');
         // Check for return URL
         const urlParams = new URLSearchParams(window.location.search);
-          const returnUrl = urlParams.get('return');
-          if (returnUrl) {
-            window.location.href = decodeURIComponent(returnUrl);
-          } else {
-            // Default: Players go to players lounge
-            window.location.href = '../public/players-lounge.html';
-          }
-        } catch (err) {
-          errorEl.textContent = err.message || 'Login failed';
-          errorEl.classList.add('show');
-          // Reset button state
-          loginBtn.textContent = originalText;
-          loginBtn.disabled = false;
+        const returnUrl = urlParams.get('return');
+        if (returnUrl) {
+          window.location.href = decodeURIComponent(returnUrl);
+        } else {
+          // Default: Players go to players lounge
+          window.location.href = '../public/players-lounge.html';
         }
-      });
+      } catch (err) {
+        errorEl.textContent = err.message || 'Login failed';
+        errorEl.classList.add('show');
+        // Reset button state
+        loginBtn.textContent = originalText;
+        loginBtn.disabled = false;
+      }
     }
     
     setupLoginHandler();
