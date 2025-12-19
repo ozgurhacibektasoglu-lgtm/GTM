@@ -71,10 +71,12 @@
     
     // Wait for window.Auth to be defined
     function setupLoginHandler() {
+      console.log('setupLoginHandler called, Auth defined:', typeof window.Auth !== 'undefined');
       if (typeof window.Auth === 'undefined') {
         setTimeout(setupLoginHandler, 100);
         return;
       }
+      console.log('Auth is ready, setting up login handler');
       
       // Format registration number input - only allow digits
       document.getElementById('regNumber').addEventListener('input', (e) => {
@@ -82,6 +84,7 @@
       });
       
       document.getElementById('loginBtn').addEventListener('click', async () => {
+        console.log('Login button clicked');
         const regNumberInput = document.getElementById('regNumber').value.trim();
         const password = document.getElementById('password').value;
         const errorEl = document.getElementById('error');
@@ -102,6 +105,7 @@
         
         // Add P prefix (e.g., "10" becomes "P10")
         const username = 'P' + regNumberInput;
+        console.log('Attempting login for:', username);
         
         // Show loading state
         const originalText = loginBtn.textContent;
@@ -109,6 +113,7 @@
         loginBtn.disabled = true;
         
         try {
+          console.log('Calling Auth.signInWithUsername...');
           // Add timeout to prevent infinite hanging
           const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
