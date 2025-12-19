@@ -992,11 +992,13 @@
             ? Object.values(playersData)
             : playersData;
           
-          // Find player by email
-          currentPlayer = allPlayers.find(p => p.email === user.email);
+          // Find player by email (check both email and authEmail)
+          currentPlayer = allPlayers.find(p => 
+            p.email === user.email || p.authEmail === user.email
+          );
           
           if (!currentPlayer) {
-            showError('Player profile not found');
+            showError('Player profile not found for ' + user.email);
             return;
           }
           
