@@ -91,16 +91,26 @@ function syncFromFirebase(path) {
     return Promise.resolve(null);
   }
   
-  return db.ref(path).once('value')
+  // Add timeout to detect hanging requests
+  const timeoutPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      console.warn('syncFromFirebase TIMEOUT for path:', path);
+      resolve(null);
+    }, 10000); // 10 second timeout
+  });
+  
+  const readPromise = db.ref(path).once('value')
     .then((snapshot) => {
       const val = snapshot.val();
-      console.log('syncFromFirebase result for', path, ':', val ? 'data found' : 'null');
+      console.log('syncFromFirebase SUCCESS for', path, ':', val ? 'data found (' + (Array.isArray(val) ? val.length : Object.keys(val).length) + ' items)' : 'null/empty');
       return val;
     })
     .catch((error) => {
-      console.error(`Firebase read error for ${path}:`, error);
+      console.error('syncFromFirebase ERROR for', path, ':', error.message || error);
       return null;
     });
+  
+  return Promise.race([readPromise, timeoutPromise]);
 }
 
 function listenToFirebase(path, callback) {
