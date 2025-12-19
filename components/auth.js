@@ -107,9 +107,9 @@
       let localPlayer = null;
       
       // Try Firebase Realtime Database FIRST (most up-to-date)
-      // Use global db from firebase-config.js if available (already initialized with correct region)
+      // Use global db from firebase-config.js if available, or firebase.database()
       const rtdb = window.db || (typeof firebase !== 'undefined' && firebase.apps.length > 0 
-        ? firebase.app().database('https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app')
+        ? firebase.database()
         : null);
       
       if (rtdb) {

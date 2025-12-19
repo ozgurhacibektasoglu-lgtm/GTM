@@ -38,12 +38,11 @@ function initFirebase() {
     
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // Get the app instance and use database with explicit URL
-      const app = firebase.app();
-      db = app.database('https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app');
+      // Simply use firebase.database() - the databaseURL in firebaseConfig handles the region
+      db = firebase.database();
       window.db = db; // Expose globally for other scripts
       syncEnabled = true;
-      console.log('Database initialized with europe-west1 region');
+      console.log('Database initialized');
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
