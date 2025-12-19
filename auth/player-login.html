@@ -178,7 +178,7 @@
         <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
       </div>
       
-      <button type="submit" id="loginBtn" class="login-btn">Sign In</button>
+      <button type="button" id="loginBtn" class="login-btn">Sign In</button>
     </form>
     
     <div class="signup-link">
@@ -193,6 +193,12 @@
   <script src="../firebase-config.js"></script>
   <script src="../components/auth.js"></script>
   <script>
+    // Prevent any form submission until ready
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    
     // Pass return URL to signup link if present
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -209,55 +215,82 @@
         return;
       }
       
+      console.log('Auth ready, setting up login handler');
+      
       // Format registration number input - only allow digits
       document.getElementById('regNumber').addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/\D/g, '');
       });
       
-      // Handle form submission
-      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      // Handle login button click directly
+      document.getElementById('loginBtn').addEventListener('click', async (e) => {
         e.preventDefault();
-        
-        const regNumberInput = document.getElementById('regNumber').value.trim();
-        const password = document.getElementById('password').value;
-        const errorEl = document.getElementById('error');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        errorEl.classList.remove('show');
-        
-        if (!regNumberInput) {
-          errorEl.textContent = 'Please enter your registration number';
-          errorEl.classList.add('show');
-          return;
+        e.stopPropagation();
+        await handleLogin();
+      });
+      
+      // Also handle Enter key on password field
+      document.getElementById('password').addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          await handleLogin();
         }
-        
-        if (!password) {
-          errorEl.textContent = 'Please enter your password';
-          errorEl.classList.add('show');
-          return;
+      });
+      
+      // Enter on reg number moves to password
+      document.getElementById('regNumber').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('password').focus();
         }
+      });
+    }
+    
+    async function handleLogin() {
+      const regNumberInput = document.getElementById('regNumber').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      const loginBtn = document.getElementById('loginBtn');
+      
+      console.log('handleLogin called, reg:', regNumberInput);
+      
+      errorEl.classList.remove('show');
+      
+      if (!regNumberInput) {
+        errorEl.textContent = 'Please enter your registration number';
+        errorEl.classList.add('show');
+        return;
+      }
+      
+      if (!password) {
+        errorEl.textContent = 'Please enter your password';
+        errorEl.classList.add('show');
+        return;
+      }
+      
+      // Add P prefix (e.g., "10" becomes "P10")
+      const username = 'P' + regNumberInput;
+      
+      // Show loading state
+      const originalText = loginBtn.textContent;
+      loginBtn.textContent = 'Signing in...';
+      loginBtn.disabled = true;
+      
+      try {
+        console.log('Calling Auth.signInWithUsername for:', username);
+        // Add timeout to prevent infinite hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
+        );
         
-        // Add P prefix (e.g., "10" becomes "P10")
-        const username = 'P' + regNumberInput;
+        await Promise.race([
+          window.Auth.signInWithUsername(username, password),
+          timeoutPromise
+        ]);
         
-        // Show loading state
-        const originalText = loginBtn.textContent;
-        loginBtn.textContent = 'Signing in...';
-        loginBtn.disabled = true;
-        
-        try {
-          // Add timeout to prevent infinite hanging
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
-          );
-          
-          await Promise.race([
-            window.Auth.signInWithUsername(username, password),
-            timeoutPromise
-          ]);
-          
-          // Check for return URL
-          const urlParams = new URLSearchParams(window.location.search);
+        console.log('Login successful, redirecting...');
+        // Check for return URL
+        const urlParams = new URLSearchParams(window.location.search);
           const returnUrl = urlParams.get('return');
           if (returnUrl) {
             window.location.href = decodeURIComponent(returnUrl);
