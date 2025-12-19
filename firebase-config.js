@@ -31,18 +31,15 @@ function initFirebase() {
       return false;
     }
     
-    // Initialize Firebase app if not already done
     if (!firebase.apps.length) {
       firebase.initializeApp(window.firebaseConfig);
     }
-    
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // Simply use firebase.database() - the databaseURL in firebaseConfig handles the region
-      db = firebase.database();
-      window.db = db; // Expose globally for other scripts
+      // Use explicit databaseURL to connect to correct region (europe-west1)
+      db = firebase.app().database(window.firebaseConfig.databaseURL);
+      window.db = db;
       syncEnabled = true;
-      console.log('Database initialized');
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
