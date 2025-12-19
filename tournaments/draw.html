@@ -309,6 +309,52 @@
       display: block;
     }
 
+    /* Pin button */
+    .pin-player {
+      position: absolute;
+      right: 28px;
+      top: 5px;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+      cursor: pointer;
+      display: none;
+      line-height: 1;
+    }
+
+    .pin-player:hover {
+      background: #f59e0b;
+    }
+
+    .group-player-card:hover .pin-player {
+      display: block;
+    }
+
+    /* Pinned player styling */
+    .group-player-card.pinned {
+      background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+      border: 2px solid #f59e0b !important;
+      border-left: 4px solid #d97706 !important;
+    }
+
+    .group-player-card.pinned .pin-player {
+      display: block;
+      background: #f59e0b;
+    }
+
+    .group-player-card.pinned .pin-indicator {
+      display: inline;
+    }
+
+    .pin-indicator {
+      display: none;
+      margin-right: 4px;
+    }
+
     .empty-state {
       text-align: center;
       color: #999;
@@ -575,6 +621,10 @@
     <div class="modal-content">
       <h2>Auto Group Settings</h2>
       
+      <div id="pinned-players-info" style="display: none; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px; font-size: 13px;">
+        <span style="font-weight: 600;">📌 <span id="pinned-count">0</span> pinned player(s)</span> will stay in their current groups.
+      </div>
+      
       <div class="modal-form-group">
         <label>Number of Players in Group</label>
         <select id="modal-group-size" onchange="calculateGroupDistribution()">
@@ -709,6 +759,7 @@
     let isPairingMode = false; // True for fourball/foursomes match play
     let pairings = []; // Pairings for the current team/round
     let draggedPairing = null; // For dragging pairings instead of players
+    let pinnedPlayers = new Set(); // Track pinned player registration numbers
 
     // Format date as dd.mm.yyyy
     function formatDateDDMMYYYY(dateStr) {
@@ -1331,10 +1382,13 @@
       return group.players.map(player => {
         const gender = (player.gender || '').toLowerCase();
         const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
+        const isPinned = pinnedPlayers.has(player.reg);
+        const pinnedClass = isPinned ? 'pinned' : '';
         return `
-          <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
+          <div class="group-player-card ${genderClass} ${pinnedClass}" draggable="true" data-reg="${player.reg}">
+            <button class="pin-player" onclick="togglePin('${player.reg}')" title="${isPinned ? 'Unpin player' : 'Pin player to this group'}">📌</button>
             <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
-            <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
+            <div style="font-weight: 600; font-size: 12px;"><span class="pin-indicator">📌</span>${player.firstName} ${player.lastName}</div>
             <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
           </div>
         `;
@@ -1603,8 +1657,20 @@
       const group = groups.find(g => g.groupId === groupId);
       if (group) {
         group.players = group.players.filter(p => p.reg !== reg);
+        // Also unpin the player when removed
+        pinnedPlayers.delete(reg);
         renderGroups();
       }
+    }
+
+    // Toggle pin status for a player
+    function togglePin(reg) {
+      if (pinnedPlayers.has(reg)) {
+        pinnedPlayers.delete(reg);
+      } else {
+        pinnedPlayers.add(reg);
+      }
+      renderGroups();
     }
 
     // Select a group for removal or other actions
@@ -1621,6 +1687,16 @@
 
     // Open auto group modal
     function openAutoGroupModal() {
+      // Show pinned players info if any
+      const pinnedInfo = document.getElementById('pinned-players-info');
+      const pinnedCount = document.getElementById('pinned-count');
+      if (pinnedPlayers.size > 0) {
+        pinnedInfo.style.display = 'block';
+        pinnedCount.textContent = pinnedPlayers.size;
+      } else {
+        pinnedInfo.style.display = 'none';
+      }
+      
       document.getElementById('auto-group-modal').classList.add('active');
       calculateGroupDistribution();
     }
@@ -1636,24 +1712,27 @@
       const separateGender = document.getElementById('separate-gender').checked;
       const separateCategories = document.getElementById('separate-categories').checked;
       
+      // Get non-pinned players for distribution calculation
+      const nonPinnedPlayers = admittedPlayers.filter(p => !pinnedPlayers.has(p.reg));
+      
       // Get player counts
       let playerCounts = [];
       
       if (separateGender) {
-        const males = admittedPlayers.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
-        const females = admittedPlayers.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
+        const males = nonPinnedPlayers.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
+        const females = nonPinnedPlayers.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
         if (males.length > 0) playerCounts.push({ label: 'Male', count: males.length });
         if (females.length > 0) playerCounts.push({ label: 'Female', count: females.length });
       } else if (separateCategories) {
         const categorized = {};
-        admittedPlayers.forEach(p => {
+        nonPinnedPlayers.forEach(p => {
           const cat = (p.categories && p.categories[0]) || 'Uncategorized';
           if (!categorized[cat]) categorized[cat] = 0;
           categorized[cat]++;
         });
         playerCounts = Object.entries(categorized).map(([cat, count]) => ({ label: cat, count }));
       } else {
-        playerCounts = [{ label: 'All Players', count: admittedPlayers.length }];
+        playerCounts = [{ label: 'All Players', count: nonPinnedPlayers.length }];
       }
 
       const section = document.getElementById('group-distribution-section');
@@ -1808,8 +1887,18 @@
       const startTime = document.getElementById('start-time').value;
       const interval = parseInt(document.getElementById('interval').value);
       
-      // Use all admitted players for auto grouping (clear and restart)
-      const availablePlayers = [...admittedPlayers];
+      // Preserve pinned players in their current groups
+      const pinnedGroupsMap = new Map(); // reg -> { groupIndex, player }
+      groups.forEach((group, groupIndex) => {
+        group.players.forEach(player => {
+          if (pinnedPlayers.has(player.reg)) {
+            pinnedGroupsMap.set(player.reg, { groupIndex, player });
+          }
+        });
+      });
+      
+      // Get non-pinned admitted players for auto grouping
+      const availablePlayers = admittedPlayers.filter(p => !pinnedPlayers.has(p.reg));
 
       // Separate players if needed
       let playerGroups = [];
@@ -1830,8 +1919,35 @@
         playerGroups = [{ label: 'All', players: availablePlayers }];
       }
 
-      // Clear existing groups
-      groups = [];
+      // Preserve groups with pinned players, clear groups without pinned players
+      const preservedGroups = [];
+      if (pinnedGroupsMap.size > 0) {
+        // Keep groups that have pinned players (with only the pinned players)
+        const pinnedByGroup = new Map();
+        pinnedGroupsMap.forEach(({ groupIndex, player }) => {
+          if (!pinnedByGroup.has(groupIndex)) {
+            pinnedByGroup.set(groupIndex, []);
+          }
+          pinnedByGroup.get(groupIndex).push(player);
+        });
+        
+        // Create preserved groups with only pinned players
+        pinnedByGroup.forEach((players, groupIndex) => {
+          const originalGroup = groups[groupIndex];
+          if (originalGroup) {
+            preservedGroups.push({
+              groupId: originalGroup.groupId,
+              players: players,
+              time: originalGroup.time,
+              tee: originalGroup.tee,
+              preserved: true // Mark as preserved
+            });
+          }
+        });
+      }
+      
+      // Clear existing groups and start with preserved ones
+      groups = [...preservedGroups];
 
       // Sort players based on order type
       playerGroups.forEach((pg, pgIndex) => {
