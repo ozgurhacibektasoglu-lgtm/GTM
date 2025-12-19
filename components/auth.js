@@ -1,7 +1,10 @@
 // Simple auth helper wrapping Firebase Auth + Firestore roles
 (function(){
-  // Wait for firebaseConfig to be defined by firebase-config.js
-  const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(window.firebaseConfig);
+  // Ensure Firebase is initialized with the correct config (including databaseURL for europe-west1)
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.firebaseConfig);
+  }
+  const app = firebase.app();
   const auth = firebase.auth();
   const db = firebase.firestore();
 
