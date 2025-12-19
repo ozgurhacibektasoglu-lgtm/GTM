@@ -14,7 +14,9 @@
   async function signInWithUsername(username, password){
     console.log('signInWithUsername called with:', username);
     try {
-      // Try to find user with exact loginName first (for admin/club users)
+      let authEmail = null;
+      
+      // Try to find user in Firestore users collection first
       console.log('Querying Firestore for loginName:', username);
       let snapshot = await db.collection('users').where('loginName', '==', username).limit(1).get();
       console.log('First query complete, empty:', snapshot.empty);
@@ -26,21 +28,51 @@
         console.log('Second query complete, empty:', snapshot.empty);
       }
       
-      if (snapshot.empty) {
-        throw new Error('User not found');
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+        console.log('Found user in Firestore');
+        authEmail = userData.authEmail || userData.email;
+      } else {
+        // Fallback: Check Realtime Database players collection
+        console.log('User not in Firestore, checking Realtime Database players...');
+        if (typeof firebase.database === 'function') {
+          const rtdb = firebase.database();
+          const regNumber = username.toUpperCase();
+          
+          // Try direct lookup by key
+          let playerSnapshot = await rtdb.ref(`players/${regNumber}`).once('value');
+          let playerData = playerSnapshot.val();
+          
+          // If not found by key, search all players
+          if (!playerData) {
+            console.log('Not found by key, searching all players...');
+            const allPlayersSnapshot = await rtdb.ref('players').once('value');
+            const allPlayers = allPlayersSnapshot.val();
+            if (allPlayers) {
+              for (const key of Object.keys(allPlayers)) {
+                const p = allPlayers[key];
+                if (p && p.reg && p.reg.toUpperCase() === regNumber) {
+                  playerData = p;
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (playerData) {
+            console.log('Found player in Realtime Database');
+            authEmail = playerData.authEmail || playerData.email;
+          }
+        }
       }
-      const userDoc = snapshot.docs[0];
-      const userData = userDoc.data();
-      console.log('Found user document');
-      
-      // Use authEmail if available (for new signup system), otherwise fall back to email
-      const authEmail = userData.authEmail || userData.email;
       
       if (!authEmail) {
-        throw new Error('User profile incomplete');
+        throw new Error('User not found. Please sign up first.');
       }
+      
       // Sign in with the authentication email and provided password
-      console.log('Attempting Firebase Auth sign in...');
+      console.log('Attempting Firebase Auth sign in with:', authEmail);
       const { user } = await auth.signInWithEmailAndPassword(authEmail, password);
       console.log('Sign in successful');
       return user;
