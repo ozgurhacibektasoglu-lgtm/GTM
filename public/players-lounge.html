@@ -901,8 +901,7 @@
           showMainContent();
           loadPlayerData();
         } else {
-          // Redirect to player login page
-          window.location.href = '/auth/player-login.html?return=' + encodeURIComponent(window.location.pathname);
+          showLoginScreen();
         }
       });
       
