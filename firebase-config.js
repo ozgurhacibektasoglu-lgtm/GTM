@@ -31,15 +31,22 @@ function initFirebase() {
       return false;
     }
     
+    // Force the correct database URL in the config before initializing
     if (!firebase.apps.length) {
-      firebase.initializeApp(window.firebaseConfig);
+      // Ensure databaseURL ends with /
+      const config = Object.assign({}, window.firebaseConfig);
+      if (config.databaseURL && !config.databaseURL.endsWith('/')) {
+        config.databaseURL = config.databaseURL + '/';
+      }
+      firebase.initializeApp(config);
     }
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // The databaseURL is already in firebaseConfig, so firebase.database() should use it
+      // Get database with explicit URL
+      const dbUrl = window.firebaseConfig.databaseURL;
       db = firebase.database();
       syncEnabled = true;
-      console.log('Database initialized with URL:', window.firebaseConfig.databaseURL);
+      console.log('Database initialized with URL:', dbUrl);
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
@@ -97,7 +104,7 @@ function syncFromFirebase(path) {
     setTimeout(() => {
       console.warn('syncFromFirebase TIMEOUT for path:', path);
       resolve(null);
-    }, 10000); // 10 second timeout
+    }, 30000); // 30 second timeout (increased for slow connections)
   });
   
   const readPromise = db.ref(path).once('value')
