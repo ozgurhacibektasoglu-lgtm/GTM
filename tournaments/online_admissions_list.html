@@ -1130,14 +1130,21 @@
       const tbody = document.getElementById('players-body');
       const maxPlayers = admissionsConfig?.maxPlayers || 72;
       const cutLineText = admissionsConfig?.cutLineText || '───── RESERVE LIST ─────';
+      const showReservePublic = admissionsConfig?.showReservePublic !== false; // Default to true
       
       // Update stats
       const admitted = registrations.filter(r => r.status === 'admitted').length;
       const reserve = registrations.filter(r => r.status === 'reserve').length;
       
       document.getElementById('stat-admitted').textContent = admitted;
-      document.getElementById('stat-reserve').textContent = reserve;
+      document.getElementById('stat-reserve').textContent = showReservePublic ? reserve : '-';
       document.getElementById('stat-capacity').textContent = maxPlayers;
+      
+      // Hide reserve stat card if not showing reserve list
+      const reserveStatCard = document.querySelector('.stat-card.reserve');
+      if (reserveStatCard) {
+        reserveStatCard.style.display = showReservePublic ? 'block' : 'none';
+      }
       
       if (registrations.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="no-data"><div class="icon">📋</div><p>No players registered yet</p></td></tr>';
@@ -1148,8 +1155,13 @@
       let cutLineAdded = false;
       
       registrations.forEach((r, index) => {
-        // Add cut line before first reserve player
-        if (r.status === 'reserve' && !cutLineAdded) {
+        // Skip reserve players if showReservePublic is false
+        if (r.status === 'reserve' && !showReservePublic) {
+          return;
+        }
+        
+        // Add cut line before first reserve player (only if showing reserve list)
+        if (r.status === 'reserve' && !cutLineAdded && showReservePublic) {
           html += `
             <tr>
               <td colspan="6" class="cut-line">${escapeHtml(cutLineText)}</td>
