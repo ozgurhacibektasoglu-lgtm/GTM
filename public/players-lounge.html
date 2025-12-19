@@ -924,6 +924,13 @@
           
           // If not an email format, search for player with this reg number
           if (!email.includes('@')) {
+            // Normalize input - add P prefix if just a number
+            let regNumber = email;
+            if (/^\d+$/.test(email)) {
+              regNumber = 'P' + email;
+            }
+            
+            console.log('Looking up player with reg:', regNumber);
             const playersSnapshot = await database.ref('players').once('value');
             const playersData = playersSnapshot.val();
             
@@ -932,12 +939,23 @@
                 ? Object.values(playersData) 
                 : playersData;
               
-              const player = players.find(p => p.reg === email);
+              // Search for player by reg number (case insensitive)
+              const player = players.find(p => 
+                p.reg && p.reg.toUpperCase() === regNumber.toUpperCase()
+              );
               
-              if (player && player.email) {
-                loginEmail = player.email;
+              console.log('Found player:', player);
+              
+              if (player) {
+                // Use authEmail (from new signup) or email (from old system)
+                loginEmail = player.authEmail || player.email;
+                console.log('Using email:', loginEmail);
+                
+                if (!loginEmail) {
+                  throw new Error('No email associated with this registration. Please sign up first.');
+                }
               } else {
-                throw new Error('Registration number not found or no email associated');
+                throw new Error('Registration number not found');
               }
             } else {
               throw new Error('No player data found');
