@@ -36,9 +36,10 @@ function initFirebase() {
     }
     // Some pages may not load Database SDK; guard gracefully
     if (typeof firebase.database === 'function') {
-      // Use explicit databaseURL to connect to correct region (europe-west1)
-      db = firebase.app().database(window.firebaseConfig.databaseURL);
+      // The databaseURL is already in firebaseConfig, so firebase.database() should use it
+      db = firebase.database();
       syncEnabled = true;
+      console.log('Database initialized with URL:', window.firebaseConfig.databaseURL);
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
