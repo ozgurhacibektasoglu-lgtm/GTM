@@ -40,7 +40,8 @@
         // Fallback: Check Realtime Database players collection
         console.log('User not in Firestore, checking Realtime Database players...');
         if (typeof firebase.database === 'function') {
-          const rtdb = firebase.database();
+          // Use explicit database URL to avoid region warnings
+          const rtdb = firebase.app().database(window.firebaseConfig.databaseURL);
           const regNumber = username.toUpperCase();
           
           // Try direct lookup by key
