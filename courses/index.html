@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Courses</title>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
     <link rel="stylesheet" href="../styles.css">
     <style>
       body { margin: 0; padding: 0; }
@@ -86,7 +91,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script src="../firebase-config.js"></script>
     <script src="../components/auth.js"></script>
     <script>
@@ -220,8 +224,7 @@
         }
         
         try {
-          // Use explicit database URL to avoid region warnings
-          firebase.app().database(window.firebaseConfig.databaseURL).ref('courses').on('value', function(snapshot) {
+          firebase.database().ref('courses').on('value', function(snapshot) {
             if (isSyncingCourses) {
               console.log('⏸ Ignoring Firebase courses update (local save in progress)');
               return;

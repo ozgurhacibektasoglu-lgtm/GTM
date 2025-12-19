@@ -164,22 +164,22 @@
     
     <div id="error" class="error-message"></div>
     
-    <div id="loginForm">
+    <form id="loginForm">
       <div class="form-group">
         <label for="regNumber">Registration Number</label>
         <div class="reg-input-wrapper">
           <span class="reg-prefix">P</span>
-          <input id="regNumber" type="text" placeholder="Enter your number" inputmode="numeric" autocomplete="off" />
+          <input id="regNumber" type="text" placeholder="Enter your number" inputmode="numeric" autocomplete="username" required />
         </div>
       </div>
       
       <div class="form-group">
         <label for="password">Password</label>
-        <input id="password" type="password" placeholder="Enter your password" autocomplete="off" />
+        <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
       </div>
       
-      <button type="button" id="loginBtn" class="login-btn">Sign In</button>
-    </div>
+      <button type="submit" id="loginBtn" class="login-btn">Sign In</button>
+    </form>
     
     <div class="signup-link">
       Don't have an account? <a href="signup.html" id="signup-link">Sign Up</a>
@@ -209,98 +209,70 @@
         return;
       }
       
-      console.log('Auth ready, setting up login handler');
-      
       // Format registration number input - only allow digits
       document.getElementById('regNumber').addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/\D/g, '');
       });
       
-      // Handle login button click directly
-      document.getElementById('loginBtn').addEventListener('click', async (e) => {
+      // Handle form submission
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        e.stopPropagation();
-        await handleLogin();
-      });
-      
-      // Also handle Enter key on password field
-      document.getElementById('password').addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          await handleLogin();
-        }
-      });
-      
-      // Enter on reg number moves to password
-      document.getElementById('regNumber').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          document.getElementById('password').focus();
-        }
-      });
-    }
-    
-    async function handleLogin() {
-      const regNumberInput = document.getElementById('regNumber').value.trim();
-      const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('error');
-      const loginBtn = document.getElementById('loginBtn');
-      
-      console.log('handleLogin called, reg:', regNumberInput);
-      
-      errorEl.classList.remove('show');
-      
-      if (!regNumberInput) {
-        errorEl.textContent = 'Please enter your registration number';
-        errorEl.classList.add('show');
-        return;
-      }
-      
-      if (!password) {
-        errorEl.textContent = 'Please enter your password';
-        errorEl.classList.add('show');
-        return;
-      }
-      
-      // Add P prefix (e.g., "10" becomes "P10")
-      const username = 'P' + regNumberInput;
-      
-      // Show loading state
-      const originalText = loginBtn.textContent;
-      loginBtn.textContent = 'Signing in...';
-      loginBtn.disabled = true;
-      
-      try {
-        console.log('Calling Auth.signInWithUsername for:', username);
-        // Add timeout to prevent infinite hanging
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
-        );
         
-        await Promise.race([
-          window.Auth.signInWithUsername(username, password),
-          timeoutPromise
-        ]);
+        const regNumberInput = document.getElementById('regNumber').value.trim();
+        const password = document.getElementById('password').value;
+        const errorEl = document.getElementById('error');
+        const loginBtn = document.getElementById('loginBtn');
         
-        console.log('Login successful, redirecting...');
-        // Check for return URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const returnUrl = urlParams.get('return');
-        if (returnUrl) {
-          window.location.href = decodeURIComponent(returnUrl);
-        } else {
-          // Default: Players go to players lounge
-          window.location.href = '../public/players-lounge.html';
+        errorEl.classList.remove('show');
+        
+        if (!regNumberInput) {
+          errorEl.textContent = 'Please enter your registration number';
+          errorEl.classList.add('show');
+          return;
         }
-      } catch (err) {
-        errorEl.textContent = err.message || 'Login failed';
-        errorEl.classList.add('show');
-        // Reset button state
-        loginBtn.textContent = originalText;
-        loginBtn.disabled = false;
-      }
+        
+        if (!password) {
+          errorEl.textContent = 'Please enter your password';
+          errorEl.classList.add('show');
+          return;
+        }
+        
+        // Add P prefix (e.g., "10" becomes "P10")
+        const username = 'P' + regNumberInput;
+        
+        // Show loading state
+        const originalText = loginBtn.textContent;
+        loginBtn.textContent = 'Signing in...';
+        loginBtn.disabled = true;
+        
+        try {
+          // Add timeout to prevent infinite hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
+          );
+          
+          await Promise.race([
+            window.Auth.signInWithUsername(username, password),
+            timeoutPromise
+          ]);
+          
+          // Check for return URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const returnUrl = urlParams.get('return');
+          if (returnUrl) {
+            window.location.href = decodeURIComponent(returnUrl);
+          } else {
+            // Default: Players go to players lounge
+            window.location.href = '../public/players-lounge.html';
+          }
+        } catch (err) {
+          errorEl.textContent = err.message || 'Login failed';
+          errorEl.classList.add('show');
+          // Reset button state
+          loginBtn.textContent = originalText;
+          loginBtn.disabled = false;
+        }
+      });
     }
     
     setupLoginHandler();

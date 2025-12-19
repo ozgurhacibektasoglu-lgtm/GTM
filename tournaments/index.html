@@ -357,19 +357,16 @@
         tbody.innerHTML = '';
 
         let tournaments = getTournaments();
-        console.log('loadTournaments: raw tournaments count:', tournaments ? tournaments.length : 0);
         
         // Filter by owner for non-admin users
         try {
           const role = window.currentUserRole;
           const uid = window.currentUserId;
-          console.log('loadTournaments: role=', role, 'uid=', uid);
           
           if (role !== 'admin') {
             // Show only tournaments created by this user
             // Hide old tournaments without createdBy field (they belong to admin or pre-auth era)
             tournaments = (tournaments || []).filter(t => t && t.createdBy && (t.createdBy === uid));
-            console.log('loadTournaments: filtered for non-admin, count:', tournaments.length);
           }
         } catch(e) {
           console.error('Error filtering tournaments:', e);
@@ -377,14 +374,12 @@
 
         // Generate year tabs from all tournaments (before year filtering)
         renderYearTabs(tournaments);
-        console.log('loadTournaments: selectedYear=', selectedYear);
 
         // Filter by selected year
         tournaments = tournaments.filter(t => {
           const year = getYear(t.date);
           return year === selectedYear;
         });
-        console.log('loadTournaments: after year filter, count:', tournaments.length);
 
         // attach original index so we can map back to storage after sorting
         const augmented = tournaments.map((t, idx) => Object.assign({ _origIndex: idx }, t));

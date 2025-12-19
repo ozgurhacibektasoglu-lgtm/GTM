@@ -890,8 +890,7 @@
       }
       
       const auth = firebase.auth();
-      // Use explicit database URL to avoid region warnings
-      const database = firebase.app().database(firebaseConfig.databaseURL);
+      const database = firebase.database();
       
       let currentPlayer = null;
       let allPlayers = [];
@@ -902,7 +901,8 @@
           showMainContent();
           loadPlayerData();
         } else {
-          showLoginScreen();
+          // Redirect to player login page
+          window.location.href = '/auth/player-login.html?return=' + encodeURIComponent(window.location.pathname);
         }
       });
       
@@ -993,13 +993,11 @@
             ? Object.values(playersData)
             : playersData;
           
-          // Find player by email (check both email and authEmail)
-          currentPlayer = allPlayers.find(p => 
-            p.email === user.email || p.authEmail === user.email
-          );
+          // Find player by email
+          currentPlayer = allPlayers.find(p => p.email === user.email);
           
           if (!currentPlayer) {
-            showError('Player profile not found for ' + user.email);
+            showError('Player profile not found');
             return;
           }
           
