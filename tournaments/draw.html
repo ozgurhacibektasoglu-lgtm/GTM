@@ -2217,8 +2217,18 @@
 
     // Clear all groups
     function clearGroups() {
-      if (confirm('Are you sure you want to clear all groups?')) {
-        groups.forEach(g => g.players = []);
+      const pinnedCount = pinnedPlayers.size;
+      const message = pinnedCount > 0 
+        ? `Are you sure you want to clear all groups?\n\n📌 ${pinnedCount} pinned player(s) will remain in their groups.`
+        : 'Are you sure you want to clear all groups?';
+      
+      if (confirm(message)) {
+        groups.forEach(g => {
+          // Keep only pinned players in each group
+          g.players = g.players.filter(p => pinnedPlayers.has(p.reg));
+        });
+        // Remove empty groups (no pinned players)
+        groups = groups.filter(g => g.players.length > 0);
         renderGroups();
       }
     }
