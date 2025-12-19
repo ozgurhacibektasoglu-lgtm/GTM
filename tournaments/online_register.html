@@ -52,11 +52,12 @@
       background: white;
       border-radius: 0 0 16px 16px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      overflow: hidden;
+      overflow: visible;
     }
     
     .card-body {
       padding: 24px;
+      padding-bottom: 40px; /* Extra padding for search dropdown */
     }
     
     /* Status Banner */
@@ -382,6 +383,7 @@
     
     .player-search-box {
       position: relative;
+      margin-bottom: 12px;
     }
     
     .player-search-input {
@@ -447,6 +449,12 @@
     
     .search-result-item.already-registered:hover {
       background: #fef2f2;
+    }
+    
+    .search-result-item.keyboard-selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
     }
     
     .selected-player-card {
@@ -1408,6 +1416,8 @@
     let selectedOtherPlayer = null;
     
     // Setup search for other players
+    let searchKeyboardIndex = -1;
+    
     function setupOtherPlayerSearch() {
       loadAllPlayers();
       
@@ -1415,6 +1425,7 @@
       const resultsContainer = document.getElementById('other-player-search-results');
       
       searchInput.addEventListener('input', (e) => {
+        searchKeyboardIndex = -1;
         const query = e.target.value.trim().toLowerCase();
         if (query.length < 2) {
           resultsContainer.classList.add('hidden');
@@ -1425,12 +1436,49 @@
         renderSearchResults(results, resultsContainer);
       });
       
+      // Keyboard navigation
+      searchInput.addEventListener('keydown', (e) => {
+        const items = resultsContainer.querySelectorAll('.search-result-item:not(.already-registered)');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          searchKeyboardIndex = Math.min(searchKeyboardIndex + 1, items.length - 1);
+          updateKeyboardSelection(resultsContainer, searchKeyboardIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          searchKeyboardIndex = Math.max(searchKeyboardIndex - 1, 0);
+          updateKeyboardSelection(resultsContainer, searchKeyboardIndex);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (searchKeyboardIndex >= 0 && items[searchKeyboardIndex]) {
+            items[searchKeyboardIndex].click();
+          }
+        } else if (e.key === 'Escape') {
+          resultsContainer.classList.add('hidden');
+          searchKeyboardIndex = -1;
+        }
+      });
+      
       // Hide results when clicking outside
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.player-search-box')) {
           resultsContainer.classList.add('hidden');
+          searchKeyboardIndex = -1;
         }
       });
+    }
+    
+    // Update keyboard selection highlight
+    function updateKeyboardSelection(container, index) {
+      const items = container.querySelectorAll('.search-result-item:not(.already-registered)');
+      items.forEach((item, i) => {
+        item.classList.toggle('keyboard-selected', i === index);
+      });
+      // Scroll into view if needed
+      if (items[index]) {
+        items[index].scrollIntoView({ block: 'nearest' });
+      }
     }
     
     // Load all players from Firebase/localStorage
@@ -1642,6 +1690,7 @@
     
     // ====== Inline Version (for already registered users) ======
     let selectedOtherPlayerInline = null;
+    let searchKeyboardIndexInline = -1;
     
     function setupOtherPlayerSearchInline() {
       loadAllPlayers();
@@ -1650,6 +1699,7 @@
       const resultsContainer = document.getElementById('other-player-search-results-inline');
       
       searchInput.addEventListener('input', (e) => {
+        searchKeyboardIndexInline = -1;
         const query = e.target.value.trim().toLowerCase();
         if (query.length < 2) {
           resultsContainer.classList.add('hidden');
@@ -1660,10 +1710,35 @@
         renderSearchResultsInline(results, resultsContainer);
       });
       
+      // Keyboard navigation
+      searchInput.addEventListener('keydown', (e) => {
+        const items = resultsContainer.querySelectorAll('.search-result-item:not(.already-registered)');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          searchKeyboardIndexInline = Math.min(searchKeyboardIndexInline + 1, items.length - 1);
+          updateKeyboardSelection(resultsContainer, searchKeyboardIndexInline);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          searchKeyboardIndexInline = Math.max(searchKeyboardIndexInline - 1, 0);
+          updateKeyboardSelection(resultsContainer, searchKeyboardIndexInline);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (searchKeyboardIndexInline >= 0 && items[searchKeyboardIndexInline]) {
+            items[searchKeyboardIndexInline].click();
+          }
+        } else if (e.key === 'Escape') {
+          resultsContainer.classList.add('hidden');
+          searchKeyboardIndexInline = -1;
+        }
+      });
+      
       // Hide results when clicking outside
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.player-search-box')) {
           resultsContainer.classList.add('hidden');
+          searchKeyboardIndexInline = -1;
         }
       });
     }
