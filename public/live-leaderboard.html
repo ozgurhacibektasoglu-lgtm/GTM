@@ -388,7 +388,8 @@
       document.addEventListener('DOMContentLoaded', async function() {
         try {
           firebase.initializeApp(firebaseConfig);
-          db = firebase.database();
+          // Use explicit database URL to avoid region warnings
+          db = firebase.app().database(firebaseConfig.databaseURL);
         } catch (e) {
           console.error('Firebase init error:', e);
         }

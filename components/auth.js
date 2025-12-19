@@ -141,7 +141,8 @@
       // Try Firebase Realtime Database FIRST (most up-to-date)
       if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
         try {
-          const rtdb = firebase.database();
+          // Use explicit database URL to avoid region warnings
+          const rtdb = firebase.app().database(window.firebaseConfig.databaseURL);
           
           // Try exact key match first (e.g., "P4626")
           console.log('Looking up Firebase path: players/' + regNumber.toUpperCase());

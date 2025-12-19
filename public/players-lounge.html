@@ -890,7 +890,8 @@
       }
       
       const auth = firebase.auth();
-      const database = firebase.database();
+      // Use explicit database URL to avoid region warnings
+      const database = firebase.app().database(firebaseConfig.databaseURL);
       
       let currentPlayer = null;
       let allPlayers = [];

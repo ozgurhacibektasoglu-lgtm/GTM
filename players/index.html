@@ -215,7 +215,8 @@
         }
         
         try {
-          firebase.database().ref('players').on('value', function(snapshot) {
+          // Use explicit database URL to avoid region warnings
+          firebase.app().database(window.firebaseConfig.databaseURL).ref('players').on('value', function(snapshot) {
             // Don't process if we just saved locally (prevents overwriting our own changes)
             if (isSyncing) {
               console.log('⏸ Ignoring Firebase update (local save in progress)');

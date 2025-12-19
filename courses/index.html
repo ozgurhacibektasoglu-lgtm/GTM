@@ -220,7 +220,8 @@
         }
         
         try {
-          firebase.database().ref('courses').on('value', function(snapshot) {
+          // Use explicit database URL to avoid region warnings
+          firebase.app().database(window.firebaseConfig.databaseURL).ref('courses').on('value', function(snapshot) {
             if (isSyncingCourses) {
               console.log('⏸ Ignoring Firebase courses update (local save in progress)');
               return;
