@@ -163,6 +163,7 @@
         position: absolute;
         top: 20px;
         right: 20px;
+        z-index: 100;
         display: flex;
         align-items: center;
         gap: 15px;
@@ -453,15 +454,22 @@
       })();
 
       // Logout functionality
-      document.getElementById('logout-btn').addEventListener('click', async () => {
-        try {
-          await window.Auth.signOut();
-          window.location.href = './auth/login.html';
-        } catch (error) {
-          console.error('Error signing out:', error);
-          alert('Error signing out. Please try again.');
-        }
-      });
+      const logoutBtn = document.getElementById('logout-btn');
+      console.log('Logout button found:', !!logoutBtn);
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          console.log('Logout button clicked');
+          try {
+            console.log('Calling Auth.signOut...');
+            await window.Auth.signOut();
+            console.log('Sign out successful, redirecting...');
+            window.location.href = './auth/login.html';
+          } catch (error) {
+            console.error('Error signing out:', error);
+            alert('Error signing out. Please try again.');
+          }
+        });
+      }
     </script>
   </body>
 </html>
