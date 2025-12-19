@@ -12,13 +12,18 @@
 
   // New: Sign in with username by querying Firestore for the user's email
   async function signInWithUsername(username, password){
+    console.log('signInWithUsername called with:', username);
     try {
       // Try to find user with exact loginName first (for admin/club users)
+      console.log('Querying Firestore for loginName:', username);
       let snapshot = await db.collection('users').where('loginName', '==', username).limit(1).get();
+      console.log('First query complete, empty:', snapshot.empty);
       
       // If not found, try uppercase (for player users with P-prefix reg numbers)
       if (snapshot.empty) {
+        console.log('Trying uppercase:', username.toUpperCase());
         snapshot = await db.collection('users').where('loginName', '==', username.toUpperCase()).limit(1).get();
+        console.log('Second query complete, empty:', snapshot.empty);
       }
       
       if (snapshot.empty) {
@@ -26,6 +31,7 @@
       }
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
+      console.log('Found user document');
       
       // Use authEmail if available (for new signup system), otherwise fall back to email
       const authEmail = userData.authEmail || userData.email;
@@ -34,9 +40,12 @@
         throw new Error('User profile incomplete');
       }
       // Sign in with the authentication email and provided password
+      console.log('Attempting Firebase Auth sign in...');
       const { user } = await auth.signInWithEmailAndPassword(authEmail, password);
+      console.log('Sign in successful');
       return user;
     } catch(e) {
+      console.error('signInWithUsername error:', e);
       throw new Error(e.message || 'Login failed');
     }
   }

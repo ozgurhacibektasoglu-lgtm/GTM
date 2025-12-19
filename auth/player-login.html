@@ -85,6 +85,7 @@
         const regNumberInput = document.getElementById('regNumber').value.trim();
         const password = document.getElementById('password').value;
         const errorEl = document.getElementById('error');
+        const loginBtn = document.getElementById('loginBtn');
         errorEl.style.display = 'none';
         
         if (!regNumberInput) {
@@ -102,8 +103,22 @@
         // Add P prefix (e.g., "10" becomes "P10")
         const username = 'P' + regNumberInput;
         
+        // Show loading state
+        const originalText = loginBtn.textContent;
+        loginBtn.textContent = 'Signing in...';
+        loginBtn.disabled = true;
+        
         try {
-          await window.Auth.signInWithUsername(username, password);
+          // Add timeout to prevent infinite hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Login timed out. Please try again.')), 15000)
+          );
+          
+          await Promise.race([
+            window.Auth.signInWithUsername(username, password),
+            timeoutPromise
+          ]);
+          
           // Check for return URL
           const urlParams = new URLSearchParams(window.location.search);
           const returnUrl = urlParams.get('return');
@@ -116,6 +131,9 @@
         } catch (err) {
           errorEl.textContent = err.message || 'Login failed';
           errorEl.style.display = 'block';
+          // Reset button state
+          loginBtn.textContent = originalText;
+          loginBtn.disabled = false;
         }
       });
       
