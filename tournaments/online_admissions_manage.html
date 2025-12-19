@@ -593,7 +593,6 @@
           <table>
             <thead>
               <tr>
-                <th id="th-approve" style="display: none; width: 70px;">Approve</th>
                 <th>#</th>
                 <th>Player</th>
                 <th>HCP</th>
@@ -848,15 +847,9 @@
       const maxPlayers = admissionsConfig?.maxPlayers || 72;
       const requireApproval = admissionsConfig?.requireApproval === true;
       
-      // Show/hide approval column header
-      const thApprove = document.getElementById('th-approve');
-      if (thApprove) {
-        thApprove.style.display = requireApproval ? 'table-cell' : 'none';
-      }
-      
       let html = '';
       let cutLineInserted = false;
-      const colSpan = requireApproval ? 9 : 8;
+      const colSpan = 8;
       
       filteredRegs.forEach((r, idx) => {
         // Insert cut line between admitted and reserve
@@ -873,15 +866,15 @@
         const statusClass = r.status === 'admitted' ? 'status-admitted' : 'status-reserve';
         const statusText = r.status === 'admitted' ? `Admitted` : `Reserve`;
         const isApproved = r.approved === true;
-        const approvalCell = requireApproval ? `
-          <td style="text-align: center;">
-            <input type="checkbox" 
-                   class="approval-checkbox" 
-                   ${isApproved ? 'checked' : ''} 
-                   onchange="toggleApproval('${escapeHtml(r.registrationId)}', this.checked)"
-                   title="${isApproved ? 'Approved - visible on public list' : 'Not approved - hidden from public list'}"
-                   style="width: 18px; height: 18px; cursor: pointer;">
-          </td>
+        
+        // Approval checkbox HTML (shown in actions column when approval required)
+        const approvalCheckbox = requireApproval ? `
+          <input type="checkbox" 
+                 class="approval-checkbox" 
+                 ${isApproved ? 'checked' : ''} 
+                 onchange="toggleApproval('${escapeHtml(r.registrationId)}', this.checked)"
+                 title="${isApproved ? 'Approved - visible on public list' : 'Not approved - hidden from public list'}"
+                 style="width: 18px; height: 18px; cursor: pointer; margin-right: 8px;">
         ` : '';
         
         // Add visual indicator for pending approval
@@ -889,7 +882,6 @@
         
         html += `
           <tr class="${pendingClass}">
-            ${approvalCell}
             <td><strong>${r.position || '-'}</strong></td>
             <td>
               <div class="player-name">${escapeHtml(name)}</div>
@@ -900,9 +892,10 @@
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td class="registered-by">${getRegisteredByDisplay(r)}</td>
             <td style="font-size: 12px; color: #64748b;">${formatDate(r.registeredAt)}</td>
-            <td>
+            <td style="display: flex; align-items: center; gap: 4px;">
+              ${approvalCheckbox}
               <button class="action-btn delete" onclick="removePlayer('${escapeHtml(r.registrationId)}', '${escapeHtml(name)}')" title="Remove player">
-                🗑️ Remove
+                🗑️
               </button>
             </td>
           </tr>
