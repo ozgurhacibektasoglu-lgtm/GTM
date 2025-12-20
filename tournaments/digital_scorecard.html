@@ -634,6 +634,16 @@
       cursor: not-allowed;
     }
     
+    /* Disputes warning state */
+    .btn-save.btn-disputes {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    /* Sign & Complete state */
+    .btn-save.btn-sign {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    
     /* Modal for Full Scorecard */
     .modal-overlay {
       position: fixed;
@@ -1177,27 +1187,6 @@
       font-size: 12px;
       color: #64748b;
     }
-    
-    /* Complete round button */
-    .complete-round-btn {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 16px;
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-    }
-    
-    .complete-round-btn:disabled {
-      background: #d1d5db;
-      box-shadow: none;
-      cursor: not-allowed;
-    }
   </style>
 </head>
 <body>
@@ -1680,19 +1669,10 @@
           <button class="btn-view-scorecard" onclick="openScorecard()">
             📋 View Full Scorecard
           </button>
-          
-          <!-- Complete Round Button -->
-          ${renderCompleteButton()}
         </div>
 
-        <!-- Save Bar -->
-        ${!isLocked ? `
-          <div class="save-bar">
-            <button class="btn-save" onclick="saveAndNext()">
-              ✓ Save & Next Hole
-            </button>
-          </div>
-        ` : ''}
+        <!-- Save Bar - transforms based on state -->
+        ${renderSaveBar()}
 
         <!-- Full Scorecard Modal -->
         <div id="scorecard-modal" class="modal-overlay" onclick="closeModal(event)">
@@ -2496,34 +2476,43 @@
     }
     
     // Render complete round button
-    function renderCompleteButton() {
+    function renderSaveBar() {
+      // Don't show save bar if scorecard is locked
       if (scorecardStatus.locked) return '';
       
       const allComplete = isRoundComplete(scores.player);
       const disputes = getDisputes();
       const hasDisputes = disputes.length > 0;
       
+      // State 1: Round not complete - show "Save & Next Hole"
       if (!allComplete) {
-        const remaining = scores.player.filter(s => s === null || s === undefined).length;
         return `
-          <button class="complete-round-btn" disabled>
-            ${remaining} hole${remaining !== 1 ? 's' : ''} remaining
-          </button>
+          <div class="save-bar">
+            <button class="btn-save" onclick="saveAndNext()">
+              ✓ Save & Next Hole
+            </button>
+          </div>
         `;
       }
       
+      // State 2: Round complete but has disputes - show disabled warning
       if (hasDisputes) {
         return `
-          <button class="complete-round-btn" disabled style="background: #f59e0b;">
-            ⚠️ Resolve ${disputes.length} dispute${disputes.length !== 1 ? 's' : ''} first
-          </button>
+          <div class="save-bar">
+            <button class="btn-save btn-disputes" disabled>
+              ⚠️ Resolve ${disputes.length} Dispute${disputes.length !== 1 ? 's' : ''} First
+            </button>
+          </div>
         `;
       }
       
+      // State 3: Round complete, no disputes - show sign button
       return `
-        <button class="complete-round-btn" onclick="openSignModal()">
-          ✍️ Sign & Complete Scorecard
-        </button>
+        <div class="save-bar">
+          <button class="btn-save btn-sign" onclick="openSignModal()">
+            ✍️ Sign & Complete Scorecard
+          </button>
+        </div>
       `;
     }
 
