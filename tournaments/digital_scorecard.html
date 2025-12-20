@@ -1655,6 +1655,45 @@
       return html;
     }
 
+    // Sync scores to liveScores for leaderboard display
+    function syncToLiveScores(targetPlayerId, targetPlayerData, scoresArray) {
+      if (!db || !targetPlayerId || !targetPlayerData) return;
+      
+      // Convert scores array to liveScores format (convert null to empty string)
+      const holesArray = scoresArray.map(s => {
+        if (s === null || s === undefined) return '';
+        if (s === 'X') return 'X'; // Keep X for pickup
+        return s;
+      });
+      
+      // Create player key (same format as live_scoring.html uses)
+      const playerKey = targetPlayerData.reg || targetPlayerData.playerId || 
+                        `${targetPlayerData.firstName}-${targetPlayerData.lastName}`;
+      
+      const liveScoreData = {
+        holes: holesArray,
+        firstName: targetPlayerData.firstName,
+        lastName: targetPlayerData.lastName,
+        club: targetPlayerData.club || targetPlayerData.homeClub || '',
+        hcp: targetPlayerData.hcp || 0,
+        playingHcp: targetPlayerData.phcp || targetPlayerData.playingHcp || targetPlayerData.hcp || 0,
+        categories: targetPlayerData.categories ? [targetPlayerData.categories] : 
+                    (targetPlayerData.category ? [targetPlayerData.category] : []),
+        lastUpdated: new Date().toISOString(),
+        scoredBy: 'digital-scorecard',
+        scoredByPlayer: `${playerData.firstName} ${playerData.lastName}`
+      };
+      
+      // Save to liveScores path (for live leaderboard)
+      db.ref(`liveScores/${roundId}/${playerKey}`).set(liveScoreData)
+        .then(() => console.log('Live scores synced for', playerKey))
+        .catch(err => console.error('Live scores sync error:', err));
+      
+      // Also save to regular scores path for compatibility
+      db.ref(`scores/${roundId}/${playerKey}`).set(liveScoreData)
+        .catch(err => console.error('Scores sync error:', err));
+    }
+
     function saveScoresToStorage() {
       // Save to localStorage for offline support
       const offlineData = {
@@ -1666,6 +1705,7 @@
 
       // Also save to Firebase in background
       if (db) {
+        // Save digital scorecard data
         db.ref(`digitalScores/${roundId}/${playerId}`).set({
           playerScores: scores.player,
           marksPlayerScores: scores.marksPlayer,
@@ -1677,6 +1717,14 @@
         }).catch(err => {
           console.error('Firebase save error:', err);
         });
+        
+        // Sync player's own scores to live leaderboard
+        syncToLiveScores(playerId, playerData, scores.player);
+        
+        // Also sync scores for the player we mark (if any)
+        if (playerData.marksPlayerId && marksPlayerData) {
+          syncToLiveScores(playerData.marksPlayerId, marksPlayerData, scores.marksPlayer);
+        }
       }
     }
 
@@ -1706,6 +1754,13 @@
             marksPlayerName: playerData.marksPlayerName,
             lastUpdated: Date.now()
           });
+          
+          // Sync to live leaderboard
+          syncToLiveScores(playerId, playerData, scores.player);
+          if (playerData.marksPlayerId && marksPlayerData) {
+            syncToLiveScores(playerData.marksPlayerId, marksPlayerData, scores.marksPlayer);
+          }
+          
           showToast('Score saved!', 'success');
         } catch (err) {
           console.error('Firebase save error:', err);
