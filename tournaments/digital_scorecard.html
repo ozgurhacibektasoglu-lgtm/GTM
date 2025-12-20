@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Digital Scorecard</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      padding-bottom: 100px;
+      overflow-x: hidden;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .live-badge {
+      background: #ef4444;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    .header-info {
+      font-size: 13px;
+      opacity: 0.95;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+    
+    /* Player Card - Compact */
+    .player-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .player-card h2 {
+      font-size: 17px;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    
+    .player-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      font-size: 13px;
+      color: #64748b;
+    }
+    
+    .player-details .detail-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .player-details .label {
+      font-weight: 600;
+      color: #475569;
+    }
+    
+    .player-details .marker-inline {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    
+    /* Current Hole Display - Compact Horizontal */
+    .current-hole-card {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
+      position: relative;
+      overflow: hidden;
+      touch-action: pan-y pinch-zoom;
+      user-select: none;
+    }
+    
+    .current-hole-card .hole-progress {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    
+    .current-hole-card .hole-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .current-hole-card .hole-dot.active {
+      background: white;
+      width: 8px;
+      height: 8px;
+    }
+    
+    .current-hole-card .hole-dot.has-score {
+      background: rgba(16, 185, 129, 0.8);
+    }
+    
+    .current-hole-card .hole-dot.active.has-score {
+      background: white;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8);
+    }
+    
+    /* Dispute indicator on hole dot */
+    .current-hole-card .hole-dot.dispute {
+      background: #dc2626;
+      animation: pulse-dispute 1.5s ease-in-out infinite;
+    }
+    
+    .current-hole-card .hole-dot.active.dispute {
+      background: white;
+      box-shadow: 0 0 0 2px #dc2626;
+    }
+    
+    @keyframes pulse-dispute {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.3); }
+    }
+    
+    .hole-main-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .hole-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .hole-left .hole-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+    
+    .hole-left .hole-number {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    
+    .hole-right {
+      text-align: right;
+    }
+    
+    .hole-right .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+    
+    .hole-right .stat-label {
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    
+    .hole-right .stat-value {
+      font-weight: 700;
+      min-width: 24px;
+    }
+    
+    .stroke-info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 12px;
+    }
+    
+    .stroke-info-row .stroke-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .stroke-info-row .stroke-count {
+      font-weight: 700;
+    }
+    
+    /* Legacy styles for compatibility */
+    .hole-stats {
+      display: none;
+    }
+    
+    .hole-stat {
+      text-align: center;
+    }
+    
+    .hole-stat .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .hole-stat .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+    
+    .stroke-info {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 13px;
+    }
+    
+    .stroke-info .stroke-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    
+    /* Score Entry */
+    .score-entry-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    
+    /* Side-by-side score sections */
+    .score-sections-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .score-section {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .score-section-header {
+      margin-bottom: 8px;
+    }
+    
+    .score-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .score-section-title.player-title {
+      color: #059669;
+    }
+    
+    .score-section-title.marker-title {
+      color: #3b82f6;
+    }
+    
+    .score-input-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .score-minus-btn, .score-plus-btn {
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 50%;
+      font-size: 32px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      user-select: none;
+      line-height: 1;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .score-minus-btn {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #dc2626;
+    }
+    
+    .score-minus-btn:active {
+      transform: scale(0.9);
+      background: #fca5a5;
+    }
+    
+    .score-plus-btn {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #059669;
+    }
+    
+    .score-plus-btn:active {
+      transform: scale(0.9);
+      background: #6ee7b7;
+    }
+    
+    .score-pickup-btn {
+      width: 100%;
+      padding: 6px 12px;
+      margin-top: 8px;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+      transition: all 0.15s;
+      user-select: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .score-pickup-btn:active {
+      transform: scale(0.95);
+      background: #fcd34d;
+    }
+    
+    .score-display {
+      min-width: 50px;
+      width: 50px;
+      height: 50px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .score-display.eagle {
+      background: #fbbf24;
+      border-color: #f59e0b;
+      color: #78350f;
+    }
+    
+    .score-display.birdie {
+      background: #dc2626;
+      border-color: #b91c1c;
+      color: white;
+    }
+    
+    .score-display.par {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #1e293b;
+    }
+    
+    .score-display.bogey {
+      background: #1e293b;
+      border-color: #0f172a;
+      color: white;
+    }
+    
+    .score-display.double {
+      background: #3b82f6;
+      border-color: #2563eb;
+      color: white;
+    }
+    
+    .score-display.pickup {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
+      font-size: 22px;
+    }
+    
+    /* Legacy score-row styles - keep for compatibility */
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .score-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    
+    .score-row:first-child {
+      padding-top: 0;
+    }
+    
+    .score-player-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      flex: 1;
+    }
+    
+    .score-player-name.player-name {
+      color: #059669;
+    }
+    
+    .score-player-name.marker-name {
+      color: #3b82f6;
+    }
+    
+    .score-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .score-adjust-btn {
+      width: 44px;
+      height: 44px;
+      border: 2px solid #e2e8f0;
+      border-radius: 50%;
+      background: white;
+      font-size: 24px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    
+    .score-adjust-btn:active {
+      transform: scale(0.9);
+      background: #f1f5f9;
+    }
+    
+    .score-adjust-btn.minus {
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    
+    .score-adjust-btn.minus:active {
+      background: #fee2e2;
+    }
+    
+    .score-adjust-btn.plus {
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+    
+    .score-adjust-btn.plus:active {
+      background: #d1fae5;
+    }
+    
+    .score-display {
+      width: 64px;
+      height: 48px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e293b;
+      position: relative;
+    }
+    
+    .score-display.empty {
+      color: #cbd5e1;
+    }
+    
+    .score-display.eagle {
+      background: #fbbf24;
+      border-color: #f59e0b;
+      color: #78350f;
+    }
+    
+    .score-display.birdie {
+      background: #dc2626;
+      border-color: #b91c1c;
+      color: white;
+    }
+    
+    .score-display.par {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #1e293b;
+    }
+    
+    .score-display.bogey {
+      background: #1e293b;
+      border-color: #0f172a;
+      color: white;
+    }
+    
+    .score-display.double-plus {
+      background: #3b82f6;
+      border-color: #2563eb;
+      color: white;
+    }
+    
+    .score-diff {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #1e293b;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+    
+    .score-diff.under {
+      background: #dc2626;
+    }
+    
+    .score-diff.over {
+      background: #1e293b;
+    }
+    
+    /* View Full Scorecard Button */
+    .btn-view-scorecard {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .btn-view-scorecard:active {
+      opacity: 0.9;
+    }
+    
+    /* Save Button */
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 16px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-save:active {
+      opacity: 0.9;
+    }
+    
+    .btn-save:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    
+    /* Modal for Full Scorecard */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 10;
+    }
+    
+    .modal-header h2 {
+      font-size: 18px;
+      color: #1e293b;
+    }
+    
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #f1f5f9;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    /* Scorecard Table */
+    .scorecard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    
+    .scorecard-table th {
+      background: #1e293b;
+      color: white;
+      padding: 8px 4px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    
+    .scorecard-table td {
+      padding: 8px 4px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .scorecard-table .row-label {
+      text-align: left;
+      font-weight: 600;
+      background: #f8fafc;
+      padding-left: 8px;
+      white-space: nowrap;
+      font-size: 10px;
+    }
+    
+    .scorecard-table .total-cell {
+      background: #dbeafe;
+      font-weight: 700;
+    }
+    
+    .scorecard-table .score-cell {
+      font-weight: 700;
+    }
+    
+    .scorecard-table .score-cell.eagle { background: #fbbf24; color: #78350f; }
+    .scorecard-table .score-cell.birdie { background: #dc2626; color: white; }
+    .scorecard-table .score-cell.par { background: white; }
+    .scorecard-table .score-cell.bogey { background: #1e293b; color: white; }
+    .scorecard-table .score-cell.double { background: #3b82f6; color: white; }
+    .scorecard-table .score-cell.pickup { background: #f59e0b; color: #78350f; font-weight: 800; }
+    
+    /* Separator row */
+    .scorecard-table .separator-row td {
+      background: #000;
+      height: 4px;
+      padding: 0;
+      border: none;
+    }
+    
+    /* Loading State */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #059669;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #dc2626;
+    }
+    
+    .error-state h2 {
+      margin-bottom: 8px;
+    }
+    
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1001;
+    }
+    
+    .toast.show {
+      opacity: 1;
+    }
+    
+    .toast.success { background: #059669; }
+    .toast.error { background: #dc2626; }
+    
+    /* Dispute warning banner */
+    .dispute-banner {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 0 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    
+    .dispute-banner.hidden {
+      display: none;
+    }
+    
+    .dispute-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    
+    .dispute-content {
+      flex: 1;
+    }
+    
+    .dispute-title {
+      font-weight: 700;
+      color: #92400e;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .dispute-holes {
+      font-size: 13px;
+      color: #b45309;
+      font-weight: 600;
+    }
+    
+    .dispute-holes span {
+      display: inline-block;
+      background: #dc2626;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-right: 4px;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+    
+    /* Hole indicator with dispute */
+    .hole-dispute-indicator {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      background: #dc2626;
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Current hole dispute warning */
+    .current-hole-dispute {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #92400e;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading scorecard...</p>
+    </div>
+  </div>
+  
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+
+  <script>
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const roundId = urlParams.get('roundId');
+    const playerId = urlParams.get('playerId');
+
+    // App state
+    let digitalData = null;
+    let playerData = null;
+    let marksPlayerData = null; // The player THIS player marks (enters score for)
+    let markerPlayerId = null; // The player who marks THIS player (enters score for us)
+    let markerScoresForMe = Array(18).fill(null); // What my marker entered for me
+    let currentHole = 1;
+    let showingFrontNine = true;
+    let scores = {
+      player: Array(18).fill(null),
+      marksPlayer: Array(18).fill(null) // Score of the player we mark
+    };
+
+    // Initialize Firebase
+    initFirebase();
+
+    // Find who marks this player (reverse lookup)
+    function findMarkerForPlayer(players, targetPlayerId) {
+      for (const [pid, pdata] of Object.entries(players)) {
+        if (pdata.marksPlayerId === targetPlayerId) {
+          return pid;
+        }
+      }
+      return null;
+    }
+
+    // Get disputes (holes where my score differs from what my marker entered)
+    function getDisputes() {
+      const disputes = [];
+      for (let i = 0; i < 18; i++) {
+        const myScore = scores.player[i];
+        const markerScore = markerScoresForMe[i];
+        // Only flag dispute if both have entered a score and they differ
+        if (myScore !== null && markerScore !== null && myScore !== markerScore) {
+          disputes.push({
+            hole: i + 1,
+            myScore: myScore,
+            markerScore: markerScore
+          });
+        }
+      }
+      return disputes;
+    }
+
+    // Check if current hole has a dispute
+    function hasDisputeOnHole(holeNumber) {
+      const idx = holeNumber - 1;
+      const myScore = scores.player[idx];
+      const markerScore = markerScoresForMe[idx];
+      return myScore !== null && markerScore !== null && myScore !== markerScore;
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Load data and initialize
+    async function init() {
+      if (!roundId || !playerId) {
+        showError('Invalid QR code. Missing round or player information.');
+        return;
+      }
+
+      // Always try to load from Firebase first (has latest data)
+      if (db) {
+        try {
+          console.log('Loading digital scorecard data from Firebase...');
+          const dataRef = db.ref(`digitalScorecards/${roundId}`);
+          const snapshot = await dataRef.once('value');
+          digitalData = snapshot.val();
+          
+          if (digitalData && digitalData.players) {
+            playerData = digitalData.players[playerId];
+            
+            if (playerData && playerData.marksPlayerId) {
+              marksPlayerData = digitalData.players[playerData.marksPlayerId];
+            }
+            
+            // Cache locally for offline use
+            const localKey = `digitalScorecard_${roundId}`;
+            localStorage.setItem(localKey, JSON.stringify(digitalData));
+            console.log('Digital scorecard data loaded from Firebase');
+          }
+        } catch (err) {
+          console.error('Could not load scorecard data from Firebase:', err);
+        }
+      }
+
+      // Fallback to localStorage if Firebase failed
+      if (!digitalData) {
+        const localKey = `digitalScorecard_${roundId}`;
+        const localData = localStorage.getItem(localKey);
+        
+        if (localData) {
+          console.log('Using cached localStorage data');
+          digitalData = JSON.parse(localData);
+          playerData = digitalData.players[playerId];
+          
+          if (playerData && playerData.marksPlayerId) {
+            marksPlayerData = digitalData.players[playerData.marksPlayerId];
+          }
+        }
+      }
+
+      // Try to load existing scores from Firebase
+      if (db) {
+        try {
+          const scoresRef = db.ref(`digitalScores/${roundId}/${playerId}`);
+          const snapshot = await scoresRef.once('value');
+          const savedScores = snapshot.val();
+          
+          if (savedScores) {
+            scores.player = savedScores.playerScores || Array(18).fill(null);
+            scores.marksPlayer = savedScores.marksPlayerScores || Array(18).fill(null);
+          }
+        } catch (err) {
+          console.log('Could not load scores from Firebase:', err);
+        }
+      }
+
+      // Also check localStorage for offline scores
+      const offlineScores = localStorage.getItem(`scores_${roundId}_${playerId}`);
+      if (offlineScores) {
+        const parsed = JSON.parse(offlineScores);
+        // Merge with Firebase scores (prefer newer)
+        if (parsed.timestamp > (scores.timestamp || 0)) {
+          scores.player = parsed.playerScores || scores.player;
+          scores.marksPlayer = parsed.marksPlayerScores || scores.marksPlayer;
+        }
+      }
+
+      if (!playerData) {
+        showError('Player not found. Please make sure the tournament staff has generated the digital scorecards.');
+        return;
+      }
+
+      // Find who marks this player (for dispute detection)
+      if (digitalData && digitalData.players) {
+        markerPlayerId = findMarkerForPlayer(digitalData.players, playerId);
+        console.log('Marker for this player:', markerPlayerId);
+        
+        // Set up real-time listener for marker's scores
+        if (markerPlayerId && db) {
+          const markerScoresRef = db.ref(`digitalScores/${roundId}/${markerPlayerId}`);
+          markerScoresRef.on('value', (snapshot) => {
+            const markerData = snapshot.val();
+            if (markerData && markerData.marksPlayerScores) {
+              // The marker's "marksPlayerScores" are the scores they entered for ME
+              markerScoresForMe = markerData.marksPlayerScores;
+              console.log('Updated marker scores for me:', markerScoresForMe);
+              // Re-render to show any disputes
+              render();
+            }
+          });
+        }
+      }
+
+      // Set starting hole based on player's tee assignment
+      console.log('Starting hole data:', {
+        startingHole: playerData.startingHole,
+        groupTee: playerData.groupTee,
+        playerData: playerData
+      });
+      currentHole = playerData.startingHole || 1;
+
+      render();
+    }
+
+    // Check if a player's category allows X score (pickup) - only Stableford types
+    function canUsePickup(player) {
+      // Debug logging
+      console.log('canUsePickup check:', {
+        player: player?.firstName,
+        category: player?.category,
+        categories: digitalData?.categories,
+        categoryInfo: player?.category ? digitalData?.categories?.[player.category] : null
+      });
+      
+      if (!player || !player.category || !digitalData.categories) {
+        // For now, allow X if we can't determine category (temporary for testing)
+        console.log('canUsePickup: allowing X (category data missing)');
+        return true;
+      }
+      const categoryInfo = digitalData.categories[player.category];
+      if (!categoryInfo) {
+        console.log('canUsePickup: allowing X (category not found in list)');
+        return true;
+      }
+      const type = (categoryInfo.tournamentType || '').toLowerCase();
+      const result = type.includes('stableford');
+      console.log('canUsePickup result:', result, 'type:', type);
+      return result;
+    }
+
+    // Calculate strokes for the player we mark on a hole
+    function getMarksPlayerStrokes(si) {
+      if (!marksPlayerData) return 0;
+      const phcp = parseInt(marksPlayerData.phcp) || 0;
+      let strokes = 0;
+      if (phcp > 0 && si <= phcp) strokes++;
+      if (phcp > 18 && si <= (phcp - 18)) strokes++;
+      return strokes;
+    }
+    
+    function showError(message) {
+      document.getElementById('app').innerHTML = `
+        <div class="error-state">
+          <h2>⚠️ Error</h2>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+
+    // Render dispute banner if there are disputes
+    function renderDisputeBanner() {
+      const disputes = getDisputes();
+      if (disputes.length === 0) {
+        return '';
+      }
+      
+      return `
+        <div class="dispute-banner">
+          <div class="dispute-icon">⚠️</div>
+          <div class="dispute-content">
+            <div class="dispute-title">Score Dispute${disputes.length > 1 ? 's' : ''} Detected!</div>
+            <div class="dispute-holes">
+              ${disputes.map(d => `<span>Hole ${d.hole}: You=${d.myScore === 'X' ? 'X' : d.myScore}, Marker=${d.markerScore === 'X' ? 'X' : d.markerScore}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const hole = currentHole;
+      const par = digitalData.pars[hole - 1] || 4;
+      const si = digitalData.strokeIndexes[hole - 1] || '-';
+      
+      // Calculate player's strokes on this hole
+      const phcp = parseInt(playerData.phcp) || 0;
+      let playerStrokes = 0;
+      if (phcp > 0) {
+        playerStrokes = si <= phcp ? 1 : 0;
+        if (phcp > 18 && si <= (phcp - 18)) playerStrokes++;
+      }
+
+      // Get current scores for this hole
+      const playerScore = scores.player[hole - 1];
+      const marksPlayerScore = scores.marksPlayer[hole - 1];
+
+      document.getElementById('app').innerHTML = `
+        <div class="header">
+          <div class="header-top">
+            <h1>📱 Digital Scorecard</h1>
+            <span class="live-badge">● LIVE</span>
+          </div>
+          <div class="header-info">${digitalData.tournamentName} • Round ${digitalData.roundIndex + 1}</div>
+        </div>
+        
+        ${renderDisputeBanner()}
+        
+        <div class="container">
+          <!-- Player Card - Compact -->
+          <div class="player-card">
+            <h2>${playerData.firstName} ${playerData.lastName}</h2>
+            <div class="player-details">
+              <span class="detail-item"><span class="label">HCP:</span> ${playerData.hcp || '-'}</span>
+              <span class="detail-item"><span class="label">PHCP:</span> ${playerData.phcp || '-'}</span>
+              <span class="detail-item"><span class="label">Tee:</span> ${playerData.groupTime || 'TBD'}</span>
+              ${playerData.marksPlayerName ? `<span class="detail-item"><span class="label">Marking:</span> <span class="marker-inline">${playerData.marksPlayerName}</span></span>` : ''}
+            </div>
+          </div>
+
+          <!-- Current Hole Display (Swipeable) -->
+          <div class="current-hole-card" id="hole-card">
+            <div class="hole-progress">
+              ${renderHoleDots()}
+            </div>
+            
+            <div class="hole-main-content">
+              <div class="hole-left">
+                <div>
+                  <div class="hole-label">Hole</div>
+                  <div class="hole-number">${hole}</div>
+                </div>
+              </div>
+              <div class="hole-right">
+                <div class="stat-row">
+                  <span class="stat-label">Par:</span>
+                  <span class="stat-value">${par}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">S.I:</span>
+                  <span class="stat-value">${si}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="stroke-info-row">
+              <div class="stroke-item">
+                <span>You get</span>
+                <span class="stroke-count">${playerStrokes}</span>
+                <span>stroke${playerStrokes !== 1 ? 's' : ''}</span>
+              </div>
+              ${marksPlayerData ? `
+                <div class="stroke-item">
+                  <span>${marksPlayerData.firstName} gets</span>
+                  <span class="stroke-count">${getMarksPlayerStrokes(si)}</span>
+                  <span>stroke${getMarksPlayerStrokes(si) !== 1 ? 's' : ''}</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Score Entry -->
+          <div class="score-entry-card">
+            ${hasDisputeOnHole(hole) ? `
+              <div class="current-hole-dispute">
+                ⚠️ <strong>Dispute!</strong> Your marker entered ${markerScoresForMe[hole - 1] === 'X' ? 'X' : markerScoresForMe[hole - 1]} for you
+              </div>
+            ` : ''}
+            <div class="score-sections-row">
+              <!-- Player Score -->
+              <div class="score-section">
+                <div class="score-section-header">
+                  <span class="score-section-title player-title">Your Score</span>
+                </div>
+                <div class="score-input-row">
+                  <button class="score-minus-btn" onclick="adjustScore('player', -1, ${par})">−</button>
+                  <div class="score-display ${getScoreDisplayClass(playerScore, par)}" id="player-score-display">
+                    ${playerScore === 'X' ? 'X' : (playerScore != null ? playerScore : '')}
+                  </div>
+                  <button class="score-plus-btn" onclick="adjustScore('player', 1, ${par})">+</button>
+                </div>
+                ${canUsePickup(playerData) ? `<button class="score-pickup-btn" onclick="setPickup('player')">Pickup (X)</button>` : ''}
+              </div>
+
+              <!-- Score for player we mark -->
+              ${playerData.marksPlayerName ? `
+                <div class="score-section">
+                  <div class="score-section-header">
+                    <span class="score-section-title marker-title">${playerData.marksPlayerName.split(' ')[0]}</span>
+                  </div>
+                  <div class="score-input-row">
+                    <button class="score-minus-btn" onclick="adjustScore('marksPlayer', -1, ${par})">−</button>
+                    <div class="score-display ${getScoreDisplayClass(marksPlayerScore, par)}" id="marksPlayer-score-display">
+                      ${marksPlayerScore === 'X' ? 'X' : (marksPlayerScore != null ? marksPlayerScore : '')}
+                    </div>
+                    <button class="score-plus-btn" onclick="adjustScore('marksPlayer', 1, ${par})">+</button>
+                  </div>
+                  ${canUsePickup(marksPlayerData) ? `<button class="score-pickup-btn" onclick="setPickup('marksPlayer')">Pickup (X)</button>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- View Scorecard Button -->
+          <button class="btn-view-scorecard" onclick="openScorecard()">
+            📋 View Full Scorecard
+          </button>
+        </div>
+
+        <!-- Save Bar -->
+        <div class="save-bar">
+          <button class="btn-save" onclick="saveAndNext()">
+            ✓ Save & Next Hole
+          </button>
+        </div>
+
+        <!-- Full Scorecard Modal -->
+        <div id="scorecard-modal" class="modal-overlay" onclick="closeModal(event)">
+          <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Full Scorecard</h2>
+              <button class="modal-close" onclick="closeScorecard()">×</button>
+            </div>
+            <div class="modal-body">
+              ${renderFullScorecard()}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Setup swipe gestures after render
+      setupSwipeGestures();
+    }
+
+    function renderHoleDots() {
+      let html = '';
+      for (let i = 1; i <= 18; i++) {
+        const hasScore = scores.player[i - 1] !== null;
+        const isActive = i === currentHole;
+        const hasDispute = hasDisputeOnHole(i);
+        html += `<span class="hole-dot ${isActive ? 'active' : ''} ${hasScore ? 'has-score' : ''} ${hasDispute ? 'dispute' : ''}"></span>`;
+      }
+      return html;
+    }
+
+    // Swipe gesture handling
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    
+    function setupSwipeGestures() {
+      const holeCard = document.getElementById('hole-card');
+      if (!holeCard) return;
+      
+      holeCard.addEventListener('touchstart', handleTouchStart, { passive: true });
+      holeCard.addEventListener('touchmove', handleTouchMove, { passive: true });
+      holeCard.addEventListener('touchend', handleTouchEnd, { passive: true });
+      
+      // Also allow clicking on arrows
+      holeCard.addEventListener('click', handleCardClick);
+    }
+    
+    function handleTouchStart(e) {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }
+    
+    function handleTouchMove(e) {
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+    }
+    
+    function handleTouchEnd(e) {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // Only trigger swipe if horizontal movement is greater than vertical (and > 50px)
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        if (deltaX > 0) {
+          // Swipe right = previous hole
+          goToPreviousHole();
+        } else {
+          // Swipe left = next hole
+          goToNextHole();
+        }
+      }
+    }
+    
+    function handleCardClick(e) {
+      const card = document.getElementById('hole-card');
+      const rect = card.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const cardWidth = rect.width;
+      
+      // Click on left 20% = previous, right 20% = next
+      if (clickX < cardWidth * 0.2) {
+        goToPreviousHole();
+      } else if (clickX > cardWidth * 0.8) {
+        goToNextHole();
+      }
+    }
+    
+    function goToNextHole() {
+      if (currentHole < 18) {
+        currentHole++;
+        render();
+      }
+    }
+    
+    function goToPreviousHole() {
+      if (currentHole > 1) {
+        currentHole--;
+        render();
+      }
+    }
+
+    function getScoreDisplayClass(score, par) {
+      if (score === null || score === undefined) return '';
+      if (score === 'X') return 'pickup';
+      const diff = score - par;
+      if (diff <= -2) return 'eagle';
+      if (diff === -1) return 'birdie';
+      if (diff === 0) return 'par';
+      if (diff === 1) return 'bogey';
+      return 'double';
+    }
+
+    function setPickup(type) {
+      const holeIndex = currentHole - 1;
+      scores[type][holeIndex] = 'X';
+      
+      // Update the display immediately
+      const displayId = type === 'player' ? 'player-score-display' : 'marksPlayer-score-display';
+      const displayEl = document.getElementById(displayId);
+      if (displayEl) {
+        displayEl.textContent = 'X';
+        displayEl.className = 'score-display pickup';
+      }
+      
+      // Update hole dots
+      const dotsContainer = document.querySelector('.hole-progress');
+      if (dotsContainer) {
+        dotsContainer.innerHTML = renderHoleDots();
+      }
+      
+      // Save to localStorage
+      saveScoresToStorage();
+    }
+
+    function adjustScore(type, delta, par) {
+      const holeIndex = currentHole - 1;
+      const currentScore = scores[type][holeIndex];
+      
+      let newScore;
+      if (currentScore === null || currentScore === undefined || currentScore === 'X') {
+        // First tap or after X: set to par
+        newScore = par;
+      } else {
+        // Subsequent taps: adjust by delta
+        newScore = currentScore + delta;
+        // Minimum score is 1
+        if (newScore < 1) newScore = 1;
+        // Maximum reasonable score is par + 8
+        if (newScore > par + 8) newScore = par + 8;
+      }
+      
+      scores[type][holeIndex] = newScore;
+      
+      // Update the display immediately without full re-render
+      const displayId = type === 'player' ? 'player-score-display' : 'marksPlayer-score-display';
+      const displayEl = document.getElementById(displayId);
+      if (displayEl) {
+        displayEl.textContent = newScore;
+        displayEl.className = 'score-display ' + getScoreDisplayClass(newScore, par);
+      }
+      
+      // Update hole dots
+      const dotsContainer = document.querySelector('.hole-progress');
+      if (dotsContainer) {
+        dotsContainer.innerHTML = renderHoleDots();
+      }
+      
+      // Save to localStorage
+      saveScoresToStorage();
+    }
+
+    function renderScoreButtons(type, par, currentScore) {
+      const scores_to_show = [];
+      
+      // Eagle or better (par - 2 or less)
+      for (let s = Math.max(1, par - 3); s <= par - 2; s++) {
+        scores_to_show.push({ value: s, label: s <= par - 2 ? 'Eagle' : '', class: 'eagle' });
+      }
+      
+      // Birdie
+      scores_to_show.push({ value: par - 1, label: 'Birdie', class: 'birdie' });
+      
+      // Par
+      scores_to_show.push({ value: par, label: 'Par', class: 'par' });
+      
+      // Bogey
+      scores_to_show.push({ value: par + 1, label: 'Bogey', class: 'bogey' });
+      
+      // Double+
+      for (let s = par + 2; s <= par + 4; s++) {
+        scores_to_show.push({ value: s, label: s === par + 2 ? 'Double' : '', class: 'double' });
+      }
+      
+      return scores_to_show.map(s => `
+        <button class="score-btn ${s.class} ${currentScore === s.value ? 'selected' : ''}"
+                onclick="setScore('${type}', ${s.value})">
+          ${s.value}
+          ${s.label ? `<span class="score-label">${s.label}</span>` : ''}
+        </button>
+      `).join('');
+    }
+
+    function renderFullScorecard() {
+      const pars = digitalData.pars;
+      const sis = digitalData.strokeIndexes;
+      
+      // Helper to calculate strokes received on a hole for a player
+      function getStrokesOnHole(player, holeIndex) {
+        if (!player) return 0;
+        const phcp = parseInt(player.phcp) || 0;
+        const si = sis[holeIndex] || 18;
+        let strokes = 0;
+        if (phcp > 0 && si <= phcp) strokes++;
+        if (phcp > 18 && si <= (phcp - 18)) strokes++;
+        return strokes;
+      }
+      
+      // Helper to get score value for totals (X = net double bogey)
+      function getScoreForTotal(score, par, strokes) {
+        if (score === null || score === undefined) return null;
+        if (score === 'X') {
+          // Net double bogey = par + 2 + strokes received
+          return par + 2 + strokes;
+        }
+        return score;
+      }
+      
+      // Calculate totals
+      let front9Par = 0, back9Par = 0;
+      let front9Player = 0, back9Player = 0;
+      let front9MarksPlayer = 0, back9MarksPlayer = 0;
+      let front9PlayerCount = 0, back9PlayerCount = 0;
+      let front9MarksPlayerCount = 0, back9MarksPlayerCount = 0;
+      
+      for (let i = 0; i < 9; i++) {
+        front9Par += pars[i] || 0;
+        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerData, i));
+        if (playerScoreVal !== null) {
+          front9Player += playerScoreVal;
+          front9PlayerCount++;
+        }
+        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(marksPlayerData, i));
+        if (marksPlayerScoreVal !== null) {
+          front9MarksPlayer += marksPlayerScoreVal;
+          front9MarksPlayerCount++;
+        }
+      }
+      
+      for (let i = 9; i < 18; i++) {
+        back9Par += pars[i] || 0;
+        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerData, i));
+        if (playerScoreVal !== null) {
+          back9Player += playerScoreVal;
+          back9PlayerCount++;
+        }
+        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(marksPlayerData, i));
+        if (marksPlayerScoreVal !== null) {
+          back9MarksPlayer += marksPlayerScoreVal;
+          back9MarksPlayerCount++;
+        }
+      }
+
+      function getScoreClass(score, par) {
+        if (score === null || score === undefined) return '';
+        if (score === 'X') return 'pickup';
+        const diff = score - par;
+        if (diff <= -2) return 'eagle';
+        if (diff === -1) return 'birdie';
+        if (diff === 0) return 'par';
+        if (diff === 1) return 'bogey';
+        return 'double';
+      }
+      
+      // Helper to display score (show X as X, numbers as numbers, empty as empty)
+      function displayScore(score) {
+        if (score === null || score === undefined) return '';
+        if (score === 'X') return 'X';
+        return score;
+      }
+
+      let html = '<div style="overflow-x: auto;">';
+      
+      // Front 9 table
+      html += `
+        <table class="scorecard-table" style="margin-bottom: 16px;">
+          <thead>
+            <tr>
+              <th style="text-align: left; min-width: 60px;">Hole</th>
+              ${[1,2,3,4,5,6,7,8,9].map(h => `<th>${h}</th>`).join('')}
+              <th class="total-cell">Out</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">Par</td>
+              ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+              <td class="total-cell">${front9Par}</td>
+            </tr>
+            <tr>
+              <td class="row-label">S.I.</td>
+              ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+              <td class="total-cell"></td>
+            </tr>
+            <tr class="separator-row"><td colspan="11"></td></tr>
+            <tr>
+              <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
+              ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
+              <td class="total-cell">${front9PlayerCount > 0 ? front9Player : '-'}</td>
+            </tr>
+            ${playerData.marksPlayerName ? `
+              <tr>
+                <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                <td class="total-cell">${front9MarksPlayerCount > 0 ? front9MarksPlayer : '-'}</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+      `;
+      
+      // Back 9 table
+      html += `
+        <table class="scorecard-table">
+          <thead>
+            <tr>
+              <th style="text-align: left; min-width: 60px;">Hole</th>
+              ${[10,11,12,13,14,15,16,17,18].map(h => `<th>${h}</th>`).join('')}
+              <th class="total-cell">In</th>
+              <th class="total-cell">Tot</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">Par</td>
+              ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+              <td class="total-cell">${back9Par}</td>
+              <td class="total-cell">${front9Par + back9Par}</td>
+            </tr>
+            <tr>
+              <td class="row-label">S.I.</td>
+              ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+              <td class="total-cell"></td>
+              <td class="total-cell"></td>
+            </tr>
+            <tr class="separator-row"><td colspan="12"></td></tr>
+            <tr>
+              <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
+              ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
+              <td class="total-cell">${back9PlayerCount > 0 ? back9Player : '-'}</td>
+              <td class="total-cell">${(front9PlayerCount + back9PlayerCount) > 0 ? front9Player + back9Player : '-'}</td>
+            </tr>
+            ${playerData.marksPlayerName ? `
+              <tr>
+                <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                <td class="total-cell">${back9MarksPlayerCount > 0 ? back9MarksPlayer : '-'}</td>
+                <td class="total-cell">${(front9MarksPlayerCount + back9MarksPlayerCount) > 0 ? front9MarksPlayer + back9MarksPlayer : '-'}</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+      `;
+      
+      html += '</div>';
+      return html;
+    }
+
+    function saveScoresToStorage() {
+      // Save to localStorage for offline support
+      const offlineData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`scores_${roundId}_${playerId}`, JSON.stringify(offlineData));
+
+      // Also save to Firebase in background
+      if (db) {
+        db.ref(`digitalScores/${roundId}/${playerId}`).set({
+          playerScores: scores.player,
+          marksPlayerScores: scores.marksPlayer,
+          playerId: playerId,
+          playerName: `${playerData.firstName} ${playerData.lastName}`,
+          marksPlayerId: playerData.marksPlayerId,
+          marksPlayerName: playerData.marksPlayerName,
+          lastUpdated: Date.now()
+        }).catch(err => {
+          console.error('Firebase save error:', err);
+        });
+      }
+    }
+
+    function setScore(type, value) {
+      scores[type][currentHole - 1] = value;
+      render();
+    }
+
+    async function saveAndNext() {
+      // Save to localStorage for offline support
+      const offlineData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`scores_${roundId}_${playerId}`, JSON.stringify(offlineData));
+
+      // Try to save to Firebase
+      if (db) {
+        try {
+          await db.ref(`digitalScores/${roundId}/${playerId}`).set({
+            playerScores: scores.player,
+            marksPlayerScores: scores.marksPlayer,
+            playerId: playerId,
+            playerName: `${playerData.firstName} ${playerData.lastName}`,
+            marksPlayerId: playerData.marksPlayerId,
+            marksPlayerName: playerData.marksPlayerName,
+            lastUpdated: Date.now()
+          });
+          showToast('Score saved!', 'success');
+        } catch (err) {
+          console.error('Firebase save error:', err);
+          showToast('Saved offline. Will sync when connected.', 'info');
+        }
+      } else {
+        showToast('Saved offline.', 'info');
+      }
+
+      // Move to next hole
+      if (currentHole < 18) {
+        currentHole++;
+        if (currentHole === 10) {
+          showingFrontNine = false;
+        }
+        render();
+      } else {
+        showToast('All 18 holes completed! 🎉', 'success');
+      }
+    }
+
+    function openScorecard() {
+      document.getElementById('scorecard-modal').classList.add('active');
+    }
+
+    function closeScorecard() {
+      document.getElementById('scorecard-modal').classList.remove('active');
+    }
+
+    function closeModal(event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        closeScorecard();
+      }
+    }
+
+    // Initialize app
+    init();
+  </script>
+</body>
+</html>
