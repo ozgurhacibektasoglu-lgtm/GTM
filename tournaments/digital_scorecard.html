@@ -892,6 +892,312 @@
       color: #92400e;
       text-align: center;
     }
+    
+    /* Locked scorecard overlay */
+    .locked-banner {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 16px;
+      margin: 0 16px 12px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+    
+    .locked-banner h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+    
+    .locked-banner p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .locked-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 50;
+      pointer-events: none;
+    }
+    
+    /* Sign modal */
+    .sign-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .sign-modal.active {
+      display: flex;
+    }
+    
+    .sign-modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .sign-modal-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 16px 16px 0 0;
+      text-align: center;
+    }
+    
+    .sign-modal-header h2 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+    }
+    
+    .sign-modal-header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .sign-modal-body {
+      padding: 20px;
+    }
+    
+    .score-summary {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .score-summary-title {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    
+    .score-summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .score-summary-row:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 18px;
+      color: #059669;
+    }
+    
+    .score-summary-label {
+      color: #475569;
+    }
+    
+    .score-summary-value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    /* Signature pad */
+    .signature-section {
+      margin-bottom: 20px;
+    }
+    
+    .signature-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    
+    .signature-pad-container {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      background: #fafafa;
+      position: relative;
+      height: 120px;
+      overflow: hidden;
+    }
+    
+    .signature-pad-container.signed {
+      border-color: #059669;
+      border-style: solid;
+      background: #f0fdf4;
+    }
+    
+    .signature-pad {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    
+    .signature-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #9ca3af;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    
+    .signature-pad-container.signed .signature-placeholder {
+      display: none;
+    }
+    
+    .clear-signature {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: none;
+    }
+    
+    .signature-pad-container.signed .clear-signature {
+      display: block;
+    }
+    
+    /* Confirmation checkbox */
+    .confirm-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .confirm-checkbox input {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      accent-color: #059669;
+    }
+    
+    .confirm-checkbox label {
+      font-size: 14px;
+      color: #78350f;
+      line-height: 1.4;
+    }
+    
+    /* Sign buttons */
+    .sign-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .sign-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .sign-btn.cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    
+    .sign-btn.confirm {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+    }
+    
+    .sign-btn.confirm:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+    }
+    
+    /* Signed status badge */
+    .signed-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .signed-status.pending {
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+    
+    .signed-status-icon {
+      font-size: 20px;
+    }
+    
+    .signed-status-text {
+      flex: 1;
+    }
+    
+    .signed-status-text strong {
+      display: block;
+      color: #166534;
+      font-size: 14px;
+    }
+    
+    .signed-status.pending .signed-status-text strong {
+      color: #92400e;
+    }
+    
+    .signed-status-text span {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    /* Complete round button */
+    .complete-round-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+    
+    .complete-round-btn:disabled {
+      background: #d1d5db;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -903,6 +1209,54 @@
   </div>
   
   <div id="toast" class="toast"></div>
+  
+  <!-- Sign Scorecard Modal -->
+  <div id="sign-modal" class="sign-modal" onclick="closeSignModal(event)">
+    <div class="sign-modal-content" onclick="event.stopPropagation()">
+      <div class="sign-modal-header">
+        <h2>✍️ Sign Scorecard</h2>
+        <p>Review and sign to confirm your scores</p>
+      </div>
+      <div class="sign-modal-body">
+        <div id="score-summary" class="score-summary">
+          <!-- Filled by JS -->
+        </div>
+        
+        <div id="player-sign-section" class="signature-section">
+          <div class="signature-label">Your Signature (Player)</div>
+          <div id="player-sig-container" class="signature-pad-container">
+            <canvas id="player-signature-pad" class="signature-pad"></canvas>
+            <span class="signature-placeholder">Sign here with your finger</span>
+            <button class="clear-signature" onclick="clearSignature('player')">×</button>
+          </div>
+        </div>
+        
+        <div id="marker-sign-section" class="signature-section">
+          <div class="signature-label">Marker's Signature (<span id="marker-name-sign">Marker</span>)</div>
+          <div id="marker-sig-container" class="signature-pad-container">
+            <canvas id="marker-signature-pad" class="signature-pad"></canvas>
+            <span class="signature-placeholder">Marker signs here</span>
+            <button class="clear-signature" onclick="clearSignature('marker')">×</button>
+          </div>
+        </div>
+        
+        <div class="confirm-checkbox">
+          <input type="checkbox" id="confirm-scores-checkbox">
+          <label for="confirm-scores-checkbox">
+            I confirm that all scores entered are accurate and agree to the final results. 
+            Once signed, the scorecard cannot be modified.
+          </label>
+        </div>
+        
+        <div class="sign-buttons">
+          <button class="sign-btn cancel" onclick="closeSignModal()">Cancel</button>
+          <button id="confirm-sign-btn" class="sign-btn confirm" onclick="confirmAndLockScorecard()" disabled>
+            Sign & Lock Scorecard
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -927,9 +1281,48 @@
       player: Array(18).fill(null),
       marksPlayer: Array(18).fill(null) // Score of the player we mark
     };
+    
+    // Scorecard signing state
+    let scorecardStatus = {
+      playerSigned: false,
+      playerSignature: null,
+      playerSignedAt: null,
+      markerConfirmed: false,
+      markerSignature: null,
+      markerSignedAt: null,
+      locked: false,
+      lockedAt: null
+    };
 
     // Initialize Firebase
     initFirebase();
+
+    // Calculate finish hole based on starting hole (for shotgun/two-tee starts)
+    function getFinishHole(startHole) {
+      if (startHole === 1) return 18;
+      return startHole - 1; // e.g., start 7 -> finish 6, start 10 -> finish 9
+    }
+
+    // Get the sequence of holes in play order
+    function getHoleSequence(startHole) {
+      const sequence = [];
+      for (let i = 0; i < 18; i++) {
+        const hole = ((startHole - 1 + i) % 18) + 1;
+        sequence.push(hole);
+      }
+      return sequence;
+    }
+
+    // Check if all 18 holes have been entered for a player
+    function isRoundComplete(scoresArray) {
+      return scoresArray.every(s => s !== null && s !== undefined);
+    }
+
+    // Check if current hole is the finish hole
+    function isFinishHole(currentHole) {
+      const startHole = playerData?.startingHole || 1;
+      return currentHole === getFinishHole(startHole);
+    }
 
     // Find who marks this player (reverse lookup)
     function findMarkerForPlayer(players, targetPlayerId) {
@@ -1033,6 +1426,12 @@
           if (savedScores) {
             scores.player = savedScores.playerScores || Array(18).fill(null);
             scores.marksPlayer = savedScores.marksPlayerScores || Array(18).fill(null);
+            
+            // Load scorecard signing status
+            if (savedScores.scorecardStatus) {
+              scorecardStatus = savedScores.scorecardStatus;
+              console.log('Loaded scorecard status:', scorecardStatus);
+            }
           }
         } catch (err) {
           console.log('Could not load scores from Firebase:', err);
@@ -1156,6 +1555,7 @@
       const hole = currentHole;
       const par = digitalData.pars[hole - 1] || 4;
       const si = digitalData.strokeIndexes[hole - 1] || '-';
+      const isLocked = scorecardStatus.locked;
       
       // Calculate player's strokes on this hole
       const phcp = parseInt(playerData.phcp) || 0;
@@ -1173,11 +1573,12 @@
         <div class="header">
           <div class="header-top">
             <h1>📱 Digital Scorecard</h1>
-            <span class="live-badge">● LIVE</span>
+            <span class="live-badge">${isLocked ? '🔒 LOCKED' : '● LIVE'}</span>
           </div>
           <div class="header-info">${digitalData.tournamentName} • Round ${digitalData.roundIndex + 1}</div>
         </div>
         
+        ${renderLockedBanner()}
         ${renderDisputeBanner()}
         
         <div class="container">
@@ -1234,7 +1635,7 @@
           </div>
 
           <!-- Score Entry -->
-          <div class="score-entry-card">
+          <div class="score-entry-card" ${isLocked ? 'style="opacity: 0.6; pointer-events: none;"' : ''}>
             ${hasDisputeOnHole(hole) ? `
               <div class="current-hole-dispute">
                 ⚠️ <strong>Dispute!</strong> Your marker entered ${markerScoresForMe[hole - 1] === 'X' ? 'X' : markerScoresForMe[hole - 1]} for you
@@ -1247,13 +1648,13 @@
                   <span class="score-section-title player-title">Your Score</span>
                 </div>
                 <div class="score-input-row">
-                  <button class="score-minus-btn" onclick="adjustScore('player', -1, ${par})">−</button>
+                  <button class="score-minus-btn" onclick="adjustScore('player', -1, ${par})" ${isLocked ? 'disabled' : ''}>−</button>
                   <div class="score-display ${getScoreDisplayClass(playerScore, par)}" id="player-score-display">
                     ${playerScore === 'X' ? 'X' : (playerScore != null ? playerScore : '')}
                   </div>
-                  <button class="score-plus-btn" onclick="adjustScore('player', 1, ${par})">+</button>
+                  <button class="score-plus-btn" onclick="adjustScore('player', 1, ${par})" ${isLocked ? 'disabled' : ''}>+</button>
                 </div>
-                ${canUsePickup(playerData) ? `<button class="score-pickup-btn" onclick="setPickup('player')">Pickup (X)</button>` : ''}
+                ${!isLocked && canUsePickup(playerData) ? `<button class="score-pickup-btn" onclick="setPickup('player')">Pickup (X)</button>` : ''}
               </div>
 
               <!-- Score for player we mark -->
@@ -1263,13 +1664,13 @@
                     <span class="score-section-title marker-title">${playerData.marksPlayerName.split(' ')[0]}</span>
                   </div>
                   <div class="score-input-row">
-                    <button class="score-minus-btn" onclick="adjustScore('marksPlayer', -1, ${par})">−</button>
+                    <button class="score-minus-btn" onclick="adjustScore('marksPlayer', -1, ${par})" ${isLocked ? 'disabled' : ''}>−</button>
                     <div class="score-display ${getScoreDisplayClass(marksPlayerScore, par)}" id="marksPlayer-score-display">
                       ${marksPlayerScore === 'X' ? 'X' : (marksPlayerScore != null ? marksPlayerScore : '')}
                     </div>
-                    <button class="score-plus-btn" onclick="adjustScore('marksPlayer', 1, ${par})">+</button>
+                    <button class="score-plus-btn" onclick="adjustScore('marksPlayer', 1, ${par})" ${isLocked ? 'disabled' : ''}>+</button>
                   </div>
-                  ${canUsePickup(marksPlayerData) ? `<button class="score-pickup-btn" onclick="setPickup('marksPlayer')">Pickup (X)</button>` : ''}
+                  ${!isLocked && canUsePickup(marksPlayerData) ? `<button class="score-pickup-btn" onclick="setPickup('marksPlayer')">Pickup (X)</button>` : ''}
                 </div>
               ` : ''}
             </div>
@@ -1279,14 +1680,19 @@
           <button class="btn-view-scorecard" onclick="openScorecard()">
             📋 View Full Scorecard
           </button>
+          
+          <!-- Complete Round Button -->
+          ${renderCompleteButton()}
         </div>
 
         <!-- Save Bar -->
-        <div class="save-bar">
-          <button class="btn-save" onclick="saveAndNext()">
-            ✓ Save & Next Hole
-          </button>
-        </div>
+        ${!isLocked ? `
+          <div class="save-bar">
+            <button class="btn-save" onclick="saveAndNext()">
+              ✓ Save & Next Hole
+            </button>
+          </div>
+        ` : ''}
 
         <!-- Full Scorecard Modal -->
         <div id="scorecard-modal" class="modal-overlay" onclick="closeModal(event)">
@@ -1804,8 +2210,328 @@
       }
     }
 
+    // ============================================
+    // SIGNATURE PAD AND SCORECARD SIGNING
+    // ============================================
+    
+    let playerSignaturePad = null;
+    let markerSignaturePad = null;
+    
+    // Simple signature pad implementation
+    class SignaturePad {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.isDrawing = false;
+        this.lastX = 0;
+        this.lastY = 0;
+        this.isEmpty = true;
+        
+        this.setupCanvas();
+        this.bindEvents();
+      }
+      
+      setupCanvas() {
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = rect.height;
+        this.ctx.strokeStyle = '#1e293b';
+        this.ctx.lineWidth = 2;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+      }
+      
+      bindEvents() {
+        // Mouse events
+        this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+        this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+        this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+        this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+        
+        // Touch events
+        this.canvas.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.startDrawing(e.touches[0]);
+        });
+        this.canvas.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          this.draw(e.touches[0]);
+        });
+        this.canvas.addEventListener('touchend', () => this.stopDrawing());
+      }
+      
+      getPos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+      
+      startDrawing(e) {
+        this.isDrawing = true;
+        const pos = this.getPos(e);
+        this.lastX = pos.x;
+        this.lastY = pos.y;
+      }
+      
+      draw(e) {
+        if (!this.isDrawing) return;
+        
+        const pos = this.getPos(e);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lastX, this.lastY);
+        this.ctx.lineTo(pos.x, pos.y);
+        this.ctx.stroke();
+        
+        this.lastX = pos.x;
+        this.lastY = pos.y;
+        this.isEmpty = false;
+        
+        // Update container class
+        this.canvas.parentElement.classList.add('signed');
+        updateSignButtonState();
+      }
+      
+      stopDrawing() {
+        this.isDrawing = false;
+      }
+      
+      clear() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.isEmpty = true;
+        this.canvas.parentElement.classList.remove('signed');
+        updateSignButtonState();
+      }
+      
+      toDataURL() {
+        return this.isEmpty ? null : this.canvas.toDataURL();
+      }
+    }
+    
+    // Initialize signature pads when modal opens
+    function initSignaturePads() {
+      const playerCanvas = document.getElementById('player-signature-pad');
+      const markerCanvas = document.getElementById('marker-signature-pad');
+      
+      if (playerCanvas && !playerSignaturePad) {
+        playerSignaturePad = new SignaturePad(playerCanvas);
+      }
+      if (markerCanvas && !markerSignaturePad) {
+        markerSignaturePad = new SignaturePad(markerCanvas);
+      }
+    }
+    
+    function clearSignature(type) {
+      if (type === 'player' && playerSignaturePad) {
+        playerSignaturePad.clear();
+      } else if (type === 'marker' && markerSignaturePad) {
+        markerSignaturePad.clear();
+      }
+    }
+    
+    function updateSignButtonState() {
+      const checkbox = document.getElementById('confirm-scores-checkbox');
+      const btn = document.getElementById('confirm-sign-btn');
+      
+      const playerSigned = playerSignaturePad && !playerSignaturePad.isEmpty;
+      const markerSigned = markerSignaturePad && !markerSignaturePad.isEmpty;
+      const isChecked = checkbox && checkbox.checked;
+      
+      if (btn) {
+        btn.disabled = !(playerSigned && markerSigned && isChecked);
+      }
+    }
+    
+    // Calculate score summary for display
+    function getScoreSummary() {
+      const pars = digitalData?.pars || [];
+      let totalGross = 0;
+      let totalPar = 0;
+      let holesPlayed = 0;
+      
+      for (let i = 0; i < 18; i++) {
+        const score = scores.player[i];
+        const par = pars[i] || 4;
+        totalPar += par;
+        
+        if (score !== null && score !== undefined && score !== 'X') {
+          totalGross += score;
+          holesPlayed++;
+        } else if (score === 'X') {
+          // For X, use net double bogey estimate
+          totalGross += par + 2;
+          holesPlayed++;
+        }
+      }
+      
+      const toPar = totalGross - totalPar;
+      const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? '+' + toPar : toPar);
+      
+      return {
+        gross: totalGross,
+        par: totalPar,
+        toPar: toParStr,
+        holesPlayed: holesPlayed
+      };
+    }
+    
+    // Open sign modal
+    function openSignModal() {
+      // Check if all holes are complete
+      if (!isRoundComplete(scores.player)) {
+        showToast('Please complete all 18 holes before signing', 'error');
+        return;
+      }
+      
+      // Check for disputes
+      const disputes = getDisputes();
+      if (disputes.length > 0) {
+        showToast('Please resolve score disputes before signing', 'error');
+        return;
+      }
+      
+      // Update marker name
+      const markerNameEl = document.getElementById('marker-name-sign');
+      if (markerNameEl && marksPlayerData) {
+        markerNameEl.textContent = marksPlayerData.firstName;
+      }
+      
+      // Populate score summary
+      const summary = getScoreSummary();
+      const summaryEl = document.getElementById('score-summary');
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          <div class="score-summary-title">Score Summary</div>
+          <div class="score-summary-row">
+            <span class="score-summary-label">Holes Played</span>
+            <span class="score-summary-value">${summary.holesPlayed}</span>
+          </div>
+          <div class="score-summary-row">
+            <span class="score-summary-label">Course Par</span>
+            <span class="score-summary-value">${summary.par}</span>
+          </div>
+          <div class="score-summary-row">
+            <span class="score-summary-label">Gross Score</span>
+            <span class="score-summary-value">${summary.gross}</span>
+          </div>
+          <div class="score-summary-row">
+            <span class="score-summary-label">To Par</span>
+            <span class="score-summary-value">${summary.toPar}</span>
+          </div>
+        `;
+      }
+      
+      document.getElementById('sign-modal').classList.add('active');
+      
+      // Initialize signature pads after modal is visible
+      setTimeout(() => {
+        initSignaturePads();
+      }, 100);
+    }
+    
+    function closeSignModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('sign-modal').classList.remove('active');
+    }
+    
+    // Confirm and lock scorecard
+    async function confirmAndLockScorecard() {
+      const playerSig = playerSignaturePad?.toDataURL();
+      const markerSig = markerSignaturePad?.toDataURL();
+      
+      if (!playerSig || !markerSig) {
+        showToast('Both signatures are required', 'error');
+        return;
+      }
+      
+      // Update scorecard status
+      scorecardStatus = {
+        playerSigned: true,
+        playerSignature: playerSig,
+        playerSignedAt: Date.now(),
+        markerConfirmed: true,
+        markerSignature: markerSig,
+        markerSignedAt: Date.now(),
+        locked: true,
+        lockedAt: Date.now(),
+        lockedBy: `${playerData.firstName} ${playerData.lastName}`
+      };
+      
+      // Save to Firebase
+      if (db) {
+        try {
+          await db.ref(`digitalScores/${roundId}/${playerId}`).update({
+            scorecardStatus: scorecardStatus,
+            lastUpdated: Date.now()
+          });
+          
+          showToast('Scorecard signed and locked! ✅', 'success');
+          closeSignModal();
+          render();
+        } catch (err) {
+          console.error('Error locking scorecard:', err);
+          showToast('Error saving. Please try again.', 'error');
+        }
+      } else {
+        // Save locally if offline
+        localStorage.setItem(`scorecardStatus_${roundId}_${playerId}`, JSON.stringify(scorecardStatus));
+        showToast('Scorecard signed (offline). Will sync when connected.', 'info');
+        closeSignModal();
+        render();
+      }
+    }
+    
+    // Render locked banner
+    function renderLockedBanner() {
+      if (!scorecardStatus.locked) return '';
+      
+      const lockedDate = new Date(scorecardStatus.lockedAt).toLocaleString();
+      return `
+        <div class="locked-banner">
+          <h3>🔒 Scorecard Locked</h3>
+          <p>Signed and confirmed on ${lockedDate}</p>
+        </div>
+      `;
+    }
+    
+    // Render complete round button
+    function renderCompleteButton() {
+      if (scorecardStatus.locked) return '';
+      
+      const allComplete = isRoundComplete(scores.player);
+      const disputes = getDisputes();
+      const hasDisputes = disputes.length > 0;
+      
+      if (!allComplete) {
+        const remaining = scores.player.filter(s => s === null || s === undefined).length;
+        return `
+          <button class="complete-round-btn" disabled>
+            ${remaining} hole${remaining !== 1 ? 's' : ''} remaining
+          </button>
+        `;
+      }
+      
+      if (hasDisputes) {
+        return `
+          <button class="complete-round-btn" disabled style="background: #f59e0b;">
+            ⚠️ Resolve ${disputes.length} dispute${disputes.length !== 1 ? 's' : ''} first
+          </button>
+        `;
+      }
+      
+      return `
+        <button class="complete-round-btn" onclick="openSignModal()">
+          ✍️ Sign & Complete Scorecard
+        </button>
+      `;
+    }
+
     // Initialize app
     init();
+    
+    // Setup checkbox listener
+    document.getElementById('confirm-scores-checkbox')?.addEventListener('change', updateSignButtonState);
   </script>
 </body>
 </html>
