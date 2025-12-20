@@ -1718,13 +1718,9 @@
           console.error('Firebase save error:', err);
         });
         
-        // Sync player's own scores to live leaderboard
+        // Sync only player's own scores to live leaderboard
+        // (marker scores are only for validation/dispute detection, not for leaderboard)
         syncToLiveScores(playerId, playerData, scores.player);
-        
-        // Also sync scores for the player we mark (if any)
-        if (playerData.marksPlayerId && marksPlayerData) {
-          syncToLiveScores(playerData.marksPlayerId, marksPlayerData, scores.marksPlayer);
-        }
       }
     }
 
@@ -1756,10 +1752,8 @@
           });
           
           // Sync to live leaderboard
+          // Sync only player's own scores to live leaderboard
           syncToLiveScores(playerId, playerData, scores.player);
-          if (playerData.marksPlayerId && marksPlayerData) {
-            syncToLiveScores(playerData.marksPlayerId, marksPlayerData, scores.marksPlayer);
-          }
           
           showToast('Score saved!', 'success');
         } catch (err) {
