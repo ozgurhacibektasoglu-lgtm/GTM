@@ -639,6 +639,11 @@
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     }
     
+    /* Waiting for marker state */
+    .btn-save.btn-pending {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    
     /* Sign & Complete state */
     .btn-save.btn-sign {
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -1762,17 +1767,31 @@
     }
     
     function goToNextHole() {
-      if (currentHole < 18) {
+      // Wrap around: 18 -> 1
+      if (currentHole === 18) {
+        currentHole = 1;
+        showingFrontNine = true;
+      } else {
         currentHole++;
-        render();
+        if (currentHole === 10) {
+          showingFrontNine = false;
+        }
       }
+      render();
     }
     
     function goToPreviousHole() {
-      if (currentHole > 1) {
+      // Wrap around: 1 -> 18
+      if (currentHole === 1) {
+        currentHole = 18;
+        showingFrontNine = false;
+      } else {
         currentHole--;
-        render();
+        if (currentHole === 9) {
+          showingFrontNine = true;
+        }
       }
+      render();
     }
 
     function getScoreDisplayClass(score, par) {
@@ -2164,14 +2183,20 @@
         showToast('Saved offline.', 'info');
       }
 
-      // Move to next hole
-      if (currentHole < 18) {
+      // Move to next hole (with wrap-around)
+      if (currentHole === 18) {
+        currentHole = 1;
+        showingFrontNine = true;
+      } else {
         currentHole++;
         if (currentHole === 10) {
           showingFrontNine = false;
         }
-        render();
-      } else {
+      }
+      render();
+      
+      // Check if all holes are now complete
+      if (isRoundComplete(scores.player)) {
         showToast('All 18 holes completed! 🎉', 'success');
       }
     }
@@ -2506,7 +2531,19 @@
         `;
       }
       
-      // State 3: Round complete, no disputes - show sign button
+      // State 3: Round complete but marker hasn't entered all scores yet
+      const markerPendingHoles = getMarkerPendingHoles();
+      if (markerPendingHoles.length > 0) {
+        return `
+          <div class="save-bar">
+            <button class="btn-save btn-pending" disabled>
+              ⏳ Waiting for Marker (${markerPendingHoles.length} hole${markerPendingHoles.length !== 1 ? 's' : ''})
+            </button>
+          </div>
+        `;
+      }
+      
+      // State 4: Round complete, no disputes, marker confirmed - show sign button
       return `
         <div class="save-bar">
           <button class="btn-save btn-sign" onclick="openSignModal()">
@@ -2514,6 +2551,21 @@
           </button>
         </div>
       `;
+    }
+    
+    // Check if marker has pending scores (player entered but marker hasn't)
+    function getMarkerPendingHoles() {
+      const pendingHoles = [];
+      for (let i = 0; i < 18; i++) {
+        const playerScore = scores.player[i];
+        const markerScore = markerScores[i];
+        // Player has entered a score but marker hasn't confirmed yet
+        if (playerScore !== null && playerScore !== undefined && 
+            (markerScore === null || markerScore === undefined)) {
+          pendingHoles.push(i + 1);
+        }
+      }
+      return pendingHoles;
     }
 
     // Initialize app
