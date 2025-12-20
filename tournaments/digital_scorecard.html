@@ -2579,7 +2579,7 @@
       const pendingHoles = [];
       for (let i = 0; i < 18; i++) {
         const playerScore = scores.player[i];
-        const markerScore = markerScores[i];
+        const markerScore = markerScoresForMe[i];
         // Player has entered a score but marker hasn't confirmed yet
         if (playerScore !== null && playerScore !== undefined && 
             (markerScore === null || markerScore === undefined)) {
