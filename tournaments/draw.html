@@ -226,11 +226,11 @@
 
     .group-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
       padding-bottom: 8px;
       border-bottom: 1px solid #ddd;
+      gap: 8px;
     }
 
     .group-title {
@@ -242,6 +242,7 @@
     .group-time {
       font-size: 12px;
       color: #666;
+      margin-left: auto;
     }
 
     .group-players {
@@ -309,50 +310,85 @@
       display: block;
     }
 
-    /* Pin button */
-    .pin-player {
-      position: absolute;
-      right: 28px;
-      top: 5px;
+    /* Pin group button */
+    .pin-group-btn {
       background: #6b7280;
       color: white;
       border: none;
-      border-radius: 3px;
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
       cursor: pointer;
-      display: none;
-      line-height: 1;
+      margin-left: 8px;
     }
 
-    .pin-player:hover {
+    .pin-group-btn:hover {
       background: #f59e0b;
     }
 
-    .group-player-card:hover .pin-player {
-      display: block;
-    }
-
-    /* Pinned player styling */
-    .group-player-card.pinned {
+    /* Pinned group styling */
+    .group-box.pinned-group {
       background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
       border: 2px solid #f59e0b !important;
-      border-left: 4px solid #d97706 !important;
     }
 
-    .group-player-card.pinned .pin-player {
-      display: block;
+    .group-box.pinned-group .group-header {
       background: #f59e0b;
+      margin: -12px -12px 10px -12px;
+      padding: 8px 12px;
+      border-radius: 6px 6px 0 0;
+      color: white;
     }
 
-    .group-player-card.pinned .pin-indicator {
-      display: inline;
+    .group-box.pinned-group .pin-group-btn {
+      background: white;
+      color: #f59e0b;
     }
 
-    .pin-indicator {
-      display: none;
-      margin-right: 4px;
+    /* Pin group button */
+    .pin-group-btn {
+      padding: 2px 8px;
+      font-size: 11px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #f8f9fa;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    
+    .pin-group-btn:hover {
+      background: #fef3c7;
+      border-color: #f59e0b;
+    }
+
+    /* Draggable group styling */
+    .group-box.draggable-group {
+      cursor: grab;
+    }
+    
+    .group-box.draggable-group:active {
+      cursor: grabbing;
+    }
+    
+    .group-box.dragging-group {
+      opacity: 0.5;
+      border: 2px dashed #007bff;
+    }
+    
+    .group-box.pinned-group {
+      cursor: default;
+    }
+    
+    .group-box.drop-left {
+      border-left: 4px solid #007bff;
+    }
+    
+    .group-box.drop-right {
+      border-right: 4px solid #007bff;
+    }
+    
+    .group-box.drop-blocked-indicator {
+      border-left: 4px solid #dc3545;
     }
 
     .empty-state {
@@ -622,7 +658,7 @@
       <h2>Auto Group Settings</h2>
       
       <div id="pinned-players-info" style="display: none; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px; font-size: 13px;">
-        <span style="font-weight: 600;">📌 <span id="pinned-count">0</span> pinned player(s)</span> will stay in their current groups.
+        <span style="font-weight: 600;">📌 <span id="pinned-count">0</span> pinned group(s)</span> will remain unchanged.
       </div>
       
       <div class="modal-form-group">
@@ -759,7 +795,19 @@
     let isPairingMode = false; // True for fourball/foursomes match play
     let pairings = []; // Pairings for the current team/round
     let draggedPairing = null; // For dragging pairings instead of players
-    let pinnedPlayers = new Set(); // Track pinned player registration numbers
+    let pinnedGroups = new Set(); // Track pinned group indices (0-based)
+
+    // Toggle pin status for a group
+    function toggleGroupPin(groupIndex) {
+      if (pinnedGroups.has(groupIndex)) {
+        pinnedGroups.delete(groupIndex);
+        console.log(`Group ${groupIndex + 1} unpinned`);
+      } else {
+        pinnedGroups.add(groupIndex);
+        console.log(`Group ${groupIndex + 1} pinned`);
+      }
+      renderGroups();
+    }
 
     // Format date as dd.mm.yyyy
     function formatDateDDMMYYYY(dateStr) {
@@ -974,13 +1022,13 @@
         document.getElementById('interval').value = savedDraw.interval || 10;
         document.getElementById('group-size').value = savedDraw.groupSize || 4;
       } else {
-        // Create default 20 groups
+        // Create default 24 groups
         const protocol = document.getElementById('protocol-type').value || 'single';
         const startTime = document.getElementById('start-time').value || '08:00';
         const interval = parseInt(document.getElementById('interval').value) || 10;
         
         groups = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 24; i++) {
           groups.push({
             groupId: `group-${Date.now()}-${i}`,
             players: [],
@@ -1382,13 +1430,10 @@
       return group.players.map(player => {
         const gender = (player.gender || '').toLowerCase();
         const genderClass = (gender === 'male' || gender === 'm') ? 'male' : (gender === 'female' || gender === 'f') ? 'female' : '';
-        const isPinned = pinnedPlayers.has(player.reg);
-        const pinnedClass = isPinned ? 'pinned' : '';
         return `
-          <div class="group-player-card ${genderClass} ${pinnedClass}" draggable="true" data-reg="${player.reg}">
-            <button class="pin-player" onclick="togglePin('${player.reg}')" title="${isPinned ? 'Unpin player' : 'Pin player to this group'}">📌</button>
+          <div class="group-player-card ${genderClass}" draggable="true" data-reg="${player.reg}">
             <button class="remove-player" onclick="removeFromGroup('${group.groupId}', '${player.reg}')">×</button>
-            <div style="font-weight: 600; font-size: 12px;"><span class="pin-indicator">📌</span>${player.firstName} ${player.lastName}</div>
+            <div style="font-weight: 600; font-size: 12px;">${player.firstName} ${player.lastName}</div>
             <div style="font-weight: 400; font-size: 10px; color: #666; white-space: nowrap;">${player.club || player.homeClub || '-'} / HCP ${getPlayingHcp(player)} / ${calculateAge(player.dob)}yrs</div>
           </div>
         `;
@@ -1404,30 +1449,39 @@
       }
     }
 
-    // Render groups
+    // Render groups - always show 24 group boxes
     function renderGroups() {
       const container = document.getElementById('groups-container');
       const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value) || 10;
+      const MIN_GROUPS = 24; // Minimum number of group boxes to show
       
-      if (groups.length === 0) {
-        container.innerHTML = '<div class="empty-state">No groups created. Click "Apply Configuration" to generate groups.</div>';
-        return;
+      // Ensure we always have at least 24 groups (but can have more)
+      while (groups.length < MIN_GROUPS) {
+        groups.push({
+          groupId: `group-${Date.now()}-${groups.length}`,
+          players: [],
+          time: calculateStartTime(groups.length, protocol, startTime, interval),
+          tee: calculateTee(groups.length, protocol)
+        });
       }
       
-      let displayGroups = groups;
+      // Display ALL groups (not capped at 24)
+      let displayGroups = [...groups];
       let isTwoTee = false;
       
-      // For two-tee layout, reorder to show: 1st tee groups first (0,2,4...), then alternate tee groups (1,3,5...)
+      // For two-tee layout, keep track of original indices
       if (protocol === 'twotee') {
         isTwoTee = true;
         displayGroups = [];
-        // Add all odd-indexed groups (1st tee)
+        // Add all even-indexed groups (1st tee: 0, 2, 4...)
         for (let i = 0; i < groups.length; i += 2) {
-          displayGroups.push({ ...groups[i], teeType: '1st' });
+          displayGroups.push({ ...groups[i], originalIndex: i, teeType: '1st' });
         }
-        // Add all even-indexed groups (alternate tee)
+        // Add all odd-indexed groups (alternate tee: 1, 3, 5...)
         for (let i = 1; i < groups.length; i += 2) {
-          displayGroups.push({ ...groups[i], teeType: 'alt' });
+          displayGroups.push({ ...groups[i], originalIndex: i, teeType: 'alt' });
         }
       }
       
@@ -1436,47 +1490,81 @@
         const firstTeeGroups = displayGroups.filter(g => g.teeType === '1st');
         const altTeeGroups = displayGroups.filter(g => g.teeType === 'alt');
         
-        const groupsHTML = (groupsList) => groupsList.map((group, idx) => `
-          <div class="group-box" data-group-id="${group.groupId}">
-            <div class="group-header">
-              <div class="group-title">Group ${idx + 1}</div>
-              <div class="group-time">${group.time} - ${group.tee}</div>
+        const groupsHTML = (groupsList) => groupsList.map((group) => {
+          const originalIndex = group.originalIndex;
+          const isPinned = pinnedGroups.has(originalIndex);
+          const pinnedClass = isPinned ? 'pinned-group' : 'draggable-group';
+          const pinBtnText = isPinned ? '📌 Pinned' : '📌 Pin';
+          const draggable = isPinned ? 'false' : 'true';
+          
+          return `
+            <div class="group-box ${pinnedClass}" data-group-id="${group.groupId}" data-group-index="${originalIndex}" draggable="${draggable}">
+              <div class="group-header">
+                <div class="group-title">Group ${originalIndex + 1}</div>
+                <button class="pin-group-btn" onclick="event.stopPropagation(); toggleGroupPin(${originalIndex})">${pinBtnText}</button>
+                <div class="group-time">${group.time}</div>
+              </div>
+              <div class="group-players">
+                ${renderGroupPlayers(group)}
+              </div>
             </div>
-            <div class="group-players">
-              ${renderGroupPlayers(group)}
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
         
         container.innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="display: flex; gap: 40px;">
             <div>
               <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #28a745; padding-bottom: 10px;">1st Tee (${firstTeeGroups.length} groups)</h3>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              <div style="display: grid; grid-template-columns: repeat(2, 250px); gap: 15px;">
                 ${groupsHTML(firstTeeGroups)}
               </div>
             </div>
             <div>
               <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #0b6efd; padding-bottom: 10px;">Alternative Tee (${altTeeGroups.length} groups)</h3>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              <div style="display: grid; grid-template-columns: repeat(2, 250px); gap: 15px;">
                 ${groupsHTML(altTeeGroups)}
               </div>
             </div>
           </div>
         `;
+        
+        // Expand the draw container to accommodate two side-by-side sections with same-width boxes
+        const drawContainer = document.querySelector('.draw-container');
+        if (drawContainer) {
+          drawContainer.style.maxWidth = 'none';
+          drawContainer.style.width = 'calc(100vw - 60px)';
+        }
       } else {
-        // Standard layout
-        container.innerHTML = displayGroups.map((group, displayIndex) => `
-          <div class="group-box" data-group-id="${group.groupId}">
-            <div class="group-header">
-              <div class="group-title">Group ${displayIndex + 1}</div>
-              <div class="group-time">${group.time} - ${group.tee}</div>
+        // Reset draw container width for single tee mode
+        const drawContainer = document.querySelector('.draw-container');
+        if (drawContainer) {
+          drawContainer.style.maxWidth = '';
+          drawContainer.style.width = '';
+        }
+        
+        // Standard layout with drop zones between groups
+        let html = '';
+        displayGroups.forEach((group, displayIndex) => {
+          const isPinned = pinnedGroups.has(displayIndex);
+          const pinnedClass = isPinned ? 'pinned-group' : 'draggable-group';
+          const pinBtnText = isPinned ? '📌 Pinned' : '📌 Pin';
+          const draggable = isPinned ? 'false' : 'true';
+          
+          html += `
+            <div class="group-box ${pinnedClass}" data-group-id="${group.groupId}" data-group-index="${displayIndex}" draggable="${draggable}">
+              <div class="group-header">
+                <div class="group-title">Group ${displayIndex + 1}</div>
+                <button class="pin-group-btn" onclick="event.stopPropagation(); toggleGroupPin(${displayIndex})">${pinBtnText}</button>
+                <div class="group-time">${group.time} - ${group.tee}</div>
+              </div>
+              <div class="group-players">
+                ${renderGroupPlayers(group)}
+              </div>
             </div>
-            <div class="group-players">
-              ${renderGroupPlayers(group)}
-            </div>
-          </div>
-        `).join('');
+          `;
+        });
+        
+        container.innerHTML = html;
       }
       
       // Add drop event listeners
@@ -1490,6 +1578,17 @@
           if (e.target.closest('.group-player-card') || e.target.closest('.group-pairing-card') || e.target.closest('.remove-player')) return;
           selectGroup(box.getAttribute('data-group-id'));
         });
+        
+        // Add group drag listeners (for non-pinned groups)
+        if (box.classList.contains('draggable-group')) {
+          box.addEventListener('dragstart', handleGroupDragStart);
+          box.addEventListener('dragend', handleGroupDragEnd);
+        }
+        
+        // Add group drop listeners for reordering (detect left/right side)
+        box.addEventListener('dragover', handleGroupDragOverForReorder);
+        box.addEventListener('dragleave', handleGroupDragLeaveForReorder);
+        box.addEventListener('drop', handleGroupDropForReorder);
       });
       
       // Add drag listeners for players in groups (only in normal mode)
@@ -1510,8 +1609,186 @@
       renderPlayers();
     }
 
-    // Drag handlers
+    // Track dragged group
+    let draggedGroupIndex = null;
+
+    // Group drag handlers
+    function handleGroupDragStart(e) {
+      // Don't start if clicking on pin button or player card
+      if (e.target.closest('.pin-group-btn') || e.target.closest('.group-player-card')) {
+        e.preventDefault();
+        return;
+      }
+      
+      const groupIndex = parseInt(e.currentTarget.getAttribute('data-group-index'));
+      
+      // Don't allow dragging pinned groups
+      if (pinnedGroups.has(groupIndex)) {
+        e.preventDefault();
+        return;
+      }
+      
+      draggedGroupIndex = groupIndex;
+      e.currentTarget.classList.add('dragging-group');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'group'); // Mark as group drag
+    }
+    
+    function handleGroupDragEnd(e) {
+      e.currentTarget.classList.remove('dragging-group');
+      draggedGroupIndex = null;
+      
+      // Clear all drop indicators
+      document.querySelectorAll('.group-box').forEach(box => {
+        box.classList.remove('drop-left', 'drop-right', 'drop-blocked-indicator');
+      });
+    }
+    
+    // Handle drag over group box for reordering (detect left/right side)
+    function handleGroupDragOverForReorder(e) {
+      // Only handle if dragging a group
+      if (draggedGroupIndex === null) return;
+      
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      const targetIndex = parseInt(e.currentTarget.getAttribute('data-group-index'));
+      
+      // Don't show indicator on the dragged group itself
+      if (targetIndex === draggedGroupIndex) return;
+      
+      // Determine if we're on the left or right half of the target
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midpoint = rect.left + rect.width / 2;
+      const isLeftSide = e.clientX < midpoint;
+      
+      // Calculate where we would drop
+      const dropIndex = isLeftSide ? targetIndex : targetIndex + 1;
+      
+      // Clear previous indicators
+      document.querySelectorAll('.group-box').forEach(box => {
+        box.classList.remove('drop-left', 'drop-right', 'drop-blocked-indicator');
+      });
+      
+      // Check if dropping at a pinned group's position
+      if (pinnedGroups.has(dropIndex)) {
+        e.currentTarget.classList.add('drop-blocked-indicator');
+      } else {
+        e.currentTarget.classList.add(isLeftSide ? 'drop-left' : 'drop-right');
+      }
+    }
+    
+    function handleGroupDragLeaveForReorder(e) {
+      e.currentTarget.classList.remove('drop-left', 'drop-right', 'drop-blocked-indicator');
+    }
+    
+    function handleGroupDropForReorder(e) {
+      // Only handle if dragging a group
+      if (draggedGroupIndex === null) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const targetIndex = parseInt(e.currentTarget.getAttribute('data-group-index'));
+      
+      // Don't do anything if dropping on itself
+      if (targetIndex === draggedGroupIndex) return;
+      
+      // Clear indicators
+      document.querySelectorAll('.group-box').forEach(box => {
+        box.classList.remove('drop-left', 'drop-right', 'drop-blocked-indicator');
+      });
+      
+      // Determine if we're on the left or right half
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midpoint = rect.left + rect.width / 2;
+      const isLeftSide = e.clientX < midpoint;
+      
+      // Calculate drop position
+      const dropIndex = isLeftSide ? targetIndex : targetIndex + 1;
+      
+      // Don't allow dropping at a pinned group's position
+      if (pinnedGroups.has(dropIndex)) {
+        alert(`Cannot move group to position ${dropIndex + 1} because it is occupied by a pinned group.`);
+        return;
+      }
+      
+      // Same position or adjacent - no change needed
+      if (dropIndex === draggedGroupIndex || dropIndex === draggedGroupIndex + 1) {
+        return;
+      }
+      
+      moveGroupToPosition(draggedGroupIndex, dropIndex);
+    }
+    
+    // Move a group to a new position, respecting pinned groups
+    function moveGroupToPosition(fromIndex, toIndex) {
+      const protocol = document.getElementById('protocol-type').value;
+      const startTime = document.getElementById('start-time').value;
+      const interval = parseInt(document.getElementById('interval').value);
+      
+      // Get the group being moved
+      const movingGroup = groups[fromIndex];
+      
+      // Collect all groups: pinned stay in place, others will be rearranged
+      const nonPinnedGroups = [];
+      for (let i = 0; i < groups.length; i++) {
+        if (!pinnedGroups.has(i) && i !== fromIndex) {
+          nonPinnedGroups.push(groups[i]);
+        }
+      }
+      
+      // Calculate where in the non-pinned sequence to insert
+      // Adjust toIndex if moving to a later position (since we removed one)
+      let adjustedToIndex = toIndex;
+      if (fromIndex < toIndex) {
+        adjustedToIndex--;
+      }
+      
+      // Find the insert position in the non-pinned array
+      let nonPinnedInsertIdx = 0;
+      for (let i = 0; i < adjustedToIndex; i++) {
+        if (!pinnedGroups.has(i)) {
+          nonPinnedInsertIdx++;
+        }
+      }
+      
+      // Insert the moving group at the calculated position
+      nonPinnedGroups.splice(nonPinnedInsertIdx, 0, movingGroup);
+      
+      // Rebuild the groups array
+      const newGroups = [];
+      let nonPinnedIdx = 0;
+      
+      for (let pos = 0; pos < groups.length; pos++) {
+        if (pinnedGroups.has(pos)) {
+          // Pinned group stays at this position
+          newGroups.push(groups[pos]);
+        } else {
+          // Fill with next non-pinned group
+          if (nonPinnedIdx < nonPinnedGroups.length) {
+            newGroups.push(nonPinnedGroups[nonPinnedIdx]);
+            nonPinnedIdx++;
+          }
+        }
+      }
+      
+      // Update groups
+      groups = newGroups;
+      
+      // Recalculate times
+      groups.forEach((group, index) => {
+        group.time = calculateStartTime(index, protocol, startTime, interval);
+        group.tee = calculateTee(index, protocol);
+      });
+      
+      renderGroups();
+    }
+
+    // Drag handlers (for players)
     function handleDragStart(e) {
+      e.stopPropagation(); // Don't trigger group drag
+      
       const reg = e.target.getAttribute('data-reg') || e.target.closest('[data-reg]')?.getAttribute('data-reg');
       draggedPlayer = admittedPlayers.find(p => p.reg === reg);
       
@@ -1525,14 +1802,19 @@
       
       e.target.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'player'); // Mark as player drag
     }
 
     function handleDragEnd(e) {
       e.target.classList.remove('dragging');
       draggedFromGroupId = null;
+      draggedPlayer = null;
     }
 
     function handleDragOver(e) {
+      // Only handle player drags
+      if (draggedGroupIndex !== null) return;
+      
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       e.currentTarget.classList.add('drag-over');
@@ -1543,6 +1825,9 @@
     }
 
     function handleDrop(e) {
+      // Only handle player drops
+      if (draggedGroupIndex !== null) return;
+      
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
       
@@ -1657,20 +1942,8 @@
       const group = groups.find(g => g.groupId === groupId);
       if (group) {
         group.players = group.players.filter(p => p.reg !== reg);
-        // Also unpin the player when removed
-        pinnedPlayers.delete(reg);
         renderGroups();
       }
-    }
-
-    // Toggle pin status for a player
-    function togglePin(reg) {
-      if (pinnedPlayers.has(reg)) {
-        pinnedPlayers.delete(reg);
-      } else {
-        pinnedPlayers.add(reg);
-      }
-      renderGroups();
     }
 
     // Select a group for removal or other actions
@@ -1687,12 +1960,12 @@
 
     // Open auto group modal
     function openAutoGroupModal() {
-      // Show pinned players info if any
+      // Show pinned groups info if any
       const pinnedInfo = document.getElementById('pinned-players-info');
       const pinnedCount = document.getElementById('pinned-count');
-      if (pinnedPlayers.size > 0) {
+      if (pinnedGroups.size > 0) {
         pinnedInfo.style.display = 'block';
-        pinnedCount.textContent = pinnedPlayers.size;
+        pinnedCount.textContent = pinnedGroups.size;
       } else {
         pinnedInfo.style.display = 'none';
       }
@@ -1712,27 +1985,35 @@
       const separateGender = document.getElementById('separate-gender').checked;
       const separateCategories = document.getElementById('separate-categories').checked;
       
-      // Get non-pinned players for distribution calculation
-      const nonPinnedPlayers = admittedPlayers.filter(p => !pinnedPlayers.has(p.reg));
+      // Get players NOT in pinned groups for distribution calculation
+      const playersInPinnedGroups = new Set();
+      pinnedGroups.forEach(groupIndex => {
+        if (groups[groupIndex]) {
+          groups[groupIndex].players.forEach(player => {
+            playersInPinnedGroups.add(player.reg);
+          });
+        }
+      });
+      const availablePlayersForGrouping = admittedPlayers.filter(p => !playersInPinnedGroups.has(p.reg));
       
       // Get player counts
       let playerCounts = [];
       
       if (separateGender) {
-        const males = nonPinnedPlayers.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
-        const females = nonPinnedPlayers.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
+        const males = availablePlayersForGrouping.filter(p => (p.gender || '').toLowerCase() === 'male' || (p.gender || '').toLowerCase() === 'm');
+        const females = availablePlayersForGrouping.filter(p => (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'f');
         if (males.length > 0) playerCounts.push({ label: 'Male', count: males.length });
         if (females.length > 0) playerCounts.push({ label: 'Female', count: females.length });
       } else if (separateCategories) {
         const categorized = {};
-        nonPinnedPlayers.forEach(p => {
+        availablePlayersForGrouping.forEach(p => {
           const cat = (p.categories && p.categories[0]) || 'Uncategorized';
           if (!categorized[cat]) categorized[cat] = 0;
           categorized[cat]++;
         });
         playerCounts = Object.entries(categorized).map(([cat, count]) => ({ label: cat, count }));
       } else {
-        playerCounts = [{ label: 'All Players', count: nonPinnedPlayers.length }];
+        playerCounts = [{ label: 'All Players', count: availablePlayersForGrouping.length }];
       }
 
       const section = document.getElementById('group-distribution-section');
@@ -1887,18 +2168,26 @@
       const startTime = document.getElementById('start-time').value;
       const interval = parseInt(document.getElementById('interval').value);
       
-      // Preserve pinned players in their current groups
-      const pinnedGroupsMap = new Map(); // reg -> { groupIndex, player }
-      groups.forEach((group, groupIndex) => {
-        group.players.forEach(player => {
-          if (pinnedPlayers.has(player.reg)) {
-            pinnedGroupsMap.set(player.reg, { groupIndex, player });
-          }
-        });
+      console.log('executeAutoGroup called');
+      console.log('admittedPlayers count:', admittedPlayers.length);
+      console.log('pinnedGroups:', [...pinnedGroups]);
+      
+      // Collect players from pinned groups (they will stay in place)
+      const playersInPinnedGroups = new Set();
+      pinnedGroups.forEach(groupIndex => {
+        if (groups[groupIndex]) {
+          groups[groupIndex].players.forEach(player => {
+            playersInPinnedGroups.add(player.reg);
+          });
+        }
       });
       
-      // Get non-pinned admitted players for auto grouping
-      const availablePlayers = admittedPlayers.filter(p => !pinnedPlayers.has(p.reg));
+      console.log('playersInPinnedGroups:', [...playersInPinnedGroups]);
+      
+      // Get players NOT in pinned groups for auto grouping
+      const availablePlayers = admittedPlayers.filter(p => !playersInPinnedGroups.has(p.reg));
+      
+      console.log('availablePlayers (not in pinned groups) count:', availablePlayers.length);
 
       // Separate players if needed
       let playerGroups = [];
@@ -1919,35 +2208,37 @@
         playerGroups = [{ label: 'All', players: availablePlayers }];
       }
 
-      // Preserve groups with pinned players, clear groups without pinned players
-      const preservedGroups = [];
-      if (pinnedGroupsMap.size > 0) {
-        // Keep groups that have pinned players (with only the pinned players)
-        const pinnedByGroup = new Map();
-        pinnedGroupsMap.forEach(({ groupIndex, player }) => {
-          if (!pinnedByGroup.has(groupIndex)) {
-            pinnedByGroup.set(groupIndex, []);
-          }
-          pinnedByGroup.get(groupIndex).push(player);
-        });
+      // Calculate how many groups we need
+      const totalPlayers = admittedPlayers.length;
+      const groupsNeeded = Math.ceil(totalPlayers / groupSize);
+      const MIN_GROUPS = 24;
+      const totalGroupsToCreate = Math.max(MIN_GROUPS, groupsNeeded);
+      
+      console.log('Groups needed:', groupsNeeded, 'Total groups to create:', totalGroupsToCreate);
+      
+      // Prepare groups - keep pinned groups completely intact
+      const newGroups = [];
+      
+      // Create groups: pinned groups keep their players, non-pinned groups start empty
+      for (let i = 0; i < totalGroupsToCreate; i++) {
+        const existingGroup = groups[i];
+        const isPinned = pinnedGroups.has(i);
         
-        // Create preserved groups with only pinned players
-        pinnedByGroup.forEach((players, groupIndex) => {
-          const originalGroup = groups[groupIndex];
-          if (originalGroup) {
-            preservedGroups.push({
-              groupId: originalGroup.groupId,
-              players: players,
-              time: originalGroup.time,
-              tee: originalGroup.tee,
-              preserved: true // Mark as preserved
-            });
-          }
+        // Pinned groups keep all their players, non-pinned groups start empty
+        const playersInGroup = isPinned && existingGroup 
+          ? [...existingGroup.players]
+          : [];
+        
+        newGroups.push({
+          groupId: existingGroup?.groupId || `group-${Date.now()}-${i}`,
+          players: playersInGroup,
+          time: calculateStartTime(i, protocol, startTime, interval),
+          tee: calculateTee(i, protocol)
         });
       }
       
-      // Clear existing groups and start with preserved ones
-      groups = [...preservedGroups];
+      // Replace groups with the new structure
+      groups = newGroups;
 
       // Sort players based on order type
       playerGroups.forEach((pg, pgIndex) => {
@@ -2013,78 +2304,24 @@
             break;
         }
 
-        // Create groups and assign players
-        // Check if there's a custom distribution for this player group
-        const customDist = customDistributions[pgIndex];
+        // Fill sorted players into the fixed groups sequentially
+        // Skip pinned groups entirely
+        let playerIndex = 0;
         
-        if (customDist && customDist.distribution) {
-          // Use custom distribution
-          let playerIndex = 0;
-          customDist.distribution.forEach(dist => {
-            for (let i = 0; i < dist.count; i++) {
-              const groupPlayers = sorted.slice(playerIndex, playerIndex + dist.size);
-              playerIndex += dist.size;
-              if (groupPlayers.length > 0) {
-                groups.push({
-                  groupId: `group-${Date.now()}-${groups.length}`,
-                  players: groupPlayers,
-                  time: calculateStartTime(groups.length, protocol, startTime, interval),
-                  tee: calculateTee(groups.length, protocol)
-                });
-              }
-            }
-          });
-        } else {
-          // Use default distribution (equal group sizes)
-          // Smaller groups go FIRST (they play faster)
-          const remainder = sorted.length % groupSize;
-          let playerIndex = 0;
+        for (let groupIdx = 0; groupIdx < groups.length && playerIndex < sorted.length; groupIdx++) {
+          // Skip pinned groups entirely
+          if (pinnedGroups.has(groupIdx)) {
+            console.log(`Skipping pinned group ${groupIdx + 1}`);
+            continue;
+          }
           
-          if (remainder === 0) {
-            // Perfect division - all groups same size
-            const numGroups = sorted.length / groupSize;
-            for (let i = 0; i < numGroups; i++) {
-              const groupPlayers = sorted.slice(i * groupSize, (i + 1) * groupSize);
-              groups.push({
-                groupId: `group-${Date.now()}-${groups.length}`,
-                players: groupPlayers,
-                time: calculateStartTime(groups.length, protocol, startTime, interval),
-                tee: calculateTee(groups.length, protocol)
-              });
-            }
-          } else {
-            // Has remainder - put smaller groups FIRST (they play faster)
-            const numGroups = Math.ceil(sorted.length / groupSize);
-            const numSmallerGroups = groupSize - remainder; // Number of groups that will have (groupSize - 1) players
-            const smallerGroupSize = groupSize - 1;
-            
-            // First create the smaller groups
-            for (let i = 0; i < numSmallerGroups; i++) {
-              const groupPlayers = sorted.slice(playerIndex, playerIndex + smallerGroupSize);
-              playerIndex += smallerGroupSize;
-              if (groupPlayers.length > 0) {
-                groups.push({
-                  groupId: `group-${Date.now()}-${groups.length}`,
-                  players: groupPlayers,
-                  time: calculateStartTime(groups.length, protocol, startTime, interval),
-                  tee: calculateTee(groups.length, protocol)
-                });
-              }
-            }
-            
-            // Then create the full-size groups
-            while (playerIndex < sorted.length) {
-              const groupPlayers = sorted.slice(playerIndex, playerIndex + groupSize);
-              playerIndex += groupSize;
-              if (groupPlayers.length > 0) {
-                groups.push({
-                  groupId: `group-${Date.now()}-${groups.length}`,
-                  players: groupPlayers,
-                  time: calculateStartTime(groups.length, protocol, startTime, interval),
-                  tee: calculateTee(groups.length, protocol)
-                });
-              }
-            }
+          const group = groups[groupIdx];
+          const availableSlots = groupSize - group.players.length;
+          
+          // Fill available slots in this group
+          for (let slot = 0; slot < availableSlots && playerIndex < sorted.length; slot++) {
+            group.players.push(sorted[playerIndex]);
+            playerIndex++;
           }
         }
       });
@@ -2135,70 +2372,206 @@
       return result;
     }
 
-    // Add a new empty group
+    // Add a new empty group at a specific position
+    // Pinned groups stay in place, non-pinned groups shift around them
     function addNewGroup() {
       const protocol = document.getElementById('protocol-type').value;
       const startTime = document.getElementById('start-time').value;
       const interval = parseInt(document.getElementById('interval').value);
       
+      // Find pinned groups
+      const pinnedGroupsList = [...pinnedGroups].map(idx => idx + 1).sort((a, b) => a - b); // 1-based for display
+      
+      let pinnedWarning = '';
+      if (pinnedGroupsList.length > 0) {
+        pinnedWarning = `\n\n📌 Pinned groups: ${pinnedGroupsList.join(', ')}\n(Pinned groups will stay in their position)`;
+      }
+      
+      // Ask user where to insert the new group
+      const position = prompt(`Insert new group at which position?\n\nEnter a number between 1 and ${groups.length + 1}\n(Enter ${groups.length + 1} or leave empty to add at the end)${pinnedWarning}`, groups.length + 1);
+      
+      if (position === null) return; // User cancelled
+      
+      let insertPosition = parseInt(position) - 1; // Convert to 0-based index
+      
+      // Validate input
+      if (isNaN(insertPosition) || insertPosition < 0) {
+        insertPosition = groups.length; // Add at end
+      } else if (insertPosition > groups.length) {
+        insertPosition = groups.length; // Add at end
+      }
+      
+      // Check if trying to insert at a pinned group's position
+      if (pinnedGroups.has(insertPosition)) {
+        alert(`Cannot insert a group at position ${insertPosition + 1} because Group ${insertPosition + 1} is pinned.\n\nPinned groups must stay in their exact position.`);
+        return;
+      }
+      
+      // Create new empty group
       const newGroup = {
         groupId: `group-${Date.now()}-${groups.length}`,
         players: [],
-        time: calculateStartTime(groups.length, protocol, startTime, interval),
-        tee: calculateTee(groups.length, protocol)
+        time: '',
+        tee: ''
       };
       
-      groups.push(newGroup);
+      // Build new groups array with pinned groups staying in place
+      // and non-pinned groups shifting to accommodate the new group
+      const newGroups = [];
+      const nonPinnedGroups = [];
+      
+      // Separate pinned and non-pinned groups
+      for (let i = 0; i < groups.length; i++) {
+        if (!pinnedGroups.has(i)) {
+          nonPinnedGroups.push({ group: groups[i], originalIndex: i });
+        }
+      }
+      
+      // Insert the new group into non-pinned groups at the right position
+      // Calculate where in the non-pinned sequence to insert
+      let nonPinnedInsertIndex = 0;
+      for (let i = 0; i < insertPosition; i++) {
+        if (!pinnedGroups.has(i)) {
+          nonPinnedInsertIndex++;
+        }
+      }
+      nonPinnedGroups.splice(nonPinnedInsertIndex, 0, { group: newGroup, originalIndex: -1 });
+      
+      // Rebuild the groups array
+      // Total positions = original length + 1
+      const totalPositions = groups.length + 1;
+      let nonPinnedIdx = 0;
+      
+      // New pinned groups set (indices may change as we add a new position)
+      const newPinnedGroups = new Set();
+      
+      for (let pos = 0; pos < totalPositions; pos++) {
+        // Check if there was a pinned group at or after this position that needs to stay
+        // A pinned group at original index X should stay at position X
+        let pinnedAtThisPos = null;
+        pinnedGroups.forEach(pinnedIdx => {
+          if (pinnedIdx === pos) {
+            pinnedAtThisPos = groups[pinnedIdx];
+            newPinnedGroups.add(pos);
+          }
+        });
+        
+        if (pinnedAtThisPos) {
+          newGroups.push(pinnedAtThisPos);
+        } else {
+          // Fill with next non-pinned group
+          if (nonPinnedIdx < nonPinnedGroups.length) {
+            newGroups.push(nonPinnedGroups[nonPinnedIdx].group);
+            nonPinnedIdx++;
+          }
+        }
+      }
+      
+      // Update groups and pinned groups
+      groups = newGroups;
+      pinnedGroups = newPinnedGroups;
+      
+      // Recalculate times and tees for all groups
+      groups.forEach((group, index) => {
+        group.time = calculateStartTime(index, protocol, startTime, interval);
+        group.tee = calculateTee(index, protocol);
+      });
+      
       renderGroups();
     }
 
     // Track selected group for removal
     let selectedGroupId = null;
 
-    // Remove selected/last empty group
+    // Remove a specific group by number
+    // Pinned groups stay in place, non-pinned groups shift to fill gaps
     function removeSelectedGroup() {
       if (groups.length === 0) {
         alert('No groups to remove.');
         return;
       }
       
-      // If a group is selected, remove it
-      if (selectedGroupId) {
-        const groupIndex = groups.findIndex(g => g.groupId === selectedGroupId);
-        if (groupIndex !== -1) {
-          const group = groups[groupIndex];
-          if (group.players.length > 0) {
-            if (!confirm(`Group has ${group.players.length} player(s). Remove anyway? Players will be moved back to the unassigned list.`)) {
-              return;
-            }
+      // Find pinned groups
+      const pinnedGroupsList = [...pinnedGroups].map(idx => idx + 1).sort((a, b) => a - b); // 1-based for display
+      
+      let pinnedWarning = '';
+      if (pinnedGroupsList.length > 0) {
+        pinnedWarning = `\n\n📌 Pinned groups: ${pinnedGroupsList.join(', ')}\n(Pinned groups will stay in their position)`;
+      }
+      
+      const groupNum = prompt(`Which group do you want to remove?\n\nEnter a number between 1 and ${groups.length}${pinnedWarning}`);
+      
+      if (groupNum === null) return; // User cancelled
+      
+      const groupIndex = parseInt(groupNum) - 1; // Convert to 0-based index
+      
+      // Validate input
+      if (isNaN(groupIndex) || groupIndex < 0 || groupIndex >= groups.length) {
+        alert('Invalid group number.');
+        return;
+      }
+      
+      // Don't allow deletion of pinned groups
+      if (pinnedGroups.has(groupIndex)) {
+        alert(`Cannot remove Group ${groupNum} because it is pinned.\n\nUnpin the group first if you want to remove it.`);
+        return;
+      }
+      
+      const group = groups[groupIndex];
+      
+      // Don't allow deletion if group has players
+      if (group.players.length > 0) {
+        alert(`Cannot remove Group ${groupNum} because it has ${group.players.length} player(s) assigned.\n\nPlease move or remove the players first.`);
+        return;
+      }
+      
+      // Build new groups array with pinned groups staying in place
+      // and non-pinned groups filling the gaps
+      const newGroups = [];
+      const nonPinnedGroups = [];
+      
+      // Collect non-pinned groups (excluding the one being removed)
+      for (let i = 0; i < groups.length; i++) {
+        if (!pinnedGroups.has(i) && i !== groupIndex) {
+          nonPinnedGroups.push(groups[i]);
+        }
+      }
+      
+      // Rebuild the groups array
+      // Total positions = original length - 1
+      const totalPositions = groups.length - 1;
+      let nonPinnedIdx = 0;
+      
+      // New pinned groups set - pinned groups keep their same index
+      const newPinnedGroups = new Set();
+      
+      for (let pos = 0; pos < totalPositions; pos++) {
+        // Check if there's a pinned group that should be at this position
+        let pinnedAtThisPos = null;
+        pinnedGroups.forEach(pinnedIdx => {
+          if (pinnedIdx === pos) {
+            pinnedAtThisPos = groups[pinnedIdx];
+            newPinnedGroups.add(pos);
           }
-          groups.splice(groupIndex, 1);
-          selectedGroupId = null;
-          // Recalculate times for remaining groups
-          recalculateGroupTimes();
-          renderGroups();
-          return;
+        });
+        
+        if (pinnedAtThisPos) {
+          newGroups.push(pinnedAtThisPos);
+        } else {
+          // Fill with next non-pinned group
+          if (nonPinnedIdx < nonPinnedGroups.length) {
+            newGroups.push(nonPinnedGroups[nonPinnedIdx]);
+            nonPinnedIdx++;
+          }
         }
       }
       
-      // Otherwise, try to remove the last empty group
-      for (let i = groups.length - 1; i >= 0; i--) {
-        if (groups[i].players.length === 0) {
-          groups.splice(i, 1);
-          recalculateGroupTimes();
-          renderGroups();
-          return;
-        }
-      }
+      // Update groups and pinned groups
+      groups = newGroups;
+      pinnedGroups = newPinnedGroups;
+      selectedGroupId = null;
       
-      // If no empty groups, ask to remove the last group
-      const lastGroup = groups[groups.length - 1];
-      if (lastGroup.players.length > 0) {
-        if (!confirm(`Last group has ${lastGroup.players.length} player(s). Remove anyway? Players will be moved back to the unassigned list.`)) {
-          return;
-        }
-      }
-      groups.pop();
+      // Recalculate times for remaining groups
       recalculateGroupTimes();
       renderGroups();
     }
@@ -2215,20 +2588,21 @@
       });
     }
 
-    // Clear all groups
+    // Clear all groups (keeps pinned groups intact, clears all other groups)
     function clearGroups() {
-      const pinnedCount = pinnedPlayers.size;
+      const pinnedCount = pinnedGroups.size;
       const message = pinnedCount > 0 
-        ? `Are you sure you want to clear all groups?\n\n📌 ${pinnedCount} pinned player(s) will remain in their groups.`
+        ? `Are you sure you want to clear all groups?\n\n📌 ${pinnedCount} pinned group(s) will remain intact.`
         : 'Are you sure you want to clear all groups?';
       
       if (confirm(message)) {
-        groups.forEach(g => {
-          // Keep only pinned players in each group
-          g.players = g.players.filter(p => pinnedPlayers.has(p.reg));
+        groups.forEach((g, idx) => {
+          // Keep pinned groups intact, clear non-pinned groups
+          if (!pinnedGroups.has(idx)) {
+            g.players = [];
+          }
         });
-        // Remove empty groups (no pinned players)
-        groups = groups.filter(g => g.players.length > 0);
+        // Don't remove empty groups - keep all 24 boxes
         renderGroups();
       }
     }
