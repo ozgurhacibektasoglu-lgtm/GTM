@@ -639,6 +639,11 @@
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     }
     
+    /* Marker not logged in state */
+    .btn-save.btn-not-logged-in {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
     /* Waiting for marker state */
     .btn-save.btn-pending {
       background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
@@ -1269,6 +1274,7 @@
     let marksPlayerData = null; // The player THIS player marks (enters score for)
     let markerPlayerId = null; // The player who marks THIS player (enters score for us)
     let markerScoresForMe = Array(18).fill(null); // What my marker entered for me
+    let markerHasLoggedIn = false; // Whether marker has started entering scores
     let currentHole = 1;
     let showingFrontNine = true;
     let scores = {
@@ -1458,10 +1464,14 @@
           const markerScoresRef = db.ref(`digitalScores/${roundId}/${markerPlayerId}`);
           markerScoresRef.on('value', (snapshot) => {
             const markerData = snapshot.val();
-            if (markerData && markerData.marksPlayerScores) {
-              // The marker's "marksPlayerScores" are the scores they entered for ME
-              markerScoresForMe = markerData.marksPlayerScores;
-              console.log('Updated marker scores for me:', markerScoresForMe);
+            if (markerData) {
+              // Marker has logged in and started entering scores
+              markerHasLoggedIn = true;
+              if (markerData.marksPlayerScores) {
+                // The marker's "marksPlayerScores" are the scores they entered for ME
+                markerScoresForMe = markerData.marksPlayerScores;
+                console.log('Updated marker scores for me:', markerScoresForMe);
+              }
               // Re-render to show any disputes
               render();
             }
@@ -2531,7 +2541,18 @@
         `;
       }
       
-      // State 3: Round complete but marker hasn't entered all scores yet
+      // State 3: Round complete but marker hasn't logged in yet
+      if (!markerHasLoggedIn && markerPlayerId) {
+        return `
+          <div class="save-bar">
+            <button class="btn-save btn-not-logged-in" disabled>
+              📵 Marker Has Not Logged In Yet
+            </button>
+          </div>
+        `;
+      }
+      
+      // State 4: Round complete but marker hasn't entered all scores yet
       const markerPendingHoles = getMarkerPendingHoles();
       if (markerPendingHoles.length > 0) {
         return `
@@ -2543,7 +2564,7 @@
         `;
       }
       
-      // State 4: Round complete, no disputes, marker confirmed - show sign button
+      // State 5: Round complete, no disputes, marker confirmed - show sign button
       return `
         <div class="save-bar">
           <button class="btn-save btn-sign" onclick="openSignModal()">
