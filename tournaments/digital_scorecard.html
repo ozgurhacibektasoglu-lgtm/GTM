@@ -1657,7 +1657,10 @@
 
     // Sync scores to liveScores for leaderboard display
     function syncToLiveScores(targetPlayerId, targetPlayerData, scoresArray) {
-      if (!db || !targetPlayerId || !targetPlayerData) return;
+      if (!db || !targetPlayerId || !targetPlayerData) {
+        console.log('syncToLiveScores: missing data', { db: !!db, targetPlayerId, targetPlayerData: !!targetPlayerData });
+        return;
+      }
       
       // Convert scores array to liveScores format (convert null to empty string)
       const holesArray = scoresArray.map(s => {
@@ -1669,6 +1672,13 @@
       // Create player key (same format as live_scoring.html uses)
       const playerKey = targetPlayerData.reg || targetPlayerData.playerId || 
                         `${targetPlayerData.firstName}-${targetPlayerData.lastName}`;
+      
+      console.log('syncToLiveScores:', {
+        roundId: roundId,
+        playerKey: playerKey,
+        holesArray: holesArray,
+        targetPlayerData: targetPlayerData
+      });
       
       const liveScoreData = {
         holes: holesArray,
@@ -1686,12 +1696,13 @@
       
       // Save to liveScores path (for live leaderboard)
       db.ref(`liveScores/${roundId}/${playerKey}`).set(liveScoreData)
-        .then(() => console.log('Live scores synced for', playerKey))
-        .catch(err => console.error('Live scores sync error:', err));
+        .then(() => console.log('✅ Live scores synced to liveScores/' + roundId + '/' + playerKey))
+        .catch(err => console.error('❌ Live scores sync error:', err));
       
       // Also save to regular scores path for compatibility
       db.ref(`scores/${roundId}/${playerKey}`).set(liveScoreData)
-        .catch(err => console.error('Scores sync error:', err));
+        .then(() => console.log('✅ Scores synced to scores/' + roundId + '/' + playerKey))
+        .catch(err => console.error('❌ Scores sync error:', err));
     }
 
     function saveScoresToStorage() {
@@ -1720,7 +1731,10 @@
         
         // Sync only player's own scores to live leaderboard
         // (marker scores are only for validation/dispute detection, not for leaderboard)
+        console.log('Calling syncToLiveScores with:', { playerId, playerData, scores: scores.player });
         syncToLiveScores(playerId, playerData, scores.player);
+      } else {
+        console.log('db not available for sync');
       }
     }
 
