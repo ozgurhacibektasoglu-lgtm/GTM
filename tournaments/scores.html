@@ -591,14 +591,15 @@
         }
         
         try {
+          // First check the scores path (new integration)
           const scoresRef = window.db.ref(`scores/${roundId}`);
-          const snapshot = await scoresRef.once('value');
-          const digitalScores = snapshot.val();
+          const scoresSnapshot = await scoresRef.once('value');
+          const newDigitalScores = scoresSnapshot.val() || {};
           
-          if (!digitalScores) {
-            console.log('No digital scorecard scores found for round:', roundId);
-            return 0;
-          }
+          // Also check digitalScores path for locked scorecards (legacy + current)
+          const digitalScoresRef = window.db.ref(`digitalScores/${roundId}`);
+          const digitalSnapshot = await digitalScoresRef.once('value');
+          const digitalScorecardData = digitalSnapshot.val() || {};
           
           // Merge with existing scores data
           const scoresData = getScoresData();
@@ -606,23 +607,103 @@
             scoresData[roundId] = {};
           }
           
+          // Get course data for calculations
+          const roundData = currentTournament?.meta?.roundsData?.[currentRoundIndex];
+          let courseHoles = [];
+          if (roundData && roundData.course) {
+            const courses = getCourses();
+            const course = courses.find(c => c.courseId === roundData.course);
+            if (course && course.holes) {
+              courseHoles = course.holes;
+            }
+          }
+          
           let importedCount = 0;
-          for (const [playerKey, scoreData] of Object.entries(digitalScores)) {
-            // Only import if it came from digital scorecard AND hasn't been manually edited
+          
+          // Process new-style scores (already in correct format)
+          for (const [playerKey, scoreData] of Object.entries(newDigitalScores)) {
             if (scoreData.syncedFromDigitalScorecard) {
               const existingScore = scoresData[roundId][playerKey];
-              
-              // Check if we should overwrite - only if no manual entry exists or existing is also from digital
               if (!existingScore || existingScore.syncedFromDigitalScorecard || !hasManualScores(existingScore)) {
                 scoresData[roundId][playerKey] = scoreData;
                 importedCount++;
-                console.log('📱 Imported digital scorecard for:', playerKey);
+                console.log('📱 Imported digital scorecard (new) for:', playerKey);
               }
             }
           }
           
+          // Process legacy digitalScores (need to convert format)
+          for (const [playerId, playerDigitalData] of Object.entries(digitalScorecardData)) {
+            // Only import if scorecard is locked/signed
+            if (!playerDigitalData.scorecardStatus?.locked) continue;
+            
+            // Get player's reg key
+            const playerKey = playerDigitalData.playerReg || playerId;
+            
+            // Skip if already imported from new path
+            if (scoresData[roundId][playerKey]?.syncedFromDigitalScorecard) continue;
+            
+            // Skip if manual scores exist
+            if (hasManualScores(scoresData[roundId][playerKey])) continue;
+            
+            // Convert playerScores array to scores format
+            const playerScores = playerDigitalData.playerScores || [];
+            if (playerScores.length === 0) continue;
+            
+            const holesArray = playerScores.map(score => {
+              if (score === null || score === undefined) return '';
+              if (score === 'X') return 0;
+              return score;
+            });
+            
+            // Calculate points and stableford
+            const pointsArray = [];
+            const stablefordPointsArray = [];
+            const playerHcp = playerDigitalData.playerHcp || 0;
+            
+            for (let i = 0; i < 18; i++) {
+              const holeScore = holesArray[i];
+              if (holeScore === '' || holeScore === 0) {
+                pointsArray.push('');
+                stablefordPointsArray.push(0);
+                continue;
+              }
+              
+              const holePar = courseHoles[i]?.par || 4;
+              const holeHcp = courseHoles[i]?.handicap || (i + 1);
+              
+              const strokesReceived = Math.floor(playerHcp / 18) + (holeHcp <= (playerHcp % 18) ? 1 : 0);
+              const netScore = holeScore - strokesReceived;
+              const points = holePar - holeScore;
+              pointsArray.push(points);
+              
+              const netToPar = netScore - holePar;
+              let stableford = 0;
+              if (netToPar <= -3) stableford = 5;
+              else if (netToPar === -2) stableford = 4;
+              else if (netToPar === -1) stableford = 3;
+              else if (netToPar === 0) stableford = 2;
+              else if (netToPar === 1) stableford = 1;
+              stablefordPointsArray.push(stableford);
+            }
+            
+            // Build score data
+            scoresData[roundId][playerKey] = {
+              holes: holesArray,
+              points: pointsArray,
+              stablefordPoints: stablefordPointsArray,
+              incompleteHoles: holesArray.map((s, i) => s === 0 ? i : -1).filter(i => i >= 0),
+              status: '',
+              digitalScorecard: true,
+              signedAt: playerDigitalData.scorecardStatus?.lockedAt || Date.now(),
+              syncedFromDigitalScorecard: true
+            };
+            
+            importedCount++;
+            console.log('📱 Imported digital scorecard (legacy) for:', playerKey);
+          }
+          
           if (importedCount > 0) {
-            // Save to localStorage
             localStorage.setItem('scores', JSON.stringify(scoresData));
             console.log(`✅ Imported ${importedCount} digital scorecard scores for round ${roundId}`);
           }

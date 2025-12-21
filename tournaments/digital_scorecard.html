@@ -2174,6 +2174,8 @@
             playerScores: scores.player,
             marksPlayerScores: scores.marksPlayer,
             playerId: playerId,
+            playerReg: playerData.reg || playerId,
+            playerHcp: playerData.handicap || playerData.hcp || 0,
             playerName: `${playerData.firstName} ${playerData.lastName}`,
             marksPlayerId: playerData.marksPlayerId,
             marksPlayerName: playerData.marksPlayerName,
