@@ -70,11 +70,14 @@
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
+        align-items: center;
       }
       
-      .tournaments-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
-      .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; overflow-x: auto; }
+      .tournaments-container { max-width: 1200px; margin: 24px auto; padding: 24px; padding-top: 16px; }
+      .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); margin-bottom: 24px; overflow: hidden; }
+      .table-scroll { max-height: calc(100vh - 280px); overflow-y: auto; }
       table { width: 100%; border-collapse: collapse; }
+      thead { position: sticky; top: 0; z-index: 10; }
       th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; }
       th.sortable { cursor: pointer; user-select: none; }
       th .sort-indicator { margin-left: 8px; font-size: 12px; color: #475569 }
@@ -96,7 +99,7 @@
       .modal-buttons .btn-secondary{background:white;border:1px solid #e6e9ef;color:#333}
       
       /* Year Filter */
-      .year-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+      .year-filter { display: flex; align-items: center; gap: 10px; margin-left: auto; }
       .year-filter label { font-weight: 600; color: #475569; font-size: 14px; }
       .year-select { padding: 8px 32px 8px 12px; border: 1px solid #e2e8f0; background: #fff; color: #1e293b; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; min-width: 100px; }
       .year-select:hover { border-color: #cbd5e1; }
@@ -185,6 +188,13 @@
           <button class="btn" id="btn-delete-tournament" style="background: linear-gradient(180deg, #64748b, #475569);">Delete Tournament</button>
           <button class="btn" id="btn-export-data" style="background: linear-gradient(180deg, #3b82f6, #2563eb);">📤 Export Data</button>
           <button class="btn" id="btn-push-cloud" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">☁️ Push to Cloud</button>
+          <!-- Year Filter -->
+          <div class="year-filter">
+            <label for="yearSelect">Year:</label>
+            <select class="year-select" id="yearSelect">
+              <!-- Years will be populated dynamically -->
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -221,17 +231,8 @@
     </div>
     
     <main class="tournaments-container">
-      <p class="lead" style="margin-top: 0;">Manage tournament information, admissions, draws, and results.</p>
-
-      <!-- Year Filter -->
-      <div class="year-filter">
-        <label for="yearSelect">Year:</label>
-        <select class="year-select" id="yearSelect">
-          <!-- Years will be populated dynamically -->
-        </select>
-      </div>
-
       <div class="table-wrapper">
+        <div class="table-scroll">
         <table id="tournaments-table">
           <thead>
               <tr>
@@ -248,6 +249,7 @@
             <!-- Rows will be inserted here by JavaScript -->
           </tbody>
         </table>
+        </div>
       </div>
       
       <div id="export-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
