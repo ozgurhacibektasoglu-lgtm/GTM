@@ -153,6 +153,606 @@
         background: #059669;
       }
       
+      /* ========================================
+         MATCH PLAY LEADERBOARD STYLES
+         ======================================== */
+      
+      .match-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .match-card-lb {
+        background: rgba(255,255,255,0.08);
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .match-card-lb:hover {
+        background: rgba(255,255,255,0.12);
+        transform: translateY(-2px);
+      }
+      
+      .match-card-lb.completed {
+        opacity: 0.8;
+      }
+      
+      .match-card-header {
+        background: rgba(0,0,0,0.3);
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .match-card-info {
+        font-size: 13px;
+        color: rgba(255,255,255,0.7);
+        font-weight: 600;
+      }
+      
+      .match-format-label {
+        background: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      
+      .match-card-body {
+        padding: 20px;
+      }
+      
+      .match-competitors-lb {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      
+      .match-side-lb {
+        flex: 1;
+        text-align: center;
+      }
+      
+      .match-side-lb.home {
+        text-align: left;
+      }
+      
+      .match-side-lb.away {
+        text-align: right;
+      }
+      
+      .match-side-names {
+        font-size: 16px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 4px;
+      }
+      
+      .match-side-names.winning {
+        color: #10b981;
+      }
+      
+      .match-side-names.losing {
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .match-side-club {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .match-side-hcp {
+        font-size: 11px;
+        color: #a78bfa;
+        margin-top: 4px;
+      }
+      
+      .match-result-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 120px;
+      }
+      
+      .match-score-arrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      
+      .match-arrow {
+        font-size: 24px;
+        transition: transform 0.3s ease;
+      }
+      
+      .match-arrow.left {
+        color: #10b981;
+      }
+      
+      .match-arrow.right {
+        color: #10b981;
+        transform: scaleX(-1);
+      }
+      
+      .match-score-text {
+        font-size: 24px;
+        font-weight: 800;
+        color: white;
+      }
+      
+      .match-score-text.all-square {
+        color: rgba(255,255,255,0.6);
+        font-size: 18px;
+      }
+      
+      .match-thru-text {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .match-final-badge {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+      
+      /* Match Detail Modal */
+      .match-detail-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 1000;
+        display: none;
+        overflow-y: auto;
+      }
+      
+      .match-detail-modal.active {
+        display: block;
+      }
+      
+      .match-detail-content {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 0 20px 40px;
+      }
+      
+      .match-detail-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+      
+      .match-detail-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .match-detail-title {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      
+      .match-detail-vs {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+      
+      .match-detail-names {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      
+      .match-detail-score {
+        text-align: center;
+        font-size: 36px;
+        font-weight: 800;
+        color: white;
+        margin-top: 16px;
+      }
+      
+      /* Scorecard Table in Modal */
+      .match-scorecard {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        overflow-x: auto;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .match-scorecard table {
+        width: 100%;
+        min-width: 800px;
+        border-collapse: collapse;
+      }
+      
+      .match-scorecard th,
+      .match-scorecard td {
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .match-scorecard th {
+        background: rgba(0,0,0,0.3);
+        font-weight: 700;
+        color: rgba(255,255,255,0.7);
+        font-size: 12px;
+      }
+      
+      .match-scorecard th:first-child,
+      .match-scorecard td:first-child {
+        text-align: left;
+        padding-left: 16px;
+        position: sticky;
+        left: 0;
+        background: #1e293b;
+        z-index: 1;
+      }
+      
+      .match-scorecard .player-name-cell {
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+      }
+      
+      .match-scorecard .hcp-cell {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .match-scorecard .score-won {
+        background: rgba(16, 185, 129, 0.3);
+        color: #10b981;
+        font-weight: 700;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .match-scorecard .score-lost {
+        background: rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        font-weight: 700;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .match-scorecard .score-halved {
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .match-status-row td {
+        font-weight: 700;
+        background: rgba(139, 92, 246, 0.2);
+      }
+      
+      .match-status-row .home-up {
+        color: #3b82f6;
+      }
+      
+      .match-status-row .away-up {
+        color: #ec4899;
+      }
+      
+      .match-status-row .all-square {
+        color: rgba(255,255,255,0.5);
+      }
+      
+      /* Match Play Leaderboard Container */
+      .match-play-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+      }
+      
+      .match-card {
+        background: rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: grid;
+        grid-template-columns: 40px 1fr 60px;
+        gap: 12px;
+        align-items: center;
+      }
+      
+      .match-card:hover {
+        background: rgba(255,255,255,0.12);
+        transform: translateY(-2px);
+      }
+      
+      .match-card.expanded {
+        background: rgba(255,255,255,0.15);
+      }
+      
+      .match-card.completed {
+        opacity: 0.85;
+      }
+      
+      .match-card.in-progress {
+        border-left: 3px solid #10b981;
+      }
+      
+      .match-number {
+        font-size: 14px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.5);
+        background: rgba(0,0,0,0.3);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .match-teams {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .team-side {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.2);
+      }
+      
+      .team-side.home {
+        text-align: left;
+        border-left: 3px solid #3b82f6;
+      }
+      
+      .team-side.away {
+        text-align: right;
+        border-right: 3px solid #ec4899;
+      }
+      
+      .team-side.leading {
+        background: rgba(16, 185, 129, 0.2);
+      }
+      
+      .team-name {
+        font-weight: 600;
+        color: white;
+        font-size: 14px;
+      }
+      
+      .match-status-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-width: 100px;
+      }
+      
+      .arrow-indicator {
+        font-size: 16px;
+        color: #10b981;
+        animation: pulse-arrow 1.5s ease-in-out infinite;
+      }
+      
+      @keyframes pulse-arrow {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      .match-score-badge {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      
+      .match-score-badge.in-progress {
+        background: rgba(16, 185, 129, 0.3);
+        color: #10b981;
+      }
+      
+      .match-score-badge.completed {
+        background: rgba(139, 92, 246, 0.3);
+        color: #a78bfa;
+      }
+      
+      .match-score-badge.not-started {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .match-thru {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+        text-align: center;
+      }
+      
+      /* Match Details Panel */
+      .match-details-panel {
+        grid-column: 1 / -1;
+        background: rgba(0,0,0,0.3);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 12px;
+        overflow-x: auto;
+      }
+      
+      .match-details-empty {
+        text-align: center;
+        color: rgba(255,255,255,0.5);
+        padding: 20px;
+      }
+      
+      .hole-score-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 700px;
+      }
+      
+      .hole-header-row,
+      .hole-par-row,
+      .hole-score-row,
+      .hole-result-row {
+        display: grid;
+        grid-template-columns: 80px repeat(18, 1fr);
+        gap: 2px;
+        align-items: center;
+      }
+      
+      .hole-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        padding: 4px;
+        position: sticky;
+        left: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      
+      .hole-num,
+      .hole-par,
+      .hole-score,
+      .hole-result {
+        text-align: center;
+        font-size: 12px;
+        padding: 6px 2px;
+        border-radius: 4px;
+      }
+      
+      .hole-num {
+        font-weight: 700;
+        color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.05);
+      }
+      
+      .hole-par {
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .hole-score-row.home {
+        background: rgba(59, 130, 246, 0.1);
+      }
+      
+      .hole-score-row.away {
+        background: rgba(236, 72, 153, 0.1);
+      }
+      
+      .hole-score {
+        font-weight: 600;
+        color: white;
+        background: rgba(255,255,255,0.1);
+      }
+      
+      .hole-score.eagle { background: #fbbf24; color: #78350f; }
+      .hole-score.birdie { background: #dc2626; color: white; }
+      .hole-score.par { background: rgba(255,255,255,0.2); }
+      .hole-score.bogey { background: #1e293b; }
+      .hole-score.double { background: #3b82f6; }
+      
+      .hole-result {
+        font-weight: 700;
+      }
+      
+      .hole-result.home-won {
+        background: rgba(59, 130, 246, 0.3);
+        color: #3b82f6;
+      }
+      
+      .hole-result.away-won {
+        background: rgba(236, 72, 153, 0.3);
+        color: #ec4899;
+      }
+      
+      .hole-result.halved {
+        color: rgba(255,255,255,0.4);
+      }
+      
+      /* Responsive Match Play */
+      @media (max-width: 768px) {
+        .match-card {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        
+        .match-number {
+          display: none;
+        }
+        
+        .match-teams {
+          flex-direction: column;
+        }
+        
+        .team-side {
+          width: 100%;
+          text-align: center !important;
+          border-left: none !important;
+          border-right: none !important;
+        }
+        
+        .team-side.home {
+          border-top: 3px solid #3b82f6;
+        }
+        
+        .team-side.away {
+          border-bottom: 3px solid #ec4899;
+        }
+        
+        .match-status-arrow {
+          width: 100%;
+        }
+        
+        .match-thru {
+          margin-top: 8px;
+        }
+      }
+
       /* Leaderboard Table */
       .leaderboard-wrapper {
         background: rgba(255,255,255,0.05);
@@ -623,6 +1223,53 @@
       let settingsListener = null;
       let isLiveScoringActive = true;
       let isLeaderboardVisible = true;
+      
+      // Match play state
+      let isMatchPlay = false;
+      let matchPlayFormat = 'singles'; // singles, fourball, foursome
+      let liveMatchScores = {};
+      let drawData = null;
+      
+      // Detect if tournament is match play
+      function detectMatchPlay() {
+        if (!currentTournament) {
+          isMatchPlay = false;
+          return;
+        }
+        
+        const type = (currentTournament.type || '').toLowerCase();
+        isMatchPlay = type.includes('match');
+        
+        if (isMatchPlay) {
+          // Check multiple possible locations for game format
+          matchPlayFormat = currentTournament.gameFormat || 
+                           currentTournament.meta?.gameFormat ||
+                           currentTournament.matchType ||
+                           currentTournament.meta?.matchType ||
+                           'singles';
+          
+          // If type contains "teams" or teamsTournament is yes, it's likely fourball
+          const isTeamsTournament = currentTournament.meta?.teamsTournament === 'yes' || 
+                                    type.includes('teams');
+          
+          // If we have team pairings defined, it's a team format (fourball/foursome)
+          const hasTeamPairings = currentTournament.teamPairings && 
+                                  Object.keys(currentTournament.teamPairings).length > 0;
+          
+          // Override to fourball if it's a teams tournament with pairings but format is still singles
+          if (matchPlayFormat === 'singles' && (isTeamsTournament || hasTeamPairings)) {
+            matchPlayFormat = 'fourball';
+          }
+          
+          // Normalize the format value
+          matchPlayFormat = matchPlayFormat.toLowerCase();
+          if (matchPlayFormat === 'foursomes') matchPlayFormat = 'foursome';
+          
+          console.log('Match play detected - format:', matchPlayFormat);
+        } else {
+          matchPlayFormat = 'singles';
+        }
+      }
 
       // Initialize
       document.addEventListener('DOMContentLoaded', async function() {
@@ -747,6 +1394,9 @@
           if (!currentTournament) {
             throw new Error('Tournament not found');
           }
+          
+          // Detect match play tournament
+          detectMatchPlay();
           
           // Set round - use URL param, or default to FIRST round (not last)
           const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
@@ -908,6 +1558,27 @@
 
       // Load categories
       function loadCategories() {
+        // For match play, show simplified tabs
+        if (isMatchPlay) {
+          const tabsContainer = document.getElementById('category-tabs');
+          tabsContainer.innerHTML = `<button class="category-tab active" data-category="MATCHPLAY" onclick="selectCategory('MATCHPLAY')">Matches</button>`;
+          tabsContainer.style.display = 'flex';
+          currentCategory = 'MATCHPLAY';
+          
+          // Update table header for match play
+          const thead = document.querySelector('.leaderboard-table thead tr');
+          if (thead) {
+            thead.innerHTML = `
+              <th style="width: 60px;">Match</th>
+              <th>Home</th>
+              <th class="center" style="width: 100px;">Status</th>
+              <th>Away</th>
+              <th class="center" style="width: 60px;">Thru</th>
+            `;
+          }
+          return;
+        }
+        
         // Check both direct categories and meta.categories
         const categories = currentTournament.categories || currentTournament.meta?.categories || [];
         const tabsContainer = document.getElementById('category-tabs');
@@ -1144,7 +1815,7 @@
         
         if (!db || !currentRoundId) return;
         
-        // Listen for live scores
+        // Listen for live scores (stroke play)
         const liveScoresRef = db.ref(`liveScores/${currentRoundId}`);
         
         firebaseListener = liveScoresRef.on('value', (snapshot) => {
@@ -1161,6 +1832,39 @@
           liveScores = newScores;
           renderLeaderboard(changedPlayers);
         });
+        
+        // Listen for match scores (match play)
+        if (isMatchPlay) {
+          const matchScoresRef = db.ref(`liveMatchScores/${currentRoundId}`);
+          matchScoresRef.on('value', (snapshot) => {
+            liveMatchScores = snapshot.val() || {};
+            console.log('Live match scores updated:', liveMatchScores);
+            renderLeaderboard();
+          });
+          
+          // Load draw data for match info - try direct path first
+          console.log('Loading draw data for roundId:', currentRoundId);
+          const drawRef = db.ref(`draws/${currentRoundId}`);
+          drawRef.once('value').then(snapshot => {
+            drawData = snapshot.val();
+            console.log('Draw data loaded from Firebase:', drawData);
+            
+            // If no draw data from Firebase, try alternative round ID format
+            if (!drawData || !drawData.groups) {
+              const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+              console.log('Trying alternative roundId for draws:', altRoundId);
+              db.ref(`draws/${altRoundId}`).once('value').then(altSnapshot => {
+                if (altSnapshot.val() && altSnapshot.val().groups) {
+                  drawData = altSnapshot.val();
+                  console.log('Draw data loaded with alt key:', drawData);
+                }
+                renderLeaderboard();
+              });
+            } else {
+              renderLeaderboard();
+            }
+          });
+        }
         
         // Listen for live settings (active/inactive)
         const settingsRef = db.ref(`liveSettings/${currentRoundId}`);
@@ -1384,8 +2088,16 @@
       function renderLeaderboard(changedPlayers = []) {
         console.log('=== renderLeaderboard called ===');
         console.log('currentCategory:', currentCategory);
+        console.log('isMatchPlay:', isMatchPlay);
         console.log('isTeamLeaderboardView():', isTeamLeaderboardView());
         console.log('teamsTournament:', currentTournament?.meta?.teamsTournament);
+        
+        // Check if match play - render match-based leaderboard
+        if (isMatchPlay) {
+          console.log('Routing to renderMatchPlayLeaderboard');
+          renderMatchPlayLeaderboard();
+          return;
+        }
         
         // Check if we should show team leaderboard
         if (isTeamLeaderboardView()) {
@@ -1875,6 +2587,308 @@
         
         html += '</div>';
         return html;
+      }
+
+      // Render match play leaderboard
+      function renderMatchPlayLeaderboard() {
+        const container = document.getElementById('leaderboard-body');
+        const noData = document.getElementById('no-data');
+        
+        // Build matches from draw data (groups) similar to live_scoring.html
+        let matches = [];
+        
+        if (drawData && drawData.groups && drawData.groups.length > 0) {
+          // Construct matches from groups
+          drawData.groups.forEach((group, groupIndex) => {
+            const players = group.players || [];
+            if (players.length < 2) return;
+            
+            if (matchPlayFormat === 'singles') {
+              // Singles: Create matches for pairs (1v2, 3v4)
+              const numMatches = Math.floor(players.length / 2);
+              
+              for (let i = 0; i < numMatches; i++) {
+                const player1 = players[i * 2];
+                const player2 = players[i * 2 + 1];
+                
+                if (!player1 || !player2) return;
+                
+                const matchKey = `match_${groupIndex}_${i}`;
+                matches.push({
+                  key: matchKey,
+                  home: player1,
+                  away: player2,
+                  group: group,
+                  liveScore: liveMatchScores[matchKey] || null
+                });
+              }
+            } else {
+              // Fourball/Foursome: Group is one match (2v2)
+              if (players.length < 4) return;
+              
+              const matchKey = `match_${groupIndex}`;
+              matches.push({
+                key: matchKey,
+                home: { player1: players[0], player2: players[1] },
+                away: { player1: players[2], player2: players[3] },
+                group: group,
+                liveScore: liveMatchScores[matchKey] || null
+              });
+            }
+          });
+        } else if (Object.keys(liveMatchScores).length > 0) {
+          // Fall back to live match scores if no draw data
+          matches = Object.entries(liveMatchScores).map(([key, score]) => ({
+            key,
+            home: score.home || { name: 'Home' },
+            away: score.away || { name: 'Away' },
+            liveScore: score
+          }));
+        }
+        
+        // Update stats - use correct element IDs
+        const totalMatches = matches.length;
+        const inProgress = matches.filter(m => m.liveScore && m.liveScore.status === 'in-progress').length;
+        const completed = matches.filter(m => m.liveScore && m.liveScore.status === 'completed').length;
+        
+        const statLeader = document.getElementById('stat-leader');
+        const statPlayers = document.getElementById('stat-players');
+        const statScoring = document.getElementById('stat-scoring');
+        const statFinished = document.getElementById('stat-finished');
+        
+        if (statLeader) statLeader.textContent = `${totalMatches}`;
+        if (statPlayers) statPlayers.textContent = `${inProgress}`;
+        if (statScoring) statScoring.textContent = `${totalMatches - completed - inProgress}`;
+        if (statFinished) statFinished.textContent = `${completed}`;
+        
+        // Update stat labels for match play
+        const labels = document.querySelectorAll('.stat-label');
+        if (labels.length >= 4) {
+          labels[0].textContent = 'Matches';
+          labels[1].textContent = 'In Progress';
+          labels[2].textContent = 'Not Started';
+          labels[3].textContent = 'Completed';
+        }
+        
+        if (matches.length === 0) {
+          container.innerHTML = '';
+          noData.style.display = 'block';
+          noData.innerHTML = `
+            <div class="no-data-icon">⛳</div>
+            <div>No matches scheduled</div>
+            <div style="margin-top: 8px; font-size: 13px;">Matches will appear here once the draw is made</div>
+          `;
+          return;
+        }
+        
+        noData.style.display = 'none';
+        
+        // Build match cards
+        let html = '<div class="match-play-container">';
+        
+        matches.forEach((match, idx) => {
+          const matchScore = match.liveScore;
+          const homeScore = matchScore?.homeScore || 0;
+          const awayScore = matchScore?.awayScore || 0;
+          const thru = matchScore?.thru || 0;
+          const status = matchScore?.status || 'not-started';
+          
+          // Determine match status text and arrow direction
+          let statusText = 'Not Started';
+          let arrowDirection = 'none'; // none, home, away
+          let statusClass = 'not-started';
+          
+          if (status === 'completed') {
+            if (matchScore.finalResult) {
+              statusText = matchScore.finalResult; // e.g., "3 & 2", "1 UP", "AS"
+            } else if (homeScore > awayScore) {
+              const diff = homeScore - awayScore;
+              statusText = `${diff} & ${18 - thru}`; // Closed out with remaining holes
+              arrowDirection = 'home';
+            } else if (awayScore > homeScore) {
+              const diff = awayScore - homeScore;
+              statusText = `${diff} & ${18 - thru}`;
+              arrowDirection = 'away';
+            } else {
+              statusText = 'AS';
+            }
+            statusClass = 'completed';
+          } else if (status === 'in-progress' || thru > 0) {
+            if (homeScore > awayScore) {
+              statusText = `${homeScore - awayScore} UP`;
+              arrowDirection = 'home';
+            } else if (awayScore > homeScore) {
+              statusText = `${awayScore - homeScore} UP`;
+              arrowDirection = 'away';
+            } else {
+              statusText = 'AS';
+            }
+            statusClass = 'in-progress';
+          }
+          
+          // Get team/player names
+          const homeName = getMatchTeamName(match.home, 'home');
+          const awayName = getMatchTeamName(match.away, 'away');
+          
+          html += `
+            <div class="match-card ${statusClass}" data-match-key="${match.key}" onclick="toggleMatchDetails('${match.key}')">
+              <div class="match-number">${idx + 1}</div>
+              <div class="match-teams">
+                <div class="team-side home ${arrowDirection === 'home' ? 'leading' : ''}">
+                  <span class="team-name">${homeName}</span>
+                </div>
+                <div class="match-status-arrow">
+                  ${arrowDirection === 'home' ? '<span class="arrow-indicator">◀</span>' : ''}
+                  <div class="match-score-badge ${statusClass}">
+                    ${statusText}
+                  </div>
+                  ${arrowDirection === 'away' ? '<span class="arrow-indicator">▶</span>' : ''}
+                </div>
+                <div class="team-side away ${arrowDirection === 'away' ? 'leading' : ''}">
+                  <span class="team-name">${awayName}</span>
+                </div>
+              </div>
+              <div class="match-thru">
+                ${thru > 0 ? `Thru ${thru}` : ''}
+              </div>
+              <div class="match-details-panel" id="match-details-${match.key}" style="display: none;">
+                ${renderMatchHoleByHole(match)}
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      }
+      
+      // Get team/player name for match display
+      function getMatchTeamName(team, side) {
+        if (!team) return side === 'home' ? 'Home' : 'Away';
+        
+        if (matchPlayFormat === 'singles') {
+          // Single player
+          if (team.name) return team.name;
+          if (team.firstName && team.lastName) {
+            return `${team.firstName} ${team.lastName}`;
+          }
+          return team.player1?.name || 'TBD';
+        }
+        
+        // Fourball/Foursome - show both players
+        const player1 = team.player1 || team;
+        const player2 = team.player2;
+        
+        const name1 = player1.name || `${player1.firstName || ''} ${player1.lastName || ''}`.trim() || 'TBD';
+        const name2 = player2 ? (player2.name || `${player2.firstName || ''} ${player2.lastName || ''}`.trim()) : '';
+        
+        if (name2) {
+          // Get last names for compact display
+          const lastName1 = name1.split(' ').pop();
+          const lastName2 = name2.split(' ').pop();
+          return `${lastName1} / ${lastName2}`;
+        }
+        
+        return name1;
+      }
+      
+      // Render hole-by-hole details for a match
+      function renderMatchHoleByHole(match) {
+        const matchScore = match.liveScore;
+        if (!matchScore || !matchScore.holes) {
+          return '<div class="match-details-empty">No hole data available</div>';
+        }
+        
+        const holes = matchScore.holes;
+        const coursePars = getCoursePars();
+        
+        let html = '<div class="hole-score-grid">';
+        
+        // Header row
+        html += '<div class="hole-header-row">';
+        html += '<div class="hole-label">Hole</div>';
+        for (let i = 1; i <= 18; i++) {
+          html += `<div class="hole-num">${i}</div>`;
+        }
+        html += '</div>';
+        
+        // Par row
+        html += '<div class="hole-par-row">';
+        html += '<div class="hole-label">Par</div>';
+        for (let i = 0; i < 18; i++) {
+          html += `<div class="hole-par">${coursePars[i] || '-'}</div>`;
+        }
+        html += '</div>';
+        
+        // Home scores
+        if (matchScore.homeScores) {
+          html += '<div class="hole-score-row home">';
+          html += `<div class="hole-label">${getMatchTeamName(match.home, 'home').split('/')[0]}</div>`;
+          for (let i = 0; i < 18; i++) {
+            const score = matchScore.homeScores[i];
+            html += `<div class="hole-score ${getScoreClass(score, coursePars[i])}">${score || '-'}</div>`;
+          }
+          html += '</div>';
+        }
+        
+        // Away scores
+        if (matchScore.awayScores) {
+          html += '<div class="hole-score-row away">';
+          html += `<div class="hole-label">${getMatchTeamName(match.away, 'away').split('/')[0]}</div>`;
+          for (let i = 0; i < 18; i++) {
+            const score = matchScore.awayScores[i];
+            html += `<div class="hole-score ${getScoreClass(score, coursePars[i])}">${score || '-'}</div>`;
+          }
+          html += '</div>';
+        }
+        
+        // Match result per hole (H = Home won, A = Away won, AS = All Square)
+        html += '<div class="hole-result-row">';
+        html += '<div class="hole-label">Result</div>';
+        for (let i = 0; i < 18; i++) {
+          const result = holes[i] || '-';
+          let resultClass = '';
+          if (result === 'H') resultClass = 'home-won';
+          else if (result === 'A') resultClass = 'away-won';
+          else if (result === 'AS') resultClass = 'halved';
+          html += `<div class="hole-result ${resultClass}">${result}</div>`;
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        return html;
+      }
+      
+      // Get score class for styling
+      function getScoreClass(score, par) {
+        if (!score || !par) return '';
+        const diff = score - par;
+        if (diff <= -2) return 'eagle';
+        if (diff === -1) return 'birdie';
+        if (diff === 0) return 'par';
+        if (diff === 1) return 'bogey';
+        return 'double';
+      }
+      
+      // Toggle match details panel
+      function toggleMatchDetails(matchKey) {
+        const panel = document.getElementById(`match-details-${matchKey}`);
+        const card = panel?.closest('.match-card');
+        
+        // Close other panels
+        document.querySelectorAll('.match-details-panel').forEach(p => {
+          if (p.id !== `match-details-${matchKey}`) {
+            p.style.display = 'none';
+            p.closest('.match-card')?.classList.remove('expanded');
+          }
+        });
+        
+        // Toggle this panel
+        if (panel) {
+          const isVisible = panel.style.display === 'block';
+          panel.style.display = isVisible ? 'none' : 'block';
+          card?.classList.toggle('expanded', !isVisible);
+        }
       }
 
       // Render team leaderboard
