@@ -719,11 +719,17 @@
         const allMatchResults = [];
         let resultsHtml = '';
         
+        console.log('=== loadAllMatchResults ===');
+        console.log('roundIds:', roundIds);
+        
         roundIds.forEach((roundId, roundIndex) => {
           const drawData = getDrawData(roundId);
           // Use merged scores from both match-score and hole-by-hole entry methods
           const matchScores = getMergedMatchScores(roundId);
           const roundPlayerTeams = playerTeamLookup[roundIndex] || {};
+          
+          console.log(`Round ${roundIndex}: roundId=${roundId}, drawData groups:`, drawData?.groups?.length);
+          console.log(`Round ${roundIndex}: matchScores:`, matchScores);
           
           if (!drawData || !drawData.groups || drawData.groups.length === 0) {
             return; // Skip rounds with no draw
