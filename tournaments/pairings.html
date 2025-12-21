@@ -264,12 +264,20 @@
           document.getElementById('tournament-date').textContent = formatDate(currentTournament.date);
           document.getElementById('round-info').textContent = `Round ${roundNumber} - ${currentRound.matchType ? currentRound.matchType.charAt(0).toUpperCase() + currentRound.matchType.slice(1) : 'Match Play'}`;
 
-          // Load admitted players for THIS round (not just round 1)
+          // Load admitted players - try current round first, fallback to round 1
           const roundIndex = roundNumber - 1;
           const roundIdForAdmissions = currentTournament.meta?.roundIds?.[roundIndex] || `${tournamentId}_R${roundNumber}`;
+          const round1Id = currentTournament.meta?.roundIds?.[0] || `${tournamentId}_R1`;
           const admittedData = localStorage.getItem('admittedPlayers');
           const allAdmitted = admittedData ? JSON.parse(admittedData) : {};
-          const admittedPlayersData = allAdmitted[roundIdForAdmissions] || [];
+          
+          // Try current round first, fallback to round 1
+          let admittedPlayersData = allAdmitted[roundIdForAdmissions] || [];
+          if (admittedPlayersData.length === 0 && roundIndex > 0) {
+            admittedPlayersData = allAdmitted[round1Id] || [];
+            console.log('Using round 1 admitted players as fallback');
+          }
+          console.log('Admitted players for pairings:', admittedPlayersData.length, 'roundId:', roundIdForAdmissions);
           
           // Create player lookup map
           const playerMap = {};
@@ -291,6 +299,7 @@
 
           // Load teams - teams are defined at tournament level, not per round
           let roundTeams = currentTournament.teams || [];
+          console.log('Teams from tournament:', roundTeams.length, roundTeams);
           
           // Convert teams with full player objects
           teams = roundTeams.map(team => {
@@ -300,6 +309,9 @@
                 const player = playerMap[playerId];
                 if (player) {
                   teamPlayersList.push(player);
+                } else {
+                  console.log('Player not found in playerMap:', playerId);
+                }
                 }
               });
             }
