@@ -3020,6 +3020,7 @@
         const scores = digitalScorecardsData.scores;
         const player = config.players[playerId];
         const playerScores = scores[playerId] || {};
+        const scoresArray = playerScores.playerScores || Array(18).fill(null);
         
         let scoresHtml = '<table style="width:100%; border-collapse: collapse; font-size: 12px;">';
         scoresHtml += '<tr><th style="border:1px solid #ddd; padding:4px;">Hole</th>';
@@ -3038,8 +3039,9 @@
         // Player's own scores
         scoresHtml += '<tr style="background:#dbeafe;"><td style="border:1px solid #ddd; padding:4px; font-weight:600;">Score</td>';
         for (let i = 0; i < 18; i++) {
-          const s = (playerScores.playerScores || [])[i];
-          scoresHtml += `<td style="border:1px solid #ddd; padding:4px; text-align:center;">${s !== null ? s : '-'}</td>`;
+          const s = scoresArray[i];
+          const displayValue = (s !== null && s !== undefined) ? s : '-';
+          scoresHtml += `<td style="border:1px solid #ddd; padding:4px; text-align:center;">${displayValue}</td>`;
         }
         scoresHtml += '</tr>';
         
@@ -3114,6 +3116,7 @@
         const scores = digitalScorecardsData.scores;
         const player = config.players[playerId];
         const playerScores = scores[playerId] || {};
+        const scoresArray = playerScores.playerScores || Array(18).fill(null);
         
         let html = `
           <div style="margin-bottom: 16px;">
@@ -3138,8 +3141,9 @@
         html += '</tr><tr style="background:#dbeafe;"><td style="border:1px solid #ddd; padding:6px; font-weight:600;">Score</td>';
         
         for (let i = 0; i < 18; i++) {
-          const s = (playerScores.playerScores || [])[i];
-          const value = s !== null ? s : '';
+          const s = scoresArray[i];
+          // Only show value if it's a valid score (number or 'X'), otherwise empty
+          const value = (s !== null && s !== undefined) ? s : '';
           html += `<td style="border:1px solid #ddd; padding:2px; text-align:center;">
             <input type="text" id="edit-score-${i}" value="${value}" 
               style="width:24px; padding:4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;"
