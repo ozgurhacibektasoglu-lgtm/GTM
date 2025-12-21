@@ -198,6 +198,7 @@
       
       <button class="btn-save-scores" onclick="saveScores()">Save Scores (F12)</button>
       <button class="btn-save-scores" style="right: 180px; background: #3b82f6;" onclick="forceSyncToCloud()">☁️ Sync to Cloud</button>
+      <button class="btn-save-scores" style="right: 340px; background: #8b5cf6;" onclick="refreshDigitalScores()" title="Load scores from signed digital scorecards">📱 Digital Scorecards</button>
     </main>
 
     <!-- Modal for score input -->
@@ -579,6 +580,74 @@
           }
         } catch (err) {
           console.error('Failed to load match scores from Firebase:', err);
+        }
+      }
+
+      // Load digital scorecard scores from Firebase
+      async function loadDigitalScorecardScores(roundId) {
+        if (!window.db) {
+          console.log('Firebase database not available for digital scorecard scores');
+          return 0;
+        }
+        
+        try {
+          const scoresRef = window.db.ref(`scores/${roundId}`);
+          const snapshot = await scoresRef.once('value');
+          const digitalScores = snapshot.val();
+          
+          if (!digitalScores) {
+            console.log('No digital scorecard scores found for round:', roundId);
+            return 0;
+          }
+          
+          // Merge with existing scores data
+          const scoresData = getScoresData();
+          if (!scoresData[roundId]) {
+            scoresData[roundId] = {};
+          }
+          
+          let importedCount = 0;
+          for (const [playerKey, scoreData] of Object.entries(digitalScores)) {
+            // Only import if it came from digital scorecard AND hasn't been manually edited
+            if (scoreData.syncedFromDigitalScorecard) {
+              const existingScore = scoresData[roundId][playerKey];
+              
+              // Check if we should overwrite - only if no manual entry exists or existing is also from digital
+              if (!existingScore || existingScore.syncedFromDigitalScorecard || !hasManualScores(existingScore)) {
+                scoresData[roundId][playerKey] = scoreData;
+                importedCount++;
+                console.log('📱 Imported digital scorecard for:', playerKey);
+              }
+            }
+          }
+          
+          if (importedCount > 0) {
+            // Save to localStorage
+            localStorage.setItem('scores', JSON.stringify(scoresData));
+            console.log(`✅ Imported ${importedCount} digital scorecard scores for round ${roundId}`);
+          }
+          
+          return importedCount;
+        } catch (err) {
+          console.error('Failed to load digital scorecard scores:', err);
+          return 0;
+        }
+      }
+      
+      // Check if score data has manual entries
+      function hasManualScores(scoreData) {
+        if (!scoreData || !scoreData.holes) return false;
+        return scoreData.holes.some(h => h !== '' && h !== null && h !== undefined);
+      }
+      
+      // Manual refresh digital scorecard scores
+      async function refreshDigitalScores() {
+        const importedCount = await loadDigitalScorecardScores(currentRoundId);
+        if (importedCount > 0) {
+          alert(`📱 Imported ${importedCount} score(s) from digital scorecards`);
+          loadScores(); // Reload the scores view
+        } else {
+          alert('No new digital scorecard scores found.\n\nScores appear here after players sign their digital scorecards.');
         }
       }
 
@@ -1122,7 +1191,7 @@
         }
       }
 
-      function loadScores() {
+      async function loadScores() {
         admittedPlayers = getAdmittedPlayers();
         selectedPlayer = null;
         
@@ -1139,7 +1208,13 @@
           courseData = courses.find(c => c.courseId === roundData.course);
         }
 
-        // Load existing scores
+        // Load digital scorecard scores from Firebase first
+        const importedCount = await loadDigitalScorecardScores(currentRoundId);
+        if (importedCount > 0) {
+          console.log(`📱 Loaded ${importedCount} scores from digital scorecards`);
+        }
+
+        // Load existing scores (now includes digital scorecard scores)
         const scoresData = getScoresData();
         const roundScores = scoresData[currentRoundId] || {};
         scores = {};
@@ -1255,8 +1330,11 @@
           const playerStatus = scores[player.reg]?.status || '';
           
           // Show status if player has one (DQ, NS, NR)
+          const isDigitalScorecard = scores[player.reg]?.syncedFromDigitalScorecard;
+          const digitalBadge = isDigitalScorecard ? '<span style="color: #8b5cf6; font-size: 11px; margin-left: 4px;" title="From Digital Scorecard">📱</span>' : '';
+          
           if (playerStatus) {
-            nameCell.innerHTML = `${playerName} <span class="player-total-score" style="color: #dc2626;">(${playerStatus})</span>`;
+            nameCell.innerHTML = `${playerName}${digitalBadge} <span class="player-total-score" style="color: #dc2626;">(${playerStatus})</span>`;
             row.style.background = '#fee2e2'; // Light red background for status players
           } else if (isComplete) {
             // Add total score if complete and no status
@@ -1264,9 +1342,9 @@
               const numScore = parseInt(score);
               return sum + (isNaN(numScore) ? 0 : numScore);
             }, 0);
-            nameCell.innerHTML = `${playerName} <span class="player-total-score">(${totalScore})</span>`;
+            nameCell.innerHTML = `${playerName}${digitalBadge} <span class="player-total-score">(${totalScore})</span>`;
           } else {
-            nameCell.textContent = playerName;
+            nameCell.innerHTML = `${playerName}${digitalBadge}`;
           }
           
           const phcpCell = row.insertCell();

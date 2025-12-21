@@ -2481,6 +2481,9 @@
             lastUpdated: Date.now()
           });
           
+          // Sync completed scores to main scores system
+          await syncToScoresSystem();
+          
           showToast('Scorecard signed and locked! ✅', 'success');
           closeSignModal();
           render();
@@ -2494,6 +2497,83 @@
         showToast('Scorecard signed (offline). Will sync when connected.', 'info');
         closeSignModal();
         render();
+      }
+    }
+    
+    // Sync completed digital scorecard to main scores system
+    async function syncToScoresSystem() {
+      if (!db || !roundId || !playerId) return;
+      
+      try {
+        // Get player's registration key (used as playerKey in scores)
+        const playerKey = playerData.reg || playerId;
+        
+        // Convert scores to the format used by scores.html
+        // scores.player contains the hole scores [score1, score2, ..., score18]
+        const holesArray = scores.player.map(score => {
+          if (score === null || score === undefined) return '';
+          if (score === 'X') return 0; // X (pickup) is stored as 0 in main system
+          return score;
+        });
+        
+        // Calculate points and stableford points using course data
+        const pointsArray = [];
+        const stablefordPointsArray = [];
+        const courseHoles = digitalData?.courseData?.holes || [];
+        const playerHcp = playerData.handicap || 0;
+        
+        for (let i = 0; i < 18; i++) {
+          const holeScore = holesArray[i];
+          if (holeScore === '' || holeScore === 0) {
+            pointsArray.push('');
+            stablefordPointsArray.push(0);
+            continue;
+          }
+          
+          const holePar = courseHoles[i]?.par || 4;
+          const holeHcp = courseHoles[i]?.handicap || (i + 1);
+          
+          // Calculate strokes received on this hole
+          const strokesReceived = Math.floor(playerHcp / 18) + (holeHcp <= (playerHcp % 18) ? 1 : 0);
+          
+          // Net score
+          const netScore = holeScore - strokesReceived;
+          
+          // Points relative to par
+          const points = holePar - holeScore;
+          pointsArray.push(points);
+          
+          // Stableford points
+          const netToPar = netScore - holePar;
+          let stableford = 0;
+          if (netToPar <= -3) stableford = 5; // Albatross or better
+          else if (netToPar === -2) stableford = 4; // Eagle
+          else if (netToPar === -1) stableford = 3; // Birdie
+          else if (netToPar === 0) stableford = 2; // Par
+          else if (netToPar === 1) stableford = 1; // Bogey
+          else stableford = 0; // Double or worse
+          stablefordPointsArray.push(stableford);
+        }
+        
+        // Build the score data object
+        const scoreData = {
+          holes: holesArray,
+          points: pointsArray,
+          stablefordPoints: stablefordPointsArray,
+          incompleteHoles: holesArray.map((s, i) => s === 0 ? i : -1).filter(i => i >= 0),
+          status: 'completed',
+          digitalScorecard: true,
+          signedAt: Date.now(),
+          syncedFromDigitalScorecard: true
+        };
+        
+        // Save to Firebase scores path
+        await db.ref(`scores/${roundId}/${playerKey}`).set(scoreData);
+        
+        console.log('✅ Scores synced to main scores system:', playerKey, scoreData);
+      } catch (err) {
+        console.error('Error syncing to scores system:', err);
+        // Don't throw - this is a secondary sync, primary signing already succeeded
       }
     }
     
