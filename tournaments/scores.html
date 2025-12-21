@@ -60,8 +60,23 @@
       .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
       .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
       .btn-back { background: white; border: 1px solid #e6e9ef; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #333; text-decoration: none; display: inline-block; }
-      .btn-save-scores { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; border: 0; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(40,167,69,0.3); transition: all 0.2s; z-index: 100; }
-      .btn-save-scores:hover { background: #218838; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(40,167,69,0.4); }
+      
+      /* Action Buttons - Below Header */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 12px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .btn-action { background: linear-gradient(180deg, #28a745, #218838); color: white; border: 0; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+      .btn-action:hover { opacity: 0.9; transform: translateY(-1px); }
+      .btn-action:active { transform: translateY(1px); }
       .status-text { font-size: 13px; color: #64748b; margin-bottom: 8px; }
       .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
       .modal-overlay.active { display: flex; }
@@ -108,6 +123,16 @@
       <h1>🏆 Scores</h1>
       <a href="index.html" class="btn-back-top">← Back</a>
     </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <div class="action-buttons">
+        <button class="btn-action" onclick="saveScores()">💾 Save Scores (F12)</button>
+        <button class="btn-action" style="background: linear-gradient(180deg, #3b82f6, #2563eb);" onclick="forceSyncToCloud()">☁️ Sync to Cloud</button>
+        <button class="btn-action" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);" onclick="refreshDigitalScores()" title="Load scores from signed digital scorecards">📱 Digital Scorecards</button>
+      </div>
+    </div>
+    
     <main class="scores-container">
       <header style="margin-bottom: 20px;">
         <p class="lead" id="tournament-name">Enter scores for the tournament round.</p>
@@ -195,10 +220,6 @@
           </div>
         </div>
       </section>
-      
-      <button class="btn-save-scores" onclick="saveScores()">Save Scores (F12)</button>
-      <button class="btn-save-scores" style="right: 180px; background: #3b82f6;" onclick="forceSyncToCloud()">☁️ Sync to Cloud</button>
-      <button class="btn-save-scores" style="right: 340px; background: #8b5cf6;" onclick="refreshDigitalScores()" title="Load scores from signed digital scorecards">📱 Digital Scorecards</button>
     </main>
 
     <!-- Modal for score input -->
