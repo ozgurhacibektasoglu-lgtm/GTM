@@ -565,8 +565,14 @@
           
           // For Match Play Fourball, show matches panel instead of players panel
           const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
+          console.log('Modal click - gameFormat:', gameFormat);
           if (gameFormat === 'fourball') {
+            document.getElementById('players-panel').style.display = 'none';
+            document.getElementById('matches-panel').style.display = 'block';
             initHoleByHoleMatchUI();
+          } else {
+            document.getElementById('players-panel').style.display = 'block';
+            document.getElementById('matches-panel').style.display = 'none';
           }
         });
       }
@@ -1823,9 +1829,12 @@
           initMatchScoreUI();
         } else if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
           const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
+          console.log('Hole-by-hole mode, gameFormat:', gameFormat);
           if (gameFormat === 'fourball') {
             // Show scores grid, initialize hole-by-hole match UI
             document.querySelector('.scores-grid').style.display = 'grid';
+            document.getElementById('players-panel').style.display = 'none';
+            document.getElementById('matches-panel').style.display = 'block';
             updateEntryMethodBadge();
             initHoleByHoleMatchUI();
           } else {
