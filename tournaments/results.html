@@ -512,6 +512,7 @@
 
       // Get merged match scores (from both match-score entry and hole-by-hole entry methods)
       // Hole-by-hole entry stores matchResult directly, so we just read it
+      // Falls back to simple calculation if matchResult not stored (for legacy data)
       function getMergedMatchScores(roundId) {
         const matchScores = getMatchScoresData()[roundId] || {};
         const holeByHoleScores = getHoleByHoleScoresData();
@@ -519,6 +520,9 @@
         // Look for hole-by-hole scores for this round
         const roundPrefix = `${roundId}_match_`;
         const merged = { ...matchScores };
+        
+        console.log('getMergedMatchScores for roundId:', roundId);
+        console.log('holeByHoleScores keys:', Object.keys(holeByHoleScores));
         
         Object.keys(holeByHoleScores).forEach(key => {
           if (key.startsWith(roundPrefix)) {
@@ -528,7 +532,15 @@
             
             // Get the stored matchResult from scores page
             const matchData = holeByHoleScores[key];
-            const storedResult = matchData?.matchResult;
+            let storedResult = matchData?.matchResult;
+            
+            console.log(`Match ${key}: matchResult =`, storedResult);
+            
+            // If no stored result, try to calculate from hole scores (legacy data support)
+            if (!storedResult && matchData) {
+              storedResult = calculateSimpleMatchResult(matchData);
+              console.log(`Match ${key}: calculated result =`, storedResult);
+            }
             
             // Only use hole-by-hole result if no match score already exists
             if (storedResult && (!merged[matchKey] || (merged[matchKey].left === '' && merged[matchKey].right === ''))) {
@@ -544,6 +556,67 @@
         });
         
         return merged;
+      }
+      
+      // Simple match result calculation for legacy data (without handicap - uses gross scores)
+      // This is a fallback when matchResult is not stored
+      function calculateSimpleMatchResult(matchData) {
+        if (!matchData) return null;
+        
+        let runningScore = 0; // Positive = Team 1 up
+        let holesPlayed = 0;
+        
+        for (let i = 0; i < 18; i++) {
+          const t1p1 = matchData.team1Player1Scores?.[i];
+          const t1p2 = matchData.team1Player2Scores?.[i];
+          const t2p1 = matchData.team2Player1Scores?.[i];
+          const t2p2 = matchData.team2Player2Scores?.[i];
+          
+          // Need at least one score from each team
+          const t1HasScore = (t1p1 !== '' && t1p1 !== undefined) || (t1p2 !== '' && t1p2 !== undefined);
+          const t2HasScore = (t2p1 !== '' && t2p1 !== undefined) || (t2p2 !== '' && t2p2 !== undefined);
+          
+          if (!t1HasScore || !t2HasScore) continue;
+          
+          holesPlayed++;
+          
+          // Get best ball for each team (X=0 scores can't win)
+          const getValidScore = (s) => {
+            if (s === '' || s === null || s === undefined) return 999;
+            const val = parseInt(s);
+            return val === 0 ? 999 : val; // X (0) can't win
+          };
+          
+          const t1Best = Math.min(getValidScore(t1p1), getValidScore(t1p2));
+          const t2Best = Math.min(getValidScore(t2p1), getValidScore(t2p2));
+          
+          if (t1Best < t2Best) runningScore++;
+          else if (t2Best < t1Best) runningScore--;
+          
+          // Check if match is finished
+          const holesRemaining = 18 - holesPlayed;
+          if (Math.abs(runningScore) > holesRemaining) {
+            return {
+              left: runningScore > 0 ? Math.abs(runningScore) : 0,
+              right: runningScore < 0 ? Math.abs(runningScore) : 0,
+              resultText: `${Math.abs(runningScore)}&${holesRemaining}`,
+              winner: runningScore > 0 ? 'team1' : 'team2'
+            };
+          }
+        }
+        
+        if (holesPlayed === 0) return null;
+        
+        if (runningScore === 0) {
+          return { left: 0, right: 0, resultText: 'Halved', winner: 'tie' };
+        } else {
+          return {
+            left: runningScore > 0 ? Math.abs(runningScore) : 0,
+            right: runningScore < 0 ? Math.abs(runningScore) : 0,
+            resultText: `${Math.abs(runningScore)}UP`,
+            winner: runningScore > 0 ? 'team1' : 'team2'
+          };
+        }
       }
 
       // Initialize match play results UI - loads ALL rounds
