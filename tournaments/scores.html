@@ -112,6 +112,8 @@
       .match-score-input.winner { background: #22c55e; color: white; border-color: #16a34a; }
       .match-score-input.loser { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
       .match-score-input.tied { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+      .match-score-input.from-hole-by-hole { box-shadow: 0 0 0 3px #7c3aed40; }
+      .match-score-input.from-hole-by-hole::after { content: '⛳'; }
       .match-status { text-align: center; margin-top: 8px; font-size: 12px; font-weight: 600; }
       .match-status.pending { color: #64748b; }
       .match-status.completed { color: #16a34a; }
@@ -2492,10 +2494,63 @@
 
         // Get existing match scores
         const matchScoresData = getMatchScoresData();
-        const roundMatchScores = matchScoresData[currentRoundId] || {};
+        let roundMatchScores = matchScoresData[currentRoundId] || {};
+        
+        // Sync from hole-by-hole scores if available
+        // This ensures match-score mode shows results from hole-by-hole scoring
+        roundMatchScores = syncMatchScoresFromHoleByHole(roundMatchScores, drawData.groups, matchType);
 
         // Render matches based on groups and match type
         renderMatchList(drawData.groups, roundMatchScores, matchType);
+      }
+      
+      // Sync match scores from hole-by-hole data
+      function syncMatchScoresFromHoleByHole(matchScores, groups, matchType) {
+        const syncedScores = { ...matchScores };
+        
+        groups.forEach((group, groupIndex) => {
+          const players = group.players || [];
+          if (players.length < 2) return;
+          
+          if (matchType === 'singles' || matchType === '') {
+            // Singles: multiple matches per group
+            const numMatches = Math.floor(players.length / 2);
+            for (let i = 0; i < numMatches; i++) {
+              const holeByHoleKey = `${currentRoundId}_match_${groupIndex}_${i}`;
+              const matchKey = `match_${groupIndex}_${i}`;
+              
+              const holeByHoleData = holeByHoleScores[holeByHoleKey];
+              if (holeByHoleData && holeByHoleData.matchResult) {
+                const result = holeByHoleData.matchResult;
+                // Convert matchResult to left/right scores
+                syncedScores[matchKey] = {
+                  left: result.left !== undefined ? result.left : '',
+                  right: result.right !== undefined ? result.right : '',
+                  fromHoleByHole: true
+                };
+                console.log('Synced match score from hole-by-hole:', matchKey, syncedScores[matchKey]);
+              }
+            }
+          } else {
+            // Fourball/Foursomes: one match per group
+            const holeByHoleKey = `${currentRoundId}_match_${groupIndex}`;
+            const matchKey = `match_${groupIndex}`;
+            
+            const holeByHoleData = holeByHoleScores[holeByHoleKey];
+            if (holeByHoleData && holeByHoleData.matchResult) {
+              const result = holeByHoleData.matchResult;
+              // Convert matchResult to left/right scores
+              syncedScores[matchKey] = {
+                left: result.left !== undefined ? result.left : '',
+                right: result.right !== undefined ? result.right : '',
+                fromHoleByHole: true
+              };
+              console.log('Synced match score from hole-by-hole:', matchKey, syncedScores[matchKey]);
+            }
+          }
+        });
+        
+        return syncedScores;
       }
 
       // Render the match list
@@ -2786,25 +2841,35 @@
 
       // Get CSS class for score input based on current scores
       function getScoreInputClass(score, side) {
-        if (score.left === '' && score.right === '') return '';
+        let classes = [];
+        
+        // Add class if score came from hole-by-hole
+        if (score.fromHoleByHole) {
+          classes.push('from-hole-by-hole');
+        }
+        
+        if (score.left === '' && score.right === '') return classes.join(' ');
         
         const leftScore = parseInt(score.left) || 0;
         const rightScore = parseInt(score.right) || 0;
         
         // Both 0 = tied
         if (leftScore === 0 && rightScore === 0 && score.left !== '' && score.right !== '') {
-          return 'tied';
+          classes.push('tied');
+          return classes.join(' ');
         }
         
         if (side === 'left') {
-          if (leftScore > rightScore) return 'winner';
-          if (leftScore < rightScore) return 'loser';
-          return 'tied';
+          if (leftScore > rightScore) classes.push('winner');
+          else if (leftScore < rightScore) classes.push('loser');
+          else classes.push('tied');
         } else {
-          if (rightScore > leftScore) return 'winner';
-          if (rightScore < leftScore) return 'loser';
-          return 'tied';
+          if (rightScore > leftScore) classes.push('winner');
+          else if (rightScore < leftScore) classes.push('loser');
+          else classes.push('tied');
         }
+        
+        return classes.join(' ');
       }
 
       // Handle match score input
