@@ -289,14 +289,8 @@
             };
           });
 
-          // Load teams for THIS round (use new teamsByRound format, fallback to old teams format)
-          let roundTeams = [];
-          if (currentTournament.teamsByRound && currentTournament.teamsByRound[roundIndex]) {
-            roundTeams = currentTournament.teamsByRound[roundIndex];
-          } else if (currentTournament.teams) {
-            // Fallback to old format
-            roundTeams = currentTournament.teams;
-          }
+          // Load teams - teams are defined at tournament level, not per round
+          let roundTeams = currentTournament.teams || [];
           
           // Convert teams with full player objects
           teams = roundTeams.map(team => {
