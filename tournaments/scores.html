@@ -154,10 +154,9 @@
       .match-scorecard-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
       .match-scorecard-input.team1 { background: #fef2f2; }
       .match-scorecard-input.team2 { background: #eff6ff; }
-      .match-scorecard-input.birdie-team1 { background: #dc2626 !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #b91c1c; }
-      .match-scorecard-input.birdie-team2 { background: #2563eb !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #1d4ed8; }
-      .match-scorecard-input.eagle-team1 { background: #fbbf24 !important; color: #1e293b !important; border-radius: 50%; font-weight: 700; border: 2px solid #d97706; }
-      .match-scorecard-input.eagle-team2 { background: #fbbf24 !important; color: #1e293b !important; border-radius: 50%; font-weight: 700; border: 2px solid #d97706; }
+      /* Winning best ball styling - circle the score in team color */
+      .match-scorecard-input.winner-team1 { background: #dc2626 !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #b91c1c; }
+      .match-scorecard-input.winner-team2 { background: #2563eb !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #1d4ed8; }
       .match-score-team1 { color: #dc2626; font-weight: 700; }
       .match-score-team2 { color: #2563eb; font-weight: 700; }
       .match-score-even { color: #64748b; font-weight: 600; }
@@ -1065,12 +1064,18 @@
         for (let i = 9; i < 18; i++) html += `<td>${strokeIndexes[i]}</td>`;
         html += '<td class="subtotal-col"></td><td class="total-col"></td></tr>';
         
+        // Calculate winning scores for each hole (to highlight the best ball that won)
+        const winningScores = calculateWinningScoresPerHole(
+          matchScoreData, 
+          t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes
+        );
+        
         // Team 1 Player 1 row
-        html += renderPlayerScoreRow(team1Player1, t1p1MatchHcp, t1p1Strokes, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, match.matchKey);
+        html += renderPlayerScoreRow(team1Player1, t1p1MatchHcp, t1p1Strokes, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, match.matchKey, winningScores);
         
         // Team 1 Player 2 row (if exists)
         if (team1Player2) {
-          html += renderPlayerScoreRow(team1Player2, t1p2MatchHcp, t1p2Strokes, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, match.matchKey);
+          html += renderPlayerScoreRow(team1Player2, t1p2MatchHcp, t1p2Strokes, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, match.matchKey, winningScores);
         }
         
         // Match Score row
@@ -1078,12 +1083,12 @@
         
         // Team 2 Player 1 row
         if (team2Player1) {
-          html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey);
+          html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey, winningScores);
         }
         
         // Team 2 Player 2 row (if exists)
         if (team2Player2) {
-          html += renderPlayerScoreRow(team2Player2, t2p2MatchHcp, t2p2Strokes, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, match.matchKey);
+          html += renderPlayerScoreRow(team2Player2, t2p2MatchHcp, t2p2Strokes, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, match.matchKey, winningScores);
         }
         
         html += '</tbody></table></div>';
@@ -1097,8 +1102,59 @@
         });
       }
 
+      // Calculate which player's score is the winning best ball for each hole
+      function calculateWinningScoresPerHole(matchScoreData, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
+        const results = [];
+        
+        for (let i = 0; i < 18; i++) {
+          const t1p1Score = matchScoreData.team1Player1Scores[i];
+          const t1p2Score = matchScoreData.team1Player2Scores ? matchScoreData.team1Player2Scores[i] : '';
+          const t2p1Score = matchScoreData.team2Player1Scores ? matchScoreData.team2Player1Scores[i] : '';
+          const t2p2Score = matchScoreData.team2Player2Scores ? matchScoreData.team2Player2Scores[i] : '';
+          
+          // Calculate net scores
+          const t1p1Net = t1p1Score ? parseInt(t1p1Score) - (t1p1Strokes[i] || 0) : 999;
+          const t1p2Net = t1p2Score ? parseInt(t1p2Score) - (t1p2Strokes[i] || 0) : 999;
+          const t2p1Net = t2p1Score ? parseInt(t2p1Score) - (t2p1Strokes[i] || 0) : 999;
+          const t2p2Net = t2p2Score ? parseInt(t2p2Score) - (t2p2Strokes[i] || 0) : 999;
+          
+          // Find best ball for each team
+          const team1Best = Math.min(t1p1Net, t1p2Net);
+          const team2Best = Math.min(t2p1Net, t2p2Net);
+          
+          let winner = null;
+          let winningTeam = null;
+          let winningPlayer = null;
+          
+          if (team1Best < 999 && team2Best < 999) {
+            if (team1Best < team2Best) {
+              winningTeam = 'team1';
+              // Find which player had the best ball
+              if (t1p1Net <= t1p2Net && t1p1Score) {
+                winningPlayer = 'p1';
+              } else if (t1p2Score) {
+                winningPlayer = 'p2';
+              }
+            } else if (team2Best < team1Best) {
+              winningTeam = 'team2';
+              // Find which player had the best ball
+              if (t2p1Net <= t2p2Net && t2p1Score) {
+                winningPlayer = 'p1';
+              } else if (t2p2Score) {
+                winningPlayer = 'p2';
+              }
+            }
+            // If tied (halved), no winner highlighted
+          }
+          
+          results.push({ winningTeam, winningPlayer });
+        }
+        
+        return results;
+      }
+
       // Render a player's score row
-      function renderPlayerScoreRow(player, matchHcp, strokeAllocation, team, playerNum, scores, pars, matchKey) {
+      function renderPlayerScoreRow(player, matchHcp, strokeAllocation, team, playerNum, scores, pars, matchKey, winningScores) {
         if (!player) return '';
         
         const teamClass = team === 'team1' ? 'team1-row' : 'team2-row';
@@ -1107,6 +1163,7 @@
         
         // Ensure scores is an array
         scores = scores || Array(18).fill('');
+        winningScores = winningScores || [];
         
         let html = `<tr class="${teamClass}"><td class="row-label">${name}<br><small>HCP:${matchHcp}</small></td>`;
         
@@ -1116,13 +1173,17 @@
           const score = scores[i] || '';
           const strokes = strokeAllocation[i] || 0;
           const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
-          const scoreClass = getScoreClass(score, pars[i], team);
+          
+          // Check if this player's score is the winning best ball for this hole
+          const holeWinner = winningScores[i];
+          const isWinningScore = holeWinner && holeWinner.winningTeam === team && holeWinner.winningPlayer === playerNum;
+          const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
           
           if (score) frontTotal += parseInt(score) || 0;
           
           html += `<td>
             <div class="score-cell-wrapper">
-              <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass}" 
                      value="${score}" 
                      data-match-key="${matchKey}"
                      data-team="${team}"
@@ -1139,13 +1200,17 @@
           const score = scores[i] || '';
           const strokes = strokeAllocation[i] || 0;
           const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
-          const scoreClass = getScoreClass(score, pars[i], team);
+          
+          // Check if this player's score is the winning best ball for this hole
+          const holeWinner = winningScores[i];
+          const isWinningScore = holeWinner && holeWinner.winningTeam === team && holeWinner.winningPlayer === playerNum;
+          const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
           
           if (score) backTotal += parseInt(score) || 0;
           
           html += `<td>
             <div class="score-cell-wrapper">
-              <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass}" 
                      value="${score}" 
                      data-match-key="${matchKey}"
                      data-team="${team}"
@@ -1163,14 +1228,9 @@
         return html;
       }
 
-      // Get score class for styling (birdie, eagle, etc.)
+      // Get score class for styling - NOT USED anymore, keeping for reference
       function getScoreClass(score, par, team) {
-        if (!score || !par) return '';
-        const diff = parseInt(score) - parseInt(par);
-        
-        if (diff <= -2) return team === 'team1' ? 'eagle-team1' : 'eagle-team2';
-        if (diff === -1) return team === 'team1' ? 'birdie-team1' : 'birdie-team2';
-        return '';
+        return ''; // No birdie/eagle styling in match play hole-by-hole
       }
 
       // Render the match score row
