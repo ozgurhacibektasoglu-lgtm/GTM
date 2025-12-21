@@ -701,40 +701,43 @@
           scoresData[currentRoundId] = {};
         }
         
-        // Force reimport
+        // Force reimport - just import holes, points will be recalculated when player is selected
         const imported = importSingleDigitalScorecard(currentRoundId, playerKey, digitalData, scoresData);
         
         if (imported) {
           localStorage.setItem('scores', JSON.stringify(scoresData));
           
-          // Recalculate points for this player
+          // Refresh the view - this will reload scores
+          await loadScores();
+          
+          // Now select the player to trigger proper recalculation with courseData loaded
           const player = admittedPlayers.find(p => p.reg === playerKey);
           if (player) {
-            // Ensure PHCP is set
-            if (player.phcp === undefined || player.phcp === null || player.phcp === '') {
-              player.phcp = calculatePlayingHcp(player);
-            }
+            selectPlayer(player);
             
-            // Recalculate points
-            const playerScores = scoresData[currentRoundId][playerKey];
-            for (let i = 0; i < 18; i++) {
-              const score = playerScores.holes[i];
-              if (score === '' || score === null || score === undefined) continue;
+            // Force recalculation by simulating entering each score
+            const playerScores = scores[playerKey];
+            if (playerScores && courseData) {
+              for (let i = 0; i < 18; i++) {
+                const score = playerScores.holes[i];
+                if (score === '' || score === null || score === undefined) continue;
+                
+                // Use the same calculation as manual entry
+                playerScores.points[i] = calculatePoints(i, score, player);
+                playerScores.stablefordPoints[i] = calculateStablefordPoints(i, score, player);
+              }
               
-              const par = courseData?.pars?.[i] || 4;
-              playerScores.points[i] = par - score;
-              playerScores.stablefordPoints[i] = calculateStablefordPoints(i, score, player);
+              // Save and update display
+              const scoresDataUpdated = getScoresData();
+              scoresDataUpdated[currentRoundId][playerKey] = playerScores;
+              saveScoresData(scoresDataUpdated);
+              
+              // Re-render scorecard to show correct values
+              renderScorecard(player);
+              updateTotals(playerKey);
             }
-            playerScores.needsRecalculation = false;
-            
-            // Save again with recalculated points
-            scoresData[currentRoundId][playerKey] = playerScores;
-            localStorage.setItem('scores', JSON.stringify(scoresData));
-            scores[playerKey] = playerScores;
           }
           
-          // Refresh the view
-          loadScores();
           alert(`✅ Reimported digital scorecard for ${digitalData.playerName || playerKey}`);
         }
       }
