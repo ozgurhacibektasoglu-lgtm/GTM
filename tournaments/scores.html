@@ -116,6 +116,27 @@
       .match-status.pending { color: #64748b; }
       .match-status.completed { color: #16a34a; }
       .match-status.tied { color: #d97706; }
+      
+      /* Hole-by-Hole Match List Styles */
+      .matches-panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); }
+      .match-item { padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+      .match-item:hover { border-color: #3b82f6; background: #f0f9ff; }
+      .match-item.selected { border-color: #3b82f6; background: #dbeafe; }
+      .match-item.completed { background: #d1fae5; border-color: #86efac; }
+      .match-item.completed:hover { background: #a7f3d0; }
+      .match-item.completed.selected { background: #86efac; }
+      .match-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+      .match-item-title { font-weight: 700; font-size: 15px; color: #1e293b; }
+      .match-item-status { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; }
+      .match-item-status.pending { background: #f1f5f9; color: #64748b; }
+      .match-item-status.in-progress { background: #fef3c7; color: #92400e; }
+      .match-item-status.completed { background: #d1fae5; color: #065f46; }
+      .match-item-teams { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #475569; }
+      .match-item-team { flex: 1; }
+      .match-item-team.left { text-align: left; }
+      .match-item-team.right { text-align: right; }
+      .match-item-vs { font-weight: 700; color: #94a3b8; font-size: 12px; }
+      .match-item-score { font-size: 14px; font-weight: 700; color: #1e293b; margin-top: 6px; text-align: center; }
     </style>
   </head>
   <body>
@@ -199,7 +220,7 @@
         </div>
 
         <!-- Right Panel: Player List -->
-        <div class="players-panel">
+        <div class="players-panel" id="players-panel">
           <h2 style="margin-top: 0; font-size: 18px; color: #1e293b; margin-bottom: 12px;">Players</h2>
           <div class="search-box">
             <input id="player-search" type="text" placeholder="Search by name or reg... (Press Enter to select)" />
@@ -217,6 +238,18 @@
                 <!-- Populated dynamically -->
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Right Panel: Matches List (for Match Play Hole-by-Hole) -->
+        <div class="matches-panel" id="matches-panel" style="display: none;">
+          <h2 style="margin-top: 0; font-size: 18px; color: #1e293b; margin-bottom: 12px;">Matches</h2>
+          <div class="search-box">
+            <input id="match-player-search" type="text" placeholder="Search by player name... (Press Enter to select)" />
+          </div>
+          <div id="matches-status-text" class="status-text"></div>
+          <div class="table-wrapper" id="matches-list-container">
+            <!-- Matches will be rendered here -->
           </div>
         </div>
       </section>
@@ -529,6 +562,12 @@
           document.getElementById('match-scores-container').classList.remove('active');
           document.querySelector('.scores-grid').style.display = 'grid';
           updateEntryMethodBadge();
+          
+          // For Match Play Fourball, show matches panel instead of players panel
+          const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
+          if (gameFormat === 'fourball') {
+            initHoleByHoleMatchUI();
+          }
         });
       }
 
@@ -575,6 +614,356 @@
         await loadMatchScoresFromFirebase();
         loadMatchScores();
       }
+
+      // ============================================
+      // HOLE-BY-HOLE MATCH PLAY UI (Fourball)
+      // ============================================
+      
+      let holeByHoleMatches = []; // Store matches for hole-by-hole mode
+      let selectedMatch = null; // Currently selected match
+      let holeByHoleScores = {}; // { matchKey: { holes: [{team1Score, team2Score, winner}, ...], status: 'pending'|'in-progress'|'completed' } }
+      let filteredMatches = [];
+      let highlightedMatchIndex = -1;
+
+      // Initialize Hole-by-Hole Match UI for Fourball
+      async function initHoleByHoleMatchUI() {
+        console.log('Initializing Hole-by-Hole Match UI for Fourball');
+        
+        // Hide players panel, show matches panel
+        document.getElementById('players-panel').style.display = 'none';
+        document.getElementById('matches-panel').style.display = 'block';
+        
+        // Load draws from Firebase first
+        await loadDrawsFromFirebase();
+        
+        // Load hole-by-hole scores from Firebase
+        await loadHoleByHoleScoresFromFirebase();
+        
+        // Load and render matches
+        loadHoleByHoleMatches();
+        
+        // Setup search functionality
+        setupMatchPlayerSearch();
+      }
+
+      // Load hole-by-hole scores from Firebase
+      async function loadHoleByHoleScoresFromFirebase() {
+        if (typeof syncFromFirebase === 'undefined' || !syncEnabled) {
+          console.log('Firebase sync not available for hole-by-hole scores');
+          // Load from localStorage
+          const localData = localStorage.getItem('holeByHoleScores');
+          holeByHoleScores = localData ? JSON.parse(localData) : {};
+          return;
+        }
+        
+        try {
+          const firebaseData = await syncFromFirebase('holeByHoleScores');
+          if (firebaseData) {
+            localStorage.setItem('holeByHoleScores', JSON.stringify(firebaseData));
+            holeByHoleScores = firebaseData;
+            console.log('✓ Hole-by-hole scores loaded from Firebase');
+          } else {
+            const localData = localStorage.getItem('holeByHoleScores');
+            holeByHoleScores = localData ? JSON.parse(localData) : {};
+          }
+        } catch (err) {
+          console.error('Failed to load hole-by-hole scores from Firebase:', err);
+          const localData = localStorage.getItem('holeByHoleScores');
+          holeByHoleScores = localData ? JSON.parse(localData) : {};
+        }
+      }
+
+      // Save hole-by-hole scores
+      function saveHoleByHoleScores() {
+        localStorage.setItem('holeByHoleScores', JSON.stringify(holeByHoleScores));
+        // Sync to Firebase if available
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('holeByHoleScores', holeByHoleScores)
+            .then(() => console.log('✓ Hole-by-hole scores synced to Firebase'))
+            .catch(e => console.error('Firebase sync failed:', e));
+        }
+      }
+
+      // Load matches for hole-by-hole mode
+      function loadHoleByHoleMatches() {
+        const drawData = getDrawData(currentRoundId);
+        console.log('Loading hole-by-hole matches, draw data:', drawData);
+        
+        if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+          document.getElementById('matches-list-container').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <p>No draw data found for this round. Please create groups in the Draw page first.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Build matches array from groups (for Fourball: each group is one match)
+        holeByHoleMatches = [];
+        
+        drawData.groups.forEach((group, groupIndex) => {
+          const players = group.players || [];
+          
+          if (players.length < 2) return;
+          
+          // For Fourball: Players 1&2 vs Players 3&4
+          const team1 = players.slice(0, 2);
+          const team2 = players.slice(2, 4);
+          
+          const matchKey = `${currentRoundId}_match_${groupIndex}`;
+          
+          // Get existing scores for this match
+          const matchScoreData = holeByHoleScores[matchKey] || { holes: [], status: 'pending' };
+          
+          holeByHoleMatches.push({
+            matchIndex: groupIndex,
+            matchKey: matchKey,
+            team1: team1,
+            team2: team2,
+            teamNames: {
+              team1: team1[0]?.teamName || team1[0]?.team || '',
+              team2: team2[0]?.teamName || team2[0]?.team || ''
+            },
+            scores: matchScoreData,
+            groupData: group
+          });
+        });
+
+        renderHoleByHoleMatchesList();
+        updateMatchesStatus();
+      }
+
+      // Render the matches list for hole-by-hole mode
+      function renderHoleByHoleMatchesList() {
+        const container = document.getElementById('matches-list-container');
+        const searchTerm = document.getElementById('match-player-search')?.value?.toLowerCase() || '';
+        
+        // Filter matches by search term
+        let matchesToShow = holeByHoleMatches;
+        if (searchTerm) {
+          matchesToShow = holeByHoleMatches.filter(match => {
+            const allPlayers = [...match.team1, ...match.team2];
+            return allPlayers.some(p => {
+              const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+              return fullName.includes(searchTerm);
+            });
+          });
+        }
+        
+        // Sort: incomplete matches first, completed matches at bottom
+        matchesToShow.sort((a, b) => {
+          const aCompleted = a.scores.status === 'completed';
+          const bCompleted = b.scores.status === 'completed';
+          
+          if (aCompleted && !bCompleted) return 1;
+          if (!aCompleted && bCompleted) return -1;
+          return a.matchIndex - b.matchIndex;
+        });
+        
+        filteredMatches = matchesToShow;
+        
+        if (matchesToShow.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <p>No matches found</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        matchesToShow.forEach((match, idx) => {
+          const isSelected = selectedMatch && selectedMatch.matchKey === match.matchKey;
+          const isHighlighted = idx === highlightedMatchIndex;
+          const status = match.scores.status || 'pending';
+          
+          // Build team names display
+          const team1Names = match.team1.map(p => `${p.firstName} ${p.lastName}`).join(' & ');
+          const team2Names = match.team2.length > 0 
+            ? match.team2.map(p => `${p.firstName} ${p.lastName}`).join(' & ')
+            : 'No opponent';
+          
+          // Calculate current match score
+          const matchScore = calculateMatchScore(match.scores.holes || []);
+          
+          html += `
+            <div class="match-item ${status === 'completed' ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+                 data-match-key="${match.matchKey}"
+                 style="${isHighlighted ? 'border-color: #f59e0b; background: #fef3c7;' : ''}">
+              <div class="match-item-header">
+                <span class="match-item-title">Match ${match.matchIndex + 1}</span>
+                <span class="match-item-status ${status}">${getStatusLabel(status)}</span>
+              </div>
+              <div class="match-item-teams">
+                <div class="match-item-team left">${team1Names}</div>
+                <div class="match-item-vs">VS</div>
+                <div class="match-item-team right">${team2Names}</div>
+              </div>
+              ${matchScore ? `<div class="match-item-score">${matchScore}</div>` : ''}
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+
+        // Add click handlers
+        container.querySelectorAll('.match-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const matchKey = item.dataset.matchKey;
+            const match = holeByHoleMatches.find(m => m.matchKey === matchKey);
+            if (match) {
+              selectMatch(match);
+              highlightedMatchIndex = -1;
+              renderHoleByHoleMatchesList();
+            }
+          });
+        });
+      }
+
+      // Get status label text
+      function getStatusLabel(status) {
+        switch(status) {
+          case 'completed': return '✓ Complete';
+          case 'in-progress': return 'In Progress';
+          default: return 'Pending';
+        }
+      }
+
+      // Calculate match score from holes data
+      function calculateMatchScore(holes) {
+        if (!holes || holes.length === 0) return '';
+        
+        let team1Up = 0;
+        let holesPlayed = 0;
+        
+        holes.forEach(hole => {
+          if (hole && hole.winner) {
+            holesPlayed++;
+            if (hole.winner === 'team1') team1Up++;
+            else if (hole.winner === 'team2') team1Up--;
+          }
+        });
+        
+        if (holesPlayed === 0) return '';
+        
+        const holesRemaining = 18 - holesPlayed;
+        
+        if (team1Up === 0) {
+          return 'All Square';
+        } else if (team1Up > 0) {
+          if (holesRemaining === 0) {
+            return `Team 1 wins ${team1Up}UP`;
+          }
+          return `Team 1 ${team1Up}UP`;
+        } else {
+          if (holesRemaining === 0) {
+            return `Team 2 wins ${Math.abs(team1Up)}UP`;
+          }
+          return `Team 2 ${Math.abs(team1Up)}UP`;
+        }
+      }
+
+      // Update matches status text
+      function updateMatchesStatus() {
+        const total = holeByHoleMatches.length;
+        const completed = holeByHoleMatches.filter(m => m.scores.status === 'completed').length;
+        const inProgress = holeByHoleMatches.filter(m => m.scores.status === 'in-progress').length;
+        
+        const statusText = document.getElementById('matches-status-text');
+        if (statusText) {
+          statusText.textContent = `${total} matches | ${completed} completed | ${inProgress} in progress`;
+        }
+      }
+
+      // Select a match for scoring
+      function selectMatch(match) {
+        selectedMatch = match;
+        console.log('Selected match:', match);
+        
+        // Update player info panel for match
+        const playerInfo = document.getElementById('player-info');
+        playerInfo.style.display = 'block';
+        
+        document.getElementById('player-name').textContent = `Match ${match.matchIndex + 1}`;
+        document.getElementById('player-reg').textContent = match.matchKey;
+        document.getElementById('player-hcp').textContent = '-';
+        document.getElementById('player-phcp').textContent = '-';
+        
+        // Hide status dropdown for matches
+        document.getElementById('player-status').parentElement.style.display = 'none';
+        
+        // Render match scorecard (placeholder - will be implemented next)
+        renderMatchScorecard(match);
+      }
+
+      // Render match scorecard (placeholder for now)
+      function renderMatchScorecard(match) {
+        const content = document.getElementById('scorecard-content');
+        
+        // Placeholder - you will tell me how this should look
+        content.innerHTML = `
+          <div style="padding: 20px; text-align: center; color: #64748b;">
+            <h3>Match ${match.matchIndex + 1} Scorecard</h3>
+            <p>Team 1: ${match.team1.map(p => p.firstName + ' ' + p.lastName).join(' & ')}</p>
+            <p>vs</p>
+            <p>Team 2: ${match.team2.map(p => p.firstName + ' ' + p.lastName).join(' & ')}</p>
+            <p style="margin-top: 20px; font-style: italic;">Scorecard layout coming next...</p>
+          </div>
+        `;
+      }
+
+      // Setup search functionality for match player search
+      function setupMatchPlayerSearch() {
+        const searchInput = document.getElementById('match-player-search');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', (e) => {
+          highlightedMatchIndex = e.target.value.trim() ? 0 : -1;
+          renderHoleByHoleMatchesList();
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+          if (filteredMatches.length === 0) return;
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedMatchIndex = Math.min(highlightedMatchIndex + 1, filteredMatches.length - 1);
+            renderHoleByHoleMatchesList();
+            scrollToHighlightedMatch();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedMatchIndex = Math.max(highlightedMatchIndex - 1, 0);
+            renderHoleByHoleMatchesList();
+            scrollToHighlightedMatch();
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedMatchIndex >= 0 && filteredMatches[highlightedMatchIndex]) {
+              selectMatch(filteredMatches[highlightedMatchIndex]);
+              searchInput.value = '';
+              highlightedMatchIndex = -1;
+              renderHoleByHoleMatchesList();
+            }
+          } else if (e.key === 'Escape') {
+            searchInput.value = '';
+            highlightedMatchIndex = -1;
+            renderHoleByHoleMatchesList();
+          }
+        });
+      }
+
+      // Scroll to highlighted match
+      function scrollToHighlightedMatch() {
+        const items = document.querySelectorAll('.match-item');
+        if (items[highlightedMatchIndex]) {
+          items[highlightedMatchIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+
+      // ============================================
+      // END HOLE-BY-HOLE MATCH PLAY UI
+      // ============================================
 
       // Get draw data for current round
       function getDrawData(roundId) {
@@ -1417,6 +1806,13 @@
           // Reload based on current entry method
           if (scoreEntryMethod === 'match-score') {
             loadMatchScores();
+          } else if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
+            const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
+            if (gameFormat === 'fourball') {
+              loadHoleByHoleMatches();
+            } else {
+              loadScores();
+            }
           } else {
             loadScores();
           }
@@ -1425,6 +1821,16 @@
         // Load appropriate view based on entry method
         if (scoreEntryMethod === 'match-score') {
           initMatchScoreUI();
+        } else if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
+          const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
+          if (gameFormat === 'fourball') {
+            // Show scores grid, initialize hole-by-hole match UI
+            document.querySelector('.scores-grid').style.display = 'grid';
+            updateEntryMethodBadge();
+            initHoleByHoleMatchUI();
+          } else {
+            loadScores();
+          }
         } else {
           loadScores();
         }
