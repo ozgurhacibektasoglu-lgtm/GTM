@@ -563,10 +563,8 @@
           document.querySelector('.scores-grid').style.display = 'grid';
           updateEntryMethodBadge();
           
-          // For Match Play Fourball, show matches panel instead of players panel
-          const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
-          console.log('Modal click - gameFormat:', gameFormat);
-          if (gameFormat === 'fourball') {
+          // For Match Play, always show matches panel instead of players panel
+          if (isMatchPlay) {
             document.getElementById('players-panel').style.display = 'none';
             document.getElementById('matches-panel').style.display = 'block';
             initHoleByHoleMatchUI();
@@ -1813,12 +1811,8 @@
           if (scoreEntryMethod === 'match-score') {
             loadMatchScores();
           } else if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
-            const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
-            if (gameFormat === 'fourball') {
-              loadHoleByHoleMatches();
-            } else {
-              loadScores();
-            }
+            // For match play hole-by-hole, reload matches
+            loadHoleByHoleMatches();
           } else {
             loadScores();
           }
@@ -1828,31 +1822,23 @@
         if (scoreEntryMethod === 'match-score') {
           initMatchScoreUI();
         } else if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
-          const gameFormat = (currentTournament.gameFormat || '').toLowerCase();
-          console.log('Hole-by-hole mode, gameFormat:', gameFormat);
-          if (gameFormat === 'fourball') {
-            // Show scores grid, initialize hole-by-hole match UI
-            document.querySelector('.scores-grid').style.display = 'grid';
-            document.getElementById('players-panel').style.display = 'none';
-            document.getElementById('matches-panel').style.display = 'block';
-            updateEntryMethodBadge();
-            initHoleByHoleMatchUI();
-          } else {
-            loadScores();
-          }
+          // For Match Play hole-by-hole, always show matches panel
+          console.log('Initializing hole-by-hole for match play');
+          document.querySelector('.scores-grid').style.display = 'grid';
+          document.getElementById('players-panel').style.display = 'none';
+          document.getElementById('matches-panel').style.display = 'block';
+          updateEntryMethodBadge();
+          initHoleByHoleMatchUI();
         } else {
           loadScores();
         }
       }
 
       async function loadScores() {
-        // Skip loading scores if we're in fourball hole-by-hole mode
+        // Skip loading scores if we're in match play hole-by-hole mode
         if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
-          const gameFormat = (currentTournament?.gameFormat || '').toLowerCase();
-          if (gameFormat === 'fourball') {
-            console.log('Skipping loadScores - in fourball hole-by-hole mode');
-            return;
-          }
+          console.log('Skipping loadScores - in match play hole-by-hole mode');
+          return;
         }
         
         admittedPlayers = getAdmittedPlayers();
@@ -1899,13 +1885,10 @@
       }
 
       function renderPlayersList() {
-        // Skip rendering players list if we're in fourball hole-by-hole mode
+        // Skip rendering players list if we're in match play hole-by-hole mode
         if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
-          const gameFormat = (currentTournament?.gameFormat || '').toLowerCase();
-          if (gameFormat === 'fourball') {
-            console.log('Skipping renderPlayersList - in fourball hole-by-hole mode');
-            return;
-          }
+          console.log('Skipping renderPlayersList - in match play hole-by-hole mode');
+          return;
         }
         
         const tbody = document.getElementById('players-tbody');
