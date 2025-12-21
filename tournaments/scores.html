@@ -986,7 +986,7 @@
         return allocation;
       }
 
-      // Render match scorecard for Fourball
+      // Render match scorecard for Fourball or Foursomes
       function renderMatchScorecard(match) {
         const content = document.getElementById('scorecard-content');
         
@@ -994,6 +994,11 @@
           content.innerHTML = '<div class="empty-state"><p>Course data not available</p></div>';
           return;
         }
+        
+        // Get match type from round data
+        const roundData = currentTournament?.meta?.roundsData?.[currentRoundIndex];
+        const matchType = (roundData?.matchType || 'fourball').toLowerCase();
+        const isFoursomes = matchType === 'foursomes';
         
         const pars = courseData.pars;
         const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
@@ -1010,30 +1015,65 @@
         const t2p1Phcp = team2Player1 ? getMatchPlayingHcp(team2Player1) : null;
         const t2p2Phcp = team2Player2 ? getMatchPlayingHcp(team2Player2) : null;
         
-        // Calculate Match HCPs: Lowest PHCP gets 0, others get the difference
-        const allPhcps = [t1p1Phcp, t1p2Phcp, t2p1Phcp, t2p2Phcp].filter(p => p !== null);
-        const lowestPhcp = Math.min(...allPhcps);
+        // Variables for stroke allocation
+        let t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes;
+        let team1MatchHcp = 0, team2MatchHcp = 0;
         
-        const t1p1MatchHcp = t1p1Phcp - lowestPhcp;
-        const t1p2MatchHcp = t1p2Phcp !== null ? t1p2Phcp - lowestPhcp : 0;
-        const t2p1MatchHcp = t2p1Phcp !== null ? t2p1Phcp - lowestPhcp : 0;
-        const t2p2MatchHcp = t2p2Phcp !== null ? t2p2Phcp - lowestPhcp : 0;
-        
-        // Calculate stroke allocation for each player
-        const t1p1Strokes = calculateStrokeAllocation(t1p1MatchHcp, strokeIndexes);
-        const t1p2Strokes = calculateStrokeAllocation(t1p2MatchHcp, strokeIndexes);
-        const t2p1Strokes = calculateStrokeAllocation(t2p1MatchHcp, strokeIndexes);
-        const t2p2Strokes = calculateStrokeAllocation(t2p2MatchHcp, strokeIndexes);
+        if (isFoursomes) {
+          // FOURSOMES: Average PHCPs per team, lowest team gets 0
+          const team1Phcps = [t1p1Phcp, t1p2Phcp].filter(p => p !== null);
+          const team2Phcps = [t2p1Phcp, t2p2Phcp].filter(p => p !== null);
+          
+          const team1Avg = team1Phcps.length > 0 ? team1Phcps.reduce((a, b) => a + b, 0) / team1Phcps.length : 0;
+          const team2Avg = team2Phcps.length > 0 ? team2Phcps.reduce((a, b) => a + b, 0) / team2Phcps.length : 0;
+          
+          const lowestTeamPhcp = Math.min(team1Avg, team2Avg);
+          team1MatchHcp = Math.round(team1Avg - lowestTeamPhcp);
+          team2MatchHcp = Math.round(team2Avg - lowestTeamPhcp);
+          
+          // For foursomes, use team HCP for stroke allocation
+          t1p1Strokes = calculateStrokeAllocation(team1MatchHcp, strokeIndexes);
+          t1p2Strokes = Array(18).fill(0); // Not used in foursomes
+          t2p1Strokes = calculateStrokeAllocation(team2MatchHcp, strokeIndexes);
+          t2p2Strokes = Array(18).fill(0); // Not used in foursomes
+        } else {
+          // FOURBALL: Lowest PHCP gets 0, others get the difference
+          const allPhcps = [t1p1Phcp, t1p2Phcp, t2p1Phcp, t2p2Phcp].filter(p => p !== null);
+          const lowestPhcp = Math.min(...allPhcps);
+          
+          const t1p1MatchHcp = t1p1Phcp - lowestPhcp;
+          const t1p2MatchHcp = t1p2Phcp !== null ? t1p2Phcp - lowestPhcp : 0;
+          const t2p1MatchHcp = t2p1Phcp !== null ? t2p1Phcp - lowestPhcp : 0;
+          const t2p2MatchHcp = t2p2Phcp !== null ? t2p2Phcp - lowestPhcp : 0;
+          
+          // Calculate stroke allocation for each player
+          t1p1Strokes = calculateStrokeAllocation(t1p1MatchHcp, strokeIndexes);
+          t1p2Strokes = calculateStrokeAllocation(t1p2MatchHcp, strokeIndexes);
+          t2p1Strokes = calculateStrokeAllocation(t2p1MatchHcp, strokeIndexes);
+          t2p2Strokes = calculateStrokeAllocation(t2p2MatchHcp, strokeIndexes);
+        }
         
         // Get existing scores for this match
         let matchScoreData = holeByHoleScores[match.matchKey] || {};
         
-        // Ensure all score arrays exist
-        matchScoreData.team1Player1Scores = matchScoreData.team1Player1Scores || Array(18).fill('');
-        matchScoreData.team1Player2Scores = matchScoreData.team1Player2Scores || Array(18).fill('');
-        matchScoreData.team2Player1Scores = matchScoreData.team2Player1Scores || Array(18).fill('');
-        matchScoreData.team2Player2Scores = matchScoreData.team2Player2Scores || Array(18).fill('');
+        if (isFoursomes) {
+          // Foursomes: only team scores (use team1Player1 and team2Player1 arrays for team scores)
+          matchScoreData.team1Scores = matchScoreData.team1Scores || Array(18).fill('');
+          matchScoreData.team2Scores = matchScoreData.team2Scores || Array(18).fill('');
+          // Keep backward compatibility
+          matchScoreData.team1Player1Scores = matchScoreData.team1Scores;
+          matchScoreData.team2Player1Scores = matchScoreData.team2Scores;
+          matchScoreData.team1Player2Scores = Array(18).fill('');
+          matchScoreData.team2Player2Scores = Array(18).fill('');
+        } else {
+          // Fourball: individual player scores
+          matchScoreData.team1Player1Scores = matchScoreData.team1Player1Scores || Array(18).fill('');
+          matchScoreData.team1Player2Scores = matchScoreData.team1Player2Scores || Array(18).fill('');
+          matchScoreData.team2Player1Scores = matchScoreData.team2Player1Scores || Array(18).fill('');
+          matchScoreData.team2Player2Scores = matchScoreData.team2Player2Scores || Array(18).fill('');
+        }
         matchScoreData.status = matchScoreData.status || 'pending';
+        matchScoreData.matchType = matchType;
         
         // Initialize if not exists
         if (!holeByHoleScores[match.matchKey]) {
@@ -1067,40 +1107,73 @@
         html += '<td class="subtotal-col"></td><td class="total-col"></td></tr>';
         
         // Calculate winning scores for each hole (to highlight the best ball that won)
-        const winningScores = calculateWinningScoresPerHole(
-          matchScoreData, 
-          t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes, pars
-        );
+        const winningScores = isFoursomes 
+          ? calculateWinningScoresPerHoleFoursomes(matchScoreData, t1p1Strokes, t2p1Strokes, pars)
+          : calculateWinningScoresPerHole(matchScoreData, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes, pars);
         
-        // Team 1 Player 1 row
-        html += renderPlayerScoreRow(team1Player1, t1p1MatchHcp, t1p1Strokes, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, match.matchKey, winningScores);
-        
-        // Team 1 Player 2 row (if exists)
-        if (team1Player2) {
-          html += renderPlayerScoreRow(team1Player2, t1p2MatchHcp, t1p2Strokes, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, match.matchKey, winningScores);
-        }
-        
-        // Match Score row
-        html += renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
-        
-        // Calculate and store the match result
-        const matchResult = calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
-        console.log('Calculated matchResult for', match.matchKey, ':', matchResult);
-        if (matchResult) {
-          matchScoreData.matchResult = matchResult;
-          holeByHoleScores[match.matchKey] = matchScoreData;
-          saveHoleByHoleScores();
-          console.log('Saved matchResult to holeByHoleScores:', match.matchKey, matchResult);
-        }
-        
-        // Team 2 Player 1 row
-        if (team2Player1) {
-          html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey, winningScores);
-        }
-        
-        // Team 2 Player 2 row (if exists)
-        if (team2Player2) {
-          html += renderPlayerScoreRow(team2Player2, t2p2MatchHcp, t2p2Strokes, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, match.matchKey, winningScores);
+        if (isFoursomes) {
+          // FOURSOMES: One row per team with combined names
+          const team1Names = match.team1.map(p => `${p.firstName} ${p.lastName.charAt(0)}.`).join(' / ');
+          const team2Names = match.team2.map(p => `${p.firstName} ${p.lastName.charAt(0)}.`).join(' / ');
+          
+          // Team 1 row
+          html += renderTeamScoreRow(team1Names, team1MatchHcp, t1p1Strokes, 'team1', matchScoreData.team1Scores, pars, match.matchKey, winningScores);
+          
+          // Match Score row (for foursomes, use team strokes)
+          html += renderMatchScoreRowFoursomes(matchScoreData, pars, t1p1Strokes, t2p1Strokes);
+          
+          // Calculate and store the match result
+          const matchResult = calculateMatchResultFoursomes(matchScoreData, pars, t1p1Strokes, t2p1Strokes);
+          console.log('Calculated matchResult for', match.matchKey, ':', matchResult);
+          if (matchResult) {
+            matchScoreData.matchResult = matchResult;
+            holeByHoleScores[match.matchKey] = matchScoreData;
+            saveHoleByHoleScores();
+            console.log('Saved matchResult to holeByHoleScores:', match.matchKey, matchResult);
+          }
+          
+          // Team 2 row
+          html += renderTeamScoreRow(team2Names, team2MatchHcp, t2p1Strokes, 'team2', matchScoreData.team2Scores, pars, match.matchKey, winningScores);
+        } else {
+          // FOURBALL: Individual player rows
+          // Get match HCPs for display (recalculate for fourball)
+          const allPhcps = [t1p1Phcp, t1p2Phcp, t2p1Phcp, t2p2Phcp].filter(p => p !== null);
+          const lowestPhcp = Math.min(...allPhcps);
+          const t1p1MatchHcp = t1p1Phcp - lowestPhcp;
+          const t1p2MatchHcp = t1p2Phcp !== null ? t1p2Phcp - lowestPhcp : 0;
+          const t2p1MatchHcp = t2p1Phcp !== null ? t2p1Phcp - lowestPhcp : 0;
+          const t2p2MatchHcp = t2p2Phcp !== null ? t2p2Phcp - lowestPhcp : 0;
+          
+          // Team 1 Player 1 row
+          html += renderPlayerScoreRow(team1Player1, t1p1MatchHcp, t1p1Strokes, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, match.matchKey, winningScores);
+          
+          // Team 1 Player 2 row (if exists)
+          if (team1Player2) {
+            html += renderPlayerScoreRow(team1Player2, t1p2MatchHcp, t1p2Strokes, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, match.matchKey, winningScores);
+          }
+          
+          // Match Score row
+          html += renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
+          
+          // Calculate and store the match result
+          const matchResult = calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
+          console.log('Calculated matchResult for', match.matchKey, ':', matchResult);
+          if (matchResult) {
+            matchScoreData.matchResult = matchResult;
+            holeByHoleScores[match.matchKey] = matchScoreData;
+            saveHoleByHoleScores();
+            console.log('Saved matchResult to holeByHoleScores:', match.matchKey, matchResult);
+          }
+          
+          // Team 2 Player 1 row
+          if (team2Player1) {
+            html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey, winningScores);
+          }
+          
+          // Team 2 Player 2 row (if exists)
+          if (team2Player2) {
+            html += renderPlayerScoreRow(team2Player2, t2p2MatchHcp, t2p2Strokes, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, match.matchKey, winningScores);
+          }
         }
         
         html += '</tbody></table></div>';
@@ -1109,7 +1182,7 @@
         
         // Add event listeners to all score inputs
         content.querySelectorAll('.match-scorecard-input').forEach(input => {
-          input.addEventListener('input', handleMatchHoleScoreInput);
+          input.addEventListener('input', isFoursomes ? handleFoursomesScoreInput : handleMatchHoleScoreInput);
           input.addEventListener('keydown', handleMatchScoreKeydown);
           // Select all text on focus for easy correction
           input.addEventListener('focus', (e) => e.target.select());
@@ -1212,6 +1285,330 @@
         }
         
         return results;
+      }
+
+      // Calculate winning team per hole for Foursomes (only one score per team)
+      function calculateWinningScoresPerHoleFoursomes(matchScoreData, team1Strokes, team2Strokes, pars) {
+        const results = [];
+        
+        for (let i = 0; i < 18; i++) {
+          const t1Score = matchScoreData.team1Scores?.[i] || '';
+          const t2Score = matchScoreData.team2Scores?.[i] || '';
+          const par = pars[i] || 4;
+          
+          // Calculate net scores
+          const t1Result = getNetScore(t1Score, team1Strokes[i], par);
+          const t2Result = getNetScore(t2Score, team2Strokes[i], par);
+          
+          let winningTeam = null;
+          
+          const team1HasValid = !t1Result.isX && t1Result.net < 999;
+          const team2HasValid = !t2Result.isX && t2Result.net < 999;
+          
+          if (team1HasValid && team2HasValid) {
+            if (t1Result.net < t2Result.net) {
+              winningTeam = 'team1';
+            } else if (t2Result.net < t1Result.net) {
+              winningTeam = 'team2';
+            }
+          } else if (team1HasValid && !team2HasValid) {
+            winningTeam = 'team1';
+          } else if (!team1HasValid && team2HasValid) {
+            winningTeam = 'team2';
+          }
+          
+          results.push({ winningTeam, winningPlayer: null }); // No specific player in foursomes
+        }
+        
+        return results;
+      }
+
+      // Render Team score row for Foursomes
+      function renderTeamScoreRow(teamNames, teamMatchHcp, strokeAllocation, team, scores, pars, matchKey, winningScores) {
+        const teamClass = team === 'team1' ? 'team1-row' : 'team2-row';
+        const inputClass = team === 'team1' ? 'team1' : 'team2';
+        
+        scores = scores || Array(18).fill('');
+        winningScores = winningScores || [];
+        
+        let html = `<tr class="${teamClass}"><td class="row-label" style="font-size: 11px;">${teamNames}<br><small>HCP:${teamMatchHcp}</small></td>`;
+        
+        let frontTotal = 0, backTotal = 0;
+        
+        for (let i = 0; i < 9; i++) {
+          const score = scores[i] || '';
+          const strokes = strokeAllocation[i] || 0;
+          const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
+          
+          const holeWinner = winningScores[i];
+          const isWinningScore = holeWinner && holeWinner.winningTeam === team;
+          const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
+          
+          const displayValue = score === '0' ? 'X' : score;
+          const xClass = score === '0' ? 'x-score' : '';
+          
+          if (score !== '' && score !== '0') frontTotal += parseInt(score) || 0;
+          else if (score === '0') frontTotal += (pars[i] || 4) + 2;
+          
+          html += `<td class="score-cell ${winnerClass}">
+            ${strokeDots}
+            <input type="text" class="match-scorecard-input ${inputClass} ${xClass}" 
+                   value="${displayValue}" 
+                   data-actual-value="${score}"
+                   data-match-key="${matchKey}"
+                   data-team="${team}"
+                   data-hole="${i}"
+                   maxlength="2">
+          </td>`;
+        }
+        
+        html += `<td class="subtotal-col">${frontTotal > 0 ? frontTotal : ''}</td>`;
+        
+        for (let i = 9; i < 18; i++) {
+          const score = scores[i] || '';
+          const strokes = strokeAllocation[i] || 0;
+          const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
+          
+          const holeWinner = winningScores[i];
+          const isWinningScore = holeWinner && holeWinner.winningTeam === team;
+          const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
+          
+          const displayValue = score === '0' ? 'X' : score;
+          const xClass = score === '0' ? 'x-score' : '';
+          
+          if (score !== '' && score !== '0') backTotal += parseInt(score) || 0;
+          else if (score === '0') backTotal += (pars[i] || 4) + 2;
+          
+          html += `<td class="score-cell ${winnerClass}">
+            ${strokeDots}
+            <input type="text" class="match-scorecard-input ${inputClass} ${xClass}" 
+                   value="${displayValue}" 
+                   data-actual-value="${score}"
+                   data-match-key="${matchKey}"
+                   data-team="${team}"
+                   data-hole="${i}"
+                   maxlength="2">
+          </td>`;
+        }
+        
+        const total = (frontTotal > 0 || backTotal > 0) ? frontTotal + backTotal : '';
+        html += `<td class="subtotal-col">${backTotal > 0 ? backTotal : ''}</td>`;
+        html += `<td class="total-col">${total}</td></tr>`;
+        
+        return html;
+      }
+
+      // Render Match Score row for Foursomes
+      function renderMatchScoreRowFoursomes(matchScoreData, pars, team1Strokes, team2Strokes) {
+        let html = '<tr class="match-score-row"><td class="row-label"><strong>MATCH SCORE</strong></td>';
+        
+        const matchResult = calculateMatchResultFoursomes(matchScoreData, pars, team1Strokes, team2Strokes);
+        
+        let runningScore = 0;
+        let matchFinished = false;
+        
+        for (let i = 0; i < 18; i++) {
+          const holeResult = calculateHoleWinnerFoursomes(
+            matchScoreData.team1Scores?.[i] || '',
+            matchScoreData.team2Scores?.[i] || '',
+            pars[i],
+            team1Strokes[i], team2Strokes[i]
+          );
+          
+          let displayText = '';
+          let displayClass = 'match-score-even';
+          
+          if (matchFinished) {
+            if (i === 8) {
+              html += `<td class="${displayClass}"></td><td class="subtotal-col"></td>`;
+            } else if (i === 17) {
+              html += `<td class="${displayClass}"></td><td class="subtotal-col"></td><td class="total-col"></td>`;
+            } else {
+              html += `<td class="${displayClass}"></td>`;
+            }
+            continue;
+          }
+          
+          if (holeResult !== null) {
+            runningScore += holeResult;
+            
+            const holesRemaining = 17 - i;
+            const absScore = Math.abs(runningScore);
+            
+            if (absScore > holesRemaining) {
+              matchFinished = true;
+              const resultStr = `${absScore}&${holesRemaining}`;
+              displayText = resultStr;
+              displayClass = runningScore > 0 ? 'match-score-team1 match-score-finished' : 'match-score-team2 match-score-finished';
+            } else if (runningScore > 0) {
+              displayText = `${runningScore}up`;
+              displayClass = 'match-score-team1';
+            } else if (runningScore < 0) {
+              displayText = `${Math.abs(runningScore)}up`;
+              displayClass = 'match-score-team2';
+            } else {
+              displayText = 'E';
+              displayClass = 'match-score-even';
+            }
+          }
+          
+          if (i === 8) {
+            html += `<td class="${displayClass}">${displayText}</td><td class="subtotal-col"></td>`;
+          } else if (i === 17) {
+            html += `<td class="${displayClass}">${displayText}</td><td class="subtotal-col"></td><td class="total-col"></td>`;
+          } else {
+            html += `<td class="${displayClass}">${displayText}</td>`;
+          }
+        }
+        
+        html += '</tr>';
+        return html;
+      }
+
+      // Calculate hole winner for Foursomes (one score per team)
+      function calculateHoleWinnerFoursomes(team1Score, team2Score, par, team1Strokes, team2Strokes) {
+        if ((team1Score === '' || team1Score === null) || (team2Score === '' || team2Score === null)) return null;
+        
+        const t1Result = getNetScore(team1Score, team1Strokes, par);
+        const t2Result = getNetScore(team2Score, team2Strokes, par);
+        
+        const t1CanWin = !t1Result.isX && t1Result.net < 999;
+        const t2CanWin = !t2Result.isX && t2Result.net < 999;
+        
+        if (!t1CanWin && !t2CanWin) return 0; // Both X = halved
+        if (!t1CanWin) return -1; // Team 1 X, Team 2 wins
+        if (!t2CanWin) return 1;  // Team 2 X, Team 1 wins
+        
+        if (t1Result.net < t2Result.net) return 1;  // Team 1 wins
+        if (t2Result.net < t1Result.net) return -1; // Team 2 wins
+        return 0; // Halved
+      }
+
+      // Calculate match result for Foursomes
+      function calculateMatchResultFoursomes(matchScoreData, pars, team1Strokes, team2Strokes) {
+        let runningScore = 0;
+        let holesPlayed = 0;
+        
+        for (let i = 0; i < 18; i++) {
+          const holeResult = calculateHoleWinnerFoursomes(
+            matchScoreData.team1Scores?.[i] || '',
+            matchScoreData.team2Scores?.[i] || '',
+            pars[i],
+            team1Strokes[i], team2Strokes[i]
+          );
+          
+          if (holeResult === null) continue;
+          
+          holesPlayed++;
+          runningScore += holeResult;
+          
+          const holesRemaining = 18 - holesPlayed;
+          const absScore = Math.abs(runningScore);
+          
+          if (absScore > holesRemaining) {
+            return {
+              left: runningScore > 0 ? absScore : 0,
+              right: runningScore < 0 ? absScore : 0,
+              resultText: `${absScore}&${holesRemaining}`,
+              winner: runningScore > 0 ? 'team1' : 'team2',
+              holesPlayed: holesPlayed
+            };
+          }
+        }
+        
+        if (holesPlayed === 0) return null;
+        
+        const absScore = Math.abs(runningScore);
+        if (runningScore === 0) {
+          return { left: 0, right: 0, resultText: 'Halved', winner: 'tie', holesPlayed: holesPlayed };
+        } else {
+          return {
+            left: runningScore > 0 ? absScore : 0,
+            right: runningScore < 0 ? absScore : 0,
+            resultText: `${absScore}UP`,
+            winner: runningScore > 0 ? 'team1' : 'team2',
+            holesPlayed: holesPlayed
+          };
+        }
+      }
+
+      // Handle score input for Foursomes
+      function handleFoursomesScoreInput(e) {
+        const input = e.target;
+        const matchKey = input.dataset.matchKey;
+        const team = input.dataset.team;
+        const holeIndex = parseInt(input.dataset.hole);
+        let value = input.value.trim().toUpperCase();
+        
+        if (value === 'X') {
+          value = '0';
+        }
+        
+        if (value !== '' && !/^\d+$/.test(value)) {
+          const actualValue = input.dataset.actualValue || '';
+          input.value = actualValue === '0' ? 'X' : actualValue;
+          return;
+        }
+        
+        const scoreKey = team === 'team1' ? 'team1Scores' : 'team2Scores';
+        if (!holeByHoleScores[matchKey]) {
+          holeByHoleScores[matchKey] = {
+            team1Scores: Array(18).fill(''),
+            team2Scores: Array(18).fill(''),
+            status: 'pending',
+            matchType: 'foursomes'
+          };
+        }
+        
+        holeByHoleScores[matchKey][scoreKey][holeIndex] = value;
+        
+        // Update status
+        updateMatchStatusFoursomes(matchKey);
+        
+        saveHoleByHoleScores();
+        
+        // Re-render
+        if (selectedMatch && selectedMatch.matchKey === matchKey) {
+          renderMatchScorecard(selectedMatch);
+          const allInputs = document.querySelectorAll('.match-scorecard-input');
+          const currentIdx = Array.from(allInputs).findIndex(inp => 
+            inp.dataset.matchKey === matchKey && 
+            inp.dataset.team === team && 
+            parseInt(inp.dataset.hole) === holeIndex
+          );
+          if (currentIdx !== -1 && value !== '' && currentIdx < allInputs.length - 1) {
+            allInputs[currentIdx + 1].focus();
+          }
+        }
+        renderHoleByHoleMatchesList();
+      }
+
+      // Update match status for Foursomes
+      function updateMatchStatusFoursomes(matchKey) {
+        const data = holeByHoleScores[matchKey];
+        if (!data) return;
+        
+        let holesPlayed = 0;
+        for (let i = 0; i < 18; i++) {
+          const t1HasScore = data.team1Scores?.[i] && data.team1Scores[i] !== '';
+          const t2HasScore = data.team2Scores?.[i] && data.team2Scores[i] !== '';
+          if (t1HasScore && t2HasScore) holesPlayed++;
+        }
+        
+        if (holesPlayed === 0) {
+          data.status = 'pending';
+        } else if (holesPlayed === 18) {
+          data.status = 'completed';
+        } else {
+          data.status = 'in-progress';
+        }
+        
+        const matchIdx = holeByHoleMatches.findIndex(m => m.matchKey === matchKey);
+        if (matchIdx !== -1) {
+          holeByHoleMatches[matchIdx].scores = data;
+        }
+        
+        updateMatchesStatus();
       }
 
       // Render a player's score row
