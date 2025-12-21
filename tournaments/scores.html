@@ -2834,17 +2834,17 @@
         // Unpublish the draw list when results are entered
         try {
           const tournaments = getTournaments();
-          const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+          const tournament = tournaments.find(t => t.tournamentId === tournamentIdParam);
           
           if (tournament && tournament.published) {
             // Check if this is the published round
-            const publishedRoundId = tournament.meta?.roundIds?.[0] || `${tournamentId}-1`;
+            const publishedRoundId = tournament.meta?.roundIds?.[0] || `${tournamentIdParam}-1`;
             if (roundId === publishedRoundId) {
               tournament.published = false;
               delete tournament.publishedHTML;
               delete tournament.publishedDate;
               
-              const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
+              const idx = tournaments.findIndex(t => t.tournamentId === tournamentIdParam);
               if (idx !== -1) {
                 tournaments[idx] = tournament;
                 saveTournaments(tournaments);
