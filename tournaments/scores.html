@@ -160,8 +160,10 @@
       .match-score-team1 { color: #dc2626; font-weight: 700; }
       .match-score-team2 { color: #2563eb; font-weight: 700; }
       .match-score-even { color: #64748b; font-weight: 600; }
+      .match-score-finished { color: #059669; font-weight: 700; font-size: 10px; }
       .score-cell-wrapper { display: flex; align-items: flex-start; justify-content: center; gap: 0; }
-      .stroke-dots { font-size: 10px; color: #3b82f6; font-weight: bold; line-height: 1; margin-left: -2px; }
+      .stroke-dots { font-size: 10px; color: #3b82f6; font-weight: bold; line-height: 1; margin-left: 3px; }
+      .match-scorecard-input.x-score { color: #9ca3af; font-style: italic; }
     </style>
   </head>
   <body>
@@ -1067,7 +1069,7 @@
         // Calculate winning scores for each hole (to highlight the best ball that won)
         const winningScores = calculateWinningScoresPerHole(
           matchScoreData, 
-          t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes
+          t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes, pars
         );
         
         // Team 1 Player 1 row
@@ -1099,11 +1101,26 @@
         content.querySelectorAll('.match-scorecard-input').forEach(input => {
           input.addEventListener('input', handleMatchHoleScoreInput);
           input.addEventListener('keydown', handleMatchScoreKeydown);
+          // Select all text on focus for easy correction
+          input.addEventListener('focus', (e) => e.target.select());
         });
       }
 
+      // Calculate net score for a player on a hole
+      // 0 score = X (did not finish) = treated as net double bogey for comparison, but cannot win
+      function getNetScore(score, strokes, par) {
+        if (score === '' || score === null || score === undefined) return { net: 999, isX: false };
+        const grossScore = parseInt(score);
+        if (grossScore === 0) {
+          // X (did not finish) - calculate as net double bogey but mark as X
+          const netDoubleBogey = (par + 2) - (strokes || 0);
+          return { net: netDoubleBogey, isX: true };
+        }
+        return { net: grossScore - (strokes || 0), isX: false };
+      }
+
       // Calculate which player's score is the winning best ball for each hole
-      function calculateWinningScoresPerHole(matchScoreData, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
+      function calculateWinningScoresPerHole(matchScoreData, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes, pars) {
         const results = [];
         
         for (let i = 0; i < 18; i++) {
@@ -1111,41 +1128,75 @@
           const t1p2Score = matchScoreData.team1Player2Scores ? matchScoreData.team1Player2Scores[i] : '';
           const t2p1Score = matchScoreData.team2Player1Scores ? matchScoreData.team2Player1Scores[i] : '';
           const t2p2Score = matchScoreData.team2Player2Scores ? matchScoreData.team2Player2Scores[i] : '';
+          const par = pars[i] || 4;
           
-          // Calculate net scores
-          const t1p1Net = t1p1Score ? parseInt(t1p1Score) - (t1p1Strokes[i] || 0) : 999;
-          const t1p2Net = t1p2Score ? parseInt(t1p2Score) - (t1p2Strokes[i] || 0) : 999;
-          const t2p1Net = t2p1Score ? parseInt(t2p1Score) - (t2p1Strokes[i] || 0) : 999;
-          const t2p2Net = t2p2Score ? parseInt(t2p2Score) - (t2p2Strokes[i] || 0) : 999;
+          // Calculate net scores (X scores cannot win)
+          const t1p1Result = getNetScore(t1p1Score, t1p1Strokes[i], par);
+          const t1p2Result = getNetScore(t1p2Score, t1p2Strokes[i], par);
+          const t2p1Result = getNetScore(t2p1Score, t2p1Strokes[i], par);
+          const t2p2Result = getNetScore(t2p2Score, t2p2Strokes[i], par);
           
-          // Find best ball for each team
-          const team1Best = Math.min(t1p1Net, t1p2Net);
-          const team2Best = Math.min(t2p1Net, t2p2Net);
+          // Find best ball for each team (excluding X scores from winning)
+          // For comparison purposes, use the net score, but X cannot be the winning score
+          const t1p1CanWin = !t1p1Result.isX && t1p1Result.net < 999;
+          const t1p2CanWin = !t1p2Result.isX && t1p2Result.net < 999;
+          const t2p1CanWin = !t2p1Result.isX && t2p1Result.net < 999;
+          const t2p2CanWin = !t2p2Result.isX && t2p2Result.net < 999;
           
-          let winner = null;
+          // Best ball that can win for each team
+          const team1BestWinnable = Math.min(
+            t1p1CanWin ? t1p1Result.net : 999,
+            t1p2CanWin ? t1p2Result.net : 999
+          );
+          const team2BestWinnable = Math.min(
+            t2p1CanWin ? t2p1Result.net : 999,
+            t2p2CanWin ? t2p2Result.net : 999
+          );
+          
           let winningTeam = null;
           let winningPlayer = null;
           
-          if (team1Best < 999 && team2Best < 999) {
-            if (team1Best < team2Best) {
+          // Need at least one valid (non-X) score from each team to determine winner
+          const team1HasValid = t1p1CanWin || t1p2CanWin;
+          const team2HasValid = t2p1CanWin || t2p2CanWin;
+          
+          if (team1HasValid && team2HasValid) {
+            if (team1BestWinnable < team2BestWinnable) {
               winningTeam = 'team1';
-              // Find which player had the best ball
-              if (t1p1Net <= t1p2Net && t1p1Score) {
+              // Find which player had the best ball (that can win)
+              if (t1p1CanWin && t1p1Result.net <= t1p2Result.net) {
                 winningPlayer = 'p1';
-              } else if (t1p2Score) {
+              } else if (t1p2CanWin) {
                 winningPlayer = 'p2';
               }
-            } else if (team2Best < team1Best) {
+            } else if (team2BestWinnable < team1BestWinnable) {
               winningTeam = 'team2';
-              // Find which player had the best ball
-              if (t2p1Net <= t2p2Net && t2p1Score) {
+              // Find which player had the best ball (that can win)
+              if (t2p1CanWin && t2p1Result.net <= t2p2Result.net) {
                 winningPlayer = 'p1';
-              } else if (t2p2Score) {
+              } else if (t2p2CanWin) {
                 winningPlayer = 'p2';
               }
             }
             // If tied (halved), no winner highlighted
+          } else if (team1HasValid && !team2HasValid) {
+            // Team 2 has no valid scores (all X), Team 1 wins
+            winningTeam = 'team1';
+            if (t1p1CanWin && (!t1p2CanWin || t1p1Result.net <= t1p2Result.net)) {
+              winningPlayer = 'p1';
+            } else if (t1p2CanWin) {
+              winningPlayer = 'p2';
+            }
+          } else if (!team1HasValid && team2HasValid) {
+            // Team 1 has no valid scores (all X), Team 2 wins
+            winningTeam = 'team2';
+            if (t2p1CanWin && (!t2p2CanWin || t2p1Result.net <= t2p2Result.net)) {
+              winningPlayer = 'p1';
+            } else if (t2p2CanWin) {
+              winningPlayer = 'p2';
+            }
           }
+          // If both teams have only X scores, it's halved (no winner)
           
           results.push({ winningTeam, winningPlayer });
         }
@@ -1179,16 +1230,29 @@
           const isWinningScore = holeWinner && holeWinner.winningTeam === team && holeWinner.winningPlayer === playerNum;
           const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
           
-          if (score) frontTotal += parseInt(score) || 0;
+          // Handle 0 as X (did not finish) - display X but count as net double bogey for totals
+          const displayValue = score === '0' ? 'X' : score;
+          const xClass = score === '0' ? 'x-score' : '';
+          
+          // For totals: 0 counts as par + 2 (double bogey gross)
+          if (score) {
+            const grossScore = parseInt(score);
+            if (grossScore === 0) {
+              frontTotal += (pars[i] || 4) + 2; // Double bogey
+            } else {
+              frontTotal += grossScore;
+            }
+          }
           
           html += `<td>
             <div class="score-cell-wrapper">
-              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass}" 
-                     value="${score}" 
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass} ${xClass}" 
+                     value="${displayValue}" 
                      data-match-key="${matchKey}"
                      data-team="${team}"
                      data-player="${playerNum}"
                      data-hole="${i}"
+                     data-actual-value="${score}"
                      maxlength="2">${strokeDots}
             </div>
           </td>`;
@@ -1206,16 +1270,29 @@
           const isWinningScore = holeWinner && holeWinner.winningTeam === team && holeWinner.winningPlayer === playerNum;
           const winnerClass = isWinningScore ? (team === 'team1' ? 'winner-team1' : 'winner-team2') : '';
           
-          if (score) backTotal += parseInt(score) || 0;
+          // Handle 0 as X (did not finish) - display X but count as net double bogey for totals
+          const displayValue = score === '0' ? 'X' : score;
+          const xClass = score === '0' ? 'x-score' : '';
+          
+          // For totals: 0 counts as par + 2 (double bogey gross)
+          if (score) {
+            const grossScore = parseInt(score);
+            if (grossScore === 0) {
+              backTotal += (pars[i] || 4) + 2; // Double bogey
+            } else {
+              backTotal += grossScore;
+            }
+          }
           
           html += `<td>
             <div class="score-cell-wrapper">
-              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass}" 
-                     value="${score}" 
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass} ${xClass}" 
+                     value="${displayValue}" 
                      data-match-key="${matchKey}"
                      data-team="${team}"
                      data-player="${playerNum}"
                      data-hole="${i}"
+                     data-actual-value="${score}"
                      maxlength="2">${strokeDots}
             </div>
           </td>`;
@@ -1238,6 +1315,9 @@
         let html = '<tr class="match-score-row"><td class="row-label"><strong>MATCH SCORE</strong></td>';
         
         let runningScore = 0; // Positive = Team 1 up, Negative = Team 2 up
+        let matchFinished = false;
+        let matchFinishedHole = -1;
+        let matchResult = '';
         
         for (let i = 0; i < 18; i++) {
           const holeResult = calculateHoleWinner(
@@ -1249,15 +1329,35 @@
             t1p1Strokes[i], t1p2Strokes[i], t2p1Strokes[i], t2p2Strokes[i]
           );
           
-          if (holeResult !== null) {
-            runningScore += holeResult;
-          }
-          
           let displayText = '';
           let displayClass = 'match-score-even';
           
+          // If match already finished, show empty cells
+          if (matchFinished) {
+            if (i === 8) {
+              html += `<td class="${displayClass}"></td><td class="subtotal-col"></td>`;
+            } else if (i === 17) {
+              html += `<td class="${displayClass}"></td><td class="subtotal-col"></td><td class="total-col"></td>`;
+            } else {
+              html += `<td class="${displayClass}"></td>`;
+            }
+            continue;
+          }
+          
           if (holeResult !== null) {
-            if (runningScore > 0) {
+            runningScore += holeResult;
+            
+            // Check if match is finished (score > holes remaining)
+            const holesRemaining = 17 - i; // After this hole
+            const absScore = Math.abs(runningScore);
+            
+            if (absScore > holesRemaining) {
+              matchFinished = true;
+              matchFinishedHole = i;
+              matchResult = `${absScore}&${holesRemaining}`;
+              displayText = matchResult;
+              displayClass = runningScore > 0 ? 'match-score-team1 match-score-finished' : 'match-score-team2 match-score-finished';
+            } else if (runningScore > 0) {
               displayText = `${runningScore}up`;
               displayClass = 'match-score-team1';
             } else if (runningScore < 0) {
@@ -1283,6 +1383,7 @@
       }
 
       // Calculate who won a hole in Fourball (best ball comparison using stroke allocation)
+      // X (0) scores are treated as net double bogey but cannot win the hole
       function calculateHoleWinner(t1p1Score, t1p2Score, t2p1Score, t2p2Score, par, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
         // Need at least one score from each team
         const t1Scores = [t1p1Score, t1p2Score].filter(s => s !== '' && s !== null && s !== undefined);
@@ -1290,15 +1391,34 @@
         
         if (t1Scores.length === 0 || t2Scores.length === 0) return null;
         
-        // Calculate net scores for each player (gross - strokes received on this hole)
-        const t1p1Net = t1p1Score ? parseInt(t1p1Score) - (t1p1Strokes || 0) : 999;
-        const t1p2Net = t1p2Score ? parseInt(t1p2Score) - (t1p2Strokes || 0) : 999;
-        const t2p1Net = t2p1Score ? parseInt(t2p1Score) - (t2p1Strokes || 0) : 999;
-        const t2p2Net = t2p2Score ? parseInt(t2p2Score) - (t2p2Strokes || 0) : 999;
+        // Calculate net scores using the helper function that handles X (0) scores
+        const t1p1Result = getNetScore(t1p1Score, t1p1Strokes, par);
+        const t1p2Result = getNetScore(t1p2Score, t1p2Strokes, par);
+        const t2p1Result = getNetScore(t2p1Score, t2p1Strokes, par);
+        const t2p2Result = getNetScore(t2p2Score, t2p2Strokes, par);
         
-        // Best ball for each team (lowest net score)
-        const team1Best = Math.min(t1p1Net, t1p2Net);
-        const team2Best = Math.min(t2p1Net, t2p2Net);
+        // Best ball for each team (X scores cannot win, so use 999 for comparison if X)
+        const t1p1CanWin = !t1p1Result.isX && t1p1Result.net < 999;
+        const t1p2CanWin = !t1p2Result.isX && t1p2Result.net < 999;
+        const t2p1CanWin = !t2p1Result.isX && t2p1Result.net < 999;
+        const t2p2CanWin = !t2p2Result.isX && t2p2Result.net < 999;
+        
+        const team1Best = Math.min(
+          t1p1CanWin ? t1p1Result.net : 999,
+          t1p2CanWin ? t1p2Result.net : 999
+        );
+        const team2Best = Math.min(
+          t2p1CanWin ? t2p1Result.net : 999,
+          t2p2CanWin ? t2p2Result.net : 999
+        );
+        
+        // If one team has only X scores, the other team wins
+        const team1HasValid = t1p1CanWin || t1p2CanWin;
+        const team2HasValid = t2p1CanWin || t2p2CanWin;
+        
+        if (!team1HasValid && !team2HasValid) return 0; // Both teams all X = halved
+        if (!team1HasValid) return -1; // Team 1 all X, Team 2 wins
+        if (!team2HasValid) return 1;  // Team 2 all X, Team 1 wins
         
         if (team1Best < team2Best) return 1;  // Team 1 wins hole
         if (team2Best < team1Best) return -1; // Team 2 wins hole
@@ -1312,11 +1432,18 @@
         const team = input.dataset.team;
         const playerNum = input.dataset.player;
         const holeIndex = parseInt(input.dataset.hole);
-        let value = input.value.trim();
+        let value = input.value.trim().toUpperCase();
         
-        // Only allow numbers
+        // Allow X as input (converts to 0 for storage)
+        if (value === 'X') {
+          value = '0';
+        }
+        
+        // Only allow numbers (including 0 for X)
         if (value !== '' && !/^\d+$/.test(value)) {
-          input.value = '';
+          // Restore previous value
+          const actualValue = input.dataset.actualValue || '';
+          input.value = actualValue === '0' ? 'X' : actualValue;
           return;
         }
         
