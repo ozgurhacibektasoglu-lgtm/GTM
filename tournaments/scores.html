@@ -999,6 +999,7 @@
         const roundData = currentTournament?.meta?.roundsData?.[currentRoundIndex];
         const matchType = (roundData?.matchType || 'fourball').toLowerCase();
         const isFoursomes = matchType === 'foursomes';
+        console.log('renderMatchScorecard - roundIndex:', currentRoundIndex, 'matchType:', matchType, 'isFoursomes:', isFoursomes, 'roundData:', roundData);
         
         const pars = courseData.pars;
         const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
