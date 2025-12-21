@@ -1085,10 +1085,12 @@
         
         // Calculate and store the match result
         const matchResult = calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
+        console.log('Calculated matchResult for', match.matchKey, ':', matchResult);
         if (matchResult) {
           matchScoreData.matchResult = matchResult;
           holeByHoleScores[match.matchKey] = matchScoreData;
           saveHoleByHoleScores();
+          console.log('Saved matchResult to holeByHoleScores:', match.matchKey, matchResult);
         }
         
         // Team 2 Player 1 row
