@@ -1846,6 +1846,15 @@
       }
 
       async function loadScores() {
+        // Skip loading scores if we're in fourball hole-by-hole mode
+        if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
+          const gameFormat = (currentTournament?.gameFormat || '').toLowerCase();
+          if (gameFormat === 'fourball') {
+            console.log('Skipping loadScores - in fourball hole-by-hole mode');
+            return;
+          }
+        }
+        
         admittedPlayers = getAdmittedPlayers();
         selectedPlayer = null;
         
@@ -1890,6 +1899,15 @@
       }
 
       function renderPlayersList() {
+        // Skip rendering players list if we're in fourball hole-by-hole mode
+        if (scoreEntryMethod === 'hole-by-hole' && isMatchPlay) {
+          const gameFormat = (currentTournament?.gameFormat || '').toLowerCase();
+          if (gameFormat === 'fourball') {
+            console.log('Skipping renderPlayersList - in fourball hole-by-hole mode');
+            return;
+          }
+        }
+        
         const tbody = document.getElementById('players-tbody');
         const searchTerm = document.getElementById('player-search').value.toLowerCase();
         
