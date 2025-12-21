@@ -656,47 +656,18 @@
               return score;
             });
             
-            // Calculate points and stableford
-            const pointsArray = [];
-            const stablefordPointsArray = [];
-            const playerHcp = playerDigitalData.playerHcp || 0;
-            
-            for (let i = 0; i < 18; i++) {
-              const holeScore = holesArray[i];
-              if (holeScore === '' || holeScore === 0) {
-                pointsArray.push('');
-                stablefordPointsArray.push(0);
-                continue;
-              }
-              
-              const holePar = courseHoles[i]?.par || 4;
-              const holeHcp = courseHoles[i]?.handicap || (i + 1);
-              
-              const strokesReceived = Math.floor(playerHcp / 18) + (holeHcp <= (playerHcp % 18) ? 1 : 0);
-              const netScore = holeScore - strokesReceived;
-              const points = holePar - holeScore;
-              pointsArray.push(points);
-              
-              const netToPar = netScore - holePar;
-              let stableford = 0;
-              if (netToPar <= -3) stableford = 5;
-              else if (netToPar === -2) stableford = 4;
-              else if (netToPar === -1) stableford = 3;
-              else if (netToPar === 0) stableford = 2;
-              else if (netToPar === 1) stableford = 1;
-              stablefordPointsArray.push(stableford);
-            }
-            
-            // Build score data
+            // Don't pre-calculate points/stableford - let scores page do it with correct PHCP
+            // Set empty arrays so they get recalculated when player is loaded
             scoresData[roundId][playerKey] = {
               holes: holesArray,
-              points: pointsArray,
-              stablefordPoints: stablefordPointsArray,
+              points: Array(18).fill(''),
+              stablefordPoints: Array(18).fill(''),
               incompleteHoles: holesArray.map((s, i) => s === 0 ? i : -1).filter(i => i >= 0),
               status: '',
               digitalScorecard: true,
               signedAt: playerDigitalData.scorecardStatus?.lockedAt || Date.now(),
-              syncedFromDigitalScorecard: true
+              syncedFromDigitalScorecard: true,
+              needsRecalculation: true // Flag to recalculate when player is selected
             };
             
             importedCount++;
@@ -721,10 +692,57 @@
         return scoreData.holes.some(h => h !== '' && h !== null && h !== undefined);
       }
       
+      // Recalculate all digital scorecard scores that need recalculation
+      function recalculateAllDigitalScores() {
+        if (!courseData || !courseData.pars) {
+          console.log('Course data not available for recalculation');
+          return;
+        }
+        
+        const scoresData = getScoresData();
+        const roundScores = scoresData[currentRoundId] || {};
+        let recalcCount = 0;
+        
+        for (const [playerKey, playerScores] of Object.entries(roundScores)) {
+          if (playerScores.syncedFromDigitalScorecard && playerScores.needsRecalculation) {
+            // Find the player to get PHCP
+            const player = admittedPlayers.find(p => p.reg === playerKey);
+            if (!player) continue;
+            
+            // Ensure PHCP is calculated
+            if (player.phcp === undefined || player.phcp === null || player.phcp === '') {
+              player.phcp = calculatePlayingHcp(player);
+            }
+            
+            // Recalculate points
+            for (let i = 0; i < 18; i++) {
+              const score = playerScores.holes[i];
+              if (score === '' || score === null || score === undefined) continue;
+              
+              const par = courseData.pars[i];
+              playerScores.points[i] = par - score;
+              playerScores.stablefordPoints[i] = calculateStablefordPoints(i, score, player);
+            }
+            
+            playerScores.needsRecalculation = false;
+            recalcCount++;
+          }
+        }
+        
+        if (recalcCount > 0) {
+          scoresData[currentRoundId] = roundScores;
+          saveScoresData(scoresData);
+          scores = roundScores;
+          console.log(`✅ Recalculated points for ${recalcCount} digital scorecards`);
+        }
+      }
+      
       // Manual refresh digital scorecard scores
       async function refreshDigitalScores() {
         const importedCount = await loadDigitalScorecardScores(currentRoundId);
         if (importedCount > 0) {
+          // Recalculate points for all imported scores
+          recalculateAllDigitalScores();
           alert(`📱 Imported ${importedCount} score(s) from digital scorecards`);
           loadScores(); // Reload the scores view
         } else {
@@ -741,6 +759,41 @@
           console.error('Failed to parse match scores', err);
           return {};
         }
+      }
+      
+      // Recalculate points and stableford for imported digital scorecard scores
+      function recalculateDigitalScorecardPoints(player) {
+        const playerKey = player.reg;
+        const playerScores = scores[playerKey];
+        
+        if (!playerScores || !courseData || !courseData.pars) return;
+        
+        console.log('📱 Recalculating points for digital scorecard:', playerKey);
+        
+        for (let i = 0; i < 18; i++) {
+          const score = playerScores.holes[i];
+          if (score === '' || score === null || score === undefined) continue;
+          
+          // Calculate points (gross)
+          const par = courseData.pars[i];
+          const points = par - score;
+          playerScores.points[i] = points;
+          
+          // Calculate stableford points (using player's PHCP)
+          const stablefordPoints = calculateStablefordPoints(i, score, player);
+          playerScores.stablefordPoints[i] = stablefordPoints;
+        }
+        
+        // Mark as recalculated
+        playerScores.needsRecalculation = false;
+        
+        // Save updated scores
+        const scoresData = getScoresData();
+        scoresData[currentRoundId][playerKey] = playerScores;
+        saveScoresData(scoresData);
+        scores[playerKey] = playerScores;
+        
+        console.log('✅ Recalculated points for:', playerKey);
       }
 
       // Save match scores data
@@ -1497,8 +1550,13 @@
         }
         document.getElementById('player-phcp').textContent = phcpDisplay;
 
-        // Load player status
+        // Recalculate points for digital scorecard imports (they don't have correct PHCP)
         const playerScores = scores[player.reg];
+        if (playerScores.syncedFromDigitalScorecard && playerScores.needsRecalculation) {
+          recalculateDigitalScorecardPoints(player);
+        }
+
+        // Load player status
         const statusSelect = document.getElementById('player-status');
         statusSelect.value = playerScores.status || '';
         
