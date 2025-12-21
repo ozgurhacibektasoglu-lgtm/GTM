@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Digital Scorecards - Admin</title>
+    <link rel="stylesheet" href="../styles.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    <style>
+      * { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      body { padding-top: 70px; background: #f0f4f8; margin: 0; }
+      
+      .top-nav {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+      }
+      
+      .top-nav h1 {
+        margin: 0;
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 24px auto;
+        padding: 16px;
+      }
+      
+      .header-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      }
+      
+      .header-card h2 {
+        margin: 0 0 8px 0;
+        color: #1e293b;
+      }
+      
+      .header-card p {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
+      }
+      
+      .controls-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      
+      .round-select {
+        padding: 10px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        min-width: 200px;
+      }
+      
+      .btn-refresh {
+        background: linear-gradient(180deg, #8b5cf6, #7c3aed);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .btn-refresh:hover {
+        opacity: 0.9;
+      }
+      
+      .stats-row {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      
+      .stat-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        min-width: 120px;
+      }
+      
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      .stat-label {
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      /* Scorecards List */
+      .scorecards-list {
+        display: grid;
+        gap: 12px;
+      }
+      
+      .scorecard-item {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #e2e8f0;
+      }
+      
+      .scorecard-item.locked {
+        background: #f0fdf4;
+        border-color: #86efac;
+      }
+      
+      .scorecard-item.has-disputes {
+        background: #fef2f2;
+        border-color: #fca5a5;
+      }
+      
+      .player-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      
+      .player-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 15px;
+      }
+      
+      .player-meta {
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      .score-summary {
+        text-align: center;
+        min-width: 70px;
+      }
+      
+      .score-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      .score-label {
+        font-size: 11px;
+        color: #64748b;
+      }
+      
+      .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      
+      .status-badge.in-progress {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      .status-badge.signed {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      .status-badge.locked {
+        background: #f0fdf4;
+        color: #166534;
+      }
+      
+      .status-badge.dispute {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      .status-badge.not-started {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+      
+      .btn-action {
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      
+      .btn-view {
+        background: #3b82f6;
+        color: white;
+      }
+      
+      .btn-edit {
+        background: #f59e0b;
+        color: white;
+      }
+      
+      .btn-edit:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+      }
+      
+      .btn-signature {
+        background: #8b5cf6;
+        color: white;
+      }
+      
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        color: #64748b;
+      }
+      
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      
+      /* Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .modal-overlay.active {
+        display: flex;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      
+      .modal-header h3 {
+        margin: 0;
+        color: #1e293b;
+      }
+      
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #64748b;
+      }
+      
+      .signature-display {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        background: #f8fafc;
+      }
+      
+      .signature-display img {
+        max-width: 100%;
+        height: auto;
+      }
+      
+      .signature-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 8px;
+      }
+      
+      .signature-timestamp {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
+      .btn-modal {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        margin-top: 12px;
+      }
+      
+      .btn-modal-primary {
+        background: #059669;
+        color: white;
+      }
+      
+      .btn-modal-secondary {
+        background: #475569;
+        color: white;
+      }
+      
+      .scores-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin: 12px 0;
+      }
+      
+      .scores-table th, .scores-table td {
+        border: 1px solid #e2e8f0;
+        padding: 6px;
+        text-align: center;
+      }
+      
+      .scores-table th {
+        background: #f1f5f9;
+        font-weight: 600;
+      }
+      
+      .scores-table .score-row {
+        background: #dbeafe;
+      }
+      
+      .scores-table input {
+        width: 28px;
+        padding: 4px;
+        text-align: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      
+      @media (max-width: 768px) {
+        .scorecard-item {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        
+        .scorecard-item > * {
+          text-align: left;
+        }
+        
+        .controls-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        .round-select {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- View Modal -->
+    <div id="view-modal" class="modal-overlay" onclick="closeModal('view-modal', event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3>👁️ View Scorecard</h3>
+          <button class="modal-close" onclick="closeModal('view-modal')">&times;</button>
+        </div>
+        <div id="view-modal-body"></div>
+        <button class="btn-modal btn-modal-secondary" onclick="closeModal('view-modal')">Close</button>
+      </div>
+    </div>
+    
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay" onclick="closeModal('edit-modal', event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3>✏️ Edit Scorecard</h3>
+          <button class="modal-close" onclick="closeModal('edit-modal')">&times;</button>
+        </div>
+        <div id="edit-modal-body"></div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-modal btn-modal-secondary" style="flex:1" onclick="closeModal('edit-modal')">Cancel</button>
+          <button class="btn-modal btn-modal-primary" style="flex:1" onclick="saveEditedScorecard()">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Signature Modal -->
+    <div id="signature-modal" class="modal-overlay" onclick="closeModal('signature-modal', event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3>📝 Signatures</h3>
+          <button class="modal-close" onclick="closeModal('signature-modal')">&times;</button>
+        </div>
+        <div id="signature-modal-body"></div>
+        <button class="btn-modal btn-modal-secondary" onclick="closeModal('signature-modal')">Close</button>
+      </div>
+    </div>
+    
+    <div class="top-nav">
+      <h1>🔐 Digital Scorecards Admin</h1>
+      <a href="scorecards.html" class="btn-back-top" onclick="history.back(); return false;">← Back</a>
+    </div>
+    
+    <div class="container">
+      <div class="header-card">
+        <h2 id="tournament-name">Digital Scorecards</h2>
+        <p>View, edit, and manage active digital scorecards for this round.</p>
+        
+        <div class="controls-row">
+          <select id="round-select" class="round-select" onchange="loadScorecards()">
+            <option value="">-- Select Round --</option>
+          </select>
+          <button class="btn-refresh" onclick="loadScorecards()">🔄 Refresh</button>
+        </div>
+        
+        <div class="stats-row" id="stats-row" style="display: none;">
+          <div class="stat-box">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total Players</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-started">0</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-signed">0</div>
+            <div class="stat-label">Signed</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="stat-locked">0</div>
+            <div class="stat-label">Locked</div>
+          </div>
+          <div class="stat-box" id="stat-disputes-box" style="display: none;">
+            <div class="stat-value" id="stat-disputes" style="color: #dc2626;">0</div>
+            <div class="stat-label">Disputes</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="scorecards-list" class="scorecards-list">
+        <div class="empty-state">
+          <div class="empty-state-icon">📱</div>
+          <p>Select a round to view digital scorecards</p>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      const preselectedRoundId = urlParams.get('roundId');
+      
+      let tournament = null;
+      let digitalScorecardsData = {};
+      let editingPlayerId = null;
+      
+      function getTournaments() {
+        try {
+          return JSON.parse(localStorage.getItem('tournaments') || '[]');
+        } catch (e) {
+          return [];
+        }
+      }
+      
+      function init() {
+        const tournaments = getTournaments();
+        tournament = tournaments.find(t => t.tournamentId === tournamentId);
+        
+        if (!tournament) {
+          alert('Tournament not found');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        document.getElementById('tournament-name').textContent = tournament.name;
+        
+        // Populate rounds
+        const roundSelect = document.getElementById('round-select');
+        let roundIds = tournament.meta?.roundIds || [tournamentId + '-1'];
+        const roundsData = tournament.meta?.roundsData || [];
+        
+        roundIds.forEach((rid, idx) => {
+          const option = document.createElement('option');
+          option.value = rid;
+          const roundDate = roundsData[idx]?.date ? ` - ${formatDate(roundsData[idx].date)}` : '';
+          option.textContent = `Round ${idx + 1}${roundDate}`;
+          roundSelect.appendChild(option);
+        });
+        
+        // Auto-select round
+        if (preselectedRoundId) {
+          roundSelect.value = preselectedRoundId;
+          loadScorecards();
+        } else if (roundIds.length === 1) {
+          roundSelect.value = roundIds[0];
+          loadScorecards();
+        }
+      }
+      
+      function formatDate(dateStr) {
+        if (!dateStr) return '';
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch (e) {
+          return dateStr;
+        }
+      }
+      
+      async function loadScorecards() {
+        const roundId = document.getElementById('round-select').value;
+        if (!roundId) {
+          document.getElementById('scorecards-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📱</div><p>Select a round to view digital scorecards</p></div>';
+          document.getElementById('stats-row').style.display = 'none';
+          return;
+        }
+        
+        document.getElementById('scorecards-list').innerHTML = '<div class="empty-state"><p>Loading...</p></div>';
+        
+        initFirebase();
+        if (!db) {
+          document.getElementById('scorecards-list').innerHTML = '<div class="empty-state"><p>Firebase not available</p></div>';
+          return;
+        }
+        
+        try {
+          const [configSnapshot, scoresSnapshot] = await Promise.all([
+            db.ref(`digitalScorecards/${roundId}`).once('value'),
+            db.ref(`digitalScores/${roundId}`).once('value')
+          ]);
+          
+          const config = configSnapshot.val();
+          const scores = scoresSnapshot.val() || {};
+          
+          digitalScorecardsData = { config, scores };
+          
+          if (!config || !config.players) {
+            document.getElementById('scorecards-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📱</div><p>No digital scorecards configured for this round.<br>Go back to Scorecards page and click "Generate QR Codes" to create them.</p></div>';
+            document.getElementById('stats-row').style.display = 'none';
+            return;
+          }
+          
+          renderScorecardsList(config, scores);
+          
+        } catch (err) {
+          console.error('Error loading scorecards:', err);
+          document.getElementById('scorecards-list').innerHTML = `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
+        }
+      }
+      
+      function renderScorecardsList(config, scores) {
+        const players = config.players;
+        const sortedPlayers = Object.entries(players).sort((a, b) => {
+          const nameA = `${a[1].lastName} ${a[1].firstName}`;
+          const nameB = `${b[1].lastName} ${b[1].firstName}`;
+          return nameA.localeCompare(nameB);
+        });
+        
+        // Calculate stats
+        let statsTotal = 0, statsStarted = 0, statsSigned = 0, statsLocked = 0, statsDisputes = 0;
+        
+        let html = '';
+        
+        for (const [playerId, player] of sortedPlayers) {
+          statsTotal++;
+          
+          const playerScores = scores[playerId] || {};
+          const scoresArray = playerScores.playerScores || Array(18).fill(null);
+          const holesPlayed = scoresArray.filter(s => s !== null && s !== undefined).length;
+          const totalScore = scoresArray.reduce((sum, s) => {
+            if (s === null || s === undefined || s === 'X') return sum;
+            return sum + parseInt(s);
+          }, 0);
+          
+          const status = playerScores.scorecardStatus || {};
+          const hasDisputes = checkForDisputes(playerId, playerScores, scores, config);
+          
+          let statusBadge = '';
+          let itemClass = '';
+          
+          if (status.locked) {
+            statusBadge = '<span class="status-badge locked">🔒 Locked</span>';
+            itemClass = 'locked';
+            statsLocked++;
+          } else if (status.playerSigned) {
+            statusBadge = '<span class="status-badge signed">✍️ Signed</span>';
+            statsSigned++;
+          } else if (holesPlayed > 0) {
+            statusBadge = '<span class="status-badge in-progress">⏳ In Progress</span>';
+            statsStarted++;
+          } else {
+            statusBadge = '<span class="status-badge not-started">Not Started</span>';
+          }
+          
+          if (hasDisputes) {
+            statusBadge += ' <span class="status-badge dispute">⚠️ Dispute</span>';
+            itemClass = 'has-disputes';
+            statsDisputes++;
+          }
+          
+          html += `
+            <div class="scorecard-item ${itemClass}">
+              <div class="player-info">
+                <span class="player-name">${player.lastName}, ${player.firstName}</span>
+                <span class="player-meta">HCP: ${player.hcp || '-'} | PHCP: ${player.phcp || '-'} | ${player.groupTime || '-'}</span>
+              </div>
+              <div class="score-summary">
+                <div class="score-value">${holesPlayed > 0 ? totalScore : '-'}</div>
+                <div class="score-label">${holesPlayed}/18 holes</div>
+              </div>
+              ${statusBadge}
+              <button class="btn-action btn-view" onclick="viewScorecard('${playerId}')">👁️ View</button>
+              <button class="btn-action btn-edit" onclick="editScorecard('${playerId}')" ${status.locked ? 'disabled' : ''}>✏️ Edit</button>
+              ${status.playerSigned || status.markerSignature ? `<button class="btn-action btn-signature" onclick="viewSignatures('${playerId}')">📝</button>` : '<div></div>'}
+            </div>
+          `;
+        }
+        
+        document.getElementById('scorecards-list').innerHTML = html || '<div class="empty-state"><p>No players found</p></div>';
+        
+        // Update stats
+        document.getElementById('stat-total').textContent = statsTotal;
+        document.getElementById('stat-started').textContent = statsStarted;
+        document.getElementById('stat-signed').textContent = statsSigned;
+        document.getElementById('stat-locked').textContent = statsLocked;
+        document.getElementById('stat-disputes').textContent = statsDisputes;
+        document.getElementById('stats-row').style.display = 'flex';
+        document.getElementById('stat-disputes-box').style.display = statsDisputes > 0 ? 'block' : 'none';
+      }
+      
+      function checkForDisputes(playerId, playerScores, allScores, config) {
+        if (!playerScores.playerScores) return false;
+        
+        const players = config.players || {};
+        
+        for (const [markerId, markerData] of Object.entries(players)) {
+          if (markerData.marksPlayerId === playerId) {
+            const markerScores = allScores[markerId];
+            if (markerScores && markerScores.marksPlayerScores) {
+              for (let i = 0; i < 18; i++) {
+                const myScore = playerScores.playerScores[i];
+                const markerScore = markerScores.marksPlayerScores[i];
+                if (myScore !== null && myScore !== undefined && markerScore !== null && markerScore !== undefined && myScore !== markerScore) {
+                  return true;
+                }
+              }
+            }
+            break;
+          }
+        }
+        return false;
+      }
+      
+      function viewScorecard(playerId) {
+        const config = digitalScorecardsData.config;
+        const scores = digitalScorecardsData.scores;
+        const player = config.players[playerId];
+        const playerScores = scores[playerId] || {};
+        const scoresArray = playerScores.playerScores || Array(18).fill(null);
+        
+        let html = `
+          <div style="margin-bottom: 16px;">
+            <strong>${player.firstName} ${player.lastName}</strong><br>
+            <span style="font-size: 13px; color: #64748b;">HCP: ${player.hcp || '-'} | PHCP: ${player.phcp || '-'}</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="scores-table">
+              <tr><th>Hole</th>`;
+        
+        for (let i = 1; i <= 18; i++) {
+          html += `<th>${i}</th>`;
+        }
+        html += '</tr><tr><td><strong>Par</strong></td>';
+        
+        for (let i = 0; i < 18; i++) {
+          html += `<td>${config.pars[i] || '-'}</td>`;
+        }
+        html += '</tr><tr class="score-row"><td><strong>Score</strong></td>';
+        
+        for (let i = 0; i < 18; i++) {
+          const s = scoresArray[i];
+          html += `<td>${(s !== null && s !== undefined) ? s : '-'}</td>`;
+        }
+        html += '</tr></table></div>';
+        
+        document.getElementById('view-modal-body').innerHTML = html;
+        document.getElementById('view-modal').classList.add('active');
+      }
+      
+      function editScorecard(playerId) {
+        editingPlayerId = playerId;
+        const config = digitalScorecardsData.config;
+        const scores = digitalScorecardsData.scores;
+        const player = config.players[playerId];
+        const playerScores = scores[playerId] || {};
+        const scoresArray = playerScores.playerScores || Array(18).fill(null);
+        
+        let html = `
+          <div style="margin-bottom: 16px;">
+            <strong>${player.firstName} ${player.lastName}</strong><br>
+            <span style="font-size: 13px; color: #64748b;">HCP: ${player.hcp || '-'} | PHCP: ${player.phcp || '-'}</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="scores-table">
+              <tr><th>Hole</th>`;
+        
+        for (let i = 1; i <= 18; i++) {
+          html += `<th>${i}</th>`;
+        }
+        html += '</tr><tr><td><strong>Par</strong></td>';
+        
+        for (let i = 0; i < 18; i++) {
+          html += `<td>${config.pars[i] || '-'}</td>`;
+        }
+        html += '</tr><tr class="score-row"><td><strong>Score</strong></td>';
+        
+        for (let i = 0; i < 18; i++) {
+          const s = scoresArray[i];
+          const value = (s !== null && s !== undefined) ? s : '';
+          html += `<td><input type="text" id="edit-score-${i}" value="${value}" maxlength="2" /></td>`;
+        }
+        html += '</tr></table></div>';
+        html += '<p style="font-size: 12px; color: #64748b; margin-top: 12px;">Enter scores (1-15) or X for pickup. Leave empty for no score.</p>';
+        
+        document.getElementById('edit-modal-body').innerHTML = html;
+        document.getElementById('edit-modal').classList.add('active');
+      }
+      
+      async function saveEditedScorecard() {
+        if (!editingPlayerId) return;
+        
+        const roundId = document.getElementById('round-select').value;
+        const newScores = [];
+        
+        for (let i = 0; i < 18; i++) {
+          const input = document.getElementById(`edit-score-${i}`);
+          const value = input.value.trim().toUpperCase();
+          
+          if (value === '') {
+            newScores.push(null);
+          } else if (value === 'X') {
+            newScores.push('X');
+          } else {
+            const num = parseInt(value);
+            if (isNaN(num) || num < 1 || num > 15) {
+              alert(`Invalid score on hole ${i+1}. Enter 1-15 or X.`);
+              return;
+            }
+            newScores.push(num);
+          }
+        }
+        
+        try {
+          await db.ref(`digitalScores/${roundId}/${editingPlayerId}/playerScores`).set(newScores);
+          await db.ref(`digitalScores/${roundId}/${editingPlayerId}/lastUpdated`).set(Date.now());
+          await db.ref(`digitalScores/${roundId}/${editingPlayerId}/editedByAdmin`).set(true);
+          await db.ref(`digitalScores/${roundId}/${editingPlayerId}/adminEditedAt`).set(Date.now());
+          
+          alert('Scorecard updated successfully!');
+          closeModal('edit-modal');
+          loadScorecards();
+        } catch (err) {
+          console.error('Error saving:', err);
+          alert('Error: ' + err.message);
+        }
+      }
+      
+      function viewSignatures(playerId) {
+        const scores = digitalScorecardsData.scores;
+        const playerScores = scores[playerId] || {};
+        const status = playerScores.scorecardStatus || {};
+        const player = digitalScorecardsData.config.players[playerId];
+        
+        let html = `<div style="margin-bottom: 16px;"><strong>${player.firstName} ${player.lastName}</strong></div>`;
+        
+        if (status.playerSignature) {
+          html += `
+            <div class="signature-display">
+              <div class="signature-label">Player Signature</div>
+              <img src="${status.playerSignature}" alt="Player Signature" />
+              <div class="signature-timestamp">Signed: ${status.playerSignedAt ? new Date(status.playerSignedAt).toLocaleString() : 'Unknown'}</div>
+            </div>
+          `;
+        }
+        
+        if (status.markerSignature) {
+          html += `
+            <div class="signature-display">
+              <div class="signature-label">Marker Signature</div>
+              <img src="${status.markerSignature}" alt="Marker Signature" />
+              <div class="signature-timestamp">Signed: ${status.markerSignedAt ? new Date(status.markerSignedAt).toLocaleString() : 'Unknown'}</div>
+            </div>
+          `;
+        }
+        
+        if (status.locked) {
+          html += `<div style="background: #f0fdf4; border: 1px solid #86efac; padding: 12px; border-radius: 8px; text-align: center;">
+            <strong style="color: #166534;">🔒 Scorecard Locked</strong><br>
+            <span style="font-size: 12px; color: #64748b;">${status.lockedAt ? new Date(status.lockedAt).toLocaleString() : ''}</span>
+          </div>`;
+        }
+        
+        if (!status.playerSignature && !status.markerSignature) {
+          html += '<p style="color: #64748b; text-align: center;">No signatures recorded yet.</p>';
+        }
+        
+        document.getElementById('signature-modal-body').innerHTML = html;
+        document.getElementById('signature-modal').classList.add('active');
+      }
+      
+      function closeModal(modalId, event) {
+        if (!event || event.target.classList.contains('modal-overlay')) {
+          document.getElementById(modalId).classList.remove('active');
+          if (modalId === 'edit-modal') editingPlayerId = null;
+        }
+      }
+      
+      init();
+    </script>
+  </body>
+</html>
