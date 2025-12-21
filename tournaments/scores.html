@@ -161,7 +161,8 @@
       .match-score-team1 { color: #dc2626; font-weight: 700; }
       .match-score-team2 { color: #2563eb; font-weight: 700; }
       .match-score-even { color: #64748b; font-weight: 600; }
-      .stroke-dot { display: inline-block; width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; margin-left: 2px; vertical-align: top; }
+      .score-cell-wrapper { display: flex; align-items: flex-start; justify-content: center; gap: 0; }
+      .stroke-dots { font-size: 10px; color: #3b82f6; font-weight: bold; line-height: 1; margin-left: -2px; }
     </style>
   </head>
   <body>
@@ -966,6 +967,24 @@
         }
       }
 
+      // Calculate stroke allocation for a match handicap (array of strokes per hole)
+      function calculateStrokeAllocation(matchHCP, strokeIndexes) {
+        const allocation = Array(18).fill(0);
+        if (matchHCP <= 0) return allocation;
+        
+        for (let stroke = 1; stroke <= matchHCP; stroke++) {
+          for (let hole = 0; hole < 18; hole++) {
+            const si = parseInt(strokeIndexes[hole]) || 99;
+            const targetSI = stroke <= 18 ? stroke : stroke - 18;
+            if (si === targetSI) {
+              allocation[hole]++;
+              break;
+            }
+          }
+        }
+        return allocation;
+      }
+
       // Render match scorecard for Fourball
       function renderMatchScorecard(match) {
         const content = document.getElementById('scorecard-content');
@@ -984,11 +1003,26 @@
         const team2Player1 = match.team2[0];
         const team2Player2 = match.team2[1];
         
-        // Get playing handicaps
-        const t1p1Hcp = getMatchPlayingHcp(team1Player1);
-        const t1p2Hcp = team1Player2 ? getMatchPlayingHcp(team1Player2) : 0;
-        const t2p1Hcp = team2Player1 ? getMatchPlayingHcp(team2Player1) : 0;
-        const t2p2Hcp = team2Player2 ? getMatchPlayingHcp(team2Player2) : 0;
+        // Get playing handicaps (PHCP)
+        const t1p1Phcp = getMatchPlayingHcp(team1Player1);
+        const t1p2Phcp = team1Player2 ? getMatchPlayingHcp(team1Player2) : null;
+        const t2p1Phcp = team2Player1 ? getMatchPlayingHcp(team2Player1) : null;
+        const t2p2Phcp = team2Player2 ? getMatchPlayingHcp(team2Player2) : null;
+        
+        // Calculate Match HCPs: Lowest PHCP gets 0, others get the difference
+        const allPhcps = [t1p1Phcp, t1p2Phcp, t2p1Phcp, t2p2Phcp].filter(p => p !== null);
+        const lowestPhcp = Math.min(...allPhcps);
+        
+        const t1p1MatchHcp = t1p1Phcp - lowestPhcp;
+        const t1p2MatchHcp = t1p2Phcp !== null ? t1p2Phcp - lowestPhcp : 0;
+        const t2p1MatchHcp = t2p1Phcp !== null ? t2p1Phcp - lowestPhcp : 0;
+        const t2p2MatchHcp = t2p2Phcp !== null ? t2p2Phcp - lowestPhcp : 0;
+        
+        // Calculate stroke allocation for each player
+        const t1p1Strokes = calculateStrokeAllocation(t1p1MatchHcp, strokeIndexes);
+        const t1p2Strokes = calculateStrokeAllocation(t1p2MatchHcp, strokeIndexes);
+        const t2p1Strokes = calculateStrokeAllocation(t2p1MatchHcp, strokeIndexes);
+        const t2p2Strokes = calculateStrokeAllocation(t2p2MatchHcp, strokeIndexes);
         
         // Get existing scores for this match
         let matchScoreData = holeByHoleScores[match.matchKey] || {};
@@ -1032,24 +1066,24 @@
         html += '<td class="subtotal-col"></td><td class="total-col"></td></tr>';
         
         // Team 1 Player 1 row
-        html += renderPlayerScoreRow(team1Player1, t1p1Hcp, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, strokeIndexes, match.matchKey);
+        html += renderPlayerScoreRow(team1Player1, t1p1MatchHcp, t1p1Strokes, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, match.matchKey);
         
         // Team 1 Player 2 row (if exists)
         if (team1Player2) {
-          html += renderPlayerScoreRow(team1Player2, t1p2Hcp, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, strokeIndexes, match.matchKey);
+          html += renderPlayerScoreRow(team1Player2, t1p2MatchHcp, t1p2Strokes, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, match.matchKey);
         }
         
         // Match Score row
-        html += renderMatchScoreRow(matchScoreData, pars, strokeIndexes, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp);
+        html += renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
         
         // Team 2 Player 1 row
         if (team2Player1) {
-          html += renderPlayerScoreRow(team2Player1, t2p1Hcp, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, strokeIndexes, match.matchKey);
+          html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey);
         }
         
         // Team 2 Player 2 row (if exists)
         if (team2Player2) {
-          html += renderPlayerScoreRow(team2Player2, t2p2Hcp, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, strokeIndexes, match.matchKey);
+          html += renderPlayerScoreRow(team2Player2, t2p2MatchHcp, t2p2Strokes, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, match.matchKey);
         }
         
         html += '</tbody></table></div>';
@@ -1064,7 +1098,7 @@
       }
 
       // Render a player's score row
-      function renderPlayerScoreRow(player, hcp, team, playerNum, scores, pars, strokeIndexes, matchKey) {
+      function renderPlayerScoreRow(player, matchHcp, strokeAllocation, team, playerNum, scores, pars, matchKey) {
         if (!player) return '';
         
         const teamClass = team === 'team1' ? 'team1-row' : 'team2-row';
@@ -1074,27 +1108,28 @@
         // Ensure scores is an array
         scores = scores || Array(18).fill('');
         
-        let html = `<tr class="${teamClass}"><td class="row-label">${name}<br><small>HCP:${hcp}</small></td>`;
+        let html = `<tr class="${teamClass}"><td class="row-label">${name}<br><small>HCP:${matchHcp}</small></td>`;
         
         let frontTotal = 0, backTotal = 0;
         
         for (let i = 0; i < 9; i++) {
           const score = scores[i] || '';
-          const strokes = getMatchStrokesForHole(hcp, strokeIndexes[i]);
-          const strokeDot = strokes > 0 ? '<span class="stroke-dot"></span>'.repeat(strokes) : '';
+          const strokes = strokeAllocation[i] || 0;
+          const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
           const scoreClass = getScoreClass(score, pars[i], team);
           
           if (score) frontTotal += parseInt(score) || 0;
           
-          html += `<td style="position: relative;">
-            <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
-                   value="${score}" 
-                   data-match-key="${matchKey}"
-                   data-team="${team}"
-                   data-player="${playerNum}"
-                   data-hole="${i}"
-                   maxlength="2">
-            ${strokeDot}
+          html += `<td>
+            <div class="score-cell-wrapper">
+              <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+                     value="${score}" 
+                     data-match-key="${matchKey}"
+                     data-team="${team}"
+                     data-player="${playerNum}"
+                     data-hole="${i}"
+                     maxlength="2">${strokeDots}
+            </div>
           </td>`;
         }
         
@@ -1102,21 +1137,22 @@
         
         for (let i = 9; i < 18; i++) {
           const score = scores[i] || '';
-          const strokes = getMatchStrokesForHole(hcp, strokeIndexes[i]);
-          const strokeDot = strokes > 0 ? '<span class="stroke-dot"></span>'.repeat(strokes) : '';
+          const strokes = strokeAllocation[i] || 0;
+          const strokeDots = strokes > 0 ? '<sup class="stroke-dots">' + '•'.repeat(strokes) + '</sup>' : '';
           const scoreClass = getScoreClass(score, pars[i], team);
           
           if (score) backTotal += parseInt(score) || 0;
           
-          html += `<td style="position: relative;">
-            <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
-                   value="${score}" 
-                   data-match-key="${matchKey}"
-                   data-team="${team}"
-                   data-player="${playerNum}"
-                   data-hole="${i}"
-                   maxlength="2">
-            ${strokeDot}
+          html += `<td>
+            <div class="score-cell-wrapper">
+              <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+                     value="${score}" 
+                     data-match-key="${matchKey}"
+                     data-team="${team}"
+                     data-player="${playerNum}"
+                     data-hole="${i}"
+                     maxlength="2">${strokeDots}
+            </div>
           </td>`;
         }
         
@@ -1138,7 +1174,7 @@
       }
 
       // Render the match score row
-      function renderMatchScoreRow(matchScoreData, pars, strokeIndexes, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp) {
+      function renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
         let html = '<tr class="match-score-row"><td class="row-label"><strong>MATCH SCORE</strong></td>';
         
         let runningScore = 0; // Positive = Team 1 up, Negative = Team 2 up
@@ -1150,8 +1186,7 @@
             matchScoreData.team2Player1Scores ? matchScoreData.team2Player1Scores[i] : '',
             matchScoreData.team2Player2Scores ? matchScoreData.team2Player2Scores[i] : '',
             pars[i],
-            strokeIndexes[i],
-            t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp
+            t1p1Strokes[i], t1p2Strokes[i], t2p1Strokes[i], t2p2Strokes[i]
           );
           
           if (holeResult !== null) {
@@ -1187,21 +1222,21 @@
         return html;
       }
 
-      // Calculate who won a hole in Fourball (best ball comparison)
-      function calculateHoleWinner(t1p1Score, t1p2Score, t2p1Score, t2p2Score, par, strokeIndex, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp) {
+      // Calculate who won a hole in Fourball (best ball comparison using stroke allocation)
+      function calculateHoleWinner(t1p1Score, t1p2Score, t2p1Score, t2p2Score, par, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
         // Need at least one score from each team
         const t1Scores = [t1p1Score, t1p2Score].filter(s => s !== '' && s !== null && s !== undefined);
         const t2Scores = [t2p1Score, t2p2Score].filter(s => s !== '' && s !== null && s !== undefined);
         
         if (t1Scores.length === 0 || t2Scores.length === 0) return null;
         
-        // Calculate net scores for each player
-        const t1p1Net = t1p1Score ? parseInt(t1p1Score) - getMatchStrokesForHole(t1p1Hcp, strokeIndex) : 999;
-        const t1p2Net = t1p2Score ? parseInt(t1p2Score) - getMatchStrokesForHole(t1p2Hcp, strokeIndex) : 999;
-        const t2p1Net = t2p1Score ? parseInt(t2p1Score) - getMatchStrokesForHole(t2p1Hcp, strokeIndex) : 999;
-        const t2p2Net = t2p2Score ? parseInt(t2p2Score) - getMatchStrokesForHole(t2p2Hcp, strokeIndex) : 999;
+        // Calculate net scores for each player (gross - strokes received on this hole)
+        const t1p1Net = t1p1Score ? parseInt(t1p1Score) - (t1p1Strokes || 0) : 999;
+        const t1p2Net = t1p2Score ? parseInt(t1p2Score) - (t1p2Strokes || 0) : 999;
+        const t2p1Net = t2p1Score ? parseInt(t2p1Score) - (t2p1Strokes || 0) : 999;
+        const t2p2Net = t2p2Score ? parseInt(t2p2Score) - (t2p2Strokes || 0) : 999;
         
-        // Best ball for each team
+        // Best ball for each team (lowest net score)
         const team1Best = Math.min(t1p1Net, t1p2Net);
         const team2Best = Math.min(t2p1Net, t2p2Net);
         
