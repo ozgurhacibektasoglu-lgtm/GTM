@@ -738,7 +738,12 @@
           return;
         }
 
-        // Build matches array from groups (for Fourball: each group is one match)
+        // Get match type for this round
+        const roundData = currentTournament?.meta?.roundsData?.[currentRoundIndex];
+        const matchType = (roundData?.matchType || 'fourball').toLowerCase();
+        console.log('loadHoleByHoleMatches - matchType:', matchType);
+        
+        // Build matches array from groups
         holeByHoleMatches = [];
         
         drawData.groups.forEach((group, groupIndex) => {
@@ -746,27 +751,52 @@
           
           if (players.length < 2) return;
           
-          // For Fourball: Players 1&2 vs Players 3&4
-          const team1 = players.slice(0, 2);
-          const team2 = players.slice(2, 4);
-          
-          const matchKey = `${currentRoundId}_match_${groupIndex}`;
-          
-          // Get existing scores for this match
-          const matchScoreData = holeByHoleScores[matchKey] || { holes: [], status: 'pending' };
-          
-          holeByHoleMatches.push({
-            matchIndex: groupIndex,
-            matchKey: matchKey,
-            team1: team1,
-            team2: team2,
-            teamNames: {
-              team1: team1[0]?.teamName || team1[0]?.team || '',
-              team2: team2[0]?.teamName || team2[0]?.team || ''
-            },
-            scores: matchScoreData,
-            groupData: group
-          });
+          if (matchType === 'singles') {
+            // SINGLES: Each pair of players is a separate 1v1 match
+            const numMatches = Math.floor(players.length / 2);
+            for (let i = 0; i < numMatches; i++) {
+              const player1 = players[i * 2];
+              const player2 = players[i * 2 + 1];
+              
+              if (!player1 || !player2) continue;
+              
+              const matchKey = `${currentRoundId}_match_${groupIndex}_${i}`;
+              const matchScoreData = holeByHoleScores[matchKey] || { holes: [], status: 'pending' };
+              
+              holeByHoleMatches.push({
+                matchIndex: groupIndex,
+                subMatchIndex: i,
+                matchKey: matchKey,
+                team1: [player1],
+                team2: [player2],
+                teamNames: { team1: '', team2: '' },
+                scores: matchScoreData,
+                groupData: group,
+                isSingles: true
+              });
+            }
+          } else {
+            // FOURBALL/FOURSOMES: Players 1&2 vs Players 3&4
+            const team1 = players.slice(0, 2);
+            const team2 = players.slice(2, 4);
+            
+            const matchKey = `${currentRoundId}_match_${groupIndex}`;
+            const matchScoreData = holeByHoleScores[matchKey] || { holes: [], status: 'pending' };
+            
+            holeByHoleMatches.push({
+              matchIndex: groupIndex,
+              matchKey: matchKey,
+              team1: team1,
+              team2: team2,
+              teamNames: {
+                team1: team1[0]?.teamName || team1[0]?.team || '',
+                team2: team2[0]?.teamName || team2[0]?.team || ''
+              },
+              scores: matchScoreData,
+              groupData: group,
+              isSingles: false
+            });
+          }
         });
 
         renderHoleByHoleMatchesList();
@@ -827,12 +857,17 @@
           // Calculate current match score
           const matchScore = calculateMatchScore(match.scores.holes || []);
           
+          // Match title: for singles show group and match number
+          const matchTitle = match.isSingles 
+            ? `Group ${match.matchIndex + 1} - Match ${(match.subMatchIndex || 0) + 1}`
+            : `Match ${match.matchIndex + 1}`;
+          
           html += `
             <div class="match-item ${status === 'completed' ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-match-key="${match.matchKey}"
                  style="${isHighlighted ? 'border-color: #f59e0b; background: #fef3c7;' : ''}">
               <div class="match-item-header">
-                <span class="match-item-title">Match ${match.matchIndex + 1}</span>
+                <span class="match-item-title">${matchTitle}</span>
                 <span class="match-item-status ${status}">${getStatusLabel(status)}</span>
               </div>
               <div class="match-item-teams">
@@ -986,7 +1021,7 @@
         return allocation;
       }
 
-      // Render match scorecard for Fourball or Foursomes
+      // Render match scorecard for Fourball, Foursomes, or Singles
       function renderMatchScorecard(match) {
         const content = document.getElementById('scorecard-content');
         
@@ -999,7 +1034,8 @@
         const roundData = currentTournament?.meta?.roundsData?.[currentRoundIndex];
         const matchType = (roundData?.matchType || 'fourball').toLowerCase();
         const isFoursomes = matchType === 'foursomes';
-        console.log('renderMatchScorecard - roundIndex:', currentRoundIndex, 'matchType:', matchType, 'isFoursomes:', isFoursomes, 'roundData:', roundData);
+        const isSingles = matchType === 'singles' || match.isSingles;
+        console.log('renderMatchScorecard - roundIndex:', currentRoundIndex, 'matchType:', matchType, 'isSingles:', isSingles, 'isFoursomes:', isFoursomes);
         
         const pars = courseData.pars;
         const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
@@ -1019,8 +1055,19 @@
         // Variables for stroke allocation
         let t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes;
         let team1MatchHcp = 0, team2MatchHcp = 0;
+        let p1MatchHcp = 0, p2MatchHcp = 0; // For singles
         
-        if (isFoursomes) {
+        if (isSingles) {
+          // SINGLES: Lowest PHCP gets 0, other gets the difference
+          const lowestPhcp = Math.min(t1p1Phcp, t2p1Phcp);
+          p1MatchHcp = t1p1Phcp - lowestPhcp;
+          p2MatchHcp = t2p1Phcp - lowestPhcp;
+          
+          t1p1Strokes = calculateStrokeAllocation(p1MatchHcp, strokeIndexes);
+          t2p1Strokes = calculateStrokeAllocation(p2MatchHcp, strokeIndexes);
+          t1p2Strokes = Array(18).fill(0);
+          t2p2Strokes = Array(18).fill(0);
+        } else if (isFoursomes) {
           // FOURSOMES: Average PHCPs per team, lowest team gets 0
           const team1Phcps = [t1p1Phcp, t1p2Phcp].filter(p => p !== null);
           const team2Phcps = [t2p1Phcp, t2p2Phcp].filter(p => p !== null);
@@ -1057,7 +1104,15 @@
         // Get existing scores for this match
         let matchScoreData = holeByHoleScores[match.matchKey] || {};
         
-        if (isFoursomes) {
+        if (isSingles) {
+          // Singles: one player per side (use team1Scores and team2Scores like foursomes)
+          matchScoreData.team1Scores = matchScoreData.team1Scores || Array(18).fill('');
+          matchScoreData.team2Scores = matchScoreData.team2Scores || Array(18).fill('');
+          matchScoreData.team1Player1Scores = matchScoreData.team1Scores;
+          matchScoreData.team2Player1Scores = matchScoreData.team2Scores;
+          matchScoreData.team1Player2Scores = Array(18).fill('');
+          matchScoreData.team2Player2Scores = Array(18).fill('');
+        } else if (isFoursomes) {
           // Foursomes: only team scores (use team1Player1 and team2Player1 arrays for team scores)
           matchScoreData.team1Scores = matchScoreData.team1Scores || Array(18).fill('');
           matchScoreData.team2Scores = matchScoreData.team2Scores || Array(18).fill('');
@@ -1108,11 +1163,33 @@
         html += '<td class="subtotal-col"></td><td class="total-col"></td></tr>';
         
         // Calculate winning scores for each hole (to highlight the best ball that won)
-        const winningScores = isFoursomes 
+        const winningScores = (isFoursomes || isSingles)
           ? calculateWinningScoresPerHoleFoursomes(matchScoreData, t1p1Strokes, t2p1Strokes, pars)
           : calculateWinningScoresPerHole(matchScoreData, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes, pars);
         
-        if (isFoursomes) {
+        if (isSingles) {
+          // SINGLES: One row per player
+          const player1Name = `${team1Player1.firstName} ${team1Player1.lastName.charAt(0)}.`;
+          const player2Name = `${team2Player1.firstName} ${team2Player1.lastName.charAt(0)}.`;
+          
+          // Player 1 row
+          html += renderTeamScoreRow(player1Name, p1MatchHcp, t1p1Strokes, 'team1', matchScoreData.team1Scores, pars, match.matchKey, winningScores);
+          
+          // Match Score row
+          html += renderMatchScoreRowFoursomes(matchScoreData, pars, t1p1Strokes, t2p1Strokes);
+          
+          // Calculate and store the match result
+          const matchResult = calculateMatchResultFoursomes(matchScoreData, pars, t1p1Strokes, t2p1Strokes);
+          console.log('Calculated singles matchResult for', match.matchKey, ':', matchResult);
+          if (matchResult) {
+            matchScoreData.matchResult = matchResult;
+            holeByHoleScores[match.matchKey] = matchScoreData;
+            saveHoleByHoleScores();
+          }
+          
+          // Player 2 row
+          html += renderTeamScoreRow(player2Name, p2MatchHcp, t2p1Strokes, 'team2', matchScoreData.team2Scores, pars, match.matchKey, winningScores);
+        } else if (isFoursomes) {
           // FOURSOMES: One row per team with combined names
           const team1Names = match.team1.map(p => `${p.firstName} ${p.lastName.charAt(0)}.`).join(' / ');
           const team2Names = match.team2.map(p => `${p.firstName} ${p.lastName.charAt(0)}.`).join(' / ');
@@ -1183,7 +1260,7 @@
         
         // Add event listeners to all score inputs
         content.querySelectorAll('.match-scorecard-input').forEach(input => {
-          input.addEventListener('input', isFoursomes ? handleFoursomesScoreInput : handleMatchHoleScoreInput);
+          input.addEventListener('input', (isFoursomes || isSingles) ? handleFoursomesScoreInput : handleMatchHoleScoreInput);
           input.addEventListener('keydown', handleMatchScoreKeydown);
           // Select all text on focus for easy correction
           input.addEventListener('focus', (e) => e.target.select());
