@@ -137,6 +137,31 @@
       .match-item-team.right { text-align: right; }
       .match-item-vs { font-weight: 700; color: #94a3b8; font-size: 12px; }
       .match-item-score { font-size: 14px; font-weight: 700; color: #1e293b; margin-top: 6px; text-align: center; }
+      
+      /* Match Scorecard Styles */
+      .match-scorecard { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .match-scorecard th, .match-scorecard td { border: 1px solid #e2e8f0; padding: 6px 4px; text-align: center; min-width: 36px; }
+      .match-scorecard th { background: #1e293b; color: white; font-weight: 600; font-size: 11px; }
+      .match-scorecard .row-label { background: #f8fafc; font-weight: 600; text-align: left; padding-left: 8px; min-width: 80px; }
+      .match-scorecard .par-row td { background: #f1f5f9; font-weight: 500; }
+      .match-scorecard .si-row td { background: #f8fafc; color: #64748b; font-size: 10px; }
+      .match-scorecard .team1-row td { background: #fef2f2; }
+      .match-scorecard .team2-row td { background: #eff6ff; }
+      .match-scorecard .match-score-row td { background: #f8fafc; font-weight: 700; font-size: 11px; }
+      .match-scorecard .subtotal-col { background: #e2e8f0 !important; font-weight: 600; }
+      .match-scorecard .total-col { background: #cbd5e1 !important; font-weight: 700; }
+      .match-scorecard-input { width: 32px; height: 28px; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; font-size: 12px; font-weight: 600; }
+      .match-scorecard-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+      .match-scorecard-input.team1 { background: #fef2f2; }
+      .match-scorecard-input.team2 { background: #eff6ff; }
+      .match-scorecard-input.birdie-team1 { background: #dc2626 !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #b91c1c; }
+      .match-scorecard-input.birdie-team2 { background: #2563eb !important; color: white !important; border-radius: 50%; font-weight: 700; border: 2px solid #1d4ed8; }
+      .match-scorecard-input.eagle-team1 { background: #fbbf24 !important; color: #1e293b !important; border-radius: 50%; font-weight: 700; border: 2px solid #d97706; }
+      .match-scorecard-input.eagle-team2 { background: #fbbf24 !important; color: #1e293b !important; border-radius: 50%; font-weight: 700; border: 2px solid #d97706; }
+      .match-score-team1 { color: #dc2626; font-weight: 700; }
+      .match-score-team2 { color: #2563eb; font-weight: 700; }
+      .match-score-even { color: #64748b; font-weight: 600; }
+      .stroke-dot { display: inline-block; width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; margin-left: 2px; vertical-align: top; }
     </style>
   </head>
   <body>
@@ -637,6 +662,14 @@
         document.getElementById('players-panel').style.display = 'none';
         document.getElementById('matches-panel').style.display = 'block';
         
+        // Load course data for scorecard
+        const roundData = currentTournament.meta?.roundsData?.[currentRoundIndex];
+        if (roundData && roundData.course) {
+          const courses = getCourses();
+          courseData = courses.find(c => c.courseId === roundData.course);
+          console.log('Course data loaded:', courseData?.name || 'Not found');
+        }
+        
         // Load draws from Firebase first
         await loadDrawsFromFirebase();
         
@@ -890,32 +923,389 @@
         const playerInfo = document.getElementById('player-info');
         playerInfo.style.display = 'block';
         
+        // Show team names in header
+        const team1Names = match.team1.map(p => `${p.firstName} ${p.lastName}`).join(' & ');
+        const team2Names = match.team2.map(p => `${p.firstName} ${p.lastName}`).join(' & ');
+        
         document.getElementById('player-name').textContent = `Match ${match.matchIndex + 1}`;
-        document.getElementById('player-reg').textContent = match.matchKey;
+        document.getElementById('player-reg').textContent = `${team1Names} vs ${team2Names}`;
         document.getElementById('player-hcp').textContent = '-';
         document.getElementById('player-phcp').textContent = '-';
         
         // Hide status dropdown for matches
         document.getElementById('player-status').parentElement.style.display = 'none';
         
-        // Render match scorecard (placeholder - will be implemented next)
+        // Render match scorecard
         renderMatchScorecard(match);
       }
 
-      // Render match scorecard (placeholder for now)
+      // Get player's playing handicap for match play
+      function getMatchPlayingHcp(player) {
+        // Use stored PHCP or calculate
+        let phcp = player.phcp;
+        if (phcp === undefined || phcp === null || phcp === '') {
+          phcp = calculatePlayingHcp(player);
+        }
+        return parseInt(phcp) || 0;
+      }
+
+      // Calculate strokes received on a hole based on handicap and stroke index
+      function getMatchStrokesForHole(phcp, strokeIndex) {
+        const si = parseInt(strokeIndex);
+        if (isNaN(si) || si > 18 || si < 1) return 0;
+        
+        const absPhcp = Math.abs(phcp);
+        const fullStrokes = Math.floor(absPhcp / 18);
+        const remainingStrokes = absPhcp % 18;
+        
+        if (phcp >= 0) {
+          return fullStrokes + (si <= remainingStrokes ? 1 : 0);
+        } else {
+          const givesStroke = si >= (19 - remainingStrokes) ? 1 : 0;
+          return -(fullStrokes + givesStroke);
+        }
+      }
+
+      // Render match scorecard for Fourball
       function renderMatchScorecard(match) {
         const content = document.getElementById('scorecard-content');
         
-        // Placeholder - you will tell me how this should look
-        content.innerHTML = `
-          <div style="padding: 20px; text-align: center; color: #64748b;">
-            <h3>Match ${match.matchIndex + 1} Scorecard</h3>
-            <p>Team 1: ${match.team1.map(p => p.firstName + ' ' + p.lastName).join(' & ')}</p>
-            <p>vs</p>
-            <p>Team 2: ${match.team2.map(p => p.firstName + ' ' + p.lastName).join(' & ')}</p>
-            <p style="margin-top: 20px; font-style: italic;">Scorecard layout coming next...</p>
-          </div>
-        `;
+        if (!courseData || !courseData.pars) {
+          content.innerHTML = '<div class="empty-state"><p>Course data not available</p></div>';
+          return;
+        }
+        
+        const pars = courseData.pars;
+        const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
+        
+        // Get players from teams
+        const team1Player1 = match.team1[0];
+        const team1Player2 = match.team1[1];
+        const team2Player1 = match.team2[0];
+        const team2Player2 = match.team2[1];
+        
+        // Get playing handicaps
+        const t1p1Hcp = getMatchPlayingHcp(team1Player1);
+        const t1p2Hcp = team1Player2 ? getMatchPlayingHcp(team1Player2) : 0;
+        const t2p1Hcp = team2Player1 ? getMatchPlayingHcp(team2Player1) : 0;
+        const t2p2Hcp = team2Player2 ? getMatchPlayingHcp(team2Player2) : 0;
+        
+        // Get existing scores for this match
+        let matchScoreData = holeByHoleScores[match.matchKey] || {};
+        
+        // Ensure all score arrays exist
+        matchScoreData.team1Player1Scores = matchScoreData.team1Player1Scores || Array(18).fill('');
+        matchScoreData.team1Player2Scores = matchScoreData.team1Player2Scores || Array(18).fill('');
+        matchScoreData.team2Player1Scores = matchScoreData.team2Player1Scores || Array(18).fill('');
+        matchScoreData.team2Player2Scores = matchScoreData.team2Player2Scores || Array(18).fill('');
+        matchScoreData.status = matchScoreData.status || 'pending';
+        
+        // Initialize if not exists
+        if (!holeByHoleScores[match.matchKey]) {
+          holeByHoleScores[match.matchKey] = matchScoreData;
+        }
+        
+        let html = '<div style="overflow-x: auto;"><table class="match-scorecard">';
+        
+        // Header row - Hole numbers
+        html += '<thead><tr><th class="row-label">Hole:</th>';
+        for (let i = 1; i <= 9; i++) html += `<th>${i}</th>`;
+        html += '<th class="subtotal-col">Front</th>';
+        for (let i = 10; i <= 18; i++) html += `<th>${i}</th>`;
+        html += '<th class="subtotal-col">Back</th><th class="total-col">Total</th></tr></thead>';
+        
+        html += '<tbody>';
+        
+        // PAR row
+        let frontPar = 0, backPar = 0;
+        html += '<tr class="par-row"><td class="row-label">PAR</td>';
+        for (let i = 0; i < 9; i++) { html += `<td>${pars[i]}</td>`; frontPar += pars[i]; }
+        html += `<td class="subtotal-col">${frontPar}</td>`;
+        for (let i = 9; i < 18; i++) { html += `<td>${pars[i]}</td>`; backPar += pars[i]; }
+        html += `<td class="subtotal-col">${backPar}</td><td class="total-col">${frontPar + backPar}</td></tr>`;
+        
+        // Stroke Index row
+        html += '<tr class="si-row"><td class="row-label">Str. Indx</td>';
+        for (let i = 0; i < 9; i++) html += `<td>${strokeIndexes[i]}</td>`;
+        html += '<td class="subtotal-col"></td>';
+        for (let i = 9; i < 18; i++) html += `<td>${strokeIndexes[i]}</td>`;
+        html += '<td class="subtotal-col"></td><td class="total-col"></td></tr>';
+        
+        // Team 1 Player 1 row
+        html += renderPlayerScoreRow(team1Player1, t1p1Hcp, 'team1', 'p1', matchScoreData.team1Player1Scores, pars, strokeIndexes, match.matchKey);
+        
+        // Team 1 Player 2 row (if exists)
+        if (team1Player2) {
+          html += renderPlayerScoreRow(team1Player2, t1p2Hcp, 'team1', 'p2', matchScoreData.team1Player2Scores, pars, strokeIndexes, match.matchKey);
+        }
+        
+        // Match Score row
+        html += renderMatchScoreRow(matchScoreData, pars, strokeIndexes, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp);
+        
+        // Team 2 Player 1 row
+        if (team2Player1) {
+          html += renderPlayerScoreRow(team2Player1, t2p1Hcp, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, strokeIndexes, match.matchKey);
+        }
+        
+        // Team 2 Player 2 row (if exists)
+        if (team2Player2) {
+          html += renderPlayerScoreRow(team2Player2, t2p2Hcp, 'team2', 'p2', matchScoreData.team2Player2Scores, pars, strokeIndexes, match.matchKey);
+        }
+        
+        html += '</tbody></table></div>';
+        
+        content.innerHTML = html;
+        
+        // Add event listeners to all score inputs
+        content.querySelectorAll('.match-scorecard-input').forEach(input => {
+          input.addEventListener('input', handleMatchHoleScoreInput);
+          input.addEventListener('keydown', handleMatchScoreKeydown);
+        });
+      }
+
+      // Render a player's score row
+      function renderPlayerScoreRow(player, hcp, team, playerNum, scores, pars, strokeIndexes, matchKey) {
+        if (!player) return '';
+        
+        const teamClass = team === 'team1' ? 'team1-row' : 'team2-row';
+        const inputClass = team === 'team1' ? 'team1' : 'team2';
+        const name = `${player.firstName || ''} ${(player.lastName || '').charAt(0)}.`;
+        
+        // Ensure scores is an array
+        scores = scores || Array(18).fill('');
+        
+        let html = `<tr class="${teamClass}"><td class="row-label">${name}<br><small>HCP:${hcp}</small></td>`;
+        
+        let frontTotal = 0, backTotal = 0;
+        
+        for (let i = 0; i < 9; i++) {
+          const score = scores[i] || '';
+          const strokes = getMatchStrokesForHole(hcp, strokeIndexes[i]);
+          const strokeDot = strokes > 0 ? '<span class="stroke-dot"></span>'.repeat(strokes) : '';
+          const scoreClass = getScoreClass(score, pars[i], team);
+          
+          if (score) frontTotal += parseInt(score) || 0;
+          
+          html += `<td style="position: relative;">
+            <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+                   value="${score}" 
+                   data-match-key="${matchKey}"
+                   data-team="${team}"
+                   data-player="${playerNum}"
+                   data-hole="${i}"
+                   maxlength="2">
+            ${strokeDot}
+          </td>`;
+        }
+        
+        html += `<td class="subtotal-col">${frontTotal || ''}</td>`;
+        
+        for (let i = 9; i < 18; i++) {
+          const score = scores[i] || '';
+          const strokes = getMatchStrokesForHole(hcp, strokeIndexes[i]);
+          const strokeDot = strokes > 0 ? '<span class="stroke-dot"></span>'.repeat(strokes) : '';
+          const scoreClass = getScoreClass(score, pars[i], team);
+          
+          if (score) backTotal += parseInt(score) || 0;
+          
+          html += `<td style="position: relative;">
+            <input type="text" class="match-scorecard-input ${inputClass} ${scoreClass}" 
+                   value="${score}" 
+                   data-match-key="${matchKey}"
+                   data-team="${team}"
+                   data-player="${playerNum}"
+                   data-hole="${i}"
+                   maxlength="2">
+            ${strokeDot}
+          </td>`;
+        }
+        
+        html += `<td class="subtotal-col">${backTotal || ''}</td>`;
+        html += `<td class="total-col">${(frontTotal + backTotal) || ''}</td>`;
+        html += '</tr>';
+        
+        return html;
+      }
+
+      // Get score class for styling (birdie, eagle, etc.)
+      function getScoreClass(score, par, team) {
+        if (!score || !par) return '';
+        const diff = parseInt(score) - parseInt(par);
+        
+        if (diff <= -2) return team === 'team1' ? 'eagle-team1' : 'eagle-team2';
+        if (diff === -1) return team === 'team1' ? 'birdie-team1' : 'birdie-team2';
+        return '';
+      }
+
+      // Render the match score row
+      function renderMatchScoreRow(matchScoreData, pars, strokeIndexes, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp) {
+        let html = '<tr class="match-score-row"><td class="row-label"><strong>MATCH SCORE</strong></td>';
+        
+        let runningScore = 0; // Positive = Team 1 up, Negative = Team 2 up
+        
+        for (let i = 0; i < 18; i++) {
+          const holeResult = calculateHoleWinner(
+            matchScoreData.team1Player1Scores[i],
+            matchScoreData.team1Player2Scores ? matchScoreData.team1Player2Scores[i] : '',
+            matchScoreData.team2Player1Scores ? matchScoreData.team2Player1Scores[i] : '',
+            matchScoreData.team2Player2Scores ? matchScoreData.team2Player2Scores[i] : '',
+            pars[i],
+            strokeIndexes[i],
+            t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp
+          );
+          
+          if (holeResult !== null) {
+            runningScore += holeResult;
+          }
+          
+          let displayText = '';
+          let displayClass = 'match-score-even';
+          
+          if (holeResult !== null) {
+            if (runningScore > 0) {
+              displayText = `${runningScore}up`;
+              displayClass = 'match-score-team1';
+            } else if (runningScore < 0) {
+              displayText = `${Math.abs(runningScore)}up`;
+              displayClass = 'match-score-team2';
+            } else {
+              displayText = 'E';
+              displayClass = 'match-score-even';
+            }
+          }
+          
+          if (i === 8) {
+            html += `<td class="${displayClass}">${displayText}</td><td class="subtotal-col"></td>`;
+          } else if (i === 17) {
+            html += `<td class="${displayClass}">${displayText}</td><td class="subtotal-col"></td><td class="total-col"></td>`;
+          } else {
+            html += `<td class="${displayClass}">${displayText}</td>`;
+          }
+        }
+        
+        html += '</tr>';
+        return html;
+      }
+
+      // Calculate who won a hole in Fourball (best ball comparison)
+      function calculateHoleWinner(t1p1Score, t1p2Score, t2p1Score, t2p2Score, par, strokeIndex, t1p1Hcp, t1p2Hcp, t2p1Hcp, t2p2Hcp) {
+        // Need at least one score from each team
+        const t1Scores = [t1p1Score, t1p2Score].filter(s => s !== '' && s !== null && s !== undefined);
+        const t2Scores = [t2p1Score, t2p2Score].filter(s => s !== '' && s !== null && s !== undefined);
+        
+        if (t1Scores.length === 0 || t2Scores.length === 0) return null;
+        
+        // Calculate net scores for each player
+        const t1p1Net = t1p1Score ? parseInt(t1p1Score) - getMatchStrokesForHole(t1p1Hcp, strokeIndex) : 999;
+        const t1p2Net = t1p2Score ? parseInt(t1p2Score) - getMatchStrokesForHole(t1p2Hcp, strokeIndex) : 999;
+        const t2p1Net = t2p1Score ? parseInt(t2p1Score) - getMatchStrokesForHole(t2p1Hcp, strokeIndex) : 999;
+        const t2p2Net = t2p2Score ? parseInt(t2p2Score) - getMatchStrokesForHole(t2p2Hcp, strokeIndex) : 999;
+        
+        // Best ball for each team
+        const team1Best = Math.min(t1p1Net, t1p2Net);
+        const team2Best = Math.min(t2p1Net, t2p2Net);
+        
+        if (team1Best < team2Best) return 1;  // Team 1 wins hole
+        if (team2Best < team1Best) return -1; // Team 2 wins hole
+        return 0; // Halved
+      }
+
+      // Handle score input for match hole
+      function handleMatchHoleScoreInput(e) {
+        const input = e.target;
+        const matchKey = input.dataset.matchKey;
+        const team = input.dataset.team;
+        const playerNum = input.dataset.player;
+        const holeIndex = parseInt(input.dataset.hole);
+        let value = input.value.trim();
+        
+        // Only allow numbers
+        if (value !== '' && !/^\d+$/.test(value)) {
+          input.value = '';
+          return;
+        }
+        
+        // Update scores data
+        const scoreKey = `${team}Player${playerNum === 'p1' ? '1' : '2'}Scores`;
+        if (!holeByHoleScores[matchKey]) {
+          holeByHoleScores[matchKey] = {
+            team1Player1Scores: Array(18).fill(''),
+            team1Player2Scores: Array(18).fill(''),
+            team2Player1Scores: Array(18).fill(''),
+            team2Player2Scores: Array(18).fill(''),
+            status: 'pending'
+          };
+        }
+        
+        holeByHoleScores[matchKey][scoreKey][holeIndex] = value;
+        
+        // Update status
+        updateMatchStatus(matchKey);
+        
+        // Save scores
+        saveHoleByHoleScores();
+        
+        // Re-render to update match score row and styling
+        if (selectedMatch && selectedMatch.matchKey === matchKey) {
+          renderMatchScorecard(selectedMatch);
+          // Re-focus on next input
+          const allInputs = document.querySelectorAll('.match-scorecard-input');
+          const currentIdx = Array.from(allInputs).findIndex(inp => 
+            inp.dataset.matchKey === matchKey && 
+            inp.dataset.team === team && 
+            inp.dataset.player === playerNum && 
+            parseInt(inp.dataset.hole) === holeIndex
+          );
+          if (currentIdx < allInputs.length - 1 && value !== '') {
+            allInputs[currentIdx + 1].focus();
+          }
+        }
+        
+        // Update match list
+        renderHoleByHoleMatchesList();
+      }
+
+      // Handle keydown for navigation
+      function handleMatchScoreKeydown(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const allInputs = Array.from(document.querySelectorAll('.match-scorecard-input'));
+          const currentIdx = allInputs.indexOf(e.target);
+          if (currentIdx < allInputs.length - 1) {
+            allInputs[currentIdx + 1].focus();
+            allInputs[currentIdx + 1].select();
+          }
+        }
+      }
+
+      // Update match status based on scores
+      function updateMatchStatus(matchKey) {
+        const data = holeByHoleScores[matchKey];
+        if (!data) return;
+        
+        // Count holes with scores from both teams
+        let holesPlayed = 0;
+        for (let i = 0; i < 18; i++) {
+          const t1HasScore = data.team1Player1Scores[i] || data.team1Player2Scores[i];
+          const t2HasScore = data.team2Player1Scores[i] || data.team2Player2Scores[i];
+          if (t1HasScore && t2HasScore) holesPlayed++;
+        }
+        
+        if (holesPlayed === 0) {
+          data.status = 'pending';
+        } else if (holesPlayed === 18) {
+          data.status = 'completed';
+        } else {
+          data.status = 'in-progress';
+        }
+        
+        // Update the match in holeByHoleMatches array
+        const matchIdx = holeByHoleMatches.findIndex(m => m.matchKey === matchKey);
+        if (matchIdx !== -1) {
+          holeByHoleMatches[matchIdx].scores = data;
+        }
+        
+        updateMatchesStatus();
       }
 
       // Setup search functionality for match player search
