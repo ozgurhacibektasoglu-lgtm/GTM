@@ -1083,6 +1083,14 @@
         // Match Score row
         html += renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
         
+        // Calculate and store the match result
+        const matchResult = calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
+        if (matchResult) {
+          matchScoreData.matchResult = matchResult;
+          holeByHoleScores[match.matchKey] = matchScoreData;
+          saveHoleByHoleScores();
+        }
+        
         // Team 2 Player 1 row
         if (team2Player1) {
           html += renderPlayerScoreRow(team2Player1, t2p1MatchHcp, t2p1Strokes, 'team2', 'p1', matchScoreData.team2Player1Scores, pars, match.matchKey, winningScores);
@@ -1314,10 +1322,11 @@
       function renderMatchScoreRow(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
         let html = '<tr class="match-score-row"><td class="row-label"><strong>MATCH SCORE</strong></td>';
         
-        let runningScore = 0; // Positive = Team 1 up, Negative = Team 2 up
+        // Calculate the match result
+        const matchResult = calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes);
+        
+        let runningScore = 0;
         let matchFinished = false;
-        let matchFinishedHole = -1;
-        let matchResult = '';
         
         for (let i = 0; i < 18; i++) {
           const holeResult = calculateHoleWinner(
@@ -1353,9 +1362,8 @@
             
             if (absScore > holesRemaining) {
               matchFinished = true;
-              matchFinishedHole = i;
-              matchResult = `${absScore}&${holesRemaining}`;
-              displayText = matchResult;
+              const resultStr = `${absScore}&${holesRemaining}`;
+              displayText = resultStr;
               displayClass = runningScore > 0 ? 'match-score-team1 match-score-finished' : 'match-score-team2 match-score-finished';
             } else if (runningScore > 0) {
               displayText = `${runningScore}up`;
@@ -1380,6 +1388,67 @@
         
         html += '</tr>';
         return html;
+      }
+
+      // Calculate the final match result (returns object with left, right, resultText, winner)
+      function calculateMatchResult(matchScoreData, pars, t1p1Strokes, t1p2Strokes, t2p1Strokes, t2p2Strokes) {
+        let runningScore = 0; // Positive = Team 1 up, Negative = Team 2 up
+        let holesPlayed = 0;
+        
+        for (let i = 0; i < 18; i++) {
+          const holeResult = calculateHoleWinner(
+            matchScoreData.team1Player1Scores?.[i] || '',
+            matchScoreData.team1Player2Scores?.[i] || '',
+            matchScoreData.team2Player1Scores?.[i] || '',
+            matchScoreData.team2Player2Scores?.[i] || '',
+            pars[i],
+            t1p1Strokes[i], t1p2Strokes[i], t2p1Strokes[i], t2p2Strokes[i]
+          );
+          
+          if (holeResult === null) continue; // Skip holes without scores from both teams
+          
+          holesPlayed++;
+          runningScore += holeResult;
+          
+          // Check if match is finished (score > holes remaining)
+          const holesRemaining = 18 - holesPlayed;
+          const absScore = Math.abs(runningScore);
+          
+          if (absScore > holesRemaining) {
+            // Match finished early
+            return {
+              left: runningScore > 0 ? absScore : 0,
+              right: runningScore < 0 ? absScore : 0,
+              resultText: `${absScore}&${holesRemaining}`,
+              winner: runningScore > 0 ? 'team1' : 'team2',
+              holesPlayed: holesPlayed
+            };
+          }
+        }
+        
+        // Match went to 18 holes (or as many as played)
+        if (holesPlayed === 0) {
+          return null; // No scores yet
+        }
+        
+        const absScore = Math.abs(runningScore);
+        if (runningScore === 0) {
+          return {
+            left: 0,
+            right: 0,
+            resultText: 'Halved',
+            winner: 'tie',
+            holesPlayed: holesPlayed
+          };
+        } else {
+          return {
+            left: runningScore > 0 ? absScore : 0,
+            right: runningScore < 0 ? absScore : 0,
+            resultText: `${absScore}UP`,
+            winner: runningScore > 0 ? 'team1' : 'team2',
+            holesPlayed: holesPlayed
+          };
+        }
       }
 
       // Calculate who won a hole in Fourball (best ball comparison using stroke allocation)

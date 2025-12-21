@@ -510,106 +510,11 @@
         }
       }
 
-      // Calculate final match result from hole-by-hole scores
-      // Returns { left: score, right: score, resultText: '5&4' or '2UP' etc }
-      function calculateMatchResultFromHoleByHole(matchKey, holeByHoleScores, courseData) {
-        const matchData = holeByHoleScores[matchKey];
-        if (!matchData) return null;
-        
-        const pars = courseData?.pars || Array(18).fill(4);
-        
-        // Get stroke allocations (simplified - we need course data ideally)
-        // For now, we'll calculate based on the stored scores
-        
-        let runningScore = 0; // Positive = Team 1 (left) up
-        let holesPlayed = 0;
-        let matchFinished = false;
-        let finalResult = null;
-        
-        for (let i = 0; i < 18; i++) {
-          const t1p1Score = matchData.team1Player1Scores?.[i] || '';
-          const t1p2Score = matchData.team1Player2Scores?.[i] || '';
-          const t2p1Score = matchData.team2Player1Scores?.[i] || '';
-          const t2p2Score = matchData.team2Player2Scores?.[i] || '';
-          
-          // Check if hole has scores from both teams
-          const t1HasScore = (t1p1Score !== '' || t1p2Score !== '');
-          const t2HasScore = (t2p1Score !== '' || t2p2Score !== '');
-          
-          if (!t1HasScore || !t2HasScore) continue;
-          
-          holesPlayed++;
-          
-          // Calculate best ball for each team (simplified without stroke allocation)
-          // X (0) scores cannot win
-          const getValidScore = (score) => {
-            if (score === '' || score === null || score === undefined) return 999;
-            const val = parseInt(score);
-            if (val === 0) return 999; // X score can't win
-            return val;
-          };
-          
-          const t1Best = Math.min(getValidScore(t1p1Score), getValidScore(t1p2Score));
-          const t2Best = Math.min(getValidScore(t2p1Score), getValidScore(t2p2Score));
-          
-          // Handle case where both teams have only X scores
-          const t1AllX = getValidScore(t1p1Score) === 999 && getValidScore(t1p2Score) === 999;
-          const t2AllX = getValidScore(t2p1Score) === 999 && getValidScore(t2p2Score) === 999;
-          
-          if (t1AllX && t2AllX) {
-            // Halved
-          } else if (t1AllX) {
-            runningScore--; // Team 2 wins hole
-          } else if (t2AllX) {
-            runningScore++; // Team 1 wins hole
-          } else if (t1Best < t2Best) {
-            runningScore++; // Team 1 wins hole
-          } else if (t2Best < t1Best) {
-            runningScore--; // Team 2 wins hole
-          }
-          // Else halved
-          
-          // Check if match is decided
-          const holesRemaining = 18 - holesPlayed;
-          if (Math.abs(runningScore) > holesRemaining) {
-            matchFinished = true;
-            finalResult = {
-              left: runningScore > 0 ? Math.abs(runningScore) : 0,
-              right: runningScore < 0 ? Math.abs(runningScore) : 0,
-              resultText: `${Math.abs(runningScore)}&${holesRemaining}`,
-              holesUp: Math.abs(runningScore),
-              holesRemaining: holesRemaining
-            };
-            break;
-          }
-        }
-        
-        if (!matchFinished && holesPlayed > 0) {
-          // Match went to 18 holes
-          if (runningScore === 0) {
-            finalResult = { left: 0, right: 0, resultText: 'Halved' };
-          } else {
-            finalResult = {
-              left: runningScore > 0 ? Math.abs(runningScore) : 0,
-              right: runningScore < 0 ? Math.abs(runningScore) : 0,
-              resultText: `${Math.abs(runningScore)}UP`
-            };
-          }
-        }
-        
-        return finalResult;
-      }
-
-      // Get merged match scores (from both match-score and hole-by-hole entry methods)
+      // Get merged match scores (from both match-score entry and hole-by-hole entry methods)
+      // Hole-by-hole entry stores matchResult directly, so we just read it
       function getMergedMatchScores(roundId) {
         const matchScores = getMatchScoresData()[roundId] || {};
         const holeByHoleScores = getHoleByHoleScoresData();
-        
-        // Get course data for this round
-        const tournament = getTournament();
-        const roundIndex = tournament?.meta?.roundIds?.indexOf(roundId) ?? 0;
-        const roundData = tournament?.meta?.roundsData?.[roundIndex];
-        const courseData = roundData?.course ? getCourseById(roundData.course) : null;
         
         // Look for hole-by-hole scores for this round
         const roundPrefix = `${roundId}_match_`;
@@ -621,32 +526,24 @@
             const matchIndex = parseInt(key.replace(roundPrefix, ''));
             const matchKey = `match_${matchIndex}`;
             
+            // Get the stored matchResult from scores page
+            const matchData = holeByHoleScores[key];
+            const storedResult = matchData?.matchResult;
+            
             // Only use hole-by-hole result if no match score already exists
-            if (!merged[matchKey] || (merged[matchKey].left === '' && merged[matchKey].right === '')) {
-              const result = calculateMatchResultFromHoleByHole(key, holeByHoleScores, courseData);
-              if (result) {
-                merged[matchKey] = { 
-                  left: result.left, 
-                  right: result.right,
-                  resultText: result.resultText,
-                  fromHoleByHole: true
-                };
-              }
+            if (storedResult && (!merged[matchKey] || (merged[matchKey].left === '' && merged[matchKey].right === ''))) {
+              merged[matchKey] = { 
+                left: storedResult.left, 
+                right: storedResult.right,
+                resultText: storedResult.resultText,
+                winner: storedResult.winner,
+                fromHoleByHole: true
+              };
             }
           }
         });
         
         return merged;
-      }
-
-      // Get course by ID
-      function getCourseById(courseId) {
-        try {
-          const courses = JSON.parse(localStorage.getItem('courses') || '[]');
-          return courses.find(c => c.courseId === courseId) || null;
-        } catch (err) {
-          return null;
-        }
       }
 
       // Initialize match play results UI - loads ALL rounds
