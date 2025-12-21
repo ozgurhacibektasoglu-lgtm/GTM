@@ -1062,27 +1062,8 @@
           isPairingMode = true;
           console.log('Pairing mode enabled for', matchType);
           
-          // Load teams to get team names - check teamsByRound first, fallback to legacy teams
-          const roundIds = currentTournament.meta?.roundIds || [];
-          const roundIndex = roundIds.indexOf(roundId);
-          let teams = [];
-          
-          if (currentTournament.teamsByRound) {
-            // Try to get teams for this round
-            teams = currentTournament.teamsByRound[roundIndex] || currentTournament.teamsByRound[String(roundIndex)] || [];
-            // If no teams for this round, try previous rounds or round 0
-            if (teams.length === 0 && roundIndex > 0) {
-              for (let i = roundIndex - 1; i >= 0; i--) {
-                teams = currentTournament.teamsByRound[i] || currentTournament.teamsByRound[String(i)] || [];
-                if (teams.length > 0) break;
-              }
-            }
-          }
-          
-          // Fallback to legacy teams array
-          if (teams.length === 0) {
-            teams = currentTournament.teams || [];
-          }
+          // Load teams - teams are defined at tournament level, not per round
+          const teams = currentTournament.teams || [];
           
           console.log('Teams loaded for round:', roundIndex, teams);
           
