@@ -298,22 +298,37 @@
           });
 
           // Load teams - teams are stored in teamsByRound (with teamDefinitions as base)
-          // Use teamsByRound for current round, or teamDefinitions for base teams
+          // Use teamsByRound for current round, fallback to round 0 if not found
           let roundTeams = [];
           
-          if (currentTournament.teamsByRound && currentTournament.teamsByRound[roundIndex]) {
-            roundTeams = currentTournament.teamsByRound[roundIndex];
-          } else if (currentTournament.teamDefinitions) {
-            // Use team definitions as base
+          if (currentTournament.teamsByRound) {
+            // Try current round first
+            if (currentTournament.teamsByRound[roundIndex]) {
+              roundTeams = currentTournament.teamsByRound[roundIndex];
+              console.log('Using teams from round', roundIndex);
+            } else if (currentTournament.teamsByRound[0]) {
+              // Fallback to round 0 (first round) if current round has no teams
+              roundTeams = currentTournament.teamsByRound[0];
+              console.log('Using teams from round 0 as fallback');
+            }
+          }
+          
+          // If still no teams, try teamDefinitions
+          if (roundTeams.length === 0 && currentTournament.teamDefinitions) {
             roundTeams = currentTournament.teamDefinitions.map(def => ({
               teamId: def.teamId,
               name: def.name,
               players: []
             }));
-          } else if (currentTournament.teams) {
-            // Legacy fallback
-            roundTeams = currentTournament.teams;
+            console.log('Using teamDefinitions as fallback');
           }
+          
+          // Legacy fallback
+          if (roundTeams.length === 0 && currentTournament.teams) {
+            roundTeams = currentTournament.teams;
+            console.log('Using legacy teams as fallback');
+          }
+          
           console.log('Teams loaded:', roundTeams.length, roundTeams);
           
           // Convert teams with full player objects
