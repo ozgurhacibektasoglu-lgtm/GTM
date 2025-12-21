@@ -1351,15 +1351,16 @@
           if (score !== '' && score !== '0') frontTotal += parseInt(score) || 0;
           else if (score === '0') frontTotal += (pars[i] || 4) + 2;
           
-          html += `<td class="score-cell ${winnerClass}">
-            ${strokeDots}
-            <input type="text" class="match-scorecard-input ${inputClass} ${xClass}" 
-                   value="${displayValue}" 
-                   data-actual-value="${score}"
-                   data-match-key="${matchKey}"
-                   data-team="${team}"
-                   data-hole="${i}"
-                   maxlength="2">
+          html += `<td>
+            <div class="score-cell-wrapper">
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass} ${xClass}" 
+                     value="${displayValue}" 
+                     data-actual-value="${score}"
+                     data-match-key="${matchKey}"
+                     data-team="${team}"
+                     data-hole="${i}"
+                     maxlength="2">${strokeDots}
+            </div>
           </td>`;
         }
         
@@ -1380,15 +1381,16 @@
           if (score !== '' && score !== '0') backTotal += parseInt(score) || 0;
           else if (score === '0') backTotal += (pars[i] || 4) + 2;
           
-          html += `<td class="score-cell ${winnerClass}">
-            ${strokeDots}
-            <input type="text" class="match-scorecard-input ${inputClass} ${xClass}" 
-                   value="${displayValue}" 
-                   data-actual-value="${score}"
-                   data-match-key="${matchKey}"
-                   data-team="${team}"
-                   data-hole="${i}"
-                   maxlength="2">
+          html += `<td>
+            <div class="score-cell-wrapper">
+              <input type="text" class="match-scorecard-input ${inputClass} ${winnerClass} ${xClass}" 
+                     value="${displayValue}" 
+                     data-actual-value="${score}"
+                     data-match-key="${matchKey}"
+                     data-team="${team}"
+                     data-hole="${i}"
+                     maxlength="2">${strokeDots}
+            </div>
           </td>`;
         }
         
