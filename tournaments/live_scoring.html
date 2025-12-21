@@ -1038,6 +1038,386 @@
         0% { background-color: #d1fae5; }
         100% { background-color: transparent; }
       }
+
+      /* ========================================
+         MATCH PLAY SPECIFIC STYLES
+         ======================================== */
+      
+      .match-play-badge {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-left: 8px;
+      }
+      
+      /* Match Card (replaces group card in match play) */
+      .match-card {
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        overflow: hidden;
+      }
+      
+      .match-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        color: white;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .match-info {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      .match-format-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      
+      .match-content {
+        padding: 16px;
+      }
+      
+      /* Match competitors display */
+      .match-competitors {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .match-side {
+        flex: 1;
+        padding: 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+      }
+      
+      .match-side:hover {
+        background: #f0f9ff;
+      }
+      
+      .match-side.home {
+        border-color: #3b82f6;
+      }
+      
+      .match-side.away {
+        border-color: #ec4899;
+      }
+      
+      .match-side.winning {
+        background: #dcfce7;
+        border-color: #22c55e;
+      }
+      
+      .match-side.losing {
+        background: #fef2f2;
+        border-color: #ef4444;
+      }
+      
+      .match-side-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      
+      .match-side-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+      }
+      
+      .match-hcp-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: #e2e8f0;
+        color: #475569;
+      }
+      
+      .match-hcp-badge.receives {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      .match-player-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: #1e293b;
+      }
+      
+      .match-team-players {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
+      /* Match status display (VS / score) */
+      .match-status-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 80px;
+      }
+      
+      .match-vs {
+        font-size: 14px;
+        font-weight: 800;
+        color: #94a3b8;
+      }
+      
+      .match-score-display {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1e293b;
+        text-align: center;
+      }
+      
+      .match-score-display.all-square {
+        color: #64748b;
+      }
+      
+      .match-score-display.home-up {
+        color: #3b82f6;
+      }
+      
+      .match-score-display.away-up {
+        color: #ec4899;
+      }
+      
+      .match-thru {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+      
+      .match-final {
+        font-size: 12px;
+        font-weight: 700;
+        color: #059669;
+        background: #d1fae5;
+        padding: 4px 10px;
+        border-radius: 12px;
+        margin-top: 4px;
+      }
+      
+      /* Match score entry modal */
+      .match-score-modal {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      .match-modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+      }
+      
+      .match-modal-title {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      
+      .match-modal-subtitle {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 4px;
+      }
+      
+      /* Match entry options */
+      .match-entry-options {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .match-entry-btn {
+        padding: 16px 20px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+      }
+      
+      .match-entry-btn:hover {
+        border-color: #7c3aed;
+        background: #faf5ff;
+      }
+      
+      .match-entry-btn-title {
+        font-weight: 700;
+        font-size: 15px;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .match-entry-btn-desc {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
+      /* Final score entry */
+      .final-score-entry {
+        padding: 20px;
+      }
+      
+      .final-score-sides {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .final-score-side {
+        flex: 1;
+        text-align: center;
+      }
+      
+      .final-score-side-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+      
+      .final-score-input {
+        width: 100%;
+        padding: 16px;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+      }
+      
+      .final-score-input:focus {
+        outline: none;
+        border-color: #7c3aed;
+      }
+      
+      .final-score-presets {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 16px;
+      }
+      
+      .final-score-preset {
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+      
+      .final-score-preset:hover {
+        border-color: #7c3aed;
+        background: #faf5ff;
+      }
+      
+      .final-score-preset.selected {
+        border-color: #7c3aed;
+        background: #7c3aed;
+        color: white;
+      }
+      
+      /* Hole by hole match entry */
+      .hole-match-grid {
+        padding: 16px;
+      }
+      
+      .hole-match-row {
+        display: grid;
+        grid-template-columns: 50px 1fr 60px 1fr;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      
+      .hole-match-row:last-child {
+        border-bottom: none;
+      }
+      
+      .hole-match-num {
+        font-weight: 700;
+        font-size: 14px;
+        color: #64748b;
+        text-align: center;
+      }
+      
+      .hole-match-input {
+        padding: 10px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        text-align: center;
+        width: 100%;
+      }
+      
+      .hole-match-input:focus {
+        outline: none;
+        border-color: #7c3aed;
+      }
+      
+      .hole-match-status {
+        text-align: center;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 6px;
+        border-radius: 6px;
+      }
+      
+      .hole-match-status.home-up {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      .hole-match-status.away-up {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      
+      .hole-match-status.all-square {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+      
+      .hole-match-status.won {
+        background: #d1fae5;
+        color: #065f46;
+      }
     </style>
   </head>
   <body>
@@ -1248,6 +1628,12 @@
       let drawData = null;
       let liveScores = {};
       let admittedPlayers = [];
+      
+      // Match play state
+      let isMatchPlay = false;
+      let matchPlayFormat = null; // 'singles', 'fourball', 'foursome'
+      let liveMatchScores = {}; // Match play scores: { matchKey: { homeScore: 0, awayScore: 0, holes: [], status: 'in-progress' } }
+      let currentMatch = null; // Current match being scored
       
       // Modal state
       let currentPlayer = null;
@@ -1621,6 +2007,16 @@
           console.log('Loading data for round:', currentRoundId);
           console.log('Tournament:', currentTournament);
           
+          // Detect if this is a match play tournament
+          const tournamentType = (currentTournament.type || '').toLowerCase();
+          isMatchPlay = tournamentType.includes('match');
+          matchPlayFormat = currentTournament.gameFormat || 'singles';
+          
+          console.log('Is Match Play:', isMatchPlay, '| Format:', matchPlayFormat);
+          
+          // Update UI for match play mode
+          updateMatchPlayUI();
+          
           // Load course data
           const courses = JSON.parse(localStorage.getItem('courses') || '[]');
           const courseId = currentTournament.meta?.courses?.[0] || currentTournament.courseId;
@@ -1670,6 +2066,11 @@
             }
           }
           
+          // Load match scores for match play
+          if (isMatchPlay) {
+            await loadLiveMatchScores();
+          }
+          
           // Also try to load from Firebase
           await loadLiveScores();
           
@@ -1683,9 +2084,14 @@
           document.getElementById('quick-stats').style.display = 'grid';
           document.getElementById('search-container').style.display = 'block';
           
-          // Render groups
-          renderGroups();
-          updateStats();
+          // Render groups or matches
+          if (isMatchPlay) {
+            renderMatches();
+            updateMatchStats();
+          } else {
+            renderGroups();
+            updateStats();
+          }
           
           // Setup player group mode UI after data is loaded
           if (scoringForGroup && playerGroupNumber !== null) {
@@ -1699,6 +2105,32 @@
           // Don't show error for empty data - that's normal for a new tournament
           // Only show error for actual failures
           hideStatus();
+        }
+      }
+      
+      // Update UI elements for match play mode
+      function updateMatchPlayUI() {
+        const topNav = document.querySelector('.top-nav h1');
+        if (isMatchPlay && topNav) {
+          topNav.innerHTML = `⛳ Live Scoring <span class="match-play-badge">Match Play</span>`;
+        } else if (topNav) {
+          topNav.innerHTML = '⛳ Live Scoring';
+        }
+      }
+      
+      // Load match scores from Firebase
+      async function loadLiveMatchScores() {
+        if (!db || !currentRoundId) return;
+        
+        try {
+          const snapshot = await db.ref(`liveMatchScores/${currentRoundId}`).once('value');
+          liveMatchScores = snapshot.val() || {};
+          console.log('Loaded match scores:', Object.keys(liveMatchScores).length);
+        } catch (error) {
+          console.error('Error loading match scores:', error);
+          // Fall back to localStorage
+          const matchScoresData = JSON.parse(localStorage.getItem('matchScores') || '{}');
+          liveMatchScores = matchScoresData[currentRoundId] || {};
         }
       }
 
@@ -2280,6 +2712,582 @@
         }
         
         document.getElementById('stat-leader').textContent = leader;
+      }
+
+      // ========================================
+      // MATCH PLAY FUNCTIONS
+      // ========================================
+      
+      // Update stats for match play
+      function updateMatchStats() {
+        const totalMatches = getMatchCount();
+        const completedMatches = Object.values(liveMatchScores).filter(m => m.status === 'completed').length;
+        const inProgressMatches = Object.values(liveMatchScores).filter(m => m.status === 'in-progress').length;
+        
+        document.getElementById('stat-players').textContent = totalMatches;
+        document.getElementById('stat-scored').textContent = completedMatches;
+        
+        // Update labels for match play
+        const labels = document.querySelectorAll('.stat-label');
+        if (labels.length >= 2) {
+          labels[0].textContent = 'Matches';
+          labels[1].textContent = 'Completed';
+          labels[2].textContent = 'In Progress';
+        }
+        
+        document.getElementById('stat-leader').textContent = inProgressMatches > 0 ? inProgressMatches : '-';
+      }
+      
+      // Get total match count from draw data
+      function getMatchCount() {
+        if (!drawData || !drawData.groups) return 0;
+        
+        let count = 0;
+        drawData.groups.forEach(group => {
+          const players = group.players || [];
+          if (matchPlayFormat === 'singles') {
+            count += Math.floor(players.length / 2);
+          } else {
+            // Fourball/Foursome: one match per group of 4
+            if (players.length >= 4) count += 1;
+          }
+        });
+        return count;
+      }
+      
+      // Render matches for match play mode
+      function renderMatches() {
+        const container = document.getElementById('groups-container');
+        const searchTerm = document.getElementById('player-search').value.toLowerCase();
+        
+        if (!drawData || !drawData.groups || drawData.groups.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">⛳</div>
+              <div class="empty-state-title">No matches found</div>
+              <div class="empty-state-text">Create a draw first to see matches</div>
+            </div>
+          `;
+          return;
+        }
+        
+        let html = '';
+        let matchIndex = 0;
+        
+        drawData.groups.forEach((group, groupIndex) => {
+          const players = group.players || [];
+          if (players.length < 2) return;
+          
+          if (matchPlayFormat === 'singles') {
+            // Singles: Create matches for pairs (1v2, 3v4)
+            const numMatches = Math.floor(players.length / 2);
+            
+            for (let i = 0; i < numMatches; i++) {
+              const player1 = players[i * 2];
+              const player2 = players[i * 2 + 1];
+              
+              if (!player1 || !player2) continue;
+              
+              // Filter by search
+              const p1Name = `${player1.firstName} ${player1.lastName}`.toLowerCase();
+              const p2Name = `${player2.firstName} ${player2.lastName}`.toLowerCase();
+              if (searchTerm && !p1Name.includes(searchTerm) && !p2Name.includes(searchTerm)) continue;
+              
+              const matchKey = `match_${groupIndex}_${i}`;
+              const matchData = liveMatchScores[matchKey] || {};
+              
+              html += renderMatchCard(matchKey, player1, player2, group, matchData, groupIndex, i);
+              matchIndex++;
+            }
+          } else {
+            // Fourball/Foursome: Group is one match
+            if (players.length < 4) return;
+            
+            const team1 = players.slice(0, 2);
+            const team2 = players.slice(2, 4);
+            
+            // Filter by search
+            const allNames = players.map(p => `${p.firstName} ${p.lastName}`.toLowerCase()).join(' ');
+            if (searchTerm && !allNames.includes(searchTerm)) return;
+            
+            const matchKey = `match_${groupIndex}`;
+            const matchData = liveMatchScores[matchKey] || {};
+            
+            html += renderTeamMatchCard(matchKey, team1, team2, group, matchData, groupIndex);
+            matchIndex++;
+          }
+        });
+        
+        if (!html) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div class="empty-state-title">No matches found</div>
+              <div class="empty-state-text">Try a different search term</div>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = html;
+      }
+      
+      // Render a singles match card
+      function renderMatchCard(matchKey, player1, player2, group, matchData, groupIndex, subMatchIndex) {
+        const p1Key = player1.reg || `${player1.firstName}-${player1.lastName}`;
+        const p2Key = player2.reg || `${player2.firstName}-${player2.lastName}`;
+        
+        // Calculate playing handicaps
+        const p1Phcp = calculatePlayingHcpForPlayer(player1);
+        const p2Phcp = calculatePlayingHcpForPlayer(player2);
+        
+        // Calculate match handicap (strokes given)
+        const hcpDiff = Math.abs(p1Phcp - p2Phcp);
+        const p1Receives = p2Phcp < p1Phcp ? hcpDiff : 0;
+        const p2Receives = p1Phcp < p2Phcp ? hcpDiff : 0;
+        
+        // Get match status
+        const { statusText, statusClass, homeUp, awayUp, thru, isFinal } = getMatchStatus(matchData);
+        
+        const p1Class = homeUp > 0 ? 'winning' : (awayUp > 0 ? 'losing' : '');
+        const p2Class = awayUp > 0 ? 'winning' : (homeUp > 0 ? 'losing' : '');
+        
+        return `
+          <div class="match-card" data-match-key="${matchKey}">
+            <div class="match-header" onclick="openMatchScoreModal('${matchKey}', ${groupIndex}, ${subMatchIndex})">
+              <div class="match-info">Match ${groupIndex + 1}${subMatchIndex > 0 ? '.' + (subMatchIndex + 1) : ''} • ${group.time || '-'}</div>
+              <div class="match-format-badge">Singles</div>
+            </div>
+            <div class="match-content" onclick="openMatchScoreModal('${matchKey}', ${groupIndex}, ${subMatchIndex})">
+              <div class="match-competitors">
+                <div class="match-side home ${p1Class}">
+                  <div class="match-side-header">
+                    <span class="match-side-label">Home</span>
+                    ${p1Receives > 0 ? `<span class="match-hcp-badge receives">+${p1Receives}</span>` : ''}
+                  </div>
+                  <div class="match-player-name">${player1.firstName} ${player1.lastName}</div>
+                </div>
+                
+                <div class="match-status-center">
+                  ${thru > 0 ? `
+                    <div class="match-score-display ${statusClass}">${statusText}</div>
+                    <div class="match-thru">${isFinal ? '' : 'Thru ' + thru}</div>
+                    ${isFinal ? '<div class="match-final">FINAL</div>' : ''}
+                  ` : `
+                    <div class="match-vs">VS</div>
+                  `}
+                </div>
+                
+                <div class="match-side away ${p2Class}">
+                  <div class="match-side-header">
+                    <span class="match-side-label">Away</span>
+                    ${p2Receives > 0 ? `<span class="match-hcp-badge receives">+${p2Receives}</span>` : ''}
+                  </div>
+                  <div class="match-player-name">${player2.firstName} ${player2.lastName}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Render a team match card (fourball/foursome)
+      function renderTeamMatchCard(matchKey, team1, team2, group, matchData, groupIndex) {
+        // Calculate team handicaps based on format
+        const t1Phcp = calculateTeamHcp(team1);
+        const t2Phcp = calculateTeamHcp(team2);
+        
+        // Calculate match handicap
+        const hcpDiff = Math.abs(t1Phcp - t2Phcp);
+        const t1Receives = t2Phcp < t1Phcp ? hcpDiff : 0;
+        const t2Receives = t1Phcp < t2Phcp ? hcpDiff : 0;
+        
+        // Get match status
+        const { statusText, statusClass, homeUp, awayUp, thru, isFinal } = getMatchStatus(matchData);
+        
+        const t1Class = homeUp > 0 ? 'winning' : (awayUp > 0 ? 'losing' : '');
+        const t2Class = awayUp > 0 ? 'winning' : (homeUp > 0 ? 'losing' : '');
+        
+        const formatLabel = matchPlayFormat === 'fourball' ? 'Fourball' : 'Foursome';
+        
+        return `
+          <div class="match-card" data-match-key="${matchKey}">
+            <div class="match-header" onclick="openMatchScoreModal('${matchKey}', ${groupIndex}, -1)">
+              <div class="match-info">Match ${groupIndex + 1} • ${group.time || '-'}</div>
+              <div class="match-format-badge">${formatLabel}</div>
+            </div>
+            <div class="match-content" onclick="openMatchScoreModal('${matchKey}', ${groupIndex}, -1)">
+              <div class="match-competitors">
+                <div class="match-side home ${t1Class}">
+                  <div class="match-side-header">
+                    <span class="match-side-label">Home</span>
+                    ${t1Receives > 0 ? `<span class="match-hcp-badge receives">+${t1Receives}</span>` : ''}
+                  </div>
+                  <div class="match-team-players">
+                    ${team1.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('')}
+                  </div>
+                </div>
+                
+                <div class="match-status-center">
+                  ${thru > 0 ? `
+                    <div class="match-score-display ${statusClass}">${statusText}</div>
+                    <div class="match-thru">${isFinal ? '' : 'Thru ' + thru}</div>
+                    ${isFinal ? '<div class="match-final">FINAL</div>' : ''}
+                  ` : `
+                    <div class="match-vs">VS</div>
+                  `}
+                </div>
+                
+                <div class="match-side away ${t2Class}">
+                  <div class="match-side-header">
+                    <span class="match-side-label">Away</span>
+                    ${t2Receives > 0 ? `<span class="match-hcp-badge receives">+${t2Receives}</span>` : ''}
+                  </div>
+                  <div class="match-team-players">
+                    ${team2.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Calculate playing handicap for a player
+      function calculatePlayingHcpForPlayer(player) {
+        const playerHcp = parseFloat(player.hcp || player.playingHcp || 0);
+        if (isNaN(playerHcp)) return 0;
+        
+        // Get HCP allowance from tournament
+        const hcpAllowance = parseFloat(currentTournament.hcpAllowance || 100) / 100;
+        
+        return Math.round(playerHcp * hcpAllowance);
+      }
+      
+      // Calculate team handicap based on format
+      function calculateTeamHcp(team) {
+        if (matchPlayFormat === 'fourball') {
+          // Fourball: Lower handicap of the two, then difference applied
+          const hcps = team.map(p => calculatePlayingHcpForPlayer(p));
+          return Math.min(...hcps);
+        } else {
+          // Foursome: Combined handicap / 2
+          const hcps = team.map(p => calculatePlayingHcpForPlayer(p));
+          return Math.round((hcps[0] + hcps[1]) / 2);
+        }
+      }
+      
+      // Get match status from match data
+      function getMatchStatus(matchData) {
+        const holes = matchData.holes || [];
+        const status = matchData.status || 'not-started';
+        
+        let homeScore = 0; // Holes won by home
+        let awayScore = 0; // Holes won by away
+        let thru = 0;
+        
+        // Count holes won
+        for (let i = 0; i < holes.length; i++) {
+          const holeResult = holes[i];
+          if (holeResult && holeResult !== '') {
+            thru = i + 1;
+            if (holeResult === 'H') homeScore++;
+            else if (holeResult === 'A') awayScore++;
+            // 'AS' = halved, no change to scores
+          }
+        }
+        
+        const diff = homeScore - awayScore;
+        const holesRemaining = 18 - thru;
+        const isFinal = status === 'completed' || thru >= 18 || Math.abs(diff) > holesRemaining;
+        
+        let statusText = 'AS';
+        let statusClass = 'all-square';
+        
+        if (diff > 0) {
+          if (isFinal) {
+            statusText = holesRemaining === 0 ? `${diff} UP` : `${diff}&${holesRemaining}`;
+          } else {
+            statusText = `${diff} UP`;
+          }
+          statusClass = 'home-up';
+        } else if (diff < 0) {
+          if (isFinal) {
+            statusText = holesRemaining === 0 ? `${Math.abs(diff)} UP` : `${Math.abs(diff)}&${holesRemaining}`;
+          } else {
+            statusText = `${Math.abs(diff)} UP`;
+          }
+          statusClass = 'away-up';
+        }
+        
+        return {
+          statusText,
+          statusClass,
+          homeUp: diff > 0 ? diff : 0,
+          awayUp: diff < 0 ? Math.abs(diff) : 0,
+          thru,
+          isFinal
+        };
+      }
+      
+      // Open match score modal
+      function openMatchScoreModal(matchKey, groupIndex, subMatchIndex) {
+        currentMatch = {
+          key: matchKey,
+          groupIndex,
+          subMatchIndex
+        };
+        
+        const group = drawData.groups[groupIndex];
+        const players = group.players || [];
+        
+        let homeName, awayName, homePlayer, awayPlayer;
+        
+        if (subMatchIndex >= 0) {
+          // Singles
+          homePlayer = players[subMatchIndex * 2];
+          awayPlayer = players[subMatchIndex * 2 + 1];
+          homeName = `${homePlayer.firstName} ${homePlayer.lastName}`;
+          awayName = `${awayPlayer.firstName} ${awayPlayer.lastName}`;
+        } else {
+          // Team match
+          const team1 = players.slice(0, 2);
+          const team2 = players.slice(2, 4);
+          homeName = team1.map(p => p.firstName).join(' & ');
+          awayName = team2.map(p => p.firstName).join(' & ');
+        }
+        
+        // Get existing match data
+        const matchData = liveMatchScores[matchKey] || { holes: [], status: 'not-started' };
+        
+        showMatchEntryModal(matchKey, homeName, awayName, matchData);
+      }
+      
+      // Show match entry modal with options
+      function showMatchEntryModal(matchKey, homeName, awayName, matchData) {
+        const modal = document.getElementById('match-score-entry-modal');
+        if (!modal) {
+          // Create modal if it doesn't exist
+          createMatchEntryModal();
+        }
+        
+        document.getElementById('match-entry-home-name').textContent = homeName;
+        document.getElementById('match-entry-away-name').textContent = awayName;
+        document.getElementById('match-score-entry-modal').classList.add('active');
+        
+        // Initialize hole-by-hole grid
+        initMatchHoleGrid(matchData);
+      }
+      
+      // Create match entry modal HTML
+      function createMatchEntryModal() {
+        const modalHtml = `
+          <div id="match-score-entry-modal" class="modal-overlay" onclick="closeMatchEntryModal(event)">
+            <div class="match-score-modal" onclick="event.stopPropagation()">
+              <div class="match-modal-header">
+                <div>
+                  <div class="match-modal-title">Enter Match Score</div>
+                  <div class="match-modal-subtitle">
+                    <span id="match-entry-home-name">Player 1</span> vs <span id="match-entry-away-name">Player 2</span>
+                  </div>
+                </div>
+                <button class="group-modal-close" onclick="closeMatchEntryModal()">×</button>
+              </div>
+              
+              <div class="hole-match-grid" id="match-hole-grid">
+                <!-- Hole by hole entries -->
+              </div>
+              
+              <div style="padding: 16px; border-top: 1px solid #e2e8f0;">
+                <div style="display: flex; gap: 12px;">
+                  <button onclick="closeMatchEntryModal()" style="flex: 1; padding: 14px; border: 2px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 600; cursor: pointer;">Cancel</button>
+                  <button onclick="saveMatchScore()" style="flex: 2; padding: 14px; border: none; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: white; border-radius: 10px; font-weight: 700; cursor: pointer;">💾 Save Match</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      }
+      
+      // Initialize match hole grid
+      function initMatchHoleGrid(matchData) {
+        const container = document.getElementById('match-hole-grid');
+        const holes = matchData.holes || [];
+        const pars = getCoursePars();
+        
+        let html = `
+          <div class="hole-match-row" style="background: #f8fafc; font-weight: 700;">
+            <div class="hole-match-num">Hole</div>
+            <div style="text-align: center; font-size: 12px;">Home</div>
+            <div style="text-align: center; font-size: 12px;">Result</div>
+            <div style="text-align: center; font-size: 12px;">Away</div>
+          </div>
+        `;
+        
+        let runningHome = 0;
+        let runningAway = 0;
+        
+        for (let i = 0; i < 18; i++) {
+          const holeResult = holes[i] || '';
+          
+          // Update running score
+          if (holeResult === 'H') runningHome++;
+          else if (holeResult === 'A') runningAway++;
+          
+          const diff = runningHome - runningAway;
+          let statusText = 'AS';
+          let statusClass = 'all-square';
+          
+          if (diff > 0) {
+            statusText = `${diff} UP (H)`;
+            statusClass = 'home-up';
+          } else if (diff < 0) {
+            statusText = `${Math.abs(diff)} UP (A)`;
+            statusClass = 'away-up';
+          }
+          
+          html += `
+            <div class="hole-match-row">
+              <div class="hole-match-num">${i + 1}<br><span style="font-size: 10px; color: #94a3b8;">Par ${pars[i]}</span></div>
+              <div>
+                <button class="hole-result-btn ${holeResult === 'H' ? 'selected' : ''}" 
+                        onclick="setHoleResult(${i}, 'H')" 
+                        data-hole="${i}" data-result="H">
+                  Won
+                </button>
+              </div>
+              <div>
+                <button class="hole-result-btn halved ${holeResult === 'AS' ? 'selected' : ''}" 
+                        onclick="setHoleResult(${i}, 'AS')" 
+                        data-hole="${i}" data-result="AS">
+                  ½
+                </button>
+              </div>
+              <div>
+                <button class="hole-result-btn ${holeResult === 'A' ? 'selected' : ''}" 
+                        onclick="setHoleResult(${i}, 'A')" 
+                        data-hole="${i}" data-result="A">
+                  Won
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Add style for hole result buttons
+        if (!document.getElementById('hole-result-btn-style')) {
+          const style = document.createElement('style');
+          style.id = 'hole-result-btn-style';
+          style.textContent = `
+            .hole-result-btn {
+              width: 100%;
+              padding: 10px 8px;
+              border: 2px solid #e2e8f0;
+              background: white;
+              border-radius: 8px;
+              font-weight: 600;
+              font-size: 13px;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            .hole-result-btn:hover {
+              border-color: #7c3aed;
+            }
+            .hole-result-btn.selected {
+              background: #7c3aed;
+              border-color: #7c3aed;
+              color: white;
+            }
+            .hole-result-btn.halved {
+              background: #f8fafc;
+            }
+            .hole-result-btn.halved.selected {
+              background: #64748b;
+              border-color: #64748b;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+      }
+      
+      // Set hole result
+      function setHoleResult(holeIndex, result) {
+        if (!currentMatch) return;
+        
+        const matchKey = currentMatch.key;
+        if (!liveMatchScores[matchKey]) {
+          liveMatchScores[matchKey] = { holes: [], status: 'in-progress' };
+        }
+        
+        // Ensure holes array is 18 elements
+        while (liveMatchScores[matchKey].holes.length < 18) {
+          liveMatchScores[matchKey].holes.push('');
+        }
+        
+        // Toggle: if same result clicked, clear it
+        if (liveMatchScores[matchKey].holes[holeIndex] === result) {
+          liveMatchScores[matchKey].holes[holeIndex] = '';
+        } else {
+          liveMatchScores[matchKey].holes[holeIndex] = result;
+        }
+        
+        // Update UI
+        const buttons = document.querySelectorAll(`[data-hole="${holeIndex}"]`);
+        buttons.forEach(btn => {
+          btn.classList.remove('selected');
+          if (btn.dataset.result === liveMatchScores[matchKey].holes[holeIndex]) {
+            btn.classList.add('selected');
+          }
+        });
+      }
+      
+      // Save match score
+      async function saveMatchScore() {
+        if (!currentMatch) return;
+        
+        const matchKey = currentMatch.key;
+        const matchData = liveMatchScores[matchKey] || { holes: [], status: 'in-progress' };
+        
+        // Check if match is complete
+        const { isFinal } = getMatchStatus(matchData);
+        if (isFinal) {
+          matchData.status = 'completed';
+        }
+        
+        // Save to localStorage
+        const allMatchScores = JSON.parse(localStorage.getItem('matchScores') || '{}');
+        if (!allMatchScores[currentRoundId]) {
+          allMatchScores[currentRoundId] = {};
+        }
+        allMatchScores[currentRoundId][matchKey] = matchData;
+        localStorage.setItem('matchScores', JSON.stringify(allMatchScores));
+        
+        // Save to Firebase
+        if (db && currentRoundId) {
+          try {
+            await db.ref(`liveMatchScores/${currentRoundId}/${matchKey}`).set(matchData);
+            showStatus('Match saved!', 'success');
+          } catch (err) {
+            console.error('Firebase save error:', err);
+            showStatus('Saved locally (offline)', 'info');
+          }
+        }
+        
+        closeMatchEntryModal();
+        renderMatches();
+        updateMatchStats();
+      }
+      
+      // Close match entry modal
+      function closeMatchEntryModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        const modal = document.getElementById('match-score-entry-modal');
+        if (modal) modal.classList.remove('active');
+        currentMatch = null;
       }
 
       // Open score modal
