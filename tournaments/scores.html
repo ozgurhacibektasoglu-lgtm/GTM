@@ -1037,7 +1037,6 @@
         const matchType = (roundData?.matchType || 'fourball').toLowerCase();
         const isFoursomes = matchType === 'foursomes';
         const isSingles = matchType === 'singles' || match.isSingles;
-        console.log('renderMatchScorecard - roundIndex:', currentRoundIndex, 'matchType:', matchType, 'isSingles:', isSingles, 'isFoursomes:', isFoursomes);
         
         const pars = courseData.pars;
         const strokeIndexes = courseData.strokeIndexes || Array(18).fill('-');
@@ -2516,9 +2515,6 @@
           }
         }
         
-        console.log('syncMatchScoresFromHoleByHole - holeByHoleScores keys:', Object.keys(holeByHoleScores));
-        console.log('syncMatchScoresFromHoleByHole - currentRoundId:', currentRoundId, 'matchType:', matchType);
-        
         groups.forEach((group, groupIndex) => {
           const players = group.players || [];
           if (players.length < 2) return;
@@ -2530,17 +2526,14 @@
               const holeByHoleKey = `${currentRoundId}_match_${groupIndex}_${i}`;
               const matchKey = `match_${groupIndex}_${i}`;
               
-              console.log('Looking for hole-by-hole data with key:', holeByHoleKey);
               const holeByHoleData = holeByHoleScores[holeByHoleKey];
               if (holeByHoleData && holeByHoleData.matchResult) {
                 const result = holeByHoleData.matchResult;
-                // Convert matchResult to left/right scores
                 syncedScores[matchKey] = {
                   left: result.left !== undefined ? result.left : '',
                   right: result.right !== undefined ? result.right : '',
                   fromHoleByHole: true
                 };
-                console.log('Synced match score from hole-by-hole:', matchKey, syncedScores[matchKey]);
               }
             }
           } else {
@@ -2548,19 +2541,14 @@
             const holeByHoleKey = `${currentRoundId}_match_${groupIndex}`;
             const matchKey = `match_${groupIndex}`;
             
-            console.log('Looking for hole-by-hole data with key:', holeByHoleKey);
             const holeByHoleData = holeByHoleScores[holeByHoleKey];
-            console.log('Found holeByHoleData:', holeByHoleData ? 'yes' : 'no', holeByHoleData?.matchResult ? 'has matchResult' : 'no matchResult');
-            
             if (holeByHoleData && holeByHoleData.matchResult) {
               const result = holeByHoleData.matchResult;
-              // Convert matchResult to left/right scores
               syncedScores[matchKey] = {
                 left: result.left !== undefined ? result.left : '',
                 right: result.right !== undefined ? result.right : '',
                 fromHoleByHole: true
               };
-              console.log('Synced match score from hole-by-hole:', matchKey, syncedScores[matchKey]);
             }
           }
         });
