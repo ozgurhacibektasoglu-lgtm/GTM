@@ -20,9 +20,16 @@ window.displayTournamentId = function(tournamentId) {
   return tournamentId.includes('-') ? tournamentId.split('-')[1] : tournamentId;
 };
 
-// Initialize Firebase
-let db = null;
-let syncEnabled = false;
+// Initialize Firebase - use window to avoid redeclaration errors
+if (typeof window.db === 'undefined') {
+  window.db = null;
+}
+if (typeof window.syncEnabled === 'undefined') {
+  window.syncEnabled = false;
+}
+// Create local references for convenience
+var db = window.db;
+var syncEnabled = window.syncEnabled;
 
 function initFirebase() {
   try {
@@ -39,16 +46,20 @@ function initFirebase() {
       db = firebase.database();
       window.db = db;
       syncEnabled = true;
+      window.syncEnabled = true;
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
+      window.db = null;
       syncEnabled = false;
+      window.syncEnabled = false;
     }
     console.log('Firebase initialized successfully');
     return true;
   } catch (error) {
     console.error('Firebase initialization error:', error);
     syncEnabled = false;
+    window.syncEnabled = false;
     return false;
   }
 }
