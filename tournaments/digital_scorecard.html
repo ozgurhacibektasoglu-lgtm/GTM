@@ -1294,6 +1294,113 @@
       lockedAt: null
     };
 
+    // ============================================
+    // OFFLINE SYNC QUEUE - Silent background sync
+    // ============================================
+    
+    const SYNC_QUEUE_KEY = 'scorecard_sync_queue';
+    let isOnline = navigator.onLine;
+    let isSyncing = false;
+    
+    // Get pending sync queue from localStorage
+    function getSyncQueue() {
+      try {
+        const queue = localStorage.getItem(SYNC_QUEUE_KEY);
+        return queue ? JSON.parse(queue) : [];
+      } catch (e) {
+        console.error('Error reading sync queue:', e);
+        return [];
+      }
+    }
+    
+    // Save sync queue to localStorage
+    function saveSyncQueue(queue) {
+      try {
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+      } catch (e) {
+        console.error('Error saving sync queue:', e);
+      }
+    }
+    
+    // Add item to sync queue
+    function addToSyncQueue(data) {
+      const queue = getSyncQueue();
+      // Replace existing entry for same roundId/playerId to avoid duplicates
+      const existingIndex = queue.findIndex(item => 
+        item.roundId === data.roundId && item.playerId === data.playerId
+      );
+      if (existingIndex >= 0) {
+        queue[existingIndex] = data;
+      } else {
+        queue.push(data);
+      }
+      saveSyncQueue(queue);
+      console.log('📝 Added to sync queue:', data.roundId, data.playerId);
+    }
+    
+    // Process sync queue when online
+    async function processSyncQueue() {
+      if (!isOnline || isSyncing || !db) return;
+      
+      const queue = getSyncQueue();
+      if (queue.length === 0) return;
+      
+      isSyncing = true;
+      console.log('🔄 Processing sync queue:', queue.length, 'items');
+      
+      const successfulSyncs = [];
+      
+      for (const item of queue) {
+        try {
+          // Sync digital scores
+          await db.ref(`digitalScores/${item.roundId}/${item.playerId}`).set(item.digitalScoresData);
+          
+          // Sync live scores if available
+          if (item.liveScoresData) {
+            await db.ref(`liveScores/${item.roundId}/${item.liveScoresKey}`).set(item.liveScoresData);
+            await db.ref(`scores/${item.roundId}/${item.liveScoresKey}`).set(item.liveScoresData);
+          }
+          
+          successfulSyncs.push(item);
+          console.log('✅ Synced:', item.roundId, item.playerId);
+        } catch (err) {
+          console.error('❌ Sync failed for', item.playerId, ':', err);
+          // Keep in queue for retry
+        }
+      }
+      
+      // Remove successfully synced items from queue
+      if (successfulSyncs.length > 0) {
+        const remainingQueue = queue.filter(item => 
+          !successfulSyncs.some(s => s.roundId === item.roundId && s.playerId === item.playerId)
+        );
+        saveSyncQueue(remainingQueue);
+        console.log('📤 Sync complete. Remaining in queue:', remainingQueue.length);
+      }
+      
+      isSyncing = false;
+    }
+    
+    // Listen for online/offline events
+    window.addEventListener('online', () => {
+      console.log('🌐 Back online - syncing pending scores...');
+      isOnline = true;
+      // Small delay to ensure connection is stable
+      setTimeout(processSyncQueue, 1000);
+    });
+    
+    window.addEventListener('offline', () => {
+      console.log('📴 Gone offline - scores will be queued');
+      isOnline = false;
+    });
+    
+    // Periodic sync attempt (every 30 seconds if online)
+    setInterval(() => {
+      if (isOnline && !isSyncing) {
+        processSyncQueue();
+      }
+    }, 30000);
+
     // Initialize Firebase
     initFirebase();
 
@@ -1488,6 +1595,9 @@
       currentHole = playerData.startingHole || 1;
 
       render();
+      
+      // Process any pending sync queue (silently in background)
+      setTimeout(processSyncQueue, 2000);
     }
 
     // Check if a player's category allows X score (pickup) - only Stableford types
@@ -2072,9 +2182,9 @@
 
     // Sync scores to liveScores for leaderboard display
     function syncToLiveScores(targetPlayerId, targetPlayerData, scoresArray) {
-      if (!db || !targetPlayerId || !targetPlayerData) {
-        console.log('syncToLiveScores: missing data', { db: !!db, targetPlayerId, targetPlayerData: !!targetPlayerData });
-        return;
+      if (!targetPlayerId || !targetPlayerData) {
+        console.log('syncToLiveScores: missing data', { targetPlayerId, targetPlayerData: !!targetPlayerData });
+        return null;
       }
       
       // Convert scores array to liveScores format (convert null to empty string)
@@ -2091,8 +2201,7 @@
       console.log('syncToLiveScores:', {
         roundId: roundId,
         playerKey: playerKey,
-        holesArray: holesArray,
-        targetPlayerData: targetPlayerData
+        holesArray: holesArray
       });
       
       const liveScoreData = {
@@ -2109,19 +2218,50 @@
         scoredByPlayer: `${playerData.firstName} ${playerData.lastName}`
       };
       
-      // Save to liveScores path (for live leaderboard)
-      db.ref(`liveScores/${roundId}/${playerKey}`).set(liveScoreData)
-        .then(() => console.log('✅ Live scores synced to liveScores/' + roundId + '/' + playerKey))
-        .catch(err => console.error('❌ Live scores sync error:', err));
+      return { playerKey, liveScoreData };
+    }
+    
+    // Attempt to sync to Firebase, queue if offline
+    async function trySyncToFirebase(digitalScoresData, liveScoresInfo) {
+      const syncData = {
+        roundId: roundId,
+        playerId: playerId,
+        digitalScoresData: digitalScoresData,
+        liveScoresKey: liveScoresInfo?.playerKey,
+        liveScoresData: liveScoresInfo?.liveScoreData,
+        timestamp: Date.now()
+      };
       
-      // Also save to regular scores path for compatibility
-      db.ref(`scores/${roundId}/${playerKey}`).set(liveScoreData)
-        .then(() => console.log('✅ Scores synced to scores/' + roundId + '/' + playerKey))
-        .catch(err => console.error('❌ Scores sync error:', err));
+      if (!isOnline || !db) {
+        // Queue for later sync
+        addToSyncQueue(syncData);
+        console.log('📴 Offline - queued for sync');
+        return false;
+      }
+      
+      try {
+        // Save digital scorecard data
+        await db.ref(`digitalScores/${roundId}/${playerId}`).set(digitalScoresData);
+        console.log('✅ Digital scores synced');
+        
+        // Sync to live leaderboard
+        if (liveScoresInfo) {
+          await db.ref(`liveScores/${roundId}/${liveScoresInfo.playerKey}`).set(liveScoresInfo.liveScoreData);
+          await db.ref(`scores/${roundId}/${liveScoresInfo.playerKey}`).set(liveScoresInfo.liveScoreData);
+          console.log('✅ Live scores synced');
+        }
+        
+        return true;
+      } catch (err) {
+        console.error('❌ Firebase sync error:', err);
+        // Queue for retry
+        addToSyncQueue(syncData);
+        return false;
+      }
     }
 
     function saveScoresToStorage() {
-      // Save to localStorage for offline support
+      // Always save to localStorage first (instant, reliable)
       const offlineData = {
         playerScores: scores.player,
         marksPlayerScores: scores.marksPlayer,
@@ -2129,28 +2269,22 @@
       };
       localStorage.setItem(`scores_${roundId}_${playerId}`, JSON.stringify(offlineData));
 
-      // Also save to Firebase in background
-      if (db) {
-        // Save digital scorecard data
-        db.ref(`digitalScores/${roundId}/${playerId}`).set({
-          playerScores: scores.player,
-          marksPlayerScores: scores.marksPlayer,
-          playerId: playerId,
-          playerName: `${playerData.firstName} ${playerData.lastName}`,
-          marksPlayerId: playerData.marksPlayerId,
-          marksPlayerName: playerData.marksPlayerName,
-          lastUpdated: Date.now()
-        }).catch(err => {
-          console.error('Firebase save error:', err);
-        });
-        
-        // Sync only player's own scores to live leaderboard
-        // (marker scores are only for validation/dispute detection, not for leaderboard)
-        console.log('Calling syncToLiveScores with:', { playerId, playerData, scores: scores.player });
-        syncToLiveScores(playerId, playerData, scores.player);
-      } else {
-        console.log('db not available for sync');
-      }
+      // Prepare data for Firebase
+      const digitalScoresData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        playerId: playerId,
+        playerName: `${playerData.firstName} ${playerData.lastName}`,
+        marksPlayerId: playerData.marksPlayerId,
+        marksPlayerName: playerData.marksPlayerName,
+        lastUpdated: Date.now()
+      };
+      
+      // Get live scores data
+      const liveScoresInfo = syncToLiveScores(playerId, playerData, scores.player);
+      
+      // Try to sync (will queue if offline)
+      trySyncToFirebase(digitalScoresData, liveScoresInfo);
     }
 
     function setScore(type, value) {
@@ -2159,7 +2293,7 @@
     }
 
     async function saveAndNext() {
-      // Save to localStorage for offline support
+      // Always save to localStorage first (instant, reliable)
       const offlineData = {
         playerScores: scores.player,
         marksPlayerScores: scores.marksPlayer,
@@ -2167,33 +2301,27 @@
       };
       localStorage.setItem(`scores_${roundId}_${playerId}`, JSON.stringify(offlineData));
 
-      // Try to save to Firebase
-      if (db) {
-        try {
-          await db.ref(`digitalScores/${roundId}/${playerId}`).set({
-            playerScores: scores.player,
-            marksPlayerScores: scores.marksPlayer,
-            playerId: playerId,
-            playerReg: playerData.reg || playerId,
-            playerHcp: playerData.handicap || playerData.hcp || 0,
-            playerName: `${playerData.firstName} ${playerData.lastName}`,
-            marksPlayerId: playerData.marksPlayerId,
-            marksPlayerName: playerData.marksPlayerName,
-            lastUpdated: Date.now()
-          });
-          
-          // Sync to live leaderboard
-          // Sync only player's own scores to live leaderboard
-          syncToLiveScores(playerId, playerData, scores.player);
-          
-          showToast('Score saved!', 'success');
-        } catch (err) {
-          console.error('Firebase save error:', err);
-          showToast('Saved offline. Will sync when connected.', 'info');
-        }
-      } else {
-        showToast('Saved offline.', 'info');
-      }
+      // Prepare data for Firebase
+      const digitalScoresData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        playerId: playerId,
+        playerReg: playerData.reg || playerId,
+        playerHcp: playerData.handicap || playerData.hcp || 0,
+        playerName: `${playerData.firstName} ${playerData.lastName}`,
+        marksPlayerId: playerData.marksPlayerId,
+        marksPlayerName: playerData.marksPlayerName,
+        lastUpdated: Date.now()
+      };
+      
+      // Get live scores data
+      const liveScoresInfo = syncToLiveScores(playerId, playerData, scores.player);
+      
+      // Try to sync (will queue if offline)
+      await trySyncToFirebase(digitalScoresData, liveScoresInfo);
+      
+      // Always show success - user doesn't need to know about offline queue
+      showToast('Score saved!', 'success');
 
       // Move to next hole (with wrap-around)
       if (currentHole === 18) {
