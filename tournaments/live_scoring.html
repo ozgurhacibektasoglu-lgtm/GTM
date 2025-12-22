@@ -3000,14 +3000,27 @@
       // Get player's playing handicap (PHCP)
       // Uses pre-calculated phcp from admissions if available, otherwise falls back to hcp
       function getPlayerPhcp(player) {
-        // Check for pre-calculated phcp from admissions (stored as number, can be negative for plus handicaps)
+        // Check for pre-calculated phcp directly on player object
         if (player.phcp !== null && player.phcp !== undefined) {
           return player.phcp;
         }
+        
+        // Look up phcp from admittedPlayers (draw players may not have phcp)
+        const playerKey = player.reg || player.playerId || `${player.firstName}-${player.lastName}`;
+        const admittedPlayer = admittedPlayers.find(ap => {
+          const apKey = ap.reg || ap.playerId || `${ap.firstName}-${ap.lastName}`;
+          return apKey === playerKey;
+        });
+        
+        if (admittedPlayer && admittedPlayer.phcp !== null && admittedPlayer.phcp !== undefined) {
+          return admittedPlayer.phcp;
+        }
+        
         // Fallback to playingHcp if it was saved before
         if (player.playingHcp !== null && player.playingHcp !== undefined) {
           return parseFloat(player.playingHcp);
         }
+        
         // Last fallback to raw HCP
         return parseFloat(player.hcp) || 0;
       }
