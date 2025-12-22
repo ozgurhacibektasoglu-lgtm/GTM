@@ -685,11 +685,6 @@
         justify-content: center;
       }
 
-      /* Match Play Modal Header Styling */
-      .group-score-modal.match-play .group-modal-header {
-        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-      }
-
       /* Score Grid Container - single scroll container */
       .score-grid-wrapper {
         position: relative;
@@ -975,170 +970,6 @@
       .quick-score-btn.birdie { border-color: #dc2626; color: #dc2626; }
       .quick-score-btn.par { border-color: #10b981; color: #10b981; }
       .quick-score-btn.bogey { border-color: #1e293b; color: #1e293b; }
-
-      /* Match Play Team Styling */
-      .team-separator {
-        display: contents;
-      }
-
-      .team-header-row {
-        display: contents;
-      }
-
-      .team-header-cell {
-        background: #dc2626;
-        color: white;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 8px 12px;
-        border-bottom: 2px solid #b91c1c;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .team-header-cell.team-blue {
-        background: #2563eb;
-        border-bottom-color: #1d4ed8;
-      }
-
-      .team-header-cell.match-score-header {
-        background: #374151;
-        border-bottom-color: #1f2937;
-        justify-content: center;
-      }
-
-      .team-header-holes {
-        text-align: center;
-        font-size: 10px;
-        font-weight: 600;
-        padding: 6px 2px;
-        background: #dc2626;
-        color: white;
-        border-bottom: 2px solid #b91c1c;
-      }
-
-      .team-header-holes.team-blue {
-        background: #2563eb;
-        border-bottom-color: #1d4ed8;
-      }
-
-      .team-header-holes.match-score-col {
-        background: #374151;
-        border-bottom-color: #1f2937;
-      }
-
-      /* Match Score Row */
-      .match-score-row {
-        display: contents;
-      }
-
-      .match-score-label {
-        grid-column: 1;
-        position: sticky;
-        left: 0;
-        z-index: 2;
-        padding: 10px 12px;
-        background: #374151;
-        color: white;
-        border-bottom: 1px solid #4b5563;
-        font-size: 11px;
-        font-weight: 700;
-        min-width: 100px;
-      }
-
-      .match-score-cell {
-        padding: 4px 2px;
-        background: #f3f4f6;
-        border-bottom: 1px solid #d1d5db;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 11px;
-      }
-
-      .match-score-cell.team1-up { color: #dc2626; }
-      .match-score-cell.team2-up { color: #2563eb; }
-      .match-score-cell.all-square { color: #6b7280; }
-      .match-score-cell.match-final { 
-        background: #fef3c7; 
-        font-size: 10px;
-      }
-
-      /* Team 1 (Red) styling */
-      .player-score-row.team1 .player-col {
-        background: #fef2f2;
-        border-left: 3px solid #dc2626;
-      }
-
-      .player-score-row.team1:nth-child(odd) .player-col {
-        background: #fef2f2;
-      }
-
-      .player-score-row.team1 .score-cell-wrapper {
-        background: #fef2f2;
-      }
-
-      .player-score-row.team1:nth-child(odd) .score-cell-wrapper {
-        background: #fef2f2;
-      }
-
-      /* Team 2 (Blue) styling */
-      .player-score-row.team2 .player-col {
-        background: #eff6ff;
-        border-left: 3px solid #2563eb;
-      }
-
-      .player-score-row.team2:nth-child(odd) .player-col {
-        background: #eff6ff;
-      }
-
-      .player-score-row.team2 .score-cell-wrapper {
-        background: #eff6ff;
-      }
-
-      .player-score-row.team2:nth-child(odd) .score-cell-wrapper {
-        background: #eff6ff;
-      }
-
-      /* Match HCP badge */
-      .match-hcp-badge {
-        font-size: 9px;
-        background: rgba(0,0,0,0.2);
-        padding: 1px 6px;
-        border-radius: 10px;
-        margin-left: auto;
-      }
-
-      /* Stroke dot for match play */
-      .stroke-indicator {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        font-size: 8px;
-        color: #3b82f6;
-        font-weight: bold;
-      }
-
-      .score-cell-wrapper.has-stroke {
-        position: relative;
-      }
-
-      /* Winning best ball highlight */
-      .score-cell.winner-team1 {
-        background: #dc2626 !important;
-        color: white !important;
-        border-color: #b91c1c !important;
-        border-radius: 50%;
-      }
-
-      .score-cell.winner-team2 {
-        background: #2563eb !important;
-        color: white !important;
-        border-color: #1d4ed8 !important;
-        border-radius: 50%;
-      }
 
       /* Group click area for volunteer mode */
       .group-header.clickable {
@@ -3789,19 +3620,9 @@
         } else {
           holesText = `Holes ${currentGroupAllowedHoles[0]}-${currentGroupAllowedHoles[currentGroupAllowedHoles.length - 1]}`;
         }
-        
-        // Check if match play fourball
-        const isMatchPlayFourball = isMatchPlay && matchPlayFormat === 'fourball' && currentGroupPlayers.length === 4;
-        let titleSuffix = '';
-        if (isMatchPlayFourball) {
-          titleSuffix = ' ⚔️ Fourball';
-        }
-        
-        document.getElementById('group-modal-title').textContent = `Group ${groupIndex + 1} - ${group.time || 'TBA'}${titleSuffix}`;
+        document.getElementById('group-modal-title').textContent = `Group ${groupIndex + 1} - ${group.time || 'TBA'}`;
         document.getElementById('group-modal-subtitle').textContent = 
-          isMatchPlayFourball 
-            ? `${holesText} • Match Play Fourball`
-            : `${holesText} • ${currentGroupPlayers.length} players`;
+          `${holesText} • ${currentGroupPlayers.length} players`;
         
         // Render holes header
         renderGroupHolesHeader();
@@ -3815,20 +3636,12 @@
         // Show modal
         groupScoreModalOpen = true;
         const modalEl = document.getElementById('group-score-modal');
-        const modalContent = modalEl.querySelector('.group-score-modal');
         
         // Add full-holes class for 18-hole mode to adjust styling
         if (currentGroupAllowedHoles.length > 9) {
-          modalContent.classList.add('full-holes');
+          modalEl.classList.add('full-holes');
         } else {
-          modalContent.classList.remove('full-holes');
-        }
-        
-        // Add match-play class for match play styling
-        if (isMatchPlayFourball) {
-          modalContent.classList.add('match-play');
-        } else {
-          modalContent.classList.remove('match-play');
+          modalEl.classList.remove('full-holes');
         }
         
         modalEl.classList.add('active');
@@ -3856,9 +3669,7 @@
       function closeGroupScoreModal() {
         groupScoreModalOpen = false;
         const modalEl = document.getElementById('group-score-modal');
-        const modalContent = modalEl.querySelector('.group-score-modal');
-        modalEl.classList.remove('active');
-        modalContent.classList.remove('full-holes', 'match-play');
+        modalEl.classList.remove('active', 'full-holes');
         currentGroupPlayers = [];
         groupTempScores = {};
         
@@ -3875,36 +3686,18 @@
       function renderScoreGrid() {
         const table = document.getElementById('score-grid-table');
         const pars = getCoursePars();
-        const strokeIndexes = getCourseStrokeIndexes();
         
         // Use currentGroupAllowedHoles (may be subset for shotgun)
         const holesToShow = currentGroupAllowedHoles.length > 0 ? currentGroupAllowedHoles : allowedHoles;
         
-        // Check if this is match play fourball
-        const isMatchPlayFourball = isMatchPlay && matchPlayFormat === 'fourball' && currentGroupPlayers.length === 4;
-        
         // Set grid columns: player column + hole columns
+        // Use smaller sizes for 18-hole mode to fit more holes on screen
         const isFullMode = holesToShow.length > 9;
         const playerColWidth = isFullMode ? '100px' : '100px';
         const holeColWidth = isFullMode ? '42px' : '44px';
         const gridColumns = `${playerColWidth} repeat(${holesToShow.length}, ${holeColWidth})`;
         table.style.gridTemplateColumns = gridColumns;
         
-        let html = '';
-        
-        if (isMatchPlayFourball) {
-          // Match Play Fourball: Split into teams with match score row
-          html = renderMatchPlayFourballGrid(holesToShow, pars, strokeIndexes, isFullMode);
-        } else {
-          // Standard stroke play grid
-          html = renderStrokePlayGrid(holesToShow, pars, isFullMode);
-        }
-        
-        table.innerHTML = html;
-      }
-
-      // Render standard stroke play grid
-      function renderStrokePlayGrid(holesToShow, pars, isFullMode) {
         let html = '';
         
         // Header row
@@ -3974,343 +3767,7 @@
           html += '</div>';
         });
         
-        return html;
-      }
-
-      // Render Match Play Fourball grid with team separation and match score
-      function renderMatchPlayFourballGrid(holesToShow, pars, strokeIndexes, isFullMode) {
-        let html = '';
-        
-        // Team 1 = first 2 players (Red), Team 2 = last 2 players (Blue)
-        const team1 = currentGroupPlayers.slice(0, 2);
-        const team2 = currentGroupPlayers.slice(2, 4);
-        
-        // Calculate match play handicaps
-        const matchHcps = calculateMatchPlayHandicaps(currentGroupPlayers);
-        
-        // Calculate stroke allocation for each player
-        const strokeAllocations = currentGroupPlayers.map((player, idx) => 
-          calculateStrokeAllocationForMatch(matchHcps[idx], strokeIndexes)
-        );
-        
-        // Calculate winning scores per hole
-        const winningScores = calculateWinningScoresPerHoleLive(holesToShow, pars, strokeAllocations, matchHcps);
-        
-        // Calculate running match score
-        const matchScores = calculateRunningMatchScoreLive(holesToShow, pars, strokeAllocations);
-        
-        // Header row
-        html += '<div class="holes-header">';
-        html += '<div class="player-col-header">Player</div>';
-        holesToShow.forEach(holeNum => {
-          const si = strokeIndexes[holeNum - 1] || '-';
-          html += `
-            <div class="hole-col-header">
-              <div>${holeNum}</div>
-              <div class="par-label">P${pars[holeNum - 1]} SI${si}</div>
-            </div>
-          `;
-        });
-        html += '</div>';
-        
-        // Team 1 (Red) header
-        html += '<div class="team-header-row">';
-        html += '<div class="team-header-cell">🔴 RED TEAM</div>';
-        holesToShow.forEach(() => {
-          html += '<div class="team-header-holes"></div>';
-        });
-        html += '</div>';
-        
-        // Team 1 Players
-        team1.forEach((player, teamPlayerIndex) => {
-          const playerIndex = teamPlayerIndex; // 0 or 1
-          const matchHcp = matchHcps[playerIndex];
-          const strokes = strokeAllocations[playerIndex];
-          html += renderMatchPlayPlayerRow(player, playerIndex, matchHcp, strokes, holesToShow, pars, winningScores, 'team1');
-        });
-        
-        // Match Score Row
-        html += '<div class="match-score-row">';
-        html += '<div class="match-score-label">MATCH</div>';
-        holesToShow.forEach((holeNum, holeIndex) => {
-          const matchScore = matchScores[holeIndex];
-          let cellClass = 'match-score-cell';
-          let displayText = '';
-          
-          if (matchScore !== null) {
-            if (matchScore.finished) {
-              cellClass += ' match-final';
-              displayText = matchScore.result;
-            } else if (matchScore.score > 0) {
-              cellClass += ' team1-up';
-              displayText = `${matchScore.score}↑`;
-            } else if (matchScore.score < 0) {
-              cellClass += ' team2-up';
-              displayText = `${Math.abs(matchScore.score)}↑`;
-            } else {
-              cellClass += ' all-square';
-              displayText = 'AS';
-            }
-          }
-          
-          html += `<div class="${cellClass}">${displayText}</div>`;
-        });
-        html += '</div>';
-        
-        // Team 2 (Blue) header
-        html += '<div class="team-header-row">';
-        html += '<div class="team-header-cell team-blue">🔵 BLUE TEAM</div>';
-        holesToShow.forEach(() => {
-          html += '<div class="team-header-holes team-blue"></div>';
-        });
-        html += '</div>';
-        
-        // Team 2 Players
-        team2.forEach((player, teamPlayerIndex) => {
-          const playerIndex = teamPlayerIndex + 2; // 2 or 3
-          const matchHcp = matchHcps[playerIndex];
-          const strokes = strokeAllocations[playerIndex];
-          html += renderMatchPlayPlayerRow(player, playerIndex, matchHcp, strokes, holesToShow, pars, winningScores, 'team2');
-        });
-        
-        return html;
-      }
-
-      // Render a single player row for match play
-      function renderMatchPlayPlayerRow(player, playerIndex, matchHcp, strokes, holesToShow, pars, winningScores, teamClass) {
-        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
-        const playerScores = groupTempScores[playerKey]?.holes || [];
-        
-        // Shorten name for mobile
-        const shortName = player.firstName.charAt(0) + '. ' + player.lastName.substring(0, 8);
-        
-        let html = `<div class="player-score-row ${teamClass}" data-player-index="${playerIndex}">`;
-        html += `
-          <div class="player-col">
-            <div class="player-col-name">${shortName}</div>
-            <div class="player-col-hcp">Match HCP: ${matchHcp}</div>
-          </div>
-        `;
-        
-        holesToShow.forEach((holeNum, holeIndex) => {
-          const score = playerScores[holeNum - 1];
-          const par = pars[holeNum - 1];
-          const strokesOnHole = strokes[holeNum - 1] || 0;
-          let cellClass = 'score-cell';
-          
-          // Check if this is the winning best ball
-          const holeWinner = winningScores[holeIndex];
-          if (holeWinner && holeWinner.winningPlayerIndex === playerIndex) {
-            cellClass += teamClass === 'team1' ? ' winner-team1' : ' winner-team2';
-          }
-          
-          if (score && score !== '') {
-            cellClass += ' has-score';
-            
-            // Handle X (DNF) - special styling
-            if (score === 'X') {
-              cellClass += ' dnf';
-            } else if (!cellClass.includes('winner-')) {
-              const diff = parseInt(score) - par;
-              if (diff <= -2) cellClass += ' eagle';
-              else if (diff === -1) cellClass += ' birdie';
-              else if (diff === 0) cellClass += ' par';
-              else if (diff === 1) cellClass += ' bogey';
-              else if (diff >= 2) cellClass += ' double-plus';
-            }
-          } else {
-            cellClass += ' empty';
-          }
-          
-          // Stroke indicator
-          const strokeDots = strokesOnHole > 0 ? '•'.repeat(strokesOnHole) : '';
-          const wrapperClass = strokesOnHole > 0 ? 'score-cell-wrapper has-stroke' : 'score-cell-wrapper';
-          
-          html += `
-            <div class="${wrapperClass}">
-              <div class="${cellClass}" 
-                   onclick="selectCell(${playerIndex}, ${holeIndex})"
-                   data-player="${playerIndex}" 
-                   data-hole="${holeIndex}">
-                ${score || '-'}
-              </div>
-              ${strokesOnHole > 0 ? `<span class="stroke-indicator">${strokeDots}</span>` : ''}
-            </div>
-          `;
-        });
-        
-        html += '</div>';
-        return html;
-      }
-
-      // Calculate match play handicaps (lowest plays off 0, others get difference)
-      function calculateMatchPlayHandicaps(players) {
-        // Get playing handicap for each player (use tournament HCP allowance)
-        const hcpAllowance = parseFloat(currentTournament?.hcpAllowance || 100) / 100;
-        
-        const phcps = players.map(p => {
-          const rawHcp = parseFloat(p.hcp || p.playingHcp || 0);
-          return Math.round(rawHcp * hcpAllowance);
-        });
-        
-        // Find lowest
-        const lowestPhcp = Math.min(...phcps);
-        
-        // Calculate match HCP (difference from lowest)
-        return phcps.map(phcp => phcp - lowestPhcp);
-      }
-
-      // Calculate stroke allocation based on match HCP and stroke indexes
-      function calculateStrokeAllocationForMatch(matchHcp, strokeIndexes) {
-        const allocation = new Array(18).fill(0);
-        
-        if (matchHcp <= 0) return allocation;
-        
-        // Allocate strokes based on stroke index (lower SI = harder hole = gets stroke first)
-        const holes = strokeIndexes.map((si, idx) => ({ si: parseInt(si) || 99, idx }))
-          .sort((a, b) => a.si - b.si);
-        
-        let strokesRemaining = matchHcp;
-        let round = 0;
-        
-        while (strokesRemaining > 0) {
-          for (const hole of holes) {
-            if (strokesRemaining <= 0) break;
-            allocation[hole.idx]++;
-            strokesRemaining--;
-          }
-          round++;
-          if (round > 3) break; // Safety limit (max 54 strokes)
-        }
-        
-        return allocation;
-      }
-
-      // Calculate winning best ball for each hole
-      function calculateWinningScoresPerHoleLive(holesToShow, pars, strokeAllocations, matchHcps) {
-        const results = [];
-        
-        holesToShow.forEach((holeNum, holeIndex) => {
-          const holeIdx = holeNum - 1;
-          const par = pars[holeIdx];
-          
-          // Get scores and net scores for each player
-          const playerResults = currentGroupPlayers.map((player, playerIndex) => {
-            const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
-            const score = groupTempScores[playerKey]?.holes?.[holeIdx];
-            const strokes = strokeAllocations[playerIndex]?.[holeIdx] || 0;
-            
-            if (!score || score === '' || score === 'X') {
-              return { net: 999, isValid: false, playerIndex };
-            }
-            
-            const gross = parseInt(score);
-            const net = gross - strokes;
-            return { net, isValid: true, playerIndex };
-          });
-          
-          // Team 1 (players 0, 1) best ball
-          const team1Results = playerResults.filter((r, idx) => idx < 2 && r.isValid);
-          const team1Best = team1Results.length > 0 
-            ? team1Results.reduce((best, curr) => curr.net < best.net ? curr : best)
-            : null;
-          
-          // Team 2 (players 2, 3) best ball
-          const team2Results = playerResults.filter((r, idx) => idx >= 2 && r.isValid);
-          const team2Best = team2Results.length > 0 
-            ? team2Results.reduce((best, curr) => curr.net < best.net ? curr : best)
-            : null;
-          
-          let winningPlayerIndex = null;
-          let winningTeam = null;
-          
-          if (team1Best && team2Best) {
-            if (team1Best.net < team2Best.net) {
-              winningPlayerIndex = team1Best.playerIndex;
-              winningTeam = 'team1';
-            } else if (team2Best.net < team1Best.net) {
-              winningPlayerIndex = team2Best.playerIndex;
-              winningTeam = 'team2';
-            }
-          } else if (team1Best && !team2Best) {
-            winningPlayerIndex = team1Best.playerIndex;
-            winningTeam = 'team1';
-          } else if (!team1Best && team2Best) {
-            winningPlayerIndex = team2Best.playerIndex;
-            winningTeam = 'team2';
-          }
-          
-          results.push({ winningPlayerIndex, winningTeam });
-        });
-        
-        return results;
-      }
-
-      // Calculate running match score for each hole
-      function calculateRunningMatchScoreLive(holesToShow, pars, strokeAllocations) {
-        const results = [];
-        let runningScore = 0;
-        let matchFinished = false;
-        let finishResult = '';
-        
-        holesToShow.forEach((holeNum, holeIndex) => {
-          const holeIdx = holeNum - 1;
-          const par = pars[holeIdx];
-          
-          // Check if both teams have valid scores for this hole
-          const playerResults = currentGroupPlayers.map((player, playerIndex) => {
-            const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
-            const score = groupTempScores[playerKey]?.holes?.[holeIdx];
-            const strokes = strokeAllocations[playerIndex]?.[holeIdx] || 0;
-            
-            if (!score || score === '' || score === 'X') {
-              return { net: 999, isValid: false };
-            }
-            
-            const gross = parseInt(score);
-            const net = gross - strokes;
-            return { net, isValid: true };
-          });
-          
-          // Team 1 best ball
-          const team1Valid = playerResults.filter((r, idx) => idx < 2 && r.isValid);
-          const team1Best = team1Valid.length > 0 ? Math.min(...team1Valid.map(r => r.net)) : null;
-          
-          // Team 2 best ball
-          const team2Valid = playerResults.filter((r, idx) => idx >= 2 && r.isValid);
-          const team2Best = team2Valid.length > 0 ? Math.min(...team2Valid.map(r => r.net)) : null;
-          
-          if (matchFinished) {
-            results.push({ score: runningScore, finished: true, result: finishResult });
-            return;
-          }
-          
-          if (team1Best !== null && team2Best !== null) {
-            // Both teams have valid scores - determine hole winner
-            if (team1Best < team2Best) {
-              runningScore++;
-            } else if (team2Best < team1Best) {
-              runningScore--;
-            }
-            // Equal = halved, no change
-            
-            // Check if match is finished
-            const holesRemaining = 18 - holeNum;
-            const absScore = Math.abs(runningScore);
-            
-            if (absScore > holesRemaining) {
-              matchFinished = true;
-              finishResult = `${absScore}&${holesRemaining}`;
-            }
-            
-            results.push({ score: runningScore, finished: matchFinished, result: finishResult });
-          } else {
-            // Not all scores entered yet
-            results.push(null);
-          }
-        });
-        
-        return results;
+        table.innerHTML = html;
       }
 
       // Legacy function names for compatibility - now just call renderScoreGrid
