@@ -1758,7 +1758,7 @@
             lastName: player.lastName,
             club: player.club || player.homeClub || '',
             hcp: player.hcp || 0,
-            playingHcp: player.playingHcp || player.hcp || 0,
+            playingHcp: calculatePlayingHcpForPlayer(player),
             timestamp: Date.now()
           };
           localStorage.setItem(localKey, JSON.stringify(existing));
@@ -2476,7 +2476,7 @@
             <div class="player-row" style="cursor: default;">
               <div class="player-info">
                 <div class="player-name">${player.firstName} ${player.lastName}</div>
-                <div class="player-details">HCP: ${player.hcp || '-'} | P.HCP: ${player.playingHcp || player.hcp || '-'}</div>
+                <div class="player-details">HCP: ${player.hcp || '-'} | P.HCP: ${getPlayingHcpDisplay(player)}</div>
               </div>
               <div class="player-score">
                 ${thruHtml}
@@ -2953,15 +2953,123 @@
         `;
       }
       
-      // Calculate playing handicap for a player
+      // Get tee data for PHCP calculation (slope, rating, par)
+      function getTeeData(player) {
+        if (!currentTournament || !currentTournament.meta) return null;
+        
+        const roundIds = currentTournament.meta.roundIds || [];
+        const roundIndex = roundIds.indexOf(currentRoundId);
+        const roundData = currentTournament.meta.roundsData?.[roundIndex >= 0 ? roundIndex : 0];
+        if (!roundData) return null;
+        
+        const playerGender = (player.gender || '').toLowerCase();
+        let teeValue = '';
+        
+        // Check if player has an assigned tee (from categories)
+        if (player.tee) {
+          const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+          const courseId = roundData.course;
+          const course = courses.find(c => c.courseId === courseId);
+          
+          if (course && course.teeIds) {
+            const idx = course.teeIds.findIndex(id => {
+              if (typeof id === 'object') {
+                return id.men === player.tee || id.women === player.tee;
+              }
+              return id === player.tee;
+            });
+            
+            if (idx !== -1) {
+              teeValue = `${courseId}||${idx}`;
+            }
+          }
+          
+          // If player.tee is already in courseId||index format, use it directly
+          if (!teeValue && player.tee.includes && player.tee.includes('||')) {
+            teeValue = player.tee;
+          }
+        }
+        
+        // If no assigned tee found, use default from tournament settings
+        if (!teeValue) {
+          if (playerGender === 'male' || playerGender === 'm' || playerGender === 'e') {
+            teeValue = roundData.teeMen || '';
+          } else if (playerGender === 'female' || playerGender === 'f' || playerGender === 'k') {
+            teeValue = roundData.teeWomen || '';
+          }
+        }
+        
+        if (!teeValue || !teeValue.includes || !teeValue.includes('||')) return null;
+        
+        const [courseId, teeIndexStr] = teeValue.split('||');
+        const teeIndex = parseInt(teeIndexStr, 10);
+        
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const course = courses.find(c => c.courseId === courseId);
+        
+        if (!course) return null;
+        
+        let par = 0;
+        if (course.pars && Array.isArray(course.pars)) {
+          par = course.pars.reduce((sum, holePar) => sum + (parseInt(holePar) || 0), 0);
+        }
+        
+        const teeData = course.teeData?.[teeIndex];
+        if (!teeData) return null;
+        
+        let slope, rating;
+        const teeGender = course.genders?.[teeIndex];
+        if (teeGender === 'B' && teeData.ratings) {
+          if (playerGender === 'male' || playerGender === 'm' || playerGender === 'e') {
+            slope = teeData.ratings.men?.slope18;
+            rating = teeData.ratings.men?.rating18;
+          } else if (playerGender === 'female' || playerGender === 'f' || playerGender === 'k') {
+            slope = teeData.ratings.women?.slope18;
+            rating = teeData.ratings.women?.rating18;
+          }
+        } else {
+          slope = teeData.slope18 || teeData.slope;
+          rating = teeData.rating18 || teeData.rating;
+        }
+        
+        return { slope, rating, par };
+      }
+      
+      // Calculate playing handicap for a player using WHS formula
+      // PHCP = (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
       function calculatePlayingHcpForPlayer(player) {
-        const playerHcp = parseFloat(player.hcp || player.playingHcp || 0);
+        const playerHcp = parseFloat(player.hcp);
         if (isNaN(playerHcp)) return 0;
         
-        // Get HCP allowance from tournament
-        const hcpAllowance = parseFloat(currentTournament.hcpAllowance || 100) / 100;
+        const teeData = getTeeData(player);
+        if (!teeData || !teeData.slope || !teeData.rating || !teeData.par) {
+          // Fallback: just apply HCP allowance
+          const hcpAllowance = parseFloat(currentTournament?.meta?.hcpAllow || currentTournament?.hcpAllowance || 100) / 100;
+          return Math.round(playerHcp * hcpAllowance);
+        }
         
-        return Math.round(playerHcp * hcpAllowance);
+        const hcpAllowance = parseFloat(currentTournament?.meta?.hcpAllow || currentTournament?.hcpAllowance || 100) / 100;
+        const slope = parseFloat(teeData.slope);
+        const rating = parseFloat(teeData.rating);
+        const par = parseFloat(teeData.par);
+        
+        if (isNaN(slope) || isNaN(rating) || isNaN(par)) {
+          return Math.round(playerHcp * hcpAllowance);
+        }
+        
+        // WHS Formula: (HCP × (Slope/113) + (Rating - Par)) × HCP_Allowance
+        const playingHcp = (playerHcp * (slope / 113) + (rating - par)) * hcpAllowance;
+        return Math.round(playingHcp);
+      }
+      
+      // Get playing handicap display string
+      function getPlayingHcpDisplay(player) {
+        const playerHcp = parseFloat(player.hcp);
+        if (isNaN(playerHcp)) return '-';
+        
+        const phcp = calculatePlayingHcpForPlayer(player);
+        // Format with + for plus handicaps (negative values)
+        return phcp < 0 ? '+' + Math.abs(phcp) : phcp.toString();
       }
       
       // Calculate team handicap based on format
@@ -3503,7 +3611,7 @@
             lastName: currentPlayer.lastName,
             club: currentPlayer.club || currentPlayer.homeClub || '',
             hcp: currentPlayer.hcp || 0,
-            playingHcp: currentPlayer.playingHcp || currentPlayer.hcp || 0,
+            playingHcp: calculatePlayingHcpForPlayer(currentPlayer),
             categories: currentPlayer.categories || [],
             lastUpdated: new Date().toISOString(),
             scoredBy: 'live-scoring'
@@ -4135,7 +4243,7 @@
                     club: player.club || player.homeClub || currentData?.club || '',
                     categories: player.categories || currentData?.categories || [],
                     hcp: player.hcp || currentData?.hcp || 0,
-                    playingHcp: player.playingHcp || player.hcp || currentData?.playingHcp || 0,
+                    playingHcp: calculatePlayingHcpForPlayer(player) || currentData?.playingHcp || 0,
                     updatedAt: Date.now(),
                     updatedBy: volunteerStation ? 'volunteer-station-' + volunteerStation : 'tournament-organizer'
                   };
@@ -4223,7 +4331,7 @@
               club: player.club || player.homeClub || '',
               categories: player.categories || [],
               hcp: player.hcp || 0,
-              playingHcp: player.playingHcp || player.hcp || 0,
+              playingHcp: calculatePlayingHcpForPlayer(player),
               updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
                          (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
             });
@@ -4255,7 +4363,7 @@
                 club: player.club || player.homeClub || currentData?.club || '',
                 categories: player.categories || currentData?.categories || [],
                 hcp: player.hcp || currentData?.hcp || 0,
-                playingHcp: player.playingHcp || player.hcp || currentData?.playingHcp || 0,
+                playingHcp: calculatePlayingHcpForPlayer(player) || currentData?.playingHcp || 0,
                 updatedAt: Date.now(),
                 updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
                            (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
@@ -4282,7 +4390,7 @@
               club: player.club || player.homeClub || '',
               categories: player.categories || [],
               hcp: player.hcp || 0,
-              playingHcp: player.playingHcp || player.hcp || 0,
+              playingHcp: calculatePlayingHcpForPlayer(player),
               updatedBy: scoringForGroup ? 'group-scorer-' + playerGroupNumber : 
                          (volunteerStation ? 'volunteer-station-' + volunteerStation : 'scorer')
             });
