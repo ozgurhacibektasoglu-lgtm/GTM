@@ -2022,12 +2022,20 @@
           console.log('Loading data for round:', currentRoundId);
           console.log('Tournament:', currentTournament);
           
+          // Get current round data for match type
+          const roundIds = currentTournament.meta?.roundIds || [];
+          const roundsData = currentTournament.meta?.roundsData || [];
+          const roundIndex = roundIds.indexOf(currentRoundId);
+          const currentRoundData = roundsData[roundIndex >= 0 ? roundIndex : 0] || {};
+          
           // Detect if this is a match play tournament
           const tournamentType = (currentTournament.type || '').toLowerCase();
           isMatchPlay = tournamentType.includes('match');
-          matchPlayFormat = currentTournament.gameFormat || 'singles';
           
-          console.log('Is Match Play:', isMatchPlay, '| Format:', matchPlayFormat);
+          // Get match play format from round data (matchType), fallback to tournament gameFormat
+          matchPlayFormat = (currentRoundData.matchType || currentTournament.gameFormat || 'singles').toLowerCase();
+          
+          console.log('Is Match Play:', isMatchPlay, '| Format:', matchPlayFormat, '| Round Data:', currentRoundData);
           
           // Update UI for match play mode
           updateMatchPlayUI();
