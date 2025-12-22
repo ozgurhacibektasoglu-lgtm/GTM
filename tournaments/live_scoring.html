@@ -3435,7 +3435,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 700;
             border-radius: 6px;
           }
@@ -3606,20 +3606,28 @@
         for (let h = 0; h < 18; h++) {
           const result = calculateHoleResult(h);
           
+          // Update running score
+          if (result === 'home') {
+            runningHomeUp++;
+          } else if (result === 'away') {
+            runningHomeUp--;
+          }
+          
+          // Determine display based on running score
           let cellClass = '';
           let cellText = '-';
           
-          if (result === 'home') {
-            runningHomeUp++;
-            cellClass = 'home-won';
-            cellText = '🔴';
-          } else if (result === 'away') {
-            runningHomeUp--;
-            cellClass = 'away-won';
-            cellText = '🔵';
-          } else if (result === 'halved') {
-            cellClass = 'halved';
-            cellText = '½';
+          if (result !== null) {
+            if (runningHomeUp > 0) {
+              cellClass = 'home-won';
+              cellText = `${runningHomeUp}UP`;
+            } else if (runningHomeUp < 0) {
+              cellClass = 'away-won';
+              cellText = `${Math.abs(runningHomeUp)}UP`;
+            } else {
+              cellClass = 'halved';
+              cellText = 'AS';
+            }
           }
           
           html += `<div class="score-cell-wrapper">
@@ -3629,8 +3637,8 @@
         
         // Total match status
         let statusText = 'AS';
-        if (runningHomeUp > 0) statusText = `${runningHomeUp}↑`;
-        else if (runningHomeUp < 0) statusText = `${Math.abs(runningHomeUp)}↑`;
+        if (runningHomeUp > 0) statusText = `${runningHomeUp}UP`;
+        else if (runningHomeUp < 0) statusText = `${Math.abs(runningHomeUp)}UP`;
         
         html += `<div class="score-cell-wrapper"><div class="total-cell" style="color: ${runningHomeUp > 0 ? '#dc2626' : runningHomeUp < 0 ? '#2563eb' : '#64748b'}">${statusText}</div></div>`;
         
