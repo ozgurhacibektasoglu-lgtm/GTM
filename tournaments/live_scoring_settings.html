@@ -1392,6 +1392,10 @@
         document.getElementById('scoring-type-card').style.display = 'block';
         document.getElementById('status-card').style.display = 'block';
         
+        // Update status display AFTER showing the card (loadLiveSettings may have skipped this
+        // because the status card was hidden at that time)
+        updateStatusDisplay();
+        
         // Load groups
         await loadGroups();
         
