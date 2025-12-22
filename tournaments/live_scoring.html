@@ -3453,6 +3453,18 @@
             color: #64748b;
           }
           
+          /* Winner score styling */
+          .score-cell.winner-red {
+            background: #dc2626 !important;
+            color: white !important;
+            border-color: #b91c1c !important;
+          }
+          .score-cell.winner-blue {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: #1d4ed8 !important;
+          }
+          
           .stroke-indicator {
             position: absolute;
             top: 2px;
@@ -3544,6 +3556,9 @@
         const strokes = playerStrokes[playerIndex];
         const pars = getCoursePars();
         
+        // Determine if this player is in team1 (red) or team2 (blue)
+        const isTeam1 = teamClass === 'team-red';
+        
         let html = `<div class="match-player-row player-score-row ${teamClass} ${playerIndex === activePlayerIndex ? 'active' : ''}">`;
         
         // Player column
@@ -3560,19 +3575,24 @@
           const isActive = playerIndex === activePlayerIndex && h === activeHoleIndex;
           const par = parseInt(pars[h]) || 4;
           
-          let cellClass = 'empty';
-          if (score && score !== '') {
-            if (score === 'X') {
-              cellClass = 'dnf';
+          // Check if this player has the winning score for this hole
+          const winningInfo = getHoleWinningPlayer(h);
+          const isWinningScore = winningInfo && winningInfo.playerIndex === playerIndex;
+          
+          let cellClass = '';
+          if (!score || score === '') {
+            cellClass = 'empty';
+          } else if (score === 'X') {
+            cellClass = 'dnf';
+          } else {
+            const numScore = parseInt(score);
+            total += numScore;
+            
+            // Highlight winning score with team color
+            if (isWinningScore) {
+              cellClass = isTeam1 ? 'winner-red' : 'winner-blue';
             } else {
-              const numScore = parseInt(score);
-              total += numScore;
-              const diff = numScore - par;
-              if (diff <= -2) cellClass = 'eagle';
-              else if (diff === -1) cellClass = 'birdie';
-              else if (diff === 0) cellClass = 'par';
-              else if (diff === 1) cellClass = 'bogey';
-              else cellClass = 'double-plus';
+              cellClass = 'has-score';
             }
           }
           
@@ -3591,6 +3611,54 @@
         
         html += '</div>';
         return html;
+      }
+      
+      // Get the winning player for a specific hole (best net score)
+      function getHoleWinningPlayer(holeIndex) {
+        const { team1, team2, allPlayers, playerStrokes, playerScores } = matchScoringState;
+        
+        let bestNet = 999;
+        let winningPlayerIndex = null;
+        let winningTeam = null;
+        
+        // Check team 1 players
+        team1.forEach((p, pIdx) => {
+          const key = p.reg || `${p.firstName}-${p.lastName}`;
+          const score = playerScores[key]?.[holeIndex];
+          if (score && score !== '' && score !== 'X') {
+            const gross = parseInt(score);
+            const net = gross - (playerStrokes[pIdx]?.[holeIndex] || 0);
+            if (net < bestNet) {
+              bestNet = net;
+              winningPlayerIndex = pIdx;
+              winningTeam = 'red';
+            }
+          }
+        });
+        
+        // Check team 2 players
+        team2.forEach((p, pIdx) => {
+          const actualIdx = team1.length + pIdx;
+          const key = p.reg || `${p.firstName}-${p.lastName}`;
+          const score = playerScores[key]?.[holeIndex];
+          if (score && score !== '' && score !== 'X') {
+            const gross = parseInt(score);
+            const net = gross - (playerStrokes[actualIdx]?.[holeIndex] || 0);
+            if (net < bestNet) {
+              bestNet = net;
+              winningPlayerIndex = actualIdx;
+              winningTeam = 'blue';
+            } else if (net === bestNet && winningTeam === 'red') {
+              // If tied with team 1, no winner (halved)
+              winningPlayerIndex = null;
+              winningTeam = null;
+            }
+          }
+        });
+        
+        if (winningPlayerIndex === null) return null;
+        
+        return { playerIndex: winningPlayerIndex, team: winningTeam };
       }
       
       // Render match status row
