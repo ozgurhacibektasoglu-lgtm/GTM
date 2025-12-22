@@ -2487,11 +2487,20 @@
           }
           
           // Players are not individually clickable - use group header to open group scoring modal
+          // For match play, show match handicaps (relative to lowest in group)
+          let hcpDisplay;
+          if (isMatchPlay) {
+            const matchHcp = getMatchPlayHcpDisplay(player, players);
+            hcpDisplay = `HCP: ${player.hcp || '-'} | Match HCP: ${matchHcp}`;
+          } else {
+            hcpDisplay = `HCP: ${player.hcp || '-'} | P.HCP: ${getPlayingHcpDisplay(player)}`;
+          }
+          
           playersHtml += `
             <div class="player-row" style="cursor: default;">
               <div class="player-info">
                 <div class="player-name">${player.firstName} ${player.lastName}</div>
-                <div class="player-details">HCP: ${player.hcp || '-'} | P.HCP: ${getPlayingHcpDisplay(player)}</div>
+                <div class="player-details">${hcpDisplay}</div>
               </div>
               <div class="player-score">
                 ${thruHtml}
@@ -3826,11 +3835,20 @@
           // Shorten name for mobile
           const shortName = player.firstName.charAt(0) + '. ' + player.lastName.substring(0, 8);
           
+          // Show Match HCP for match play, PHCP for stroke play
+          let hcpLabel;
+          if (isMatchPlay) {
+            const matchHcp = getMatchPlayHcpDisplay(player, currentGroupPlayers);
+            hcpLabel = `Match ${matchHcp}`;
+          } else {
+            hcpLabel = `PHCP ${getPlayingHcpDisplay(player)}`;
+          }
+          
           html += `<div class="player-score-row" data-player-index="${playerIndex}">`;
           html += `
             <div class="player-col">
               <div class="player-col-name">${shortName}</div>
-              <div class="player-col-hcp">PHCP ${getPlayingHcpDisplay(player)}</div>
+              <div class="player-col-hcp">${hcpLabel}</div>
             </div>
           `;
           
