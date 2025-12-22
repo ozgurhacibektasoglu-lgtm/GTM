@@ -3493,8 +3493,16 @@
       // Render match score grid
       function renderMatchScoreGrid() {
         const container = document.getElementById('match-score-grid');
+        if (!container) return;
+        
         const { team1, team2, allPlayers, matchHcps, playerStrokes, playerScores, activePlayerIndex, activeHoleIndex } = matchScoringState;
         const pars = getCoursePars();
+        
+        // Set grid columns: player column (100px) + 18 hole columns (42px each) + total column (44px)
+        const gridColumns = '100px repeat(18, 42px) 44px';
+        container.style.gridTemplateColumns = gridColumns;
+        container.style.display = 'grid';
+        container.style.width = 'max-content';
         
         let html = '';
         
