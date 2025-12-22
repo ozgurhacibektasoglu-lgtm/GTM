@@ -1162,10 +1162,25 @@
         color: #1e293b;
       }
       
+      .match-player-name .player-match-hcp {
+        font-weight: 500;
+        font-size: 13px;
+        color: #6366f1;
+        background: #eef2ff;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin-left: 4px;
+      }
+      
       .match-team-players {
         font-size: 13px;
         color: #64748b;
         margin-top: 4px;
+      }
+      
+      .match-team-players .match-player-name {
+        font-size: 14px;
+        margin-bottom: 4px;
       }
       
       /* Match status display (VS / score) */
@@ -2837,14 +2852,11 @@
         const p1Key = player1.reg || `${player1.firstName}-${player1.lastName}`;
         const p2Key = player2.reg || `${player2.firstName}-${player2.lastName}`;
         
-        // Get playing handicaps (pre-calculated from admissions)
-        const p1Phcp = getPlayerPhcp(player1);
-        const p2Phcp = getPlayerPhcp(player2);
-        
-        // Calculate match handicap (strokes given)
-        const hcpDiff = Math.abs(p1Phcp - p2Phcp);
-        const p1Receives = p2Phcp < p1Phcp ? hcpDiff : 0;
-        const p2Receives = p1Phcp < p2Phcp ? hcpDiff : 0;
+        // Calculate match play handicaps (relative to lowest in match)
+        const matchPlayers = [player1, player2];
+        const matchHcps = calculateMatchPlayHcps(matchPlayers);
+        const p1MatchHcp = matchHcps[0];
+        const p2MatchHcp = matchHcps[1];
         
         // Get match status
         const { statusText, statusClass, homeUp, awayUp, thru, isFinal } = getMatchStatus(matchData);
@@ -2863,7 +2875,7 @@
                 <div class="match-side home ${p1Class}">
                   <div class="match-side-header">
                     <span class="match-side-label">Home</span>
-                    ${p1Receives > 0 ? `<span class="match-hcp-badge receives">+${p1Receives}</span>` : ''}
+                    ${p1MatchHcp > 0 ? `<span class="match-hcp-badge receives">+${p1MatchHcp}</span>` : ''}
                   </div>
                   <div class="match-player-name">${player1.firstName} ${player1.lastName}</div>
                 </div>
@@ -2881,7 +2893,7 @@
                 <div class="match-side away ${p2Class}">
                   <div class="match-side-header">
                     <span class="match-side-label">Away</span>
-                    ${p2Receives > 0 ? `<span class="match-hcp-badge receives">+${p2Receives}</span>` : ''}
+                    ${p2MatchHcp > 0 ? `<span class="match-hcp-badge receives">+${p2MatchHcp}</span>` : ''}
                   </div>
                   <div class="match-player-name">${player2.firstName} ${player2.lastName}</div>
                 </div>
@@ -2893,14 +2905,35 @@
       
       // Render a team match card (fourball/foursome)
       function renderTeamMatchCard(matchKey, team1, team2, group, matchData, groupIndex) {
-        // Calculate team handicaps based on format
-        const t1Phcp = calculateTeamHcp(team1);
-        const t2Phcp = calculateTeamHcp(team2);
+        // Get all 4 players for match play handicap calculation
+        const allPlayers = [...team1, ...team2];
         
-        // Calculate match handicap
-        const hcpDiff = Math.abs(t1Phcp - t2Phcp);
-        const t1Receives = t2Phcp < t1Phcp ? hcpDiff : 0;
-        const t2Receives = t1Phcp < t2Phcp ? hcpDiff : 0;
+        // Calculate individual match play handicaps (relative to lowest in group)
+        const matchHcps = calculateMatchPlayHcps(allPlayers);
+        
+        // For fourball: show individual player match HCPs
+        // For foursome: calculate team HCP as combined/2
+        let t1Receives = 0;
+        let t2Receives = 0;
+        
+        if (matchPlayFormat === 'fourball') {
+          // Fourball: Each player has their own strokes based on relative handicap
+          // Team strokes = lower player's match HCP in that team
+          const t1MatchHcps = matchHcps.slice(0, 2);
+          const t2MatchHcps = matchHcps.slice(2, 4);
+          const t1LowerHcp = Math.min(...t1MatchHcps);
+          const t2LowerHcp = Math.min(...t2MatchHcps);
+          
+          // This is simplified - in fourball each player plays their own ball
+          // with their individual strokes
+        } else {
+          // Foursome: Combined team handicap / 2
+          const t1Phcp = Math.round((getPlayerPhcp(team1[0]) + getPlayerPhcp(team1[1])) / 2);
+          const t2Phcp = Math.round((getPlayerPhcp(team2[0]) + getPlayerPhcp(team2[1])) / 2);
+          const hcpDiff = Math.abs(t1Phcp - t2Phcp);
+          t1Receives = t2Phcp < t1Phcp ? hcpDiff : 0;
+          t2Receives = t1Phcp < t2Phcp ? hcpDiff : 0;
+        }
         
         // Get match status
         const { statusText, statusClass, homeUp, awayUp, thru, isFinal } = getMatchStatus(matchData);
@@ -2909,6 +2942,15 @@
         const t2Class = awayUp > 0 ? 'winning' : (homeUp > 0 ? 'losing' : '');
         
         const formatLabel = matchPlayFormat === 'fourball' ? 'Fourball' : 'Foursome';
+        
+        // Build player HTML with match HCPs for fourball
+        const buildPlayerHtml = (player, playerMatchHcp) => {
+          if (matchPlayFormat === 'fourball') {
+            return `<div class="match-player-name">${player.firstName} ${player.lastName} <span class="player-match-hcp">(${playerMatchHcp})</span></div>`;
+          } else {
+            return `<div class="match-player-name">${player.firstName} ${player.lastName}</div>`;
+          }
+        };
         
         return `
           <div class="match-card" data-match-key="${matchKey}">
@@ -2921,10 +2963,11 @@
                 <div class="match-side home ${t1Class}">
                   <div class="match-side-header">
                     <span class="match-side-label">Home</span>
-                    ${t1Receives > 0 ? `<span class="match-hcp-badge receives">+${t1Receives}</span>` : ''}
+                    ${!matchPlayFormat === 'fourball' && t1Receives > 0 ? `<span class="match-hcp-badge receives">+${t1Receives}</span>` : ''}
                   </div>
                   <div class="match-team-players">
-                    ${team1.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('')}
+                    ${buildPlayerHtml(team1[0], matchHcps[0])}
+                    ${buildPlayerHtml(team1[1], matchHcps[1])}
                   </div>
                 </div>
                 
@@ -2941,10 +2984,11 @@
                 <div class="match-side away ${t2Class}">
                   <div class="match-side-header">
                     <span class="match-side-label">Away</span>
-                    ${t2Receives > 0 ? `<span class="match-hcp-badge receives">+${t2Receives}</span>` : ''}
+                    ${!matchPlayFormat === 'fourball' && t2Receives > 0 ? `<span class="match-hcp-badge receives">+${t2Receives}</span>` : ''}
                   </div>
                   <div class="match-team-players">
-                    ${team2.map(p => `<div class="match-player-name">${p.firstName} ${p.lastName}</div>`).join('')}
+                    ${buildPlayerHtml(team2[0], matchHcps[2])}
+                    ${buildPlayerHtml(team2[1], matchHcps[3])}
                   </div>
                 </div>
               </div>
@@ -2975,6 +3019,41 @@
         
         // Format with + for plus handicaps (negative values)
         return phcp < 0 ? '+' + Math.abs(phcp) : phcp.toString();
+      }
+      
+      // Calculate relative match play handicaps for a group
+      // For match play fourball: lowest PHCP becomes 0, others get difference from lowest
+      // Example: PHCPs [10, 12, 14, 12] → Match HCPs [0, 2, 4, 2]
+      function calculateMatchPlayHcps(players) {
+        if (!players || players.length === 0) return [];
+        
+        // Get all PHCPs
+        const phcps = players.map(p => getPlayerPhcp(p));
+        
+        // Find the lowest PHCP
+        const lowestPhcp = Math.min(...phcps);
+        
+        // Calculate relative handicaps (strokes received)
+        const matchHcps = phcps.map(phcp => phcp - lowestPhcp);
+        
+        return matchHcps;
+      }
+      
+      // Get match play handicap display for a player within their group
+      function getMatchPlayHcpDisplay(player, groupPlayers) {
+        if (!isMatchPlay || !groupPlayers || groupPlayers.length === 0) {
+          return getPlayingHcpDisplay(player);
+        }
+        
+        const matchHcps = calculateMatchPlayHcps(groupPlayers);
+        const playerIndex = groupPlayers.findIndex(p => 
+          (p.reg || `${p.firstName}-${p.lastName}`) === (player.reg || `${player.firstName}-${player.lastName}`)
+        );
+        
+        if (playerIndex === -1) return getPlayingHcpDisplay(player);
+        
+        const matchHcp = matchHcps[playerIndex];
+        return matchHcp.toString();
       }
       
       // Calculate team handicap based on format
