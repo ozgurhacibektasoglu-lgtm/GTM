@@ -499,7 +499,7 @@
                              ondrop="handlePairingSlotDrop(event, ${pIdx}, ${slotIdx})">
                           <div>
                             <span class="slot-player">${player.name}</span>
-                            <span class="slot-hcp">HCP: ${player.hcp}</span>
+                            <span class="slot-hcp">PHCP: ${player.phcp !== undefined && player.phcp !== null ? player.phcp : player.hcp}</span>
                           </div>
                           <span class="remove-btn" onclick="removeFromPairing(${pIdx}, ${slotIdx})">✕</span>
                         </div>
@@ -869,9 +869,10 @@
           div.draggable = true;
           div.dataset.playerIndex = index;
           
+          const displayHcp = player.phcp !== undefined && player.phcp !== null ? player.phcp : player.hcp;
           div.innerHTML = `
             <div class="player-name">${player.name}</div>
-            <div class="player-info">HCP: ${player.hcp}</div>
+            <div class="player-info">PHCP: ${displayHcp}</div>
           `;
           
           div.ondragstart = (e) => {

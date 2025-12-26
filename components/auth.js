@@ -65,28 +65,75 @@
   async function getUserRole(){
     const user = auth.currentUser;
     if (!user) return null;
-    const doc = await db.collection('users').doc(user.uid).get();
-    const data = doc.exists ? doc.data() : null;
-    return data?.role || 'user';
+    
+    // Add timeout for Firestore queries (Safari can hang)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Firestore timeout')), 15000);
+    });
+    
+    try {
+      const doc = await Promise.race([
+        db.collection('users').doc(user.uid).get(),
+        timeoutPromise
+      ]);
+      const data = doc.exists ? doc.data() : null;
+      return data?.role || 'user';
+    } catch (e) {
+      console.warn('getUserRole error:', e.message);
+      return 'user'; // Default to user role on error
+    }
   }
 
   async function getUserProfile(){
     const user = auth.currentUser;
     if (!user) return null;
-    const doc = await db.collection('users').doc(user.uid).get();
-    return doc.exists ? doc.data() : null;
+    
+    // Add timeout for Firestore queries (Safari can hang)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Firestore timeout')), 15000);
+    });
+    
+    try {
+      const doc = await Promise.race([
+        db.collection('users').doc(user.uid).get(),
+        timeoutPromise
+      ]);
+      return doc.exists ? doc.data() : null;
+    } catch (e) {
+      console.warn('getUserProfile error:', e.message);
+      return null;
+    }
   }
 
   async function requireAuth(requiredRole){
     return new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Add timeout for Safari - if auth state doesn't fire in 20 seconds, redirect to login
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.warn('Auth state timeout - redirecting to login');
+          window.location.href = '/auth/login.html';
+        }
+      }, 20000);
+      
       const unsub = auth.onAuthStateChanged(async (user) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeoutId);
+        
         if (!user) {
           unsub();
           window.location.href = '/auth/login.html';
           return;
         }
         let role = 'user';
-        try { role = await getUserRole(); } catch(e){}
+        try { 
+          role = await getUserRole(); 
+        } catch(e){
+          console.warn('getUserRole error:', e.message);
+        }
         if (requiredRole && role !== requiredRole){
           unsub();
           reject(new Error('Insufficient permissions'));

@@ -1778,8 +1778,15 @@
                 const player = admittedPlayers.find(p => p.reg === reg);
                 if (player) {
                   player.hcp = Math.round(newHcp * 10) / 10; // Round to 1 decimal
-                  // Recalculate playing HCP
-                  player.phcp = null; // Force recalculation
+                  // Recalculate and store playing HCP
+                  const phcpString = calculatePlayingHcp(player);
+                  if (phcpString !== '') {
+                    player.phcp = phcpString.startsWith('+') ? 
+                      -parseInt(phcpString.substring(1)) : 
+                      parseInt(phcpString);
+                  } else {
+                    player.phcp = null;
+                  }
                 }
               }
               renderTables();

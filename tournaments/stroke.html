@@ -588,6 +588,7 @@
           if (t.meta && t.meta.hcpQual) document.getElementById('hcp-qual').value = t.meta.hcpQual;
           if (t.meta && t.meta.hcpAllow) document.getElementById('hcp-allow').value = t.meta.hcpAllow;
           if (t.meta && t.meta.maxScore) document.getElementById('max-score').value = t.meta.maxScore;
+          if (t.meta && t.meta.teamsTournament) document.getElementById('teams-tournament').value = t.meta.teamsTournament;
         } catch (err) {
           console.error('Failed to load tournament for edit', err);
           renderRounds();

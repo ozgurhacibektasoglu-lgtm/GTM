@@ -1062,8 +1062,17 @@
           isPairingMode = true;
           console.log('Pairing mode enabled for', matchType);
           
-          // Load teams - teams are defined at tournament level, not per round
-          const teams = currentTournament.teams || [];
+          // Load teams - prefer teamDefinitions, then teamsByRound, then legacy teams
+          let teams = currentTournament.teamDefinitions || [];
+          if (teams.length === 0 && currentTournament.teamsByRound) {
+            const roundKeys = Object.keys(currentTournament.teamsByRound);
+            if (roundKeys.length > 0) {
+              teams = currentTournament.teamsByRound[roundKeys[0]] || [];
+            }
+          }
+          if (teams.length === 0) {
+            teams = currentTournament.teams || [];
+          }
           
           console.log('Teams loaded for round:', roundIndex, teams);
           
@@ -1215,8 +1224,17 @@
       return { slope, rating, par };
     }
 
-    // Calculate playing HCP dynamically
+    // Get playing HCP - use stored phcp from admissions if available, otherwise calculate
     function getPlayingHcp(player) {
+      // First check if phcp is already stored (from admissions page)
+      if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
+        const phcp = parseInt(player.phcp);
+        if (!isNaN(phcp)) {
+          return phcp < 0 ? '+' + Math.abs(phcp) : phcp;
+        }
+      }
+      
+      // Fallback: calculate dynamically if no stored phcp
       const playerHcp = parseFloat(player.hcp);
       if (isNaN(playerHcp)) return '-';
       
@@ -1264,19 +1282,24 @@
         container.innerHTML = availablePairings.map(pairing => {
           const p1 = pairing.players[0];
           const p2 = pairing.players[1];
+          // Look up actual team name from teamsByRound
+          const actualTeamName = getActualTeamName(p1?.playerId || p1?.reg) || pairing.teamName;
+          // Display phcp if available, fallback to hcp
+          const p1Hcp = p1?.phcp !== undefined && p1?.phcp !== null ? p1.phcp : (p1?.hcp || '-');
+          const p2Hcp = p2?.phcp !== undefined && p2?.phcp !== null ? p2.phcp : (p2?.hcp || '-');
           return `
           <div class="player-card pairing-card" draggable="true" data-pairing-id="${pairing.pairingId}" style="background: linear-gradient(135deg, #e0f2fe 50%, #fce7f3 50%); border-left: 4px solid #7c3aed;">
-            <div style="font-size: 10px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🏷️ ${pairing.teamName}</div>
+            <div style="font-size: 10px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">🏷️ ${actualTeamName}</div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 10px; color: #0284c7;">👤</span>
                 <span class="player-name" style="margin: 0; font-size: 12px;">${p1?.name || 'Unknown'}</span>
-                <span style="font-size: 10px; color: #666;">HCP ${p1?.hcp || '-'}</span>
+                <span style="font-size: 10px; color: #666;">PHCP ${p1Hcp}</span>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 10px; color: #ec4899;">👤</span>
                 <span class="player-name" style="margin: 0; font-size: 12px;">${p2?.name || 'Unknown'}</span>
-                <span style="font-size: 10px; color: #666;">HCP ${p2?.hcp || '-'}</span>
+                <span style="font-size: 10px; color: #666;">PHCP ${p2Hcp}</span>
               </div>
             </div>
           </div>
@@ -1393,6 +1416,37 @@
       if (protocol === 'shotgun') return `Hole ${(index % 18) + 1}`;
       return '1st Tee';
     }
+    
+    // Get actual team name from teamsByRound/teamDefinitions using player's reg ID
+    function getActualTeamName(playerRegId) {
+      if (!currentTournament || !playerRegId) return '';
+      
+      // First try teamsByRound
+      const teamsByRound = currentTournament.teamsByRound || {};
+      const roundKeys = Object.keys(teamsByRound);
+      
+      if (roundKeys.length > 0) {
+        const teams = teamsByRound[roundKeys[0]] || [];
+        for (const team of teams) {
+          if (team.players && team.players.includes(playerRegId)) {
+            return team.name || '';
+          }
+        }
+      }
+      
+      // Fallback to teamDefinitions with teams array matching
+      const teamDefs = currentTournament.teamDefinitions || [];
+      const teamsArr = currentTournament.teams || [];
+      
+      for (let i = 0; i < teamsArr.length; i++) {
+        const team = teamsArr[i];
+        if (team.players && team.players.includes(playerRegId)) {
+          return teamDefs[i]?.name || team.name || '';
+        }
+      }
+      
+      return '';
+    }
 
     // Render players in a group (handles both normal and pairing mode)
     function renderGroupPlayers(group) {
@@ -1409,7 +1463,9 @@
         group.players.forEach(player => {
           const pairingId = player.pairingId || 'unknown';
           if (!playersByPairing[pairingId]) {
-            playersByPairing[pairingId] = { players: [], teamName: player.teamName };
+            // Look up actual team name from teamsByRound
+            const actualTeamName = getActualTeamName(player.reg) || player.teamName;
+            playersByPairing[pairingId] = { players: [], teamName: actualTeamName };
           }
           playersByPairing[pairingId].players.push(player);
         });
@@ -1418,12 +1474,14 @@
           <div class="group-pairing-card" style="background: linear-gradient(135deg, #e0f2fe 50%, #fce7f3 50%); border: 1px solid #ddd; border-left: 4px solid #7c3aed; border-radius: 4px; padding: 8px; margin-bottom: 6px; position: relative;">
             <button class="remove-player" onclick="removePairingFromGroup('${group.groupId}', '${pairingId}')" style="display: block;">×</button>
             <div style="font-size: 9px; font-weight: 600; color: #7c3aed; margin-bottom: 4px;">🏷️ ${data.teamName || 'Team'}</div>
-            ${data.players.map(player => `
+            ${data.players.map(player => {
+              const displayHcp = player.phcp !== undefined && player.phcp !== null ? player.phcp : (player.hcp || '-');
+              return `
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                 <span style="font-weight: 600; font-size: 11px;">${player.firstName || ''} ${player.lastName || player.name || ''}</span>
-                <span style="font-size: 9px; color: #666;">HCP ${player.hcp || '-'}</span>
+                <span style="font-size: 9px; color: #666;">PHCP ${displayHcp}</span>
               </div>
-            `).join('')}
+            `;}).join('')}
           </div>
         `).join('');
       }
@@ -1860,6 +1918,7 @@
             lastName: p1.name?.split(' ').slice(1).join(' ') || '',
             name: p1.name,
             hcp: p1.hcp,
+            phcp: p1.phcp,
             pairingId: draggedPairing.pairingId,
             teamName: draggedPairing.teamName
           });
@@ -1871,6 +1930,7 @@
             lastName: p2.name?.split(' ').slice(1).join(' ') || '',
             name: p2.name,
             hcp: p2.hcp,
+            phcp: p2.phcp,
             pairingId: draggedPairing.pairingId,
             teamName: draggedPairing.teamName
           });
@@ -2654,12 +2714,18 @@
         const players = group.players || [];
         if (players.length < 2) return;
         
-        // Calculate PHCP for each player
+        // Get PHCP for each player - use stored phcp from admissions if available
         const playerPHCPs = {};
         players.forEach(player => {
           const pKey = player.playerId || player.reg;
-          const hcp = parseFloat(player.hcp); const phcp = isNaN(hcp) ? "-" : Math.round(hcp);
-          playerPHCPs[pKey] = phcp === '-' ? null : Math.round(parseFloat(phcp));
+          // First check for stored phcp (from admissions page), then fallback to hcp
+          let phcp = null;
+          if (player.phcp !== undefined && player.phcp !== null && player.phcp !== '') {
+            phcp = parseInt(player.phcp);
+          } else if (player.hcp !== undefined && player.hcp !== null && player.hcp !== '') {
+            phcp = Math.round(parseFloat(player.hcp));
+          }
+          playerPHCPs[pKey] = isNaN(phcp) ? null : phcp;
         });
         
         if (matchType === 'singles') {

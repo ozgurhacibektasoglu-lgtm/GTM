@@ -1,1159 +1,1287 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Players Lounge - Golf Tournament Management</title>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 20px;
-      }
-      
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      
-      /* Login Screen */
-      .login-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 20px;
-      }
-      
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Players Lounge - GTM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    /* Login Screen */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .login-logo .icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .login-logo h1 {
+      color: #1a1a2e;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .login-logo p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #333;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-logout {
+      background: #e74c3c;
+      color: white;
+      margin-top: 20px;
+    }
+
+    .btn-logout:hover {
+      background: #c0392b;
+    }
+
+    .error-message {
+      background: #ffe6e6;
+      color: #c0392b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* Profile Screen */
+    .profile-screen {
+      min-height: 100vh;
+      padding: 20px;
+      display: none;
+    }
+
+    .profile-header {
+      text-align: center;
+      padding: 40px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      margin: 0 auto 16px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .profile-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .profile-avatar .camera-icon {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #667eea;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border: 2px solid white;
+    }
+
+    .photo-input {
+      display: none;
+    }
+
+    /* Photo Options Modal */
+    .photo-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .photo-modal.show {
+      display: flex;
+    }
+
+    .photo-modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .photo-modal-content h3 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .photo-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 20px;
+      margin-bottom: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .photo-option:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+
+    .photo-option .icon {
+      font-size: 24px;
+    }
+
+    .photo-cancel {
+      margin-top: 8px;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Photo Editor Modal */
+    .photo-editor-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      flex-direction: column;
+    }
+
+    .photo-editor-modal.show {
+      display: flex;
+    }
+
+    .editor-container {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .editor-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .crop-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 20px;
+      overflow: hidden;
+      border-radius: 50%;
+      border: 3px solid white;
+      background: #000;
+    }
+
+    .crop-image {
+      position: absolute;
+      max-width: none;
+      cursor: move;
+      user-select: none;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .zoom-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid white;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .zoom-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .zoom-slider {
+      width: 200px;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+    }
+
+    .zoom-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .editor-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .editor-btn-save {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .editor-btn-cancel {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid white;
+    }
+
+    .profile-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .profile-header p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+    }
+
+    .profile-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .profile-card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .profile-row:last-child {
+      border-bottom: none;
+    }
+
+    .profile-row .label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .profile-row .value {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      text-align: right;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
       .login-card {
-        background: white;
-        border-radius: 16px;
-        padding: 48px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        max-width: 440px;
-        width: 100%;
-      }
-      
-      .login-header {
-        text-align: center;
-        margin-bottom: 32px;
-      }
-      
-      .login-header h1 {
-        font-size: 32px;
-        color: #0f172a;
-        margin-bottom: 8px;
-      }
-      
-      .login-header p {
-        color: #64748b;
-        font-size: 16px;
-      }
-      
-      .login-icon {
-        font-size: 64px;
-        margin-bottom: 16px;
-      }
-      
-      .form-group {
-        margin-bottom: 20px;
-      }
-      
-      .form-group label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: #334155;
-      }
-      
-      .form-group input {
-        width: 100%;
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 16px;
-        transition: all 0.2s;
-      }
-      
-      .form-group input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      }
-      
-      .login-btn {
-        width: 100%;
-        padding: 14px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-      
-      .login-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-      }
-      
-      .login-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-      }
-      
-      .error-message {
-        background: #fef2f2;
-        color: #991b1b;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border: 1px solid #fecaca;
-        display: none;
-      }
-      
-      .error-message.show {
-        display: block;
-      }
-      
-      /* Main Content */
-      .main-content {
-        display: none;
-      }
-      
-      .main-content.active {
-        display: block;
-      }
-      
-      .header {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-      
-      .header-left h1 {
-        font-size: 28px;
-        color: #0f172a;
-        margin-bottom: 4px;
-      }
-      
-      .header-left p {
-        color: #64748b;
-      }
-      
-      .logout-btn {
-        padding: 10px 20px;
-        background: #ef4444;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      
-      .logout-btn:hover {
-        background: #dc2626;
-      }
-      
-      .welcome-card {
-        background: white;
-        color: #0f172a;
-        padding: 32px;
-        border-radius: 16px;
-        margin-bottom: 24px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      }
-      
-      .welcome-card h2 {
-        margin: 0 0 8px 0;
-        font-size: 28px;
-      }
-      
-      .welcome-card p {
-        margin: 0;
-        color: #64748b;
-      }
-      
-      .lounge-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 24px;
-        margin-bottom: 24px;
-      }
-      
-      .info-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      }
-      
-      .info-card h3 {
-        margin: 0 0 16px 0;
-        color: #0f172a;
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .info-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px solid #e2e8f0;
-      }
-      
-      .info-row:last-child {
-        border-bottom: none;
-      }
-      
-      .info-label {
-        font-weight: 600;
-        color: #64748b;
-      }
-      
-      .info-value {
-        color: #0f172a;
-        text-align: right;
-      }
-      
-      .edit-profile-btn {
-        width: 100%;
-        padding: 12px;
-        background: #3b82f6;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-top: 16px;
-        transition: background 0.2s;
-      }
-      
-      .edit-profile-btn:hover {
-        background: #2563eb;
-      }
-      
-      .tournaments-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      }
-      
-      .tournaments-card h3 {
-        margin: 0 0 16px 0;
-        color: #0f172a;
-        font-size: 20px;
-      }
-      
-      .tournament-item {
-        padding: 16px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin-bottom: 12px;
-        transition: all 0.2s;
-      }
-      
-      .tournament-item:hover {
-        border-color: #3b82f6;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-      }
-      
-      .tournament-name {
-        font-weight: 600;
-        color: #0f172a;
-        margin-bottom: 8px;
-      }
-      
-      .tournament-info {
-        display: flex;
-        gap: 16px;
-        font-size: 14px;
-        color: #64748b;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .tournament-status {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-      
-      .status-open {
-        background: #dcfce7;
-        color: #166534;
-      }
-      
-      .status-registered {
-        background: #dbeafe;
-        color: #1e40af;
-      }
-      
-      .status-closed {
-        background: #fef2f2;
-        color: #991b1b;
-      }
-      
-      .register-btn {
-        padding: 8px 16px;
-        background: #10b981;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-top: 8px;
-      }
-      
-      .register-btn:hover {
-        background: #059669;
-      }
-      
-      .register-btn:disabled {
-        background: #cbd5e1;
-        cursor: not-allowed;
-      }
-      
-      .no-tournaments {
-        text-align: center;
-        padding: 32px;
-        color: #94a3b8;
-      }
-      
-      /* Edit Modal */
-      .modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        align-items: center;
-        justify-content: center;
-        z-index: 60;
-      }
-      
-      .modal.active {
-        display: flex;
-      }
-      
-      .modal-content {
-        background: white;
-        border-radius: 16px;
-        max-width: 600px;
-        width: 92%;
-        padding: 24px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      }
-      
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      
-      .modal-header h3 {
-        margin: 0;
-        font-size: 24px;
-      }
-      
-      .close-btn {
-        background: none;
-        border: none;
-        font-size: 28px;
-        cursor: pointer;
-        color: #64748b;
-        padding: 0;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        transition: all 0.2s;
-      }
-      
-      .close-btn:hover {
-        background: #f1f5f9;
-        color: #0f172a;
-      }
-      
-      .field {
-        margin-bottom: 16px;
-      }
-      
-      .field label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 6px;
-        color: #334155;
-      }
-      
-      .field input,
-      .field select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        border: 2px solid #e2e8f0;
-        font-size: 14px;
-      }
-      
-      .field input:disabled,
-      .field input:read-only {
-        background-color: #f1f5f9;
-        cursor: not-allowed;
-      }
-      
-      .modal-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        margin-top: 24px;
-      }
-      
-      .btn-cancel {
-        padding: 10px 20px;
-        background: white;
-        border: 2px solid #cbd5e1;
-        color: #0f172a;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      
-      .btn-cancel:hover {
-        background: #f1f5f9;
-      }
-      
-      .btn-save {
-        padding: 10px 20px;
-        background: #3b82f6;
-        border: none;
-        color: white;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      
-      .btn-save:hover {
-        background: #2563eb;
-      }
-      
-      .message {
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 16px;
-        display: none;
-      }
-      
-      .message.success {
-        background: #dcfce7;
-        color: #166534;
-        border: 1px solid #86efac;
-        display: block;
-      }
-      
-      .message.error {
-        background: #fef2f2;
-        color: #991b1b;
-        border: 1px solid #fecaca;
-        display: block;
-      }
-      
-      @media (max-width: 768px) {
-        .login-card {
-          padding: 32px 24px;
-        }
-        
-        .header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-        
-        .lounge-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-container">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">🏌️</div>
-          <h1>Players Lounge</h1>
-          <p>Sign in to access your player profile</p>
-        </div>
-        
-        <div id="loginError" class="error-message"></div>
-        
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="loginEmail">Email or Registration Number</label>
-            <input type="text" id="loginEmail" required autocomplete="username" />
-          </div>
-          
-          <div class="form-group">
-            <label for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" required autocomplete="current-password" />
-          </div>
-          
-          <button type="submit" class="login-btn" id="loginBtn">
-            Sign In
-          </button>
-          
-          <div style="text-align: center; margin-top: 16px; color: #64748b;">
-            Don't have an account? 
-            <a href="#" onclick="showSignupScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Sign Up</a>
-          </div>
-        </form>
+        padding: 30px 24px;
+        border-radius: 20px;
+      }
+
+      .profile-header {
+        padding: 30px 16px;
+      }
+
+      .profile-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="icon">🏌️</div>
+        <h1>Players Lounge</h1>
+        <p>Sign in to access your profile</p>
       </div>
-    </div>
-    
-    <!-- Sign Up Screen - Step 1: Enter Registration Number -->
-    <div id="signupScreen" class="login-container" style="display: none;">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">🏌️</div>
-          <h1>Create Account</h1>
-          <p>Enter your registration number to get started</p>
-        </div>
-        
-        <div id="signupError" class="error-message"></div>
-        
-        <form id="signupStep1Form">
-          <div class="form-group">
-            <label for="signupRegNo">Player Registration Number *</label>
-            <input type="text" id="signupRegNo" required placeholder="e.g. P001" />
-            <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">Enter your GTM registration number</small>
-          </div>
-          
-          <button type="submit" class="login-btn" id="step1Btn">
-            Continue
-          </button>
-          
-          <div style="text-align: center; margin-top: 16px; color: #64748b;">
-            Already have an account? 
-            <a href="#" onclick="showLoginScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Sign In</a>
-          </div>
-        </form>
-      </div>
-    </div>
-    
-    <!-- Sign Up Screen - Step 2: Choose Verification Method -->
-    <div id="signupStep2Screen" class="login-container" style="display: none;">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">✉️</div>
-          <h1>Verify Your Identity</h1>
-          <p>Choose how you'd like to receive your verification code</p>
-        </div>
-        
-        <div id="step2Error" class="error-message"></div>
-        
-        <div style="margin-bottom: 24px; padding: 16px; background: #f1f5f9; border-radius: 8px;">
-          <div style="font-weight: 600; color: #334155; margin-bottom: 8px;">Player Found:</div>
-          <div style="color: #64748b;" id="playerInfoDisplay"></div>
-        </div>
-        
+
+      <div class="error-message" id="errorMessage"></div>
+
+      <form id="loginForm">
         <div class="form-group">
-          <label>Select verification method:</label>
-          <div id="verificationOptions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-            <!-- Options will be populated dynamically -->
-          </div>
+          <label for="regNo">Registration Number</label>
+          <input type="text" id="regNo" placeholder="Enter your reg no (e.g. 10)" required>
         </div>
-        
-        <button type="button" class="login-btn" id="sendCodeBtn" onclick="sendVerificationCode()">
-          Send Verification Code
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="loginBtn">
+          Sign In
         </button>
-        
-        <div style="text-align: center; margin-top: 16px;">
-          <a href="#" onclick="showSignupScreen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">← Back</a>
-        </div>
-      </div>
+      </form>
     </div>
-    
-    <!-- Sign Up Screen - Step 3: Enter Verification Code -->
-    <div id="signupStep3Screen" class="login-container" style="display: none;">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">🔐</div>
-          <h1>Enter Verification Code</h1>
-          <p>We sent a code to <span id="sentToDisplay"></span></p>
+  </div>
+
+  <!-- Profile Screen -->
+  <div class="profile-screen" id="profileScreen">
+    <div class="container">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profileAvatar" onclick="openPhotoModal()">
+          <span id="avatarEmoji">📷</span>
+          <span class="camera-icon">📷</span>
         </div>
-        
-        <div id="step3Error" class="error-message"></div>
-        <div id="step3Success" class="message success" style="display: none;"></div>
-        
-        <form id="signupStep3Form">
-          <div class="form-group">
-            <label for="verificationCode">Verification Code *</label>
-            <input type="text" id="verificationCode" required placeholder="Enter 6-digit code" maxlength="6" 
-                   style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;" />
-          </div>
-          
-          <button type="submit" class="login-btn" id="verifyCodeBtn">
-            Verify Code
+        <h1 id="playerName">Player Name</h1>
+        <p id="playerReg">Registration Number</p>
+      </div>
+
+      <!-- Photo Options Modal -->
+      <div class="photo-modal" id="photoModal">
+        <div class="photo-modal-content">
+          <h3>Change Profile Photo</h3>
+          <button class="photo-option" id="editPhotoBtn" onclick="editCurrentPhoto()" style="display: none;">
+            <span class="icon">✏️</span>
+            <span>Edit Current Photo</span>
           </button>
-          
-          <div style="text-align: center; margin-top: 16px; color: #64748b;">
-            Didn't receive the code? 
-            <a href="#" onclick="resendVerificationCode(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">Resend</a>
-          </div>
-          
-          <div style="text-align: center; margin-top: 12px;">
-            <a href="#" onclick="showStep2Screen(); return false;" style="color: #667eea; font-weight: 600; text-decoration: none;">← Back</a>
-          </div>
-        </form>
-      </div>
-    </div>
-    
-    <!-- Sign Up Screen - Step 4: Set Password -->
-    <div id="signupStep4Screen" class="login-container" style="display: none;">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">🔒</div>
-          <h1>Set Your Password</h1>
-          <p>Create a secure password for your account</p>
-        </div>
-        
-        <div id="step4Error" class="error-message"></div>
-        
-        <form id="signupStep4Form">
-          <div class="form-group">
-            <label for="newPassword">Password *</label>
-            <input type="password" id="newPassword" required minlength="6" autocomplete="new-password" />
-            <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">At least 6 characters</small>
-          </div>
-          
-          <div class="form-group">
-            <label for="confirmPassword">Re-enter Password *</label>
-            <input type="password" id="confirmPassword" required minlength="6" autocomplete="new-password" />
-          </div>
-          
-          <button type="submit" class="login-btn" id="completeSignupBtn">
-            Complete Sign Up
+          <button class="photo-option" onclick="takePhoto()">
+            <span class="icon">📸</span>
+            <span>Take Photo</span>
           </button>
-        </form>
+          <button class="photo-option" onclick="chooseFromLibrary()">
+            <span class="icon">🖼️</span>
+            <span>Choose from Library</span>
+          </button>
+          <button class="photo-cancel" onclick="closePhotoModal()">Cancel</button>
+        </div>
       </div>
-    </div>
-    
-    <!-- Main Content -->
-    <div id="mainContent" class="main-content">
-      <div class="container">
-        <!-- Header -->
-        <div class="header">
-          <div class="header-left">
-            <h1>🏌️ Players Lounge</h1>
-            <p>Welcome back, <span id="headerPlayerName">Player</span></p>
+
+      <!-- Photo Editor Modal -->
+      <div class="photo-editor-modal" id="photoEditor">
+        <div class="editor-container">
+          <div class="editor-title">Adjust Your Photo</div>
+          <div class="crop-container" id="cropContainer">
+            <img id="cropImage" class="crop-image" src="" alt="Crop preview">
           </div>
-          <button class="logout-btn" onclick="handleLogout()">Logout</button>
-        </div>
-        
-        <!-- Welcome Card -->
-        <div class="welcome-card">
-          <h2>Hello, <span id="playerName">Player</span>! 👋</h2>
-          <p>Manage your profile and register for upcoming tournaments</p>
-        </div>
-        
-        <!-- Profile Grid -->
-        <div class="lounge-grid">
-          <!-- Personal Information -->
-          <div class="info-card">
-            <h3>📋 Personal Information</h3>
-            <div id="personalInfo">
-              <div class="info-row">
-                <span class="info-label">Registration No:</span>
-                <span class="info-value" id="regNo">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Name:</span>
-                <span class="info-value" id="fullName">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Date of Birth:</span>
-                <span class="info-value" id="dob">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Age Group:</span>
-                <span class="info-value" id="ageGroup">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Gender:</span>
-                <span class="info-value" id="gender">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Nationality:</span>
-                <span class="info-value" id="nationality">-</span>
-              </div>
-            </div>
-            <button class="edit-profile-btn" onclick="openEditModal()">✏️ Edit Profile</button>
+          <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomOut()">-</button>
+            <input type="range" id="zoomSlider" class="zoom-slider" min="100" max="300" value="100">
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
           </div>
-          
-          <!-- Golf Information -->
-          <div class="info-card">
-            <h3>⛳ Golf Information</h3>
-            <div id="golfInfo">
-              <div class="info-row">
-                <span class="info-label">Home Club:</span>
-                <span class="info-value" id="homeClub">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Handicap:</span>
-                <span class="info-value" id="handicap">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Player Type:</span>
-                <span class="info-value" id="playerType">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Admission Date:</span>
-                <span class="info-value" id="admissionDate">-</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Contact Information -->
-          <div class="info-card">
-            <h3>📞 Contact Information</h3>
-            <div id="contactInfo">
-              <div class="info-row">
-                <span class="info-label">ID Number:</span>
-                <span class="info-value" id="idNo">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Email:</span>
-                <span class="info-value" id="email">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Mobile:</span>
-                <span class="info-value" id="mobile">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Address:</span>
-                <span class="info-value" id="address">-</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Tournament Stats -->
-          <div class="info-card">
-            <h3>🏆 Tournament Stats</h3>
-            <div id="tournamentStats">
-              <div class="info-row">
-                <span class="info-label">Tournaments Played:</span>
-                <span class="info-value">0</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Wins:</span>
-                <span class="info-value">0</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Top 3 Finishes:</span>
-                <span class="info-value">0</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Best Score:</span>
-                <span class="info-value">-</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Available Tournaments -->
-        <div class="tournaments-card">
-          <h3>🏌️ Available Tournaments</h3>
-          <div id="tournamentsList">
-            <div class="no-tournaments">
-              <p>📅 No tournaments available at the moment</p>
-              <p style="font-size: 14px;">Check back soon for upcoming events!</p>
-            </div>
+          <div class="editor-actions">
+            <button class="editor-btn editor-btn-cancel" onclick="cancelCrop()">Cancel</button>
+            <button class="editor-btn editor-btn-save" onclick="saveCroppedPhoto()">Save Photo</button>
           </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Edit Profile Modal -->
-    <div id="editModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Edit Profile</h3>
-          <button class="close-btn" onclick="closeEditModal()">×</button>
+
+      <!-- Hidden file inputs -->
+      <input type="file" id="cameraInput" class="photo-input" accept="image/*" capture="user">
+      <input type="file" id="libraryInput" class="photo-input" accept="image/*">
+
+      <!-- Personal Information -->
+      <div class="profile-card">
+        <h2>Personal Information</h2>
+        <div class="profile-row">
+          <span class="label">Full Name</span>
+          <span class="value" id="fullName">-</span>
         </div>
-        
-        <div id="modalMessage" class="message"></div>
-        
-        <form id="editForm">
-          <div class="field">
-            <label>Registration No</label>
-            <input type="text" id="editRegNo" disabled />
-          </div>
-          
-          <div class="field">
-            <label>First Name</label>
-            <input type="text" id="editFirstName" disabled />
-          </div>
-          
-          <div class="field">
-            <label>Last Name</label>
-            <input type="text" id="editLastName" disabled />
-          </div>
-          
-          <div class="field">
-            <label>Date of Birth</label>
-            <input type="date" id="editDob" disabled />
-          </div>
-          
-          <div class="field">
-            <label>Handicap</label>
-            <input type="number" step="0.1" id="editHandicap" />
-          </div>
-          
-          <div class="field">
-            <label>ID Number</label>
-            <input type="text" id="editIdNo" />
-          </div>
-          
-          <div class="field">
-            <label>Email</label>
-            <input type="email" id="editEmail" />
-          </div>
-          
-          <div class="field">
-            <label>Mobile</label>
-            <input type="tel" id="editMobile" />
-          </div>
-          
-          <div class="field">
-            <label>Address</label>
-            <input type="text" id="editAddress" />
-          </div>
-          
-          <div class="modal-actions">
-            <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-            <button type="submit" class="btn-save">Save Changes</button>
-          </div>
-        </form>
+        <div class="profile-row">
+          <span class="label">Date of Birth</span>
+          <span class="value" id="dob">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Gender</span>
+          <span class="value" id="gender">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Nationality</span>
+          <span class="value" id="nationality">-</span>
+        </div>
       </div>
+
+      <!-- Golf Information -->
+      <div class="profile-card">
+        <h2>Golf Information</h2>
+        <div class="profile-row">
+          <span class="label">Home Club</span>
+          <span class="value" id="homeClub">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Handicap Index</span>
+          <span class="value" id="handicap">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Player Type</span>
+          <span class="value" id="playerType">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Age Group</span>
+          <span class="value" id="ageGroup">-</span>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="profile-card">
+        <h2>Contact Information</h2>
+        <div class="profile-row">
+          <span class="label">Email</span>
+          <span class="value" id="email">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Mobile</span>
+          <span class="value" id="mobile">-</span>
+        </div>
+        <div class="profile-row">
+          <span class="label">Address</span>
+          <span class="value" id="address">-</span>
+        </div>
+      </div>
+
+      <!-- Logout Button -->
+      <button class="btn btn-logout" id="logoutBtn">
+        Sign Out
+      </button>
     </div>
-    
-    <script>
-      // Firebase Configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyCS5xw35GRf3OjN0_MF0E9CIpqZFN7nqSY",
-        authDomain: "gtm-management-6350e.firebaseapp.com",
-        databaseURL: "https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app/",
-        projectId: "gtm-management-6350e",
-        storageBucket: "gtm-management-6350e.firebasestorage.app",
-        messagingSenderId: "62680867005",
-        appId: "1:62680867005:web:84a1b2f1e35a51e92c06c9"
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+      authDomain: "gtm-management-6350e.firebaseapp.com",
+      databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com/",
+      projectId: "gtm-management-6350e",
+      storageBucket: "gtm-management-6350e.firebasestorage.app",
+      messagingSenderId: "461806742170",
+      appId: "1:461806742170:web:9a2af43d50c0a26718cd23"
+    };
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const database = firebase.database();
+    const storage = firebase.storage();
+
+    // DOM Elements
+    const loginScreen = document.getElementById('loginScreen');
+    const profileScreen = document.getElementById('profileScreen');
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Show error message
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+    }
+
+    // Hide error message
+    function hideError() {
+      errorMessage.classList.remove('show');
+    }
+
+    // Show login screen
+    function showLogin() {
+      loginScreen.style.display = 'flex';
+      profileScreen.style.display = 'none';
+    }
+
+    // Show profile screen
+    function showProfile() {
+      loginScreen.style.display = 'none';
+      profileScreen.style.display = 'block';
+    }
+
+    // Load player data
+    async function loadPlayerData(user) {
+      try {
+        const snapshot = await database.ref('players').once('value');
+        const players = snapshot.val();
+
+        if (!players) {
+          showError('No player data found');
+          return;
+        }
+
+        // Find player by authEmail or by matching reg number from email
+        let player = null;
+        const userEmail = user.email.toLowerCase();
+
+        for (const key in players) {
+          const p = players[key];
+          
+          // Match by authEmail
+          if (p.authEmail && p.authEmail.toLowerCase() === userEmail) {
+            player = p;
+            break;
+          }
+          
+          // Match by constructed email from reg number
+          if (p.reg && `${p.reg.toLowerCase()}@gtm.player.local` === userEmail) {
+            player = p;
+            break;
+          }
+        }
+
+        if (!player) {
+          showError('Player profile not found');
+          showLogin();
+          await auth.signOut();
+          return;
+        }
+
+        // Populate profile
+        document.getElementById('playerName').textContent = 
+          `${player.firstName || ''} ${player.lastName || ''}`.trim() || 'Player';
+        document.getElementById('playerReg').textContent = player.reg || '-';
+
+        // Personal Information
+        document.getElementById('fullName').textContent = 
+          `${player.firstName || ''} ${player.lastName || ''}`.trim() || '-';
+        document.getElementById('dob').textContent = player.dob || '-';
+        document.getElementById('gender').textContent = 
+          player.gender ? player.gender.charAt(0).toUpperCase() + player.gender.slice(1) : '-';
+        document.getElementById('nationality').textContent = player.nationality || '-';
+
+        // Golf Information
+        document.getElementById('homeClub').textContent = player.homeClub || '-';
+        document.getElementById('handicap').textContent = 
+          player.hcp !== undefined && player.hcp !== null ? player.hcp : '-';
+        document.getElementById('playerType').textContent = 
+          player.playerType ? player.playerType.charAt(0).toUpperCase() + player.playerType.slice(1) : '-';
+        document.getElementById('ageGroup').textContent = player.ageGroup || '-';
+
+        // Contact Information
+        document.getElementById('email').textContent = player.email || '-';
+        document.getElementById('mobile').textContent = player.mobile || '-';
+        document.getElementById('address').textContent = player.address || '-';
+
+        showProfile();
+
+      } catch (error) {
+        console.error('Error loading player data:', error);
+        showError('Failed to load player data');
+      }
+    }
+
+    // Login form handler
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      let regNo = document.getElementById('regNo').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+
+      if (!regNo || !password) {
+        showError('Please enter registration number and password');
+        return;
+      }
+
+      // Remove 'p' prefix if user added it, then add it back
+      regNo = regNo.replace(/^p/i, '');
+      const email = `p${regNo}@gtm.player.local`;
+
+      // Show loading state
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // Auth state change will handle the rest
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        let message = 'Login failed. Please check your credentials.';
+        if (error.code === 'auth/user-not-found') {
+          message = 'Registration number not found.';
+        } else if (error.code === 'auth/wrong-password') {
+          message = 'Incorrect password.';
+        } else if (error.code === 'auth/too-many-requests') {
+          message = 'Too many failed attempts. Please try again later.';
+        }
+        
+        showError(message);
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      }
+    });
+
+    // Logout handler
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // Auth state change listener
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        loadPlayerData(user);
+        loadProfilePhoto(user.uid);
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      } else {
+        showLogin();
+      }
+    });
+
+    // Photo Modal Functions
+    function openPhotoModal() {
+      document.getElementById('photoModal').classList.add('show');
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photoModal').classList.remove('show');
+    }
+
+    function editCurrentPhoto() {
+      if (savedPhotoData) {
+        closePhotoModal();
+        openPhotoEditor(savedPhotoData);
+      }
+    }
+
+    function takePhoto() {
+      closePhotoModal();
+      document.getElementById('cameraInput').click();
+    }
+
+    function chooseFromLibrary() {
+      closePhotoModal();
+      document.getElementById('libraryInput').click();
+    }
+
+    // Handle photo selection
+    document.getElementById('cameraInput').addEventListener('change', handlePhotoSelect);
+    document.getElementById('libraryInput').addEventListener('change', handlePhotoSelect);
+
+    let currentImage = null;
+    let savedPhotoData = null; // Store the original uploaded photo
+    let currentScale = 1;
+    let currentX = 0;
+    let currentY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    function handlePhotoSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB.');
+        return;
+      }
+
+      // Read and open editor
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        savedPhotoData = e.target.result; // Save original photo
+        openPhotoEditor(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Reset input
+      event.target.value = '';
+    }
+
+    function openPhotoEditor(imageData) {
+      currentImage = imageData;
+      const cropImage = document.getElementById('cropImage');
+      const editor = document.getElementById('photoEditor');
+      
+      cropImage.src = imageData;
+      cropImage.onload = function() {
+        // Center and fit the image to the container
+        resetImagePosition();
       };
       
-      // Initialize Firebase
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+      editor.classList.add('show');
+      
+      // Reset zoom
+      currentScale = 1;
+      document.getElementById('zoomSlider').value = 100;
+    }
+
+    function resetImagePosition() {
+      const cropImage = document.getElementById('cropImage');
+      const container = document.getElementById('cropContainer');
+      
+      const containerSize = 300;
+      const imgWidth = cropImage.naturalWidth;
+      const imgHeight = cropImage.naturalHeight;
+      
+      // Calculate scale to fit the container (cover the entire circle)
+      const scaleToFit = Math.max(containerSize / imgWidth, containerSize / imgHeight);
+      
+      // Set the base scale
+      const baseScale = scaleToFit;
+      currentScale = baseScale;
+      
+      // Update slider range based on the image
+      const slider = document.getElementById('zoomSlider');
+      slider.min = Math.floor(baseScale * 100);
+      slider.max = Math.floor(baseScale * 300);
+      slider.value = Math.floor(baseScale * 100);
+      
+      // Calculate position to center the image
+      const scaledWidth = imgWidth * currentScale;
+      const scaledHeight = imgHeight * currentScale;
+      
+      currentX = (containerSize - scaledWidth) / 2;
+      currentY = (containerSize - scaledHeight) / 2;
+      
+      updateImageTransform();
+    }
+
+    function updateImageTransform() {
+      const cropImage = document.getElementById('cropImage');
+      cropImage.style.transform = `scale(${currentScale}) translate(${currentX / currentScale}px, ${currentY / currentScale}px)`;
+      cropImage.style.transformOrigin = 'top left';
+    }
+
+    // Zoom controls
+    document.getElementById('zoomSlider').addEventListener('input', function(e) {
+      const slider = document.getElementById('zoomSlider');
+      const minScale = parseFloat(slider.min) / 100;
+      currentScale = e.target.value / 100;
+      updateImageTransform();
+    });
+
+    function zoomIn() {
+      const slider = document.getElementById('zoomSlider');
+      const currentVal = parseInt(slider.value);
+      const step = (parseInt(slider.max) - parseInt(slider.min)) / 10;
+      slider.value = Math.min(parseInt(slider.max), currentVal + step);
+      currentScale = slider.value / 100;
+      updateImageTransform();
+    }
+
+    function zoomOut() {
+      const slider = document.getElementById('zoomSlider');
+      const currentVal = parseInt(slider.value);
+      const step = (parseInt(slider.max) - parseInt(slider.min)) / 10;
+      slider.value = Math.max(parseInt(slider.min), currentVal - step);
+      currentScale = slider.value / 100;
+      updateImageTransform();
+    }
+
+    // Drag to reposition
+    const cropImage = document.getElementById('cropImage');
+    const cropContainer = document.getElementById('cropContainer');
+
+    cropImage.addEventListener('mousedown', startDrag);
+    cropImage.addEventListener('touchstart', startDrag);
+    
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag);
+    
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('touchend', stopDrag);
+
+    // Pinch to zoom
+    let initialPinchDistance = 0;
+    let initialScale = 1;
+    let initialPinchCenter = { x: 0, y: 0 };
+    let initialX = 0;
+    let initialY = 0;
+
+    cropContainer.addEventListener('touchstart', handleTouchStart);
+    cropContainer.addEventListener('touchmove', handleTouchMove);
+
+    function handleTouchStart(e) {
+      if (e.touches.length === 2) {
+        // Pinch gesture started
+        e.preventDefault();
+        initialPinchDistance = getPinchDistance(e.touches);
+        initialScale = currentScale;
+        initialX = currentX;
+        initialY = currentY;
+        
+        // Calculate pinch center point relative to container
+        const rect = cropContainer.getBoundingClientRect();
+        initialPinchCenter = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+        };
+      } else if (e.touches.length === 1) {
+        // Single touch - drag
+        startDrag(e);
+      }
+    }
+
+    function handleTouchMove(e) {
+      if (e.touches.length === 2) {
+        // Pinch gesture
+        e.preventDefault();
+        const currentDistance = getPinchDistance(e.touches);
+        const scaleChange = currentDistance / initialPinchDistance;
+        
+        const slider = document.getElementById('zoomSlider');
+        const minScale = parseFloat(slider.min) / 100;
+        const maxScale = parseFloat(slider.max) / 100;
+        
+        let newScale = initialScale * scaleChange;
+        newScale = Math.max(minScale, Math.min(maxScale, newScale));
+        
+        // Calculate new position to zoom toward pinch center
+        const scaleDiff = newScale - initialScale;
+        currentX = initialX - (initialPinchCenter.x - initialX) * (scaleDiff / initialScale);
+        currentY = initialY - (initialPinchCenter.y - initialY) * (scaleDiff / initialScale);
+        currentScale = newScale;
+        
+        slider.value = Math.round(newScale * 100);
+        updateImageTransform();
+      } else if (e.touches.length === 1) {
+        // Single touch - drag
+        drag(e);
+      }
+    }
+
+    function getPinchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function startDrag(e) {
+      if (e.touches && e.touches.length > 1) return; // Ignore multi-touch for drag
+      isDragging = true;
+      const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+      startX = clientX - currentX;
+      startY = clientY - currentY;
+      e.preventDefault();
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      if (e.touches && e.touches.length > 1) return; // Ignore multi-touch for drag
+      const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+      currentX = clientX - startX;
+      currentY = clientY - startY;
+      updateImageTransform();
+      e.preventDefault();
+    }
+
+    function stopDrag() {
+      isDragging = false;
+    }
+
+    function cancelCrop() {
+      document.getElementById('photoEditor').classList.remove('show');
+      currentImage = null;
+    }
+
+    async function saveCroppedPhoto() {
+      try {
+        // Create a canvas to crop the image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 300;
+        canvas.width = size;
+        canvas.height = size;
+
+        // Load the image
+        const img = new Image();
+        img.src = currentImage;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
+
+        // Fill with white background first (in case of transparency)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        // Create circular clipping path
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Apply the same transformation as CSS: scale first, then translate
+        // CSS: scale(currentScale) translate(currentX/currentScale, currentY/currentScale)
+        // Canvas equivalent:
+        ctx.scale(currentScale, currentScale);
+        ctx.translate(currentX / currentScale, currentY / currentScale);
+        
+        // Draw the image at origin
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+        
+        ctx.restore();
+
+        // Convert to data URL
+        const croppedImage = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Close editor
+        document.getElementById('photoEditor').classList.remove('show');
+        
+        // Update savedPhotoData with the original image (not cropped) for future edits
+        // currentImage already contains the original photo
+        
+        // Display and save
+        displayProfilePhoto(croppedImage);
+        await saveProfilePhoto(croppedImage);
+        
+      } catch (error) {
+        console.error('Error cropping photo:', error);
+        alert('Failed to process photo. Please try again.');
+      }
+    }
+
+    function displayProfilePhoto(imageData) {
+      const avatar = document.getElementById('profileAvatar');
+      const emoji = document.getElementById('avatarEmoji');
+      const editBtn = document.getElementById('editPhotoBtn');
+      
+      // Check if image already exists
+      let img = avatar.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        avatar.insertBefore(img, avatar.firstChild);
       }
       
-      const auth = firebase.auth();
-      const database = firebase.database();
+      img.src = imageData;
+      emoji.style.display = 'none';
       
-      let currentPlayer = null;
-      let allPlayers = [];
-      
-      // Check authentication state
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          showMainContent();
-          loadPlayerData();
-        } else {
-          // Redirect to player login page
-          window.location.href = '/auth/player-login.html?return=' + encodeURIComponent(window.location.pathname);
-        }
-      });
-      
-      // Login form handler
-      document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+      // Show edit button in photo modal
+      if (editBtn) {
+        editBtn.style.display = 'flex';
+      }
+    }
+
+    async function saveProfilePhoto(imageData) {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('No user logged in');
+        return;
+      }
+
+      try {
+        // Show uploading state (optional - you can add a loading indicator)
+        console.log('Uploading photo to Firebase...');
+
+        // Convert base64 to blob
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+
+        // Create a reference in Firebase Storage
+        // Store in players/photos/{userId}.jpg
+        const storageRef = storage.ref(`players/photos/${user.uid}.jpg`);
         
-        const loginBtn = document.getElementById('loginBtn');
-        const errorDiv = document.getElementById('loginError');
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Signing in...';
-        errorDiv.classList.remove('show');
-        
-        try {
-          // Check if input is an email or registration number
-          let loginEmail = email;
-          
-          // If not an email format, search for player with this reg number
-          if (!email.includes('@')) {
-            // Normalize input - add P prefix if just a number
-            let regNumber = email;
-            if (/^\d+$/.test(email)) {
-              regNumber = 'P' + email;
-            }
-            
-            console.log('Looking up player with reg:', regNumber);
-            const playersSnapshot = await database.ref('players').once('value');
-            const playersData = playersSnapshot.val();
-            
-            if (playersData) {
-              const players = typeof playersData === 'object' && !Array.isArray(playersData) 
-                ? Object.values(playersData) 
-                : playersData;
-              
-              // Search for player by reg number (case insensitive)
-              const player = players.find(p => 
-                p.reg && p.reg.toUpperCase() === regNumber.toUpperCase()
-              );
-              
-              console.log('Found player:', player);
-              
-              if (player) {
-                // Use authEmail (from new signup) or email (from old system)
-                loginEmail = player.authEmail || player.email;
-                console.log('Using email:', loginEmail);
-                
-                if (!loginEmail) {
-                  throw new Error('No email associated with this registration. Please sign up first.');
-                }
-              } else {
-                throw new Error('Registration number not found');
+        // Upload the file
+        const snapshot = await storageRef.put(blob, {
+          contentType: 'image/jpeg'
+        });
+
+        // Get the download URL
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        console.log('Photo uploaded, URL:', downloadURL);
+
+        // Save the URL to the player's profile in Realtime Database
+        await database.ref(`players`).once('value').then(async (playersSnapshot) => {
+          const players = playersSnapshot.val();
+          if (players) {
+            // Find the player's key
+            for (const key in players) {
+              const p = players[key];
+              if (p.authEmail && p.authEmail.toLowerCase() === user.email.toLowerCase()) {
+                // Update player's photoURL
+                await database.ref(`players/${key}`).update({
+                  photoURL: downloadURL
+                });
+                console.log('Photo saved to Firebase successfully!');
+                alert('Profile photo updated successfully!');
+                break;
+              } else if (p.reg && `${p.reg.toLowerCase()}@gtm.player.local` === user.email.toLowerCase()) {
+                await database.ref(`players/${key}`).update({
+                  photoURL: downloadURL
+                });
+                console.log('Photo saved to Firebase successfully!');
+                alert('Profile photo updated successfully!');
+                break;
               }
-            } else {
-              throw new Error('No player data found');
             }
           }
-          
-          await auth.signInWithEmailAndPassword(loginEmail, password);
-          
-        } catch (error) {
-          console.error('Login error:', error);
-          errorDiv.textContent = getErrorMessage(error.code);
-          errorDiv.classList.add('show');
-          loginBtn.disabled = false;
-          loginBtn.textContent = 'Sign In';
-        }
-      });
-      
-      // Load player data
-      async function loadPlayerData() {
-        try {
-          const user = auth.currentUser;
-          if (!user) return;
-          
-          const playersSnapshot = await database.ref('players').once('value');
-          const playersData = playersSnapshot.val();
-          
-          if (!playersData) {
-            showError('No player data found');
-            return;
+        });
+
+        // Also save to localStorage as backup
+        localStorage.setItem(`playerPhoto_${user.uid}`, downloadURL);
+
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        alert('Failed to upload photo: ' + error.message);
+      }
+    }
+
+    async function loadProfilePhoto(userId) {
+      try {
+        // First try to load from Firebase
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const playersSnapshot = await database.ref(`players`).once('value');
+        const players = playersSnapshot.val();
+        
+        if (players) {
+          for (const key in players) {
+            const p = players[key];
+            if ((p.authEmail && p.authEmail.toLowerCase() === user.email.toLowerCase()) ||
+                (p.reg && `${p.reg.toLowerCase()}@gtm.player.local` === user.email.toLowerCase())) {
+              if (p.photoURL) {
+                savedPhotoData = p.photoURL; // Save for editing
+                displayProfilePhoto(p.photoURL);
+                return;
+              }
+              break;
+            }
           }
-          
-          // Convert to array
-          allPlayers = typeof playersData === 'object' && !Array.isArray(playersData)
-            ? Object.values(playersData)
-            : playersData;
-          
-          // Find player by email
-          currentPlayer = allPlayers.find(p => p.email === user.email);
-          
-          if (!currentPlayer) {
-            showError('Player profile not found');
-            return;
-          }
-          
-          displayPlayerData();
-          
-        } catch (error) {
-          console.error('Error loading player data:', error);
-          showError('Failed to load player data');
+        }
+
+        // Fallback to localStorage if no Firebase photo
+        const imageData = localStorage.getItem(`playerPhoto_${userId}`);
+        if (imageData) {
+          displayProfilePhoto(imageData);
+        }
+      } catch (error) {
+        console.error('Error loading photo:', error);
+        // Try localStorage as fallback
+        const imageData = localStorage.getItem(`playerPhoto_${userId}`);
+        if (imageData) {
+          displayProfilePhoto(imageData);
         }
       }
-      
-      // Display player data
-      function displayPlayerData() {
-        if (!currentPlayer) return;
-        
-        // Welcome messages
-        document.getElementById('playerName').textContent = currentPlayer.firstName || 'Player';
-        document.getElementById('headerPlayerName').textContent = currentPlayer.firstName || 'Player';
-        
-        // Personal Information
-        document.getElementById('regNo').textContent = currentPlayer.reg || '-';
-        document.getElementById('fullName').textContent = 
-          `${currentPlayer.firstName || ''} ${currentPlayer.lastName || ''}`.trim() || '-';
-        document.getElementById('dob').textContent = currentPlayer.dob || '-';
-        document.getElementById('ageGroup').textContent = currentPlayer.ageGroup || '-';
-        document.getElementById('gender').textContent = 
-          currentPlayer.gender ? currentPlayer.gender.charAt(0).toUpperCase() + currentPlayer.gender.slice(1) : '-';
-        document.getElementById('nationality').textContent = currentPlayer.nationality || '-';
-        
-        // Golf Information
-        document.getElementById('homeClub').textContent = currentPlayer.homeClub || '-';
-        document.getElementById('handicap').textContent = 
-          currentPlayer.hcp !== undefined ? currentPlayer.hcp : '-';
-        document.getElementById('playerType').textContent = 
-          currentPlayer.playerType ? currentPlayer.playerType.charAt(0).toUpperCase() + currentPlayer.playerType.slice(1) : '-';
-        document.getElementById('admissionDate').textContent = currentPlayer.admissionDate || '-';
-        
-        // Contact Information
-        document.getElementById('idNo').textContent = currentPlayer.idNo || '-';
-        document.getElementById('email').textContent = currentPlayer.email || '-';
-        document.getElementById('mobile').textContent = currentPlayer.mobile || '-';
-        document.getElementById('address').textContent = currentPlayer.address || '-';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('photoModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closePhotoModal();
       }
-      
-      // Open edit modal
-      function openEditModal() {
-        if (!currentPlayer) return;
-        
-        document.getElementById('editRegNo').value = currentPlayer.reg || '';
-        document.getElementById('editFirstName').value = currentPlayer.firstName || '';
-        document.getElementById('editLastName').value = currentPlayer.lastName || '';
-        document.getElementById('editDob').value = currentPlayer.dob || '';
-        document.getElementById('editHandicap').value = currentPlayer.hcp || '';
-        document.getElementById('editIdNo').value = currentPlayer.idNo || '';
-        document.getElementById('editEmail').value = currentPlayer.email || '';
-        document.getElementById('editMobile').value = currentPlayer.mobile || '';
-        document.getElementById('editAddress').value = currentPlayer.address || '';
-        
-        document.getElementById('editModal').classList.add('active');
-        document.getElementById('modalMessage').style.display = 'none';
-      }
-      
-      // Close edit modal
-      function closeEditModal() {
-        document.getElementById('editModal').classList.remove('active');
-      }
-      
-      // Handle edit form submission
-      document.getElementById('editForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-          // Update editable fields
-          currentPlayer.hcp = parseFloat(document.getElementById('editHandicap').value) || 0;
-          currentPlayer.idNo = document.getElementById('editIdNo').value;
-          currentPlayer.email = document.getElementById('editEmail').value;
-          currentPlayer.mobile = document.getElementById('editMobile').value;
-          currentPlayer.address = document.getElementById('editAddress').value;
-          
-          // Update in array
-          const playerIndex = allPlayers.findIndex(p => p.reg === currentPlayer.reg);
-          if (playerIndex !== -1) {
-            allPlayers[playerIndex] = currentPlayer;
-          }
-          
-          // Save to Firebase
-          const playersObject = {};
-          allPlayers.forEach(player => {
-            playersObject[player.reg] = player;
-          });
-          
-          await database.ref('players').set(playersObject);
-          
-          // Update display
-          displayPlayerData();
-          
-          // Show success
-          showModalMessage('success', 'Profile updated successfully!');
-          setTimeout(() => {
-            closeEditModal();
-          }, 1500);
-          
-        } catch (error) {
-          console.error('Error updating profile:', error);
-          showModalMessage('error', 'Failed to update profile. Please try again.');
-        }
-      });
-      
-      // Logout
-      async function handleLogout() {
-        try {
-          await auth.signOut();
-          showLoginScreen();
-        } catch (error) {
-          console.error('Logout error:', error);
-        }
-      }
-      
-      // UI helpers
-      function showLoginScreen() {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContent').classList.remove('active');
-      }
-      
-      function showMainContent() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainContent').classList.add('active');
-      }
-      
-      function showModalMessage(type, message) {
-        const msgDiv = document.getElementById('modalMessage');
-        msgDiv.className = `message ${type}`;
-        msgDiv.textContent = message;
-        msgDiv.style.display = 'block';
-      }
-      
-      function showError(message) {
-        alert(message);
-      }
-      
-      function getErrorMessage(code) {
-        switch (code) {
-          case 'auth/invalid-email':
-            return 'Invalid email address';
-          case 'auth/user-disabled':
-            return 'This account has been disabled';
-          case 'auth/user-not-found':
-            return 'No account found with this email or registration number';
-          case 'auth/wrong-password':
-            return 'Incorrect password';
-          case 'auth/invalid-credential':
-            return 'Invalid login credentials';
-          default:
-            return 'Login failed. Please try again.';
-        }
-      }
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>

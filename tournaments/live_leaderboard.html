@@ -475,138 +475,219 @@
         color: rgba(255,255,255,0.5);
       }
       
-      /* Match Play Leaderboard Container */
+      /* Match Play Leaderboard Container - Centered, Large Cards */
       .match-play-container {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        padding: 16px;
+        gap: 16px;
+        padding: 20px;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      
+      .match-play-content {
+        background: transparent;
       }
       
       .match-card {
-        background: rgba(255,255,255,0.08);
-        border-radius: 12px;
-        padding: 16px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 16px;
+        padding: 0;
         cursor: pointer;
         transition: all 0.2s;
         border: 1px solid rgba(255,255,255,0.1);
-        display: grid;
-        grid-template-columns: 40px 1fr 60px;
-        gap: 12px;
-        align-items: center;
+        overflow: hidden;
       }
       
       .match-card:hover {
-        background: rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.1);
         transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       }
       
       .match-card.expanded {
-        background: rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.12);
       }
       
       .match-card.completed {
-        opacity: 0.85;
+        opacity: 0.9;
       }
       
       .match-card.in-progress {
-        border-left: 3px solid #10b981;
+        border: 2px solid rgba(16, 185, 129, 0.5);
+      }
+      
+      .match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 16px;
+        background: rgba(0,0,0,0.2);
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
       }
       
       .match-number {
-        font-size: 14px;
-        font-weight: 700;
-        color: rgba(255,255,255,0.5);
-        background: rgba(0,0,0,0.3);
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-weight: 600;
+      }
+      
+      .match-thru {
+        font-size: 12px;
+        color: rgba(255,255,255,0.6);
+      }
+      
+      .match-body {
+        padding: 16px 20px;
       }
       
       .match-teams {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
       }
       
       .team-side {
         flex: 1;
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: rgba(0,0,0,0.2);
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.25);
+        min-width: 120px;
       }
       
       .team-side.home {
         text-align: left;
-        border-left: 3px solid #3b82f6;
+        border-left: 4px solid #ef4444;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(0,0,0,0.25));
       }
       
       .team-side.away {
         text-align: right;
-        border-right: 3px solid #ec4899;
+        border-right: 4px solid #3b82f6;
+        background: linear-gradient(135deg, rgba(0,0,0,0.25), rgba(59, 130, 246, 0.15));
       }
       
-      .team-side.leading {
-        background: rgba(16, 185, 129, 0.2);
+      .team-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+      }
+      
+      .team-side.home .team-label {
+        color: #f87171;
+      }
+      
+      .team-side.away .team-label {
+        color: #60a5fa;
       }
       
       .team-name {
         font-weight: 600;
         color: white;
         font-size: 14px;
+        line-height: 1.6;
+      }
+      
+      .team-name .player-name {
+        display: block;
       }
       
       .match-status-arrow {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
-        min-width: 100px;
+        gap: 6px;
+        min-width: 90px;
       }
       
       .arrow-indicator {
-        font-size: 16px;
-        color: #10b981;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         animation: pulse-arrow 1.5s ease-in-out infinite;
       }
       
+      .arrow-indicator svg {
+        width: 40px;
+        height: 40px;
+      }
+      
+      .arrow-indicator.home-leading svg {
+        fill: #ef4444;
+      }
+      
+      .arrow-indicator.away-leading svg {
+        fill: #3b82f6;
+      }
+      
       @keyframes pulse-arrow {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.1); }
       }
       
       .match-score-badge {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.15);
         color: white;
-        padding: 6px 12px;
-        border-radius: 16px;
+        padding: 8px 16px;
+        border-radius: 20px;
         font-weight: 700;
-        font-size: 13px;
+        font-size: 14px;
         white-space: nowrap;
       }
       
       .match-score-badge.in-progress {
-        background: rgba(16, 185, 129, 0.3);
-        color: #10b981;
+        background: rgba(255,255,255,0.15);
+        color: white;
+      }
+      
+      .match-score-badge.in-progress.home-leading {
+        background: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+      }
+      
+      .match-score-badge.in-progress.away-leading {
+        background: rgba(59, 130, 246, 0.3);
+        color: #93c5fd;
       }
       
       .match-score-badge.completed {
-        background: rgba(139, 92, 246, 0.3);
-        color: #a78bfa;
+        background: rgba(139, 92, 246, 0.25);
+        color: #c4b5fd;
+      }
+      
+      .match-score-badge.completed.home-leading {
+        background: rgba(239, 68, 68, 0.35);
+        color: #fca5a5;
+      }
+      
+      .match-score-badge.completed.away-leading {
+        background: rgba(59, 130, 246, 0.35);
+        color: #93c5fd;
       }
       
       .match-score-badge.not-started {
-        background: rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.5);
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.4);
       }
       
-      .match-thru {
+      .match-thru-center {
+        font-size: 11px;
+        color: rgba(255,255,255,0.6);
+        margin-top: 4px;
+      }
+      
+      .match-final-label {
         font-size: 12px;
-        color: rgba(255,255,255,0.5);
-        text-align: center;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.25);
+        color: #4ade80;
+        margin-bottom: 6px;
       }
       
       /* Match Details Panel */
@@ -714,42 +795,115 @@
         color: rgba(255,255,255,0.4);
       }
       
-      /* Responsive Match Play */
+      /* Responsive Match Play - Keep horizontal, just smaller */
       @media (max-width: 768px) {
-        .match-card {
-          grid-template-columns: 1fr;
-          gap: 8px;
+        .container {
+          padding: 10px;
         }
         
-        .match-number {
-          display: none;
+        .match-play-container {
+          padding: 10px;
+          gap: 12px;
+        }
+        
+        .match-card {
+          border-radius: 12px;
+        }
+        
+        .match-header {
+          padding: 6px 12px;
+          font-size: 11px;
+        }
+        
+        .match-body {
+          padding: 12px 14px;
         }
         
         .match-teams {
-          flex-direction: column;
+          gap: 10px;
         }
         
         .team-side {
-          width: 100%;
-          text-align: center !important;
-          border-left: none !important;
-          border-right: none !important;
+          padding: 10px 12px;
+          min-width: 0;
+          border-radius: 10px;
         }
         
-        .team-side.home {
-          border-top: 3px solid #3b82f6;
-        }
-        
-        .team-side.away {
-          border-bottom: 3px solid #ec4899;
+        .team-name {
+          font-size: 13px;
+          line-height: 1.3;
+          word-wrap: break-word;
         }
         
         .match-status-arrow {
-          width: 100%;
+          min-width: 65px;
         }
         
-        .match-thru {
-          margin-top: 8px;
+        .match-score-badge {
+          padding: 6px 12px;
+          font-size: 12px;
+        }
+        
+        .arrow-indicator {
+          font-size: 14px;
+        }
+        
+        .stats-bar {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+        
+        .stat-card {
+          padding: 10px 12px;
+        }
+        
+        .stat-value {
+          font-size: 24px;
+        }
+        
+        .stat-label {
+          font-size: 10px;
+        }
+      }
+      
+      /* Even smaller for very small phones */
+      @media (max-width: 400px) {
+        .container {
+          padding: 6px;
+        }
+        
+        .match-play-container {
+          padding: 6px;
+        }
+        
+        .match-body {
+          padding: 10px 10px;
+        }
+        
+        .match-teams {
+          gap: 6px;
+        }
+        
+        .team-side {
+          padding: 8px 10px;
+        }
+        
+        .team-name {
+          font-size: 11px;
+        }
+        
+        .match-status-arrow {
+          min-width: 55px;
+        }
+        
+        .match-score-badge {
+          padding: 5px 10px;
+          font-size: 11px;
+        }
+        
+        .arrow-indicator {
+          font-size: 12px;
         }
       }
 
@@ -1116,6 +1270,240 @@
           min-width: 220px;
         }
       }
+      
+      /* ========================================
+         TEAM STANDINGS STYLES
+         ======================================== */
+      
+      .team-standings-container {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 900px;
+        margin: 0 auto;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      }
+      
+      .team-standings-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 20px;
+      }
+      
+      .team-standings-title .trophy {
+        font-size: 24px;
+      }
+      
+      .team-standings-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      
+      .team-standings-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #64748b;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 13px;
+      }
+      
+      .team-standings-table th.center {
+        text-align: center;
+      }
+      
+      .team-standings-table td {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+      }
+      
+      .team-standings-table td.center {
+        text-align: center;
+      }
+      
+      .team-standings-table tr:last-child td {
+        border-bottom: none;
+      }
+      
+      .team-standings-table .rank {
+        font-weight: 700;
+        color: #10b981;
+        font-size: 16px;
+      }
+      
+      .team-standings-table .team-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 15px;
+      }
+      
+      .team-standings-table .won {
+        color: #10b981;
+        font-weight: 600;
+      }
+      
+      .team-standings-table .lost {
+        color: #ef4444;
+        font-weight: 600;
+      }
+      
+      .team-standings-table .points {
+        font-weight: 700;
+        font-size: 16px;
+        color: #1e293b;
+      }
+      
+      .team-standings-table .diff-positive {
+        color: #10b981;
+        font-weight: 600;
+      }
+      
+      .team-standings-table .diff-negative {
+        color: #ef4444;
+        font-weight: 600;
+      }
+      
+      .team-standings-note {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 16px;
+        font-style: italic;
+      }
+      
+      /* Expandable team row */
+      .team-standings-table .team-row {
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .team-standings-table .team-row:hover {
+        background: #f8fafc;
+      }
+      
+      .team-standings-table .team-row.expanded {
+        background: #f1f5f9;
+      }
+      
+      .team-standings-table .team-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .team-standings-table .expand-icon {
+        font-size: 10px;
+        color: #94a3b8;
+        transition: transform 0.2s;
+      }
+      
+      .team-standings-table .team-row.expanded .expand-icon {
+        transform: rotate(90deg);
+      }
+      
+      /* Breakdown row */
+      .team-standings-table .breakdown-row {
+        display: none;
+        background: #f8fafc;
+      }
+      
+      .team-standings-table .breakdown-row.visible {
+        display: table-row;
+      }
+      
+      .team-standings-table .breakdown-row td {
+        padding: 0 16px 16px 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .breakdown-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      .breakdown-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+      }
+      
+      .breakdown-item .breakdown-label {
+        font-weight: 600;
+        min-width: 90px;
+        color: #475569;
+      }
+      
+      .breakdown-item.confirmed .breakdown-label {
+        color: #10b981;
+      }
+      
+      .breakdown-item.in-progress .breakdown-label {
+        color: #f59e0b;
+      }
+      
+      .breakdown-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      
+      .breakdown-stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .breakdown-stat-label {
+        color: #94a3b8;
+      }
+      
+      .breakdown-stat-value {
+        font-weight: 600;
+        color: #334155;
+      }
+      
+      .breakdown-stat-value.won { color: #10b981; }
+      .breakdown-stat-value.lost { color: #ef4444; }
+      .breakdown-stat-value.points { color: #1e293b; font-weight: 700; }
+      
+      @media (max-width: 600px) {
+        .team-standings-container {
+          padding: 16px;
+          margin: 0 8px;
+        }
+        
+        .team-standings-table th,
+        .team-standings-table td {
+          padding: 10px 8px;
+          font-size: 12px;
+        }
+        
+        .team-standings-title {
+          font-size: 18px;
+        }
+        
+        .breakdown-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+        
+        .breakdown-stats {
+          gap: 12px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1197,6 +1585,9 @@
         <div>No scores available yet</div>
         <div style="margin-top: 8px; font-size: 13px;">Scores will appear here once players start</div>
       </div>
+      
+      <!-- Team Standings -->
+      <div id="team-standings-wrapper" style="display: none;"></div>
     </div>
 
     <!-- Footer -->
@@ -1214,8 +1605,11 @@
       // State
       let currentTournament = null;
       let currentRoundId = null;
+      let currentRoundIndex = 0; // Index of current round (0-based)
       let currentCategory = 'ALL';
       let liveScores = {};
+      let officialScores = {}; // Official scores from scores page - these take precedence
+      let previousRoundsScores = {}; // Scores from previous rounds for multi-day tournaments: { playerKey: { gross: X, net: Y, toPar: Z } }
       let admittedPlayers = [];
       let courseData = null;
       let previousPositions = {};
@@ -1223,6 +1617,7 @@
       let settingsListener = null;
       let isLiveScoringActive = true;
       let isLeaderboardVisible = true;
+      let isMultiRoundTournament = false;
       
       // Match play state
       let isMatchPlay = false;
@@ -1402,6 +1797,13 @@
           const roundIds = currentTournament.meta?.roundIds || [tournamentId + '-1'];
           currentRoundId = roundId || roundIds[0]; // Default to first round
           
+          // Determine round index for multi-round support
+          currentRoundIndex = roundIds.indexOf(currentRoundId);
+          if (currentRoundIndex === -1) currentRoundIndex = 0;
+          isMultiRoundTournament = roundIds.length > 1;
+          
+          console.log('Multi-round tournament:', isMultiRoundTournament, '| Current round:', currentRoundIndex + 1, 'of', roundIds.length);
+          
           // Update header with round selector if multiple rounds
           document.getElementById('tournament-name').textContent = currentTournament.name;
           
@@ -1561,20 +1963,17 @@
         // For match play, show simplified tabs
         if (isMatchPlay) {
           const tabsContainer = document.getElementById('category-tabs');
-          tabsContainer.innerHTML = `<button class="category-tab active" data-category="MATCHPLAY" onclick="selectCategory('MATCHPLAY')">Matches</button>`;
+          tabsContainer.innerHTML = `
+            <button class="category-tab active" data-category="MATCHPLAY" onclick="selectCategory('MATCHPLAY')">Matches</button>
+            <button class="category-tab" data-category="TEAM_STANDINGS" onclick="selectCategory('TEAM_STANDINGS')">Team Standings</button>
+          `;
           tabsContainer.style.display = 'flex';
           currentCategory = 'MATCHPLAY';
           
-          // Update table header for match play
-          const thead = document.querySelector('.leaderboard-table thead tr');
+          // Hide table header for match play - we don't need MATCH/HOME/STATUS/AWAY/THRU headers
+          const thead = document.querySelector('.leaderboard-table thead');
           if (thead) {
-            thead.innerHTML = `
-              <th style="width: 60px;">Match</th>
-              <th>Home</th>
-              <th class="center" style="width: 100px;">Status</th>
-              <th>Away</th>
-              <th class="center" style="width: 60px;">Thru</th>
-            `;
+            thead.style.display = 'none';
           }
           return;
         }
@@ -1616,6 +2015,20 @@
         document.querySelectorAll('.category-tab').forEach(tab => {
           tab.classList.toggle('active', tab.dataset.category === category);
         });
+        
+        // Handle Team Standings view for match play
+        if (category === 'TEAM_STANDINGS') {
+          document.getElementById('leaderboard-wrapper').style.display = 'none';
+          document.getElementById('no-data').style.display = 'none';
+          document.getElementById('team-standings-wrapper').style.display = 'block';
+          renderTeamStandings();
+          return;
+        } else {
+          document.getElementById('team-standings-wrapper').style.display = 'none';
+          if (isMatchPlay) {
+            document.getElementById('leaderboard-wrapper').style.display = 'block';
+          }
+        }
         
         // Update column headers based on scoring format
         updateColumnHeaders();
@@ -1778,30 +2191,159 @@
           isLeaderboardVisible = settings?.leaderboardVisible !== false; // Default to true if not set
           updateLiveIndicator();
           
-          // Try liveScores path first
+          // Load official scores (from scores page) first - these take precedence
+          // Scores are stored at path 'scores' as an object with roundId keys
+          const officialSnapshot = await db.ref('scores').once('value');
+          const allOfficialScores = officialSnapshot.val() || {};
+          officialScores = allOfficialScores[currentRoundId] || {};
+          console.log('Firebase official scores:', Object.keys(officialScores).length, 'for round', currentRoundId);
+          
+          // Try liveScores path for real-time data
           let snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
           const firebaseLiveScores = snapshot.val() || {};
           console.log('Firebase liveScores:', Object.keys(firebaseLiveScores).length);
           
-          // Also check regular scores
-          snapshot = await db.ref(`scores/${currentRoundId}`).once('value');
-          const regularScores = snapshot.val() || {};
-          console.log('Firebase regular scores:', Object.keys(regularScores).length);
-          
-          // Merge Firebase scores into local scores
+          // Merge scores - official scores take precedence over live scores
           for (const playerId in firebaseLiveScores) {
-            liveScores[playerId] = firebaseLiveScores[playerId];
+            // Only use live scores if no official scores exist for this player
+            if (!hasCompleteOfficialScores(playerId)) {
+              liveScores[playerId] = firebaseLiveScores[playerId];
+            }
           }
-          for (const playerId in regularScores) {
-            if (!liveScores[playerId]) {
-              liveScores[playerId] = regularScores[playerId];
+          
+          // Apply official scores on top (they always take precedence)
+          for (const playerId in officialScores) {
+            if (hasCompleteOfficialScores(playerId)) {
+              liveScores[playerId] = officialScores[playerId];
             }
           }
           
           console.log('Total scores after merge:', Object.keys(liveScores).length);
+          
+          // Load previous round scores for multi-day aggregate tournaments
+          if (isMultiRoundTournament && currentRoundIndex > 0) {
+            await loadPreviousRoundsScores(allOfficialScores);
+          }
         } catch (error) {
           console.error('Error loading scores from Firebase:', error);
         }
+      }
+      
+      // Load scores from previous rounds for multi-day tournaments
+      async function loadPreviousRoundsScores(allScoresData) {
+        if (!currentTournament || !isMultiRoundTournament || currentRoundIndex === 0) {
+          previousRoundsScores = {};
+          return;
+        }
+        
+        console.log('=== Loading previous rounds scores ===');
+        
+        const roundIds = currentTournament.meta?.roundIds || [];
+        previousRoundsScores = {};
+        
+        // Get all scores data (either passed in or load fresh)
+        let allScores = allScoresData;
+        if (!allScores) {
+          // Load from localStorage first
+          allScores = JSON.parse(localStorage.getItem('scores') || '{}');
+          
+          // Also try Firebase
+          if (db) {
+            try {
+              const snapshot = await db.ref('scores').once('value');
+              allScores = snapshot.val() || allScores;
+            } catch (e) {
+              console.error('Error loading scores from Firebase:', e);
+            }
+          }
+        }
+        
+        // Calculate cumulative scores from all previous rounds
+        for (let i = 0; i < currentRoundIndex; i++) {
+          const prevRoundId = roundIds[i];
+          const prevRoundScores = allScores[prevRoundId] || {};
+          
+          console.log(`Processing round ${i + 1} (${prevRoundId}):`, Object.keys(prevRoundScores).length, 'players');
+          
+          for (const playerKey in prevRoundScores) {
+            const playerData = prevRoundScores[playerKey];
+            
+            // Skip players with DQ/NS/NR status
+            if (playerData.status && ['DQ', 'NS', 'NR', 'WD'].includes(playerData.status)) {
+              continue;
+            }
+            
+            if (!playerData.holes) continue;
+            
+            // Calculate gross and net for this round
+            const holes = playerData.holes;
+            let roundGross = 0;
+            let roundNet = 0;
+            let roundToPar = 0;
+            let roundStableford = 0;
+            let holesPlayed = 0;
+            
+            for (let h = 0; h < 18; h++) {
+              if (holes[h] && holes[h] !== '' && holes[h] !== null) {
+                const score = holes[h] === 'X' ? 10 : parseInt(holes[h]) || 0; // Use 10 for X (DNF)
+                roundGross += score;
+                holesPlayed++;
+              }
+            }
+            
+            // Get net and stableford from stored data if available
+            if (playerData.points) {
+              roundNet = playerData.points.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+            }
+            if (playerData.stablefordPoints) {
+              roundStableford = playerData.stablefordPoints.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+            }
+            
+            // Calculate to par (assuming course par 72 if not available)
+            const coursePar = 72; // Default, will be overridden if course data available
+            roundToPar = roundGross - coursePar;
+            
+            // Add to cumulative previous rounds
+            if (!previousRoundsScores[playerKey]) {
+              previousRoundsScores[playerKey] = {
+                gross: 0,
+                net: 0,
+                toPar: 0,
+                stableford: 0,
+                rounds: 0
+              };
+            }
+            
+            previousRoundsScores[playerKey].gross += roundGross;
+            previousRoundsScores[playerKey].net += roundNet;
+            previousRoundsScores[playerKey].toPar += roundToPar;
+            previousRoundsScores[playerKey].stableford += roundStableford;
+            previousRoundsScores[playerKey].rounds++;
+          }
+        }
+        
+        console.log('Previous rounds scores calculated for', Object.keys(previousRoundsScores).length, 'players');
+        
+        // Debug: Show some sample data
+        const samplePlayers = Object.keys(previousRoundsScores).slice(0, 3);
+        samplePlayers.forEach(pk => {
+          console.log(`[Previous] ${pk}: gross=${previousRoundsScores[pk].gross}, toPar=${previousRoundsScores[pk].toPar > 0 ? '+' : ''}${previousRoundsScores[pk].toPar}, rounds=${previousRoundsScores[pk].rounds}`);
+        });
+      }
+      
+      // Check if a player has complete official scores (18 holes or status like DQ/NS/NR)
+      function hasCompleteOfficialScores(playerId) {
+        const official = officialScores[playerId];
+        if (!official || !official.holes) return false;
+        
+        // Check if player has 18 holes
+        const completedHoles = official.holes.filter(s => s !== '' && s !== null && s !== undefined).length;
+        if (completedHoles === 18) return true;
+        
+        // Check if player has a status (DQ, NS, NR, WD)
+        if (official.status && ['DQ', 'NS', 'NR', 'WD'].includes(official.status)) return true;
+        
+        return false;
       }
 
       // Setup Firebase real-time listener
@@ -1824,13 +2366,46 @@
           // Detect changes
           const changedPlayers = [];
           for (const key in newScores) {
-            if (!liveScores[key] || JSON.stringify(liveScores[key]) !== JSON.stringify(newScores[key])) {
+            // Only apply live scores for players who don't have official scores
+            if (!hasCompleteOfficialScores(key)) {
+              if (!liveScores[key] || JSON.stringify(liveScores[key]) !== JSON.stringify(newScores[key])) {
+                changedPlayers.push(key);
+              }
+              liveScores[key] = newScores[key];
+            }
+          }
+          
+          renderLeaderboard(changedPlayers);
+        });
+        
+        // Also listen for official scores changes
+        // Scores are stored at path 'scores' as an object with roundId keys
+        const officialScoresRef = db.ref('scores');
+        officialScoresRef.on('value', (snapshot) => {
+          const allScores = snapshot.val() || {};
+          const newOfficialScores = allScores[currentRoundId] || {};
+          
+          // Detect changes
+          const changedPlayers = [];
+          for (const key in newOfficialScores) {
+            if (!officialScores[key] || JSON.stringify(officialScores[key]) !== JSON.stringify(newOfficialScores[key])) {
               changedPlayers.push(key);
             }
           }
           
-          liveScores = newScores;
-          renderLeaderboard(changedPlayers);
+          officialScores = newOfficialScores;
+          
+          // Apply official scores to liveScores (they take precedence)
+          for (const playerId in officialScores) {
+            if (hasCompleteOfficialScores(playerId)) {
+              liveScores[playerId] = officialScores[playerId];
+            }
+          }
+          
+          if (changedPlayers.length > 0) {
+            console.log('Official scores updated for:', changedPlayers);
+            renderLeaderboard(changedPlayers);
+          }
         });
         
         // Listen for match scores (match play)
@@ -1994,6 +2569,27 @@
         // Stableford "to par" = actual points - expected (positive is good!)
         const stablefordToPar = stablefordPoints - expectedStablefordPoints;
         
+        // Calculate previous rounds totals for multi-round aggregate tournaments
+        let prevRoundsGross = 0;
+        let prevRoundsToPar = 0;
+        let prevRoundsNet = 0;
+        let prevRoundsNetToPar = 0;
+        let prevRoundsStableford = 0;
+        let prevRoundsStablefordToPar = 0;
+        
+        if (isMultiRoundTournament && previousRoundsScores && previousRoundsScores[playerKey]) {
+          // Get the pre-calculated cumulative scores for this player
+          const prevData = previousRoundsScores[playerKey];
+          prevRoundsGross = prevData.gross || 0;
+          prevRoundsToPar = prevData.toPar || 0;
+          prevRoundsNet = prevData.net || 0;
+          prevRoundsStableford = prevData.stableford || 0;
+          
+          // Calculate stableford to par for previous rounds (expected is 36 per round)
+          const prevRoundsCount = prevData.rounds || 0;
+          prevRoundsStablefordToPar = prevRoundsStableford - (prevRoundsCount * 36);
+        }
+        
         return {
           gross,
           net,
@@ -2004,7 +2600,17 @@
           holes: holeScores,
           stablefordPoints,
           stablefordToPar,
-          playingHcp
+          playingHcp,
+          // Aggregate totals (current + previous rounds)
+          totalGross: gross + prevRoundsGross,
+          totalToPar: (gross - coursePar) + prevRoundsToPar,
+          totalNet: net + prevRoundsNet,
+          totalNetToPar: (net - coursePar) + prevRoundsNetToPar,
+          totalStableford: stablefordPoints + prevRoundsStableford,
+          totalStablefordToPar: stablefordToPar + prevRoundsStablefordToPar,
+          prevRoundsGross,
+          prevRoundsToPar,
+          prevRoundsStableford
         };
       }
 
@@ -2094,6 +2700,12 @@
         
         // Check if match play - render match-based leaderboard
         if (isMatchPlay) {
+          // If Team Standings view is active, re-render it
+          if (currentCategory === 'TEAM_STANDINGS') {
+            console.log('Routing to renderTeamStandings (match play)');
+            renderTeamStandings();
+            return;
+          }
           console.log('Routing to renderMatchPlayLeaderboard');
           renderMatchPlayLeaderboard();
           return;
@@ -2218,20 +2830,27 @@
         // Medal Net: lowest net to par first (ascending)
         // Stableford: highest points first (descending)
         // Use holesPlayed (actual count) instead of thru (last hole index) for shotgun support
+        // For multi-round tournaments, use aggregate totals
         players.sort((a, b) => {
           if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
           if (a.holesPlayed === 0) return 1;
           if (b.holesPlayed === 0) return -1;
           
           if (useStableford) {
-            // Stableford: higher is better
-            if (a.stablefordToPar !== b.stablefordToPar) return b.stablefordToPar - a.stablefordToPar;
+            // Stableford: higher is better - use aggregate totals for multi-round
+            const aScore = isMultiRoundTournament ? a.totalStablefordToPar : a.stablefordToPar;
+            const bScore = isMultiRoundTournament ? b.totalStablefordToPar : b.stablefordToPar;
+            if (aScore !== bScore) return bScore - aScore;
           } else if (useNet) {
-            // Medal Net: lower net to par is better
-            if (a.netToPar !== b.netToPar) return a.netToPar - b.netToPar;
+            // Medal Net: lower net to par is better - use aggregate totals for multi-round
+            const aScore = isMultiRoundTournament ? a.totalNetToPar : a.netToPar;
+            const bScore = isMultiRoundTournament ? b.totalNetToPar : b.netToPar;
+            if (aScore !== bScore) return aScore - bScore;
           } else {
-            // Stroke play (gross): lower is better
-            if (a.toPar !== b.toPar) return a.toPar - b.toPar;
+            // Stroke play (gross): lower is better - use aggregate totals for multi-round
+            const aScore = isMultiRoundTournament ? a.totalToPar : a.toPar;
+            const bScore = isMultiRoundTournament ? b.totalToPar : b.toPar;
+            if (aScore !== bScore) return aScore - bScore;
           }
           return b.holesPlayed - a.holesPlayed;
         });
@@ -2243,8 +2862,15 @@
         let playersAtPosition = 0;
         
         players.forEach((player, index) => {
-          // Use appropriate score based on format
-          const sortScore = useStableford ? player.stablefordToPar : (useNet ? player.netToPar : player.toPar);
+          // Use appropriate score based on format and multi-round status
+          let sortScore;
+          if (useStableford) {
+            sortScore = isMultiRoundTournament ? player.totalStablefordToPar : player.stablefordToPar;
+          } else if (useNet) {
+            sortScore = isMultiRoundTournament ? player.totalNetToPar : player.netToPar;
+          } else {
+            sortScore = isMultiRoundTournament ? player.totalToPar : player.toPar;
+          }
           
           if (player.holesPlayed === 0) {
             player.position = '-';
@@ -2308,13 +2934,13 @@
           }
           
           // Format score based on scoring format
+          // For multi-round tournaments, use aggregate totals
           let toParStr, toParClass;
           if (useStableford) {
             // Stableford: show total points and +/- from expected (positive is good)
             // Use holesPlayed to check if player has any scores (0 points is still a valid score!)
-            const hasScores = player.holesPlayed > 0;
-            const pointsDisplay = hasScores ? player.stablefordPoints : '-';
-            const toParValue = player.stablefordToPar;
+            const hasScores = player.holesPlayed > 0 || (isMultiRoundTournament && player.prevRoundsStableford > 0);
+            const toParValue = isMultiRoundTournament ? player.totalStablefordToPar : player.stablefordToPar;
             // Check for NaN or no scores
             if (!hasScores || isNaN(toParValue)) {
               toParStr = '-';
@@ -2328,10 +2954,12 @@
             // Stroke play: show to par (negative is good)
             // Check if using Net scoring (Medal Net, etc.)
             const useNet = isNetScoring();
-            const toParValue = useNet ? player.netToPar : player.toPar;
+            const toParValue = isMultiRoundTournament 
+              ? (useNet ? player.totalNetToPar : player.totalToPar)
+              : (useNet ? player.netToPar : player.toPar);
             
             // Use holesPlayed to check if player has any scores
-            const hasScores = player.holesPlayed > 0;
+            const hasScores = player.holesPlayed > 0 || (isMultiRoundTournament && player.prevRoundsGross > 0);
             if (!hasScores || isNaN(toParValue)) {
               toParStr = '-';
               toParClass = 'even-par';
@@ -2382,17 +3010,22 @@
             
             // Update round scores (0 is a valid score, so check holesPlayed not the value)
             const hasScores = player.holesPlayed > 0;
+            const hasPrevScores = isMultiRoundTournament && player.prevRoundsGross > 0;
             const useNet = isNetScoring();
-            let todayValue;
+            let todayValue, totalValue;
             if (useStableford) {
               todayValue = hasScores ? player.stablefordPoints : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalStableford : '-';
             } else if (useNet) {
               todayValue = hasScores ? player.net : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalNet : '-';
             } else {
               todayValue = hasScores ? player.gross : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalGross : '-';
             }
-            roundScores.forEach(cell => {
-              cell.textContent = todayValue;
+            roundScores.forEach((cell, cellIndex) => {
+              // First round-score is Today, second is Total
+              cell.textContent = cellIndex === 0 ? todayValue : (isMultiRoundTournament ? totalValue : todayValue);
             });
             
             // Update hole scores
@@ -2426,18 +3059,22 @@
             
             // Display values based on scoring format
             const hasScores = player.holesPlayed > 0;
+            const hasPrevScores = isMultiRoundTournament && player.prevRoundsGross > 0;
             const useNet = isNetScoring();
             let todayValue, totalValue;
             if (useStableford) {
               todayValue = hasScores ? player.stablefordPoints : '-';
-              totalValue = hasScores ? player.stablefordPoints : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalStableford : '-';
             } else if (useNet) {
               todayValue = hasScores ? player.net : '-';
-              totalValue = hasScores ? player.net : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalNet : '-';
             } else {
               todayValue = hasScores ? player.gross : '-';
-              totalValue = hasScores ? player.gross : '-';
+              totalValue = (hasScores || hasPrevScores) ? player.totalGross : '-';
             }
+            
+            // For multi-round, show Today and Total separately
+            const roundTotalDisplay = isMultiRoundTournament ? totalValue : todayValue;
             
             newRow.innerHTML = `
               <td class="position-cell ${player.position <= 3 ? 'top-3' : ''}">${player.position}${positionChange}</td>
@@ -2453,7 +3090,7 @@
               <td class="score-cell ${toParClass}">${toParStr}</td>
               <td class="thru-cell ${player.holesPlayed === 18 ? 'finished' : ''}">${player.holesPlayed === 0 ? '-' : (player.holesPlayed === 18 ? 'F' : player.holesPlayed)}</td>
               <td class="round-score">${todayValue}</td>
-              <td class="round-score">${totalValue}</td>
+              <td class="round-score">${roundTotalDisplay}</td>
               <td>${renderHoleScores(player.holes, useStableford, useNet)}</td>
             `;
             
@@ -2588,6 +3225,398 @@
         html += '</div>';
         return html;
       }
+      
+      // Get actual team name from teamsByRound using player's reg ID
+      function getActualTeamName(playerRegId) {
+        if (!currentTournament || !playerRegId) return '';
+        
+        const teamsByRound = currentTournament.teamsByRound || {};
+        const roundKeys = Object.keys(teamsByRound);
+        
+        if (roundKeys.length === 0) return '';
+        
+        // Check first round's teams
+        const teams = teamsByRound[roundKeys[0]] || [];
+        
+        for (const team of teams) {
+          if (team.players && team.players.includes(playerRegId)) {
+            return team.name || '';
+          }
+        }
+        
+        return '';
+      }
+
+      // Render Team Standings table
+      // Process a single round's matches from OFFICIAL results (matchScores) and update team stats
+      function processOfficialRoundResults(roundDrawData, officialScores, teamStats) {
+        if (!roundDrawData || !roundDrawData.groups || roundDrawData.groups.length === 0) {
+          return;
+        }
+        
+        roundDrawData.groups.forEach((group, groupIndex) => {
+          const players = group.players || [];
+          if (players.length < 4) return;
+          
+          // Get official score for this match
+          const matchKey = `match_${groupIndex}`;
+          const score = officialScores?.[matchKey];
+          
+          // Skip if no official score or empty score
+          if (!score || (score.left === '' && score.right === '')) return;
+          
+          // Get team names
+          const homePlayerReg = players[0]?.reg;
+          const awayPlayerReg = players[2]?.reg;
+          const homeTeamName = getActualTeamName(homePlayerReg);
+          const awayTeamName = getActualTeamName(awayPlayerReg);
+          
+          // Find team stats
+          let homeTeamStats = null;
+          let awayTeamStats = null;
+          
+          for (const key of Object.keys(teamStats)) {
+            if (teamStats[key].name === homeTeamName) homeTeamStats = teamStats[key];
+            if (teamStats[key].name === awayTeamName) awayTeamStats = teamStats[key];
+          }
+          
+          if (!homeTeamStats || !awayTeamStats) return;
+          
+          // Official scores: left = home points won by, right = away points won by
+          const homeWonBy = parseInt(score.left) || 0;
+          const awayWonBy = parseInt(score.right) || 0;
+          
+          // Update CONFIRMED stats
+          homeTeamStats.confirmed.played++;
+          awayTeamStats.confirmed.played++;
+          
+          if (homeWonBy > 0) {
+            homeTeamStats.confirmed.won++;
+            homeTeamStats.confirmed.points += 1;
+            homeTeamStats.confirmed.differential += homeWonBy;
+            awayTeamStats.confirmed.lost++;
+            awayTeamStats.confirmed.differential -= homeWonBy;
+          } else if (awayWonBy > 0) {
+            awayTeamStats.confirmed.won++;
+            awayTeamStats.confirmed.points += 1;
+            awayTeamStats.confirmed.differential += awayWonBy;
+            homeTeamStats.confirmed.lost++;
+            homeTeamStats.confirmed.differential -= awayWonBy;
+          } else {
+            homeTeamStats.confirmed.tied++;
+            awayTeamStats.confirmed.tied++;
+            homeTeamStats.confirmed.points += 0.5;
+            awayTeamStats.confirmed.points += 0.5;
+          }
+        });
+      }
+      
+      // Process current round's matches from LIVE scores and update team stats
+      function processLiveRoundMatches(roundDrawData, liveScores, teamStats) {
+        if (!roundDrawData || !roundDrawData.groups || roundDrawData.groups.length === 0) {
+          return;
+        }
+        
+        roundDrawData.groups.forEach((group, groupIndex) => {
+          const players = group.players || [];
+          if (players.length < 4) return;
+          
+          const matchKey = `match_${groupIndex}`;
+          const matchScore = liveScores?.[matchKey];
+          
+          if (!matchScore) return;
+          
+          const homePlayerReg = players[0]?.reg;
+          const awayPlayerReg = players[2]?.reg;
+          const homeTeamName = getActualTeamName(homePlayerReg);
+          const awayTeamName = getActualTeamName(awayPlayerReg);
+          
+          let homeTeamStats = null;
+          let awayTeamStats = null;
+          
+          for (const key of Object.keys(teamStats)) {
+            if (teamStats[key].name === homeTeamName) homeTeamStats = teamStats[key];
+            if (teamStats[key].name === awayTeamName) awayTeamStats = teamStats[key];
+          }
+          
+          if (!homeTeamStats || !awayTeamStats) return;
+          
+          const homeUp = matchScore.homeUp || 0;
+          
+          // For in-progress matches, update IN-PROGRESS stats
+          if (matchScore.status !== 'completed') {
+            homeTeamStats.inProgress.played++;
+            awayTeamStats.inProgress.played++;
+            
+            if (homeUp > 0) {
+              homeTeamStats.inProgress.won++;
+              homeTeamStats.inProgress.points += 1;
+              awayTeamStats.inProgress.lost++;
+            } else if (homeUp < 0) {
+              awayTeamStats.inProgress.won++;
+              awayTeamStats.inProgress.points += 1;
+              homeTeamStats.inProgress.lost++;
+            } else {
+              homeTeamStats.inProgress.tied++;
+              awayTeamStats.inProgress.tied++;
+              homeTeamStats.inProgress.points += 0.5;
+              awayTeamStats.inProgress.points += 0.5;
+            }
+            return;
+          }
+          
+          // Completed match in current round - goes to CONFIRMED
+          homeTeamStats.confirmed.played++;
+          awayTeamStats.confirmed.played++;
+          
+          let margin = 0;
+          if (matchScore.finalResult) {
+            const resultText = matchScore.finalResult;
+            if (resultText.includes('&')) {
+              margin = parseInt(resultText.split('&')[0].trim()) || 0;
+            } else if (resultText.toUpperCase().includes('UP')) {
+              margin = parseInt(resultText.replace(/UP/i, '').trim()) || 0;
+            }
+          } else {
+            margin = Math.abs(homeUp);
+          }
+          
+          if (matchScore.winner === 'home' || (homeUp > 0 && !matchScore.winner)) {
+            homeTeamStats.confirmed.won++;
+            homeTeamStats.confirmed.points += 1;
+            homeTeamStats.confirmed.differential += margin;
+            awayTeamStats.confirmed.lost++;
+            awayTeamStats.confirmed.differential -= margin;
+          } else if (matchScore.winner === 'away' || (homeUp < 0 && !matchScore.winner)) {
+            awayTeamStats.confirmed.won++;
+            awayTeamStats.confirmed.points += 1;
+            awayTeamStats.confirmed.differential += margin;
+            homeTeamStats.confirmed.lost++;
+            homeTeamStats.confirmed.differential -= margin;
+          } else {
+            homeTeamStats.confirmed.tied++;
+            awayTeamStats.confirmed.tied++;
+            homeTeamStats.confirmed.points += 0.5;
+            awayTeamStats.confirmed.points += 0.5;
+          }
+        });
+      }
+      
+      // Render Team Standings - aggregates all rounds
+      // Previous rounds: use official results from matchScores
+      // Current round: use live scores from liveMatchScores
+      async function renderTeamStandings() {
+        const wrapper = document.getElementById('team-standings-wrapper');
+        if (!wrapper) return;
+        
+        const teams = getTeams();
+        console.log('Team Standings - teams from getTeams():', teams);
+        
+        if (teams.length === 0) {
+          wrapper.innerHTML = `
+            <div class="team-standings-container">
+              <div class="team-standings-title">
+                <span class="trophy">🏆</span> Team Standings
+              </div>
+              <p style="color: #64748b; text-align: center;">No teams configured for this tournament</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Initialize team stats with confirmed and inProgress sub-objects
+        const teamStats = {};
+        teams.forEach(team => {
+          const key = team.teamId || team.id || team.name;
+          teamStats[key] = {
+            id: team.teamId || team.id,
+            name: team.name,
+            confirmed: { played: 0, won: 0, lost: 0, tied: 0, points: 0, differential: 0 },
+            inProgress: { played: 0, won: 0, lost: 0, tied: 0, points: 0, differential: 0 }
+          };
+        });
+        
+        // Get all round IDs
+        const tournamentId = currentTournament?.tournamentId || currentTournament?.id;
+        const roundIds = currentTournament?.meta?.roundIds || [tournamentId + '-1'];
+        
+        console.log('Team Standings - Processing all rounds:', roundIds);
+        console.log('Team Standings - Current round:', currentRoundId);
+        
+        // Fetch official results (matchScores) for all rounds at once
+        let allOfficialScores = {};
+        try {
+          if (db) {
+            const officialSnapshot = await db.ref('matchScores').once('value');
+            allOfficialScores = officialSnapshot.val() || {};
+            console.log('Team Standings - Official matchScores loaded:', Object.keys(allOfficialScores));
+          }
+        } catch (error) {
+          console.error('Error fetching official matchScores:', error);
+        }
+        
+        // Process each round
+        for (const roundId of roundIds) {
+          const isCurrentRound = (roundId === currentRoundId);
+          
+          let roundDrawData;
+          
+          if (isCurrentRound) {
+            roundDrawData = drawData;
+          } else {
+            // Fetch draw data for previous rounds
+            try {
+              if (db) {
+                const drawSnapshot = await db.ref(`draws/${roundId}`).once('value');
+                roundDrawData = drawSnapshot.val();
+              }
+            } catch (error) {
+              console.error(`Error fetching draw for round ${roundId}:`, error);
+              continue;
+            }
+          }
+          
+          console.log(`Processing round ${roundId}, isCurrentRound: ${isCurrentRound}, groups: ${roundDrawData?.groups?.length || 0}`);
+          
+          if (isCurrentRound) {
+            // Current round: use live scores
+            processLiveRoundMatches(roundDrawData, liveMatchScores || {}, teamStats);
+          } else {
+            // Previous rounds: use official results from matchScores
+            const officialScores = allOfficialScores[roundId] || {};
+            console.log(`Round ${roundId} official scores:`, officialScores);
+            processOfficialRoundResults(roundDrawData, officialScores, teamStats);
+          }
+        }
+        
+        // Calculate totals and sort teams
+        const sortedTeams = Object.values(teamStats).map(team => {
+          const total = {
+            played: team.confirmed.played + team.inProgress.played,
+            won: team.confirmed.won + team.inProgress.won,
+            lost: team.confirmed.lost + team.inProgress.lost,
+            tied: team.confirmed.tied + team.inProgress.tied,
+            points: team.confirmed.points + team.inProgress.points,
+            differential: team.confirmed.differential + team.inProgress.differential
+          };
+          return { ...team, total };
+        }).sort((a, b) => {
+          if (b.total.points !== a.total.points) return b.total.points - a.total.points;
+          return b.total.differential - a.total.differential;
+        });
+        
+        // Build HTML table with expandable rows
+        let html = `
+          <div class="team-standings-container">
+            <div class="team-standings-title">
+              <span class="trophy">🏆</span> Team Standings
+            </div>
+            <table class="team-standings-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Team</th>
+                  <th class="center">Played</th>
+                  <th class="center">Won</th>
+                  <th class="center">Lost</th>
+                  <th class="center">Tied</th>
+                  <th class="center">Points</th>
+                  <th class="center">+/-</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        sortedTeams.forEach((team, index) => {
+          const t = team.total;
+          const c = team.confirmed;
+          const p = team.inProgress;
+          
+          const diffClass = t.differential > 0 ? 'diff-positive' : (t.differential < 0 ? 'diff-negative' : '');
+          const diffText = t.differential > 0 ? `+${t.differential}` : t.differential.toString();
+          const hasInProgress = p.played > 0;
+          const teamKey = (team.id || team.name).replace(/[^a-zA-Z0-9]/g, '_');
+          
+          // Main row (clickable if has in-progress matches)
+          html += `
+            <tr class="team-row ${hasInProgress ? '' : ''}" onclick="toggleTeamBreakdown('${teamKey}')" style="cursor: ${hasInProgress ? 'pointer' : 'default'}">
+              <td class="rank">${index + 1}</td>
+              <td>
+                <div class="team-name-cell">
+                  ${hasInProgress ? '<span class="expand-icon">▶</span>' : '<span style="width: 14px; display: inline-block;"></span>'}
+                  <span class="team-name">${team.name}</span>
+                </div>
+              </td>
+              <td class="center">${t.played}</td>
+              <td class="center won">${t.won}</td>
+              <td class="center lost">${t.lost}</td>
+              <td class="center">${t.tied}</td>
+              <td class="center points">${t.points % 1 === 0 ? t.points : t.points.toFixed(1)}</td>
+              <td class="center ${diffClass}">${diffText}</td>
+            </tr>
+          `;
+          
+          // Breakdown row (hidden by default)
+          if (hasInProgress) {
+            const cDiffText = c.differential > 0 ? `+${c.differential}` : c.differential.toString();
+            const pDiffText = p.differential > 0 ? `+${p.differential}` : p.differential.toString();
+            
+            html += `
+              <tr class="breakdown-row" id="breakdown-${teamKey}">
+                <td colspan="8">
+                  <div class="breakdown-container">
+                    <div class="breakdown-item confirmed">
+                      <span class="breakdown-label">✓ Confirmed</span>
+                      <div class="breakdown-stats">
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Matches:</span> <span class="breakdown-stat-value">${c.played}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Won:</span> <span class="breakdown-stat-value won">${c.won}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Lost:</span> <span class="breakdown-stat-value lost">${c.lost}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Tied:</span> <span class="breakdown-stat-value">${c.tied}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Pts:</span> <span class="breakdown-stat-value points">${c.points % 1 === 0 ? c.points : c.points.toFixed(1)}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">+/-:</span> <span class="breakdown-stat-value">${cDiffText}</span></div>
+                      </div>
+                    </div>
+                    <div class="breakdown-item in-progress">
+                      <span class="breakdown-label">⏳ In Progress</span>
+                      <div class="breakdown-stats">
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Matches:</span> <span class="breakdown-stat-value">${p.played}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Leading:</span> <span class="breakdown-stat-value won">${p.won}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Down:</span> <span class="breakdown-stat-value lost">${p.lost}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">AS:</span> <span class="breakdown-stat-value">${p.tied}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">Proj Pts:</span> <span class="breakdown-stat-value points">${p.points % 1 === 0 ? p.points : p.points.toFixed(1)}</span></div>
+                        <div class="breakdown-stat"><span class="breakdown-stat-label">+/-:</span> <span class="breakdown-stat-value">${pDiffText}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }
+        });
+        
+        html += `
+              </tbody>
+            </table>
+            <div class="team-standings-note">
+              * Click on a team row to see breakdown of confirmed vs in-progress matches.<br>
+              * +/- = Score Differential (sum of winning margins). Used as untie criteria when points are equal.
+            </div>
+          </div>
+        `;
+        
+        wrapper.innerHTML = html;
+      }
+      
+      // Toggle team breakdown row visibility
+      function toggleTeamBreakdown(teamKey) {
+        const row = document.getElementById(`breakdown-${teamKey}`);
+        const mainRow = row?.previousElementSibling;
+        
+        if (row) {
+          row.classList.toggle('visible');
+          mainRow?.classList.toggle('expanded');
+        }
+      }
 
       // Render match play leaderboard
       function renderMatchPlayLeaderboard() {
@@ -2688,9 +3717,9 @@
         
         matches.forEach((match, idx) => {
           const matchScore = match.liveScore;
-          const homeScore = matchScore?.homeScore || 0;
+          const homeScore = matchScore?.homeScore || matchScore?.homeUp || 0;
           const awayScore = matchScore?.awayScore || 0;
-          const thru = matchScore?.thru || 0;
+          const thru = matchScore?.thru || matchScore?.holesPlayed || 0;
           const status = matchScore?.status || 'not-started';
           
           // Determine match status text and arrow direction
@@ -2701,6 +3730,12 @@
           if (status === 'completed') {
             if (matchScore.finalResult) {
               statusText = matchScore.finalResult; // e.g., "3 & 2", "1 UP", "AS"
+              // Determine winner from finalResult or scores
+              if (homeScore > awayScore) {
+                arrowDirection = 'home';
+              } else if (awayScore > homeScore || matchScore.winner === 'away') {
+                arrowDirection = 'away';
+              }
             } else if (homeScore > awayScore) {
               const diff = homeScore - awayScore;
               statusText = `${diff} & ${18 - thru}`; // Closed out with remaining holes
@@ -2726,33 +3761,38 @@
             statusClass = 'in-progress';
           }
           
-          // Get team/player names
-          const homeName = getMatchTeamName(match.home, 'home');
-          const awayName = getMatchTeamName(match.away, 'away');
+          // Get team/player names - look up actual team names from teamsByRound
+          const homePlayerReg = match.home.player1?.reg || match.home.reg || '';
+          const awayPlayerReg = match.away.player1?.reg || match.away.reg || '';
+          const homeTeamLabel = getActualTeamName(homePlayerReg) || match.home.player1?.teamName || match.home.teamName || '';
+          const awayTeamLabel = getActualTeamName(awayPlayerReg) || match.away.player1?.teamName || match.away.teamName || '';
+          const homeName = getMatchTeamName(match.home, 'home', homeTeamLabel);
+          const awayName = getMatchTeamName(match.away, 'away', awayTeamLabel);
           
           html += `
-            <div class="match-card ${statusClass}" data-match-key="${match.key}" onclick="toggleMatchDetails('${match.key}')">
-              <div class="match-number">${idx + 1}</div>
-              <div class="match-teams">
-                <div class="team-side home ${arrowDirection === 'home' ? 'leading' : ''}">
-                  <span class="team-name">${homeName}</span>
-                </div>
-                <div class="match-status-arrow">
-                  ${arrowDirection === 'home' ? '<span class="arrow-indicator">◀</span>' : ''}
-                  <div class="match-score-badge ${statusClass}">
-                    ${statusText}
+            <div class="match-card ${statusClass}" data-match-key="${match.key}">
+              <div class="match-header">
+                <span class="match-number">Match ${idx + 1}</span>
+                <span class="match-thru">${status === 'completed' ? 'Final' : ''}</span>
+              </div>
+              <div class="match-body">
+                <div class="match-teams">
+                  <div class="team-side home">
+                    <span class="team-name">${homeName}</span>
                   </div>
-                  ${arrowDirection === 'away' ? '<span class="arrow-indicator">▶</span>' : ''}
+                  <div class="match-status-arrow">
+                    ${status === 'completed' ? `<div class="match-final-label">FINAL</div>` : ''}
+                    ${arrowDirection === 'home' ? `<div class="arrow-indicator home-leading"><svg viewBox="0 0 60 40"><path d="M20 0 L0 20 L20 40 L20 32 L8 20 L20 8 Z M38 0 L18 20 L38 40 L38 32 L26 20 L38 8 Z M56 0 L36 20 L56 40 L56 32 L44 20 L56 8 Z"/></svg></div>` : ''}
+                    ${arrowDirection === 'away' ? `<div class="arrow-indicator away-leading"><svg viewBox="0 0 60 40"><path d="M4 0 L24 20 L4 40 L4 32 L16 20 L4 8 Z M22 0 L42 20 L22 40 L22 32 L34 20 L22 8 Z M40 0 L60 20 L40 40 L40 32 L52 20 L40 8 Z"/></svg></div>` : ''}
+                    <div class="match-score-badge ${statusClass} ${arrowDirection === 'home' ? 'home-leading' : ''} ${arrowDirection === 'away' ? 'away-leading' : ''}">
+                      ${statusText}
+                    </div>
+                    ${thru > 0 && status !== 'completed' ? `<div class="match-thru-center">Thru ${thru}</div>` : ''}
+                  </div>
+                  <div class="team-side away">
+                    <span class="team-name">${awayName}</span>
+                  </div>
                 </div>
-                <div class="team-side away ${arrowDirection === 'away' ? 'leading' : ''}">
-                  <span class="team-name">${awayName}</span>
-                </div>
-              </div>
-              <div class="match-thru">
-                ${thru > 0 ? `Thru ${thru}` : ''}
-              </div>
-              <div class="match-details-panel" id="match-details-${match.key}" style="display: none;">
-                ${renderMatchHoleByHole(match)}
               </div>
             </div>
           `;
@@ -2762,34 +3802,48 @@
         container.innerHTML = html;
       }
       
+      // Format player name as "FirstName MiddleName L." (first letter of last name + dot)
+      function formatPlayerName(fullName) {
+        if (!fullName || fullName === 'TBD') return 'TBD';
+        const parts = fullName.trim().split(' ');
+        if (parts.length === 1) return parts[0];
+        // Last part is the last name - take first letter + dot
+        const lastName = parts.pop();
+        const firstNames = parts.join(' ');
+        return `${firstNames} ${lastName.charAt(0)}.`;
+      }
+      
       // Get team/player name for match display
-      function getMatchTeamName(team, side) {
+      function getMatchTeamName(team, side, teamLabel = '') {
         if (!team) return side === 'home' ? 'Home' : 'Away';
+        
+        // Add team label if provided
+        const labelHtml = teamLabel ? `<div class="team-label">${teamLabel}</div>` : '';
         
         if (matchPlayFormat === 'singles') {
           // Single player
-          if (team.name) return team.name;
-          if (team.firstName && team.lastName) {
-            return `${team.firstName} ${team.lastName}`;
-          }
-          return team.player1?.name || 'TBD';
+          let fullName = '';
+          if (team.name) fullName = team.name;
+          else if (team.firstName && team.lastName) fullName = `${team.firstName} ${team.lastName}`;
+          else fullName = team.player1?.name || 'TBD';
+          return `${labelHtml}<span class="player-name">${formatPlayerName(fullName)}</span>`;
         }
         
-        // Fourball/Foursome - show both players
+        // Fourball/Foursome - show both players on separate lines
         const player1 = team.player1 || team;
         const player2 = team.player2;
         
         const name1 = player1.name || `${player1.firstName || ''} ${player1.lastName || ''}`.trim() || 'TBD';
         const name2 = player2 ? (player2.name || `${player2.firstName || ''} ${player2.lastName || ''}`.trim()) : '';
         
-        if (name2) {
-          // Get last names for compact display
-          const lastName1 = name1.split(' ').pop();
-          const lastName2 = name2.split(' ').pop();
-          return `${lastName1} / ${lastName2}`;
+        const formatted1 = formatPlayerName(name1);
+        const formatted2 = name2 ? formatPlayerName(name2) : '';
+        
+        if (formatted2) {
+          return `${labelHtml}<span class="player-name">${formatted1}</span><span class="player-name">${formatted2}</span>`;
         }
         
-        return name1;
+        return `${labelHtml}<span class="player-name">${formatted1}</span>`;
       }
       
       // Render hole-by-hole details for a match

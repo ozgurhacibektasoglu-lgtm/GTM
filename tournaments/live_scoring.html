@@ -169,6 +169,11 @@
         overflow: hidden;
       }
       
+      .group-card.official-complete {
+        border: 2px solid #10b981;
+        opacity: 0.85;
+      }
+      
       .group-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         color: white;
@@ -180,6 +185,15 @@
       
       .group-info { font-size: 14px; font-weight: 600; }
       .group-tee { font-size: 12px; opacity: 0.9; }
+      
+      .group-status.official {
+        background: #10b981;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+      }
       
       .group-players {
         padding: 12px;
@@ -195,8 +209,34 @@
         transition: background 0.2s;
       }
       
+      .player-row.official-complete {
+        background: #f0fdf4;
+      }
+      
       .player-row:last-child { border-bottom: none; }
       .player-row:active { background: #f0fdf4; }
+      
+      .official-badge {
+        display: inline-block;
+        background: #10b981;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      
+      .official-hint {
+        color: #10b981 !important;
+        font-style: italic;
+      }
+      
+      .score-badge.official-status {
+        background: #f59e0b;
+        color: white;
+      }
       
       .player-info { flex: 1; }
       .player-name { font-weight: 600; font-size: 15px; color: #1e293b; }
@@ -697,6 +737,8 @@
         /* Fix for first column visibility */
         display: block;
         width: 100%;
+        /* Prevent layout shifts during updates */
+        contain: layout style;
       }
 
       .score-grid-table {
@@ -707,6 +749,17 @@
         padding: 0;
         /* Ensure grid starts at left edge */
         justify-content: start;
+        /* Prevent layout reflow shake */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-font-smoothing: subpixel-antialiased;
+      }
+      
+      /* Smooth transitions for score updates */
+      .score-grid-table .score-cell,
+      .score-grid-table .match-status-cell-display,
+      .score-grid-table .total-cell {
+        transition: none;
       }
 
       /* Holes Header Row */
@@ -845,6 +898,40 @@
       .score-cell.bogey { background: #1e293b; color: white; border-color: #0f172a; }
       .score-cell.double-plus { background: #3b82f6; color: white; border-color: #2563eb; }
       .score-cell.dnf { background: #6b7280; color: white; border-color: #4b5563; font-style: italic; }
+      
+      /* Official scores - locked cells */
+      .score-cell.official-locked {
+        opacity: 0.8;
+        cursor: not-allowed;
+        position: relative;
+      }
+      
+      .score-cell.official-locked::after {
+        content: '🔒';
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        font-size: 8px;
+      }
+      
+      .player-score-row.official-row {
+        opacity: 0.85;
+        background: #f0fdf4;
+      }
+      
+      .player-score-row.official-row .player-col {
+        background: #f0fdf4;
+        border-left: 3px solid #10b981;
+      }
+      
+      .player-score-row.official-row .score-cell-wrapper {
+        background: #f0fdf4;
+      }
+      
+      .official-icon {
+        font-size: 10px;
+        margin-left: 4px;
+      }
 
       @keyframes pulseInput {
         0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
@@ -1110,21 +1197,13 @@
       }
       
       .match-side.home {
-        border-color: #3b82f6;
+        border-color: #dc2626;
+        background: #fef2f2;
       }
       
       .match-side.away {
-        border-color: #ec4899;
-      }
-      
-      .match-side.winning {
-        background: #dcfce7;
-        border-color: #22c55e;
-      }
-      
-      .match-side.losing {
-        background: #fef2f2;
-        border-color: #ef4444;
+        border-color: #2563eb;
+        background: #eff6ff;
       }
       
       .match-side-header {
@@ -1138,8 +1217,15 @@
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
-        color: #64748b;
         letter-spacing: 0.5px;
+      }
+      
+      .match-side.home .match-side-label {
+        color: #dc2626;
+      }
+      
+      .match-side.away .match-side-label {
+        color: #2563eb;
       }
       
       .match-hcp-badge {
@@ -1209,11 +1295,11 @@
       }
       
       .match-score-display.home-up {
-        color: #3b82f6;
+        color: #dc2626;
       }
       
       .match-score-display.away-up {
-        color: #ec4899;
+        color: #2563eb;
       }
       
       .match-thru {
@@ -1642,6 +1728,7 @@
       let currentCourse = null;
       let drawData = null;
       let liveScores = {};
+      let officialScores = {}; // Official scores from scores page - these take precedence
       let admittedPlayers = [];
       
       // Match play state
@@ -2047,16 +2134,52 @@
           console.log('Course:', currentCourse);
           
           // Load draw data - try multiple key formats
-          const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+          let draws = JSON.parse(localStorage.getItem('draws') || '{}');
           drawData = draws[currentRoundId];
           console.log('Draw data for', currentRoundId, ':', drawData);
           console.log('All draw keys:', Object.keys(draws));
           
+          // If no draw data in localStorage, try Firebase
+          if (!drawData && db) {
+            try {
+              console.log('Trying to load draw from Firebase...');
+              const snapshot = await db.ref(`draws/${currentRoundId}`).once('value');
+              const firebaseDrawData = snapshot.val();
+              if (firebaseDrawData) {
+                drawData = firebaseDrawData;
+                console.log('Loaded draw data from Firebase:', drawData.groups?.length, 'groups');
+                // Save to localStorage for future use
+                draws[currentRoundId] = drawData;
+                localStorage.setItem('draws', JSON.stringify(draws));
+              }
+            } catch (e) {
+              console.log('Firebase draw load failed:', e.message);
+            }
+          }
+          
           // Load admitted players - try multiple key formats
-          const admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          let admittedData = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
           admittedPlayers = admittedData[currentRoundId] || [];
           console.log('Admitted players for', currentRoundId, ':', admittedPlayers.length);
           console.log('All admitted keys:', Object.keys(admittedData));
+          
+          // If no admitted players in localStorage, try Firebase
+          if (admittedPlayers.length === 0 && db) {
+            try {
+              console.log('Trying to load admitted players from Firebase...');
+              const snapshot = await db.ref(`admittedPlayers/${currentRoundId}`).once('value');
+              const firebaseAdmitted = snapshot.val();
+              if (firebaseAdmitted && Array.isArray(firebaseAdmitted)) {
+                admittedPlayers = firebaseAdmitted;
+                console.log('Loaded admitted players from Firebase:', admittedPlayers.length);
+                // Save to localStorage for future use
+                admittedData[currentRoundId] = admittedPlayers;
+                localStorage.setItem('admittedPlayers', JSON.stringify(admittedData));
+              }
+            } catch (e) {
+              console.log('Firebase admitted players load failed:', e.message);
+            }
+          }
           
           // If no data found, try alternative round ID format
           if (admittedPlayers.length === 0 && (!drawData || !drawData.groups)) {
@@ -2166,23 +2289,80 @@
           const snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
           liveScores = snapshot.val() || {};
           
-          // Also check regular scores
-          const scoresSnapshot = await db.ref(`scores/${currentRoundId}`).once('value');
-          const regularScores = scoresSnapshot.val() || {};
-          
-          // Merge - live scores take precedence
-          for (const playerId in regularScores) {
-            if (!liveScores[playerId]) {
-              liveScores[playerId] = regularScores[playerId];
-            }
-          }
+          // Load official scores (from scores page)
+          await loadOfficialScores();
           
         } catch (error) {
           console.error('Error loading live scores:', error);
           // Fall back to localStorage
           const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
           liveScores = scoresData[currentRoundId] || {};
+          
+          // Also load official scores from localStorage
+          officialScores = scoresData[currentRoundId] || {};
         }
+      }
+      
+      // Load official scores from scores page (these take precedence over live scores)
+      async function loadOfficialScores() {
+        if (!currentRoundId) return;
+        
+        try {
+          // Load from localStorage first
+          const scoresData = JSON.parse(localStorage.getItem('scores') || '{}');
+          officialScores = scoresData[currentRoundId] || {};
+          console.log('Official scores from localStorage:', Object.keys(officialScores).length, 'players for round', currentRoundId);
+          
+          // Also try Firebase - scores are stored at path 'scores' as an object with roundId keys
+          if (db) {
+            const scoresSnapshot = await db.ref('scores').once('value');
+            const allScores = scoresSnapshot.val() || {};
+            const firebaseScores = allScores[currentRoundId] || {};
+            
+            console.log('Official scores from Firebase:', Object.keys(firebaseScores).length, 'players for round', currentRoundId);
+            
+            // Merge Firebase scores into official scores - Firebase takes precedence
+            for (const playerId in firebaseScores) {
+              officialScores[playerId] = firebaseScores[playerId];
+            }
+          }
+          
+          console.log('Total official scores loaded:', Object.keys(officialScores).length, 'players');
+          
+          // Debug: log which players have official scores
+          for (const playerKey in officialScores) {
+            const holes = officialScores[playerKey]?.holes || [];
+            const completedHoles = holes.filter(s => s !== '' && s !== null && s !== undefined).length;
+            const status = officialScores[playerKey]?.status;
+            console.log(`[Official] ${playerKey}: ${completedHoles} holes, status: ${status || 'none'}`);
+          }
+        } catch (error) {
+          console.error('Error loading official scores:', error);
+        }
+      }
+      
+      // Check if a player has official scores (complete scorecard entered via scores page)
+      function playerHasOfficialScores(playerKey) {
+        const official = officialScores[playerKey];
+        if (!official || !official.holes) return false;
+        
+        // Check if player has any holes with official scores
+        const completedHoles = official.holes.filter(s => s !== '' && s !== null && s !== undefined).length;
+        
+        // Consider player as having official scores if they have 18 holes OR have a status (DQ, NS, NR)
+        if (completedHoles === 18) return true;
+        if (official.status && ['DQ', 'NS', 'NR', 'WD'].includes(official.status)) return true;
+        
+        return false;
+      }
+      
+      // Check if a specific hole has official score for a player
+      function holeHasOfficialScore(playerKey, holeIndex) {
+        const official = officialScores[playerKey];
+        if (!official || !official.holes) return false;
+        
+        const score = official.holes[holeIndex];
+        return score !== '' && score !== null && score !== undefined;
       }
 
       // Setup Firebase real-time listener
@@ -2235,6 +2415,29 @@
               console.error('Firebase listener error:', error);
             }
           );
+          
+          // Also listen to match scores for match play tournaments
+          if (isMatchPlay) {
+            const matchScoresRef = db.ref(`liveMatchScores/${currentRoundId}`);
+            matchScoresRef.on('value', 
+              function onMatchSuccess(snapshot) {
+                try {
+                  const newMatchScores = snapshot.val() || {};
+                  liveMatchScores = newMatchScores;
+                  console.log('Match scores updated:', Object.keys(liveMatchScores).length);
+                  
+                  // Re-render matches and update stats
+                  renderMatches();
+                  updateMatchStats();
+                } catch (callbackError) {
+                  console.error('Error in match scores callback:', callbackError);
+                }
+              },
+              function onMatchError(error) {
+                console.error('Match scores listener error:', error);
+              }
+            );
+          }
           
           console.log('Firebase listener setup successfully');
         } catch (error) {
@@ -2468,15 +2671,40 @@
       function renderGroupCard(group, index, playedHoles = [], completed = false, holesUntilArrival = 0) {
         let playersHtml = '';
         const isVolunteerMode = scoringMode === 'volunteers' && allowedHoles.length > 0;
+        let groupHasAllOfficialScores = true; // Track if all players in group have official scores
         
         group.players.forEach(player => {
           const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
           const playerScore = liveScores[playerKey];
+          const hasOfficial = playerHasOfficialScores(playerKey);
+          
+          // Track if any player doesn't have official scores
+          if (!hasOfficial) {
+            groupHasAllOfficialScores = false;
+          }
           
           let scoreHtml = '';
           let thruHtml = '';
+          let officialBadge = '';
           
-          if (playerScore && playerScore.holes) {
+          // Check for official scores first
+          if (hasOfficial) {
+            const official = officialScores[playerKey];
+            if (official.status && ['DQ', 'NS', 'NR', 'WD'].includes(official.status)) {
+              scoreHtml = `<div class="score-badge official-status">${official.status}</div>`;
+              officialBadge = '<div class="official-badge">✓ Official</div>';
+            } else {
+              const { gross, toPar, thru } = calculatePlayerScore(official, player);
+              let scoreClass = 'even-par';
+              if (toPar < 0) scoreClass = 'under-par';
+              else if (toPar > 0) scoreClass = 'over-par';
+              
+              const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+              scoreHtml = `<div class="score-badge ${scoreClass}">${toParStr}</div>`;
+              thruHtml = `<div class="thru-badge">F</div>`;
+              officialBadge = '<div class="official-badge">✓ Official</div>';
+            }
+          } else if (playerScore && playerScore.holes) {
             const { gross, toPar, thru } = calculatePlayerScore(playerScore, player);
             
             if (thru > 0) {
@@ -2504,10 +2732,12 @@
             hcpDisplay = `HCP: ${player.hcp || '-'} | P.HCP: ${getPlayingHcpDisplay(player)}`;
           }
           
+          const playerRowClass = hasOfficial ? 'player-row official-complete' : 'player-row';
+          
           playersHtml += `
-            <div class="player-row" style="cursor: default;">
+            <div class="${playerRowClass}" style="cursor: default;">
               <div class="player-info">
-                <div class="player-name">${player.firstName} ${player.lastName}</div>
+                <div class="player-name">${player.firstName} ${player.lastName}${officialBadge}</div>
                 <div class="player-details">${hcpDisplay}</div>
               </div>
               <div class="player-score">
@@ -2528,19 +2758,23 @@
         const groupDataStr = encodeURIComponent(JSON.stringify(groupDataWithHoles));
         
         // Make group header clickable (except for completed groups in volunteer mode)
-        const isClickable = !(isVolunteerMode && completed);
+        // If group scoring is still possible, use default click handling
+        // But if ALL players have official scores, show different message
+        const isClickable = !(isVolunteerMode && completed) && !groupHasAllOfficialScores;
         const headerClickHandler = isClickable
           ? `onclick="openGroupScoreModal(${index}, '${groupDataStr}')"` 
-          : '';
+          : (groupHasAllOfficialScores ? `onclick="showOfficialScoresWarning()"` : '');
         
         // Build header class
         let headerClass = 'group-header';
         if (isClickable) headerClass += ' clickable';
-        if (completed) headerClass += ' completed';
+        if (completed || groupHasAllOfficialScores) headerClass += ' completed';
         
-        // Build status indicator for volunteer mode
+        // Build status indicator for volunteer mode or official scores
         let statusHtml = '';
-        if (isVolunteerMode) {
+        if (groupHasAllOfficialScores) {
+          statusHtml = '<div class="group-status official">✓ Official Scores</div>';
+        } else if (isVolunteerMode) {
           if (completed) {
             statusHtml = '<div class="group-status completed">✓ Done</div>';
           } else {
@@ -2552,7 +2786,9 @@
         }
         
         // Card class
-        const cardClass = completed ? 'group-card completed' : 'group-card';
+        let cardClass = 'group-card';
+        if (completed) cardClass += ' completed';
+        if (groupHasAllOfficialScores) cardClass += ' official-complete';
         
         return `
           <div class="${cardClass}">
@@ -2561,6 +2797,7 @@
                 <div class="group-info">Group ${index + 1} - ${group.time || 'TBA'}</div>
                 <div class="group-tee">Started: Hole ${group.tee || '1'}</div>
                 ${isClickable ? '<div class="tap-hint">👆 Tap to enter scores</div>' : ''}
+                ${groupHasAllOfficialScores ? '<div class="tap-hint official-hint">📋 Scores finalized by admin</div>' : ''}
               </div>
               ${statusHtml}
             </div>
@@ -2569,6 +2806,50 @@
             </div>
           </div>
         `;
+      }
+      
+      // Show warning when trying to edit official scores
+      function showOfficialScoresWarning() {
+        const warningHtml = `
+          <div id="official-warning-modal" style="
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+          " onclick="this.remove()">
+            <div style="
+              background: white;
+              border-radius: 16px;
+              padding: 24px;
+              max-width: 340px;
+              text-align: center;
+              margin: 16px;
+            " onclick="event.stopPropagation()">
+              <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1e293b;">Official Scores Registered</div>
+              <div style="font-size: 14px; color: #64748b; margin-bottom: 20px; line-height: 1.5;">
+                All players in this group have official scores registered by the tournament administrator.
+                <br><br>
+                Live scoring is disabled for players with official scores.
+              </div>
+              <button onclick="document.getElementById('official-warning-modal').remove()" style="
+                width: 100%;
+                padding: 14px;
+                border: none;
+                border-radius: 10px;
+                background: #3b82f6;
+                color: white;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+              ">Got it</button>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', warningHtml);
       }
 
       // Calculate player score
@@ -3343,22 +3624,14 @@
 
               <!-- Number Input Pad -->
               <div class="input-pad-container">
-                <div class="current-input-display">
-                  <div>
-                    <div class="current-input-label">Entering score for:</div>
-                    <div class="current-input-player" id="match-input-player">Select a cell</div>
-                    <div class="current-input-hole" id="match-input-hole"></div>
-                  </div>
-                  <div class="current-input-value" id="match-input-value">-</div>
-                </div>
 
                 <!-- Quick Score Buttons -->
                 <div class="quick-scores" id="match-quick-scores">
-                  <button class="quick-score-btn birdie" onclick="matchQuickScore(-1)">Birdie</button>
-                  <button class="quick-score-btn par" onclick="matchQuickScore(0)">Par</button>
-                  <button class="quick-score-btn bogey" onclick="matchQuickScore(1)">Bogey</button>
-                  <button class="quick-score-btn" onclick="matchQuickScore(2)">+2</button>
-                  <button class="quick-score-btn" onclick="matchQuickScore(3)">+3</button>
+                    <button class="quick-score-btn circle birdie" onclick="matchQuickScore(-1)">Birdie</button>
+                    <button class="quick-score-btn circle par" onclick="matchQuickScore(0)">Par</button>
+                    <button class="quick-score-btn circle bogey" onclick="matchQuickScore(1)">Bogey</button>
+                    <button class="quick-score-btn circle" onclick="matchQuickScore(2)">+2</button>
+                    <button class="quick-score-btn circle" onclick="matchQuickScore(3)">+3</button>
                 </div>
 
                 <!-- Number Pad -->
@@ -3393,6 +3666,40 @@
         const style = document.createElement('style');
         style.id = 'match-scorecard-styles';
         style.textContent = `
+            /* Quick Score Buttons - Circular and Larger */
+            .quick-score-btn.circle {
+              width: 52px;
+              height: 52px;
+              border-radius: 50%;
+              padding: 0;
+              font-size: 15px;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-right: 8px;
+              margin-bottom: 4px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+              transition: all 0.1s;
+            }
+            .quick-score-btn.circle:last-child {
+              margin-right: 0;
+            }
+            .quick-score-btn.circle.birdie {
+              border-color: #dc2626;
+              color: #dc2626;
+            }
+            .quick-score-btn.circle.par {
+              border-color: #10b981;
+              color: #10b981;
+            }
+            .quick-score-btn.circle.bogey {
+              border-color: #1e293b;
+              color: #1e293b;
+            }
+            .quick-score-btn.circle:active {
+              background: #f1f5f9;
+            }
           /* Match row styling */
           .match-player-row {
             display: contents;
@@ -3510,6 +3817,18 @@
         const { team1, team2, allPlayers, matchHcps, playerStrokes, playerScores, activePlayerIndex, activeHoleIndex } = matchScoringState;
         const pars = getCoursePars();
         
+        // Save scroll position before update to prevent shake
+        const wrapper = container.parentElement;
+        const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
+        const scrollTop = wrapper ? wrapper.scrollTop : 0;
+        
+        // Lock dimensions before update to prevent reflow
+        const currentHeight = container.offsetHeight;
+        const currentWidth = container.offsetWidth;
+        if (currentHeight > 0) {
+          container.style.minHeight = currentHeight + 'px';
+        }
+        
         // Set grid columns: player column (100px) + 18 hole columns (42px each) + total column (44px)
         const gridColumns = '100px repeat(18, 42px) 44px';
         container.style.gridTemplateColumns = gridColumns;
@@ -3541,10 +3860,20 @@
           html += renderMatchPlayerRow(player, actualIdx, 'team-blue', activePlayerIndex, activeHoleIndex);
         });
         
+        // Update DOM synchronously but prevent layout thrashing
         container.innerHTML = html;
         
-        // Scroll to active cell
-        scrollToActiveMatchCell();
+        // Restore scroll position immediately
+        if (wrapper) {
+          wrapper.scrollLeft = scrollLeft;
+          wrapper.scrollTop = scrollTop;
+        }
+        
+        // Release height lock after a frame
+        requestAnimationFrame(() => {
+          container.style.minHeight = '';
+          scrollToActiveMatchCell();
+        });
       }
       
       // Render a player row
@@ -3670,15 +3999,19 @@
         html += `<div class="player-col"><div class="player-col-name">MATCH</div><div class="player-col-hcp" id="match-overall-status">AS</div></div>`;
         
         let runningHomeUp = 0;
+        let lastPlayedHole = 0;
         
         for (let h = 0; h < 18; h++) {
           const result = calculateHoleResult(h);
           
           // Update running score
-          if (result === 'home') {
-            runningHomeUp++;
-          } else if (result === 'away') {
-            runningHomeUp--;
+          if (result) {
+            lastPlayedHole = h + 1;
+            if (result === 'home') {
+              runningHomeUp++;
+            } else if (result === 'away') {
+              runningHomeUp--;
+            }
           }
           
           // Determine display based on running score
@@ -3703,10 +4036,26 @@
           </div>`;
         }
         
+        // Check if match is decided (lead > remaining holes)
+        const holesRemaining = 18 - lastPlayedHole;
+        const isMatchDecided = Math.abs(runningHomeUp) > holesRemaining;
+        const isAllHolesPlayed = lastPlayedHole >= 18;
+        const isMatchOver = isMatchDecided || isAllHolesPlayed;
+        
         // Total match status
         let statusText = 'AS';
         if (runningHomeUp > 0) statusText = `${runningHomeUp}UP`;
         else if (runningHomeUp < 0) statusText = `${Math.abs(runningHomeUp)}UP`;
+        
+        if (isMatchOver) {
+          if (runningHomeUp === 0) {
+            statusText = 'AS';
+          } else if (lastPlayedHole >= 18) {
+            statusText = `${Math.abs(runningHomeUp)} UP`;
+          } else {
+            statusText = `${Math.abs(runningHomeUp)} & ${holesRemaining}`;
+          }
+        }
         
         html += `<div class="score-cell-wrapper"><div class="total-cell" style="color: ${runningHomeUp > 0 ? '#dc2626' : runningHomeUp < 0 ? '#2563eb' : '#64748b'}">${statusText}</div></div>`;
         
@@ -3716,7 +4065,21 @@
         setTimeout(() => {
           const statusEl = document.getElementById('match-overall-status');
           if (statusEl) {
-            if (runningHomeUp > 0) {
+            if (isMatchOver) {
+              // Match is over
+              if (runningHomeUp > 0) {
+                const finalText = lastPlayedHole >= 18 ? `${runningHomeUp} UP` : `${runningHomeUp} & ${holesRemaining}`;
+                statusEl.textContent = `FINAL: ${finalText} (H)`;
+                statusEl.style.color = '#dc2626';
+              } else if (runningHomeUp < 0) {
+                const finalText = lastPlayedHole >= 18 ? `${Math.abs(runningHomeUp)} UP` : `${Math.abs(runningHomeUp)} & ${holesRemaining}`;
+                statusEl.textContent = `FINAL: ${finalText} (A)`;
+                statusEl.style.color = '#2563eb';
+              } else {
+                statusEl.textContent = 'FINAL: All Square';
+                statusEl.style.color = '#64748b';
+              }
+            } else if (runningHomeUp > 0) {
               statusEl.textContent = `${runningHomeUp} UP (H)`;
               statusEl.style.color = '#dc2626';
             } else if (runningHomeUp < 0) {
@@ -3732,6 +4095,21 @@
         // Store match status
         if (liveMatchScores[matchKey]) {
           liveMatchScores[matchKey].homeUp = runningHomeUp;
+          liveMatchScores[matchKey].holesPlayed = lastPlayedHole;
+          
+          if (isMatchOver) {
+            liveMatchScores[matchKey].status = 'completed';
+            if (runningHomeUp === 0) {
+              liveMatchScores[matchKey].finalResult = 'AS';
+            } else if (lastPlayedHole >= 18) {
+              liveMatchScores[matchKey].finalResult = `${Math.abs(runningHomeUp)} UP`;
+            } else {
+              liveMatchScores[matchKey].finalResult = `${Math.abs(runningHomeUp)} & ${holesRemaining}`;
+            }
+            liveMatchScores[matchKey].winner = runningHomeUp > 0 ? 'home' : (runningHomeUp < 0 ? 'away' : 'tie');
+          } else {
+            liveMatchScores[matchKey].status = lastPlayedHole > 0 ? 'in-progress' : 'not-started';
+          }
         }
         
         return html;
@@ -3780,6 +4158,67 @@
         return 'halved';
       }
       
+      // Check if score entry should be blocked for the active hole
+      // Returns: { blocked: boolean, reason: string }
+      function shouldBlockScoreEntry() {
+        const { playerScores, allPlayers, activeHoleIndex, activePlayerIndex } = matchScoringState;
+        const activePlayer = allPlayers[activePlayerIndex];
+        const activePlayerKey = activePlayer.reg || `${activePlayer.firstName}-${activePlayer.lastName}`;
+        
+        // First, find the last COMPLETE hole (all players have scores)
+        let lastCompleteHole = -1; // -1 means no complete holes
+        for (let h = 0; h < 18; h++) {
+          let holeComplete = true;
+          for (const player of allPlayers) {
+            const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+            const score = playerScores[playerKey]?.[h];
+            if (!score || score === '' || score === 'X') {
+              holeComplete = false;
+              break;
+            }
+          }
+          if (holeComplete) {
+            lastCompleteHole = h;
+          } else {
+            break; // Stop at first incomplete hole
+          }
+        }
+        
+        // If active hole is at or before lastCompleteHole, ALWAYS allow (editing existing scores)
+        if (activeHoleIndex <= lastCompleteHole) {
+          return { blocked: false };
+        }
+        
+        // If active hole is the next hole after lastCompleteHole, check if it's partially filled
+        // and allow completing it
+        if (activeHoleIndex === lastCompleteHole + 1) {
+          // This is the "current" hole being played - always allow
+          return { blocked: false };
+        }
+        
+        // Active hole is beyond current play - check if match is decided
+        // Calculate match status up to lastCompleteHole
+        let homeUp = 0;
+        for (let h = 0; h <= lastCompleteHole; h++) {
+          const result = calculateHoleResult(h);
+          if (result === 'home') homeUp++;
+          else if (result === 'away') homeUp--;
+        }
+        
+        const holesPlayed = lastCompleteHole + 1;
+        const holesRemaining = 18 - holesPlayed;
+        const isMatchDecided = Math.abs(homeUp) > holesRemaining;
+        
+        if (isMatchDecided) {
+          return { 
+            blocked: true, 
+            reason: '⛳ Match is already decided. No more scores needed.' 
+          };
+        }
+        
+        return { blocked: false };
+      }
+      
       // Set active cell
       function setMatchActiveCell(playerIndex, holeIndex) {
         matchScoringState.activePlayerIndex = playerIndex;
@@ -3798,13 +4237,26 @@
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
         const currentScore = playerScores[playerKey]?.[activeHoleIndex] || '';
         
-        document.getElementById('match-input-player').textContent = `${player.firstName} ${player.lastName}`;
-        document.getElementById('match-input-hole').textContent = `Hole ${activeHoleIndex + 1} (Par ${par})`;
-        document.getElementById('match-input-value').textContent = currentScore || '-';
+        // These elements may not exist if the display was simplified
+        const playerEl = document.getElementById('match-input-player');
+        const holeEl = document.getElementById('match-input-hole');
+        const valueEl = document.getElementById('match-input-value');
+        
+        if (playerEl) playerEl.textContent = `${player.firstName} ${player.lastName}`;
+        if (holeEl) holeEl.textContent = `Hole ${activeHoleIndex + 1} (Par ${par})`;
+        if (valueEl) valueEl.textContent = currentScore || '-';
       }
       
       // Quick score (relative to par)
       function matchQuickScore(relativeToPar) {
+        // Check if score entry should be blocked
+        const blockCheck = shouldBlockScoreEntry();
+        if (blockCheck.blocked) {
+          showStatus(blockCheck.reason, 'info');
+          setTimeout(() => hideStatus(), 3000);
+          return;
+        }
+        
         const { activeHoleIndex } = matchScoringState;
         const pars = getCoursePars();
         const par = parseInt(pars[activeHoleIndex]) || 4;
@@ -3814,6 +4266,14 @@
       
       // Input a score
       function matchInputScore(value) {
+        // Check if score entry should be blocked
+        const blockCheck = shouldBlockScoreEntry();
+        if (blockCheck.blocked) {
+          showStatus(blockCheck.reason, 'info');
+          setTimeout(() => hideStatus(), 3000);
+          return;
+        }
+        
         const { allPlayers, activePlayerIndex, activeHoleIndex, playerScores, matchKey } = matchScoringState;
         const player = allPlayers[activePlayerIndex];
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
@@ -3829,8 +4289,9 @@
           liveMatchScores[matchKey].playerScores = playerScores;
         }
         
-        // Update display
-        document.getElementById('match-input-value').textContent = value;
+        // Update display (if element exists)
+        const valueEl = document.getElementById('match-input-value');
+        if (valueEl) valueEl.textContent = value;
         
         // Re-render grid
         renderMatchScoreGrid();
@@ -3841,6 +4302,7 @@
       
       // Clear current input
       function matchClearInput() {
+        // Clearing is always allowed (for fixing mistakes)
         const { allPlayers, activePlayerIndex, activeHoleIndex, playerScores, matchKey } = matchScoringState;
         const player = allPlayers[activePlayerIndex];
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
@@ -3853,7 +4315,8 @@
           liveMatchScores[matchKey].playerScores = playerScores;
         }
         
-        document.getElementById('match-input-value').textContent = '-';
+        const valueEl = document.getElementById('match-input-value');
+        if (valueEl) valueEl.textContent = '-';
         renderMatchScoreGrid();
       }
       
@@ -3888,9 +4351,15 @@
         const wrapper = document.querySelector('#match-scorecard-modal .score-grid-wrapper');
         if (!wrapper) return;
         
-        // Calculate scroll position (each hole column is ~48px)
-        const scrollPos = activeHoleIndex * 48 - 50;
-        wrapper.scrollLeft = Math.max(0, scrollPos);
+        // Calculate scroll position (each hole column is ~42px)
+        // Keep at least 3 previous holes visible (3 * 42 = 126px offset)
+        // Don't scroll for first 3 holes
+        if (activeHoleIndex <= 2) {
+          wrapper.scrollLeft = 0;
+        } else {
+          const scrollPos = (activeHoleIndex - 2) * 42;
+          wrapper.scrollLeft = Math.max(0, scrollPos);
+        }
       }
       
       // Calculate stroke allocation based on match HCP and stroke indexes
@@ -3944,7 +4413,7 @@
           return;
         }
         
-        // Calculate final match status
+        // Calculate match status hole by hole
         let homeUp = 0;
         let holesPlayed = 0;
         
@@ -3957,10 +4426,33 @@
           }
         }
         
+        // Check if match is decided (lead > remaining holes)
+        const holesRemaining = 18 - holesPlayed;
+        const isMatchDecided = Math.abs(homeUp) > holesRemaining;
+        const isAllHolesPlayed = holesPlayed >= 18;
+        const isMatchOver = isMatchDecided || isAllHolesPlayed;
+        
         matchData.playerScores = playerScores;
         matchData.homeUp = homeUp;
         matchData.holesPlayed = holesPlayed;
-        matchData.status = holesPlayed > 0 ? 'in-progress' : 'not-started';
+        
+        // Determine match status and final result
+        if (isMatchOver) {
+          matchData.status = 'completed';
+          if (homeUp === 0) {
+            matchData.finalResult = 'AS'; // All Square (tie)
+          } else if (holesPlayed >= 18) {
+            matchData.finalResult = `${Math.abs(homeUp)} UP`; // Won on 18th hole
+          } else {
+            // Won before 18th - format is "X & Y" (X up with Y holes remaining)
+            matchData.finalResult = `${Math.abs(homeUp)} & ${holesRemaining}`;
+          }
+          matchData.winner = homeUp > 0 ? 'home' : (homeUp < 0 ? 'away' : 'tie');
+        } else {
+          matchData.status = holesPlayed > 0 ? 'in-progress' : 'not-started';
+          matchData.finalResult = null;
+          matchData.winner = null;
+        }
         
         try {
           // Save to Firebase
@@ -3986,11 +4478,18 @@
             }
           }
           
-          showStatus('✓ Match saved', 'success');
-          setTimeout(() => hideStatus(), 2000);
+          // Show appropriate success message
+          if (matchData.status === 'completed') {
+            const winnerText = matchData.winner === 'home' ? 'Home Team' : matchData.winner === 'away' ? 'Away Team' : 'Tied';
+            showStatus(`🏆 Match Complete! ${winnerText} wins ${matchData.finalResult}`, 'success');
+            setTimeout(() => hideStatus(), 4000);
+          } else {
+            showStatus('✓ Match saved', 'success');
+            setTimeout(() => hideStatus(), 2000);
+          }
           
-          closeMatchScorecardModal();
-          renderMatches();
+          // Stay on the same page - don't close the modal
+          // User can close manually with X button when done
           
         } catch (error) {
           console.error('Error saving match:', error);
@@ -4302,6 +4801,18 @@
           return;
         }
         
+        // Check if all players have official scores
+        const playersWithoutOfficial = currentGroupPlayers.filter(player => {
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          return !playerHasOfficialScores(playerKey);
+        });
+        
+        if (playersWithoutOfficial.length === 0) {
+          // All players have official scores - show warning
+          showOfficialScoresWarning();
+          return;
+        }
+        
         // Use played holes if available (for shotgun where group may not have played all station holes)
         currentGroupAllowedHoles = group._playedHoles && group._playedHoles.length > 0 
           ? group._playedHoles 
@@ -4311,8 +4822,16 @@
         groupTempScores = {};
         currentGroupPlayers.forEach(player => {
           const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          
+          // If player has official scores, use those (read-only)
+          if (playerHasOfficialScores(playerKey)) {
+            groupTempScores[playerKey] = { 
+              holes: [...(officialScores[playerKey].holes || new Array(18).fill(''))],
+              isOfficial: true
+            };
+          } 
           // Load existing scores from liveScores
-          if (liveScores[playerKey] && liveScores[playerKey].holes) {
+          else if (liveScores[playerKey] && liveScores[playerKey].holes) {
             groupTempScores[playerKey] = { holes: [...liveScores[playerKey].holes] };
           } else {
             groupTempScores[playerKey] = { holes: new Array(18).fill('') };
@@ -4425,6 +4944,7 @@
         currentGroupPlayers.forEach((player, playerIndex) => {
           const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
           const playerScores = groupTempScores[playerKey]?.holes || [];
+          const hasOfficial = playerHasOfficialScores(playerKey);
           
           // Shorten name for mobile
           const shortName = player.firstName.charAt(0) + '. ' + player.lastName.substring(0, 8);
@@ -4438,11 +4958,14 @@
             hcpLabel = `PHCP ${getPlayingHcpDisplay(player)}`;
           }
           
-          html += `<div class="player-score-row" data-player-index="${playerIndex}">`;
+          // Add official-row class if player has official scores
+          const rowClass = hasOfficial ? 'player-score-row official-row' : 'player-score-row';
+          
+          html += `<div class="${rowClass}" data-player-index="${playerIndex}">`;
           html += `
             <div class="player-col">
-              <div class="player-col-name">${shortName}</div>
-              <div class="player-col-hcp">${hcpLabel}</div>
+              <div class="player-col-name">${shortName}${hasOfficial ? ' <span class="official-icon" title="Official scores registered">📋</span>' : ''}</div>
+              <div class="player-col-hcp">${hcpLabel}${hasOfficial ? ' <span style="color:#10b981;font-size:9px;">OFFICIAL</span>' : ''}</div>
             </div>
           `;
           
@@ -4450,6 +4973,11 @@
             const score = playerScores[holeNum - 1];
             const par = pars[holeNum - 1];
             let cellClass = 'score-cell';
+            
+            // Add locked class if player has official scores
+            if (hasOfficial) {
+              cellClass += ' official-locked';
+            }
             
             if (score && score !== '') {
               cellClass += ' has-score';
@@ -4469,10 +4997,15 @@
               cellClass += ' empty';
             }
             
+            // Only make cells clickable if player doesn't have official scores
+            const clickHandler = hasOfficial 
+              ? `onclick="showOfficialScoreWarningForCell()"`
+              : `onclick="selectCell(${playerIndex}, ${holeIndex})"`;
+            
             html += `
               <div class="score-cell-wrapper">
                 <div class="${cellClass}" 
-                     onclick="selectCell(${playerIndex}, ${holeIndex})"
+                     ${clickHandler}
                      data-player="${playerIndex}" 
                      data-hole="${holeIndex}">
                   ${score || '-'}
@@ -4485,6 +5018,12 @@
         });
         
         table.innerHTML = html;
+      }
+      
+      // Show warning when clicking on a cell with official score
+      function showOfficialScoreWarningForCell() {
+        showStatus('🔒 This player has official scores - editing disabled', 'error');
+        setTimeout(hideStatus, 2000);
       }
 
       // Legacy function names for compatibility - now just call renderScoreGrid
@@ -4531,9 +5070,12 @@
         const holeNum = groupHoles[activeCell.holeIndex];
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
         const currentScore = groupTempScores[playerKey]?.holes[holeNum - 1] || '';
+        const hasOfficial = playerHasOfficialScores(playerKey);
         
-        document.getElementById('input-current-player').textContent = `${player.firstName} ${player.lastName}`;
-        document.getElementById('input-current-hole').textContent = `Hole ${holeNum} (Par ${getCoursePars()[holeNum - 1]})`;
+        document.getElementById('input-current-player').textContent = `${player.firstName} ${player.lastName}${hasOfficial ? ' 🔒' : ''}`;
+        document.getElementById('input-current-hole').textContent = hasOfficial 
+          ? '⚠️ Official scores - Read only' 
+          : `Hole ${holeNum} (Par ${getCoursePars()[holeNum - 1]})`;
         document.getElementById('input-current-value').textContent = currentScore || '-';
         
         // Scroll cell into view
@@ -4578,6 +5120,15 @@
         const groupHoles = getGroupHoles();
         const holeNum = groupHoles[activeCell.holeIndex];
         
+        // Check if player has official scores - don't allow editing
+        if (playerHasOfficialScores(playerKey)) {
+          showStatus('⚠️ Cannot edit - player has official scores', 'error');
+          setTimeout(hideStatus, 2000);
+          // Skip to next player without official scores
+          skipToNextEditableCell();
+          return;
+        }
+        
         // Handle X (DNF)
         if (score === 'X') {
           setScoreAndAdvance(playerKey, holeNum, 'X');
@@ -4602,6 +5153,57 @@
         
         // Normal score entry
         setScoreAndAdvance(playerKey, holeNum, score);
+      }
+      
+      // Skip to next cell that can be edited (player without official scores)
+      function skipToNextEditableCell() {
+        const totalPlayers = currentGroupPlayers.length;
+        const groupHoles = getGroupHoles();
+        const totalHoles = groupHoles.length;
+        
+        // Try to find next editable cell
+        for (let attempts = 0; attempts < totalPlayers * totalHoles; attempts++) {
+          // Move to next cell
+          if (scoringForGroup) {
+            // Player-group mode: next player, then next hole
+            if (activeCell.playerIndex < totalPlayers - 1) {
+              activeCell.playerIndex++;
+            } else {
+              if (activeCell.holeIndex < totalHoles - 1) {
+                activeCell.holeIndex++;
+                activeCell.playerIndex = 0;
+              } else {
+                activeCell.playerIndex = 0;
+                activeCell.holeIndex = 0;
+              }
+            }
+          } else {
+            // Volunteer mode: next hole, then next player
+            if (activeCell.holeIndex < totalHoles - 1) {
+              activeCell.holeIndex++;
+            } else {
+              if (activeCell.playerIndex < totalPlayers - 1) {
+                activeCell.playerIndex++;
+                activeCell.holeIndex = 0;
+              } else {
+                activeCell.playerIndex = 0;
+                activeCell.holeIndex = 0;
+              }
+            }
+          }
+          
+          // Check if this player can be edited
+          const player = currentGroupPlayers[activeCell.playerIndex];
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          if (!playerHasOfficialScores(playerKey)) {
+            updateActiveCell();
+            return;
+          }
+        }
+        
+        // All players have official scores
+        showStatus('All players have official scores', 'info');
+        setTimeout(hideStatus, 2000);
       }
 
       // Set score and auto-advance to next cell
@@ -4719,6 +5321,15 @@
       function quickScore(relativeToPar) {
         const player = currentGroupPlayers[activeCell.playerIndex];
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        
+        // Check if player has official scores - don't allow editing
+        if (playerHasOfficialScores(playerKey)) {
+          showStatus('⚠️ Cannot edit - player has official scores', 'error');
+          setTimeout(hideStatus, 2000);
+          skipToNextEditableCell();
+          return;
+        }
+        
         const groupHoles = getGroupHoles();
         const holeNum = groupHoles[activeCell.holeIndex];
         const par = getCoursePars()[holeNum - 1];
@@ -4737,6 +5348,14 @@
         
         const player = currentGroupPlayers[activeCell.playerIndex];
         const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        
+        // Check if player has official scores - don't allow editing
+        if (playerHasOfficialScores(playerKey)) {
+          showStatus('⚠️ Cannot edit - player has official scores', 'error');
+          setTimeout(hideStatus, 2000);
+          return;
+        }
+        
         const groupHoles = getGroupHoles();
         const holeNum = groupHoles[activeCell.holeIndex];
         
@@ -4771,37 +5390,47 @@
         const groupHoles = getGroupHoles();
         const totalHoles = groupHoles.length;
         
-        if (scoringForGroup) {
-          // Player-group mode: score all players for current hole, then move to next hole
-          // Try next player for same hole
-          if (activeCell.playerIndex < totalPlayers - 1) {
-            activeCell.playerIndex++;
-          } else {
-            // Move to next hole, first player
-            if (activeCell.holeIndex < totalHoles - 1) {
-              activeCell.holeIndex++;
-              activeCell.playerIndex = 0;
-            } else {
-              // We've reached the end - wrap to first player, first hole
-              activeCell.playerIndex = 0;
-              activeCell.holeIndex = 0;
-            }
-          }
-        } else {
-          // Volunteer mode: score all holes for current player, then move to next player
-          // Try next hole for same player
-          if (activeCell.holeIndex < totalHoles - 1) {
-            activeCell.holeIndex++;
-          } else {
-            // Move to next player, first hole
+        // Try to find next editable cell (skip players with official scores)
+        for (let attempts = 0; attempts < totalPlayers * totalHoles; attempts++) {
+          if (scoringForGroup) {
+            // Player-group mode: score all players for current hole, then move to next hole
+            // Try next player for same hole
             if (activeCell.playerIndex < totalPlayers - 1) {
               activeCell.playerIndex++;
-              activeCell.holeIndex = 0;
             } else {
-              // We've reached the end - wrap to first player
-              activeCell.playerIndex = 0;
-              activeCell.holeIndex = 0;
+              // Move to next hole, first player
+              if (activeCell.holeIndex < totalHoles - 1) {
+                activeCell.holeIndex++;
+                activeCell.playerIndex = 0;
+              } else {
+                // We've reached the end - wrap to first player, first hole
+                activeCell.playerIndex = 0;
+                activeCell.holeIndex = 0;
+              }
             }
+          } else {
+            // Volunteer mode: score all holes for current player, then move to next player
+            // Try next hole for same player
+            if (activeCell.holeIndex < totalHoles - 1) {
+              activeCell.holeIndex++;
+            } else {
+              // Move to next player, first hole
+              if (activeCell.playerIndex < totalPlayers - 1) {
+                activeCell.playerIndex++;
+                activeCell.holeIndex = 0;
+              } else {
+                // We've reached the end - wrap to first player
+                activeCell.playerIndex = 0;
+                activeCell.holeIndex = 0;
+              }
+            }
+          }
+          
+          // Check if this player can be edited (no official scores)
+          const player = currentGroupPlayers[activeCell.playerIndex];
+          const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+          if (!playerHasOfficialScores(playerKey)) {
+            break; // Found an editable cell
           }
         }
         
@@ -4818,10 +5447,18 @@
         try {
           showStatus('Saving scores...', 'info');
           let savedCount = 0;
+          let skippedOfficial = 0;
           const groupHoles = getGroupHoles();
           
           for (const player of currentGroupPlayers) {
             const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+            
+            // Skip players with official scores - don't overwrite them
+            if (playerHasOfficialScores(playerKey)) {
+              skippedOfficial++;
+              continue;
+            }
+            
             const scores = groupTempScores[playerKey];
             
             if (scores && scores.holes) {
@@ -4864,7 +5501,11 @@
           }
           
           if (savedCount > 0) {
-            showStatus(`✓ Saved scores for ${savedCount} player(s)`, 'success');
+            let statusMsg = `✓ Saved scores for ${savedCount} player(s)`;
+            if (skippedOfficial > 0) {
+              statusMsg += ` (${skippedOfficial} with official scores skipped)`;
+            }
+            showStatus(statusMsg, 'success');
             
             // Flash animation
             document.querySelectorAll('.player-score-row').forEach(row => {
@@ -4872,13 +5513,10 @@
               setTimeout(() => row.classList.remove('save-flash'), 500);
             });
             
-            // In player-group mode, keep the modal open (scorer continues entering scores)
-            // In volunteer mode, close the modal after saving
-            if (!scoringForGroup) {
-              setTimeout(() => {
-                closeGroupScoreModal();
-              }, 800);
-            }
+            // Stay on the same page - don't close the modal
+            // User can close manually with X button when done
+          } else if (skippedOfficial > 0) {
+            showStatus(`All ${skippedOfficial} player(s) have official scores - nothing to save`, 'info');
           } else {
             showStatus('No scores to save', 'info');
           }

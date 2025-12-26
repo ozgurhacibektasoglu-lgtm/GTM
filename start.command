@@ -8,12 +8,12 @@ echo "====================================="
 echo "Starting GTM Golf Tournament System"
 echo "====================================="
 echo ""
-echo "Server will start on: http://localhost:8888"
+echo "Server will start on: http://localhost:8889"
 echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Wait 2 seconds then open browser
-(sleep 2 && open http://localhost:8888/index.html) &
+(sleep 2 && open http://localhost:8889/index.html) &
 
 # Start the Python HTTP server
-python3 -m http.server 8888
+python3 -m http.server 8889

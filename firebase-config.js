@@ -47,6 +47,15 @@ function initFirebase() {
       window.db = db;
       syncEnabled = true;
       window.syncEnabled = true;
+      
+      // Force the database connection to be established (helps Safari)
+      // This triggers the WebSocket connection immediately rather than lazily
+      db.ref('.info/connected').once('value').then((snap) => {
+        console.log('Firebase connection status:', snap.val() ? 'connected' : 'disconnected');
+      }).catch((e) => {
+        console.log('Firebase connection check failed:', e.message);
+      });
+      
     } else {
       console.warn('Realtime Database SDK not loaded; cloud sync disabled on this page');
       db = null;
@@ -102,26 +111,63 @@ function syncFromFirebase(path) {
     return Promise.resolve(null);
   }
   
-  // Add timeout to detect hanging requests
-  const timeoutPromise = new Promise((resolve) => {
-    setTimeout(() => {
-      console.warn('syncFromFirebase TIMEOUT for path:', path);
-      resolve(null);
-    }, 30000); // 30 second timeout (increased for slow connections)
-  });
+  // Detect Safari - it has issues with Firebase WebSocket connections
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const timeoutDuration = isSafari ? 10000 : 30000; // Shorter timeout for Safari
   
-  const readPromise = db.ref(path).once('value')
-    .then((snapshot) => {
-      const val = snapshot.val();
-      console.log('syncFromFirebase SUCCESS for', path, ':', val ? 'data found (' + (Array.isArray(val) ? val.length : Object.keys(val).length) + ' items)' : 'null/empty');
-      return val;
-    })
-    .catch((error) => {
-      console.error('syncFromFirebase ERROR for', path, ':', error.message || error);
-      return null;
+  // Function to attempt a single read
+  const attemptRead = () => {
+    return db.ref(path).once('value')
+      .then((snapshot) => {
+        const val = snapshot.val();
+        console.log('syncFromFirebase SUCCESS for', path, ':', val ? 'data found (' + (Array.isArray(val) ? val.length : Object.keys(val).length) + ' items)' : 'null/empty');
+        return val;
+      });
+  };
+  
+  // Function to read with timeout
+  const readWithTimeout = (attempt = 1) => {
+    return new Promise((resolve) => {
+      let resolved = false;
+      
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.warn(`syncFromFirebase TIMEOUT for path: ${path} (attempt ${attempt})`);
+          resolve(null);
+        }
+      }, timeoutDuration);
+      
+      attemptRead()
+        .then((val) => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            resolve(val);
+          }
+        })
+        .catch((error) => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            console.error('syncFromFirebase ERROR for', path, ':', error.message || error);
+            resolve(null);
+          }
+        });
     });
+  };
   
-  return Promise.race([readPromise, timeoutPromise]);
+  // For Safari, try up to 2 times with shorter timeout
+  if (isSafari) {
+    console.log('Safari detected - using retry strategy for Firebase');
+    return readWithTimeout(1).then((result) => {
+      if (result !== null) return result;
+      console.log('Safari retry attempt 2 for', path);
+      return readWithTimeout(2);
+    });
+  }
+  
+  return readWithTimeout(1);
 }
 
 function listenToFirebase(path, callback) {

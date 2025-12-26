@@ -1286,6 +1286,15 @@
       });
 
       async function selectTournament(tournamentId) {
+        // Clear previous state completely
+        currentTournament = null;
+        currentRoundId = null;
+        
+        // Clear UI elements
+        document.getElementById('volunteer-links-container').innerHTML = '';
+        document.getElementById('player-group-links-container').innerHTML = '';
+        document.getElementById('groups-grid').innerHTML = '';
+        
         if (!tournamentId) {
           document.getElementById('round-group').style.display = 'none';
           document.getElementById('tournament-info').style.display = 'none';
@@ -1300,7 +1309,7 @@
         // Reset settings when switching tournaments
         resetSettingsToDefaults();
         
-        // Load tournament
+        // Load tournament - always get fresh data from Firebase
         let tournaments = [];
         
         if (db) {
@@ -1329,6 +1338,7 @@
         const roundsData = currentTournament.meta?.roundsData || [];
         
         let availableRounds = [];
+        let roundDates = []; // Store dates for each round for auto-selection
         
         roundIds.forEach((rid, idx) => {
           // Get round date for display
@@ -1345,14 +1355,84 @@
           option.textContent = `Round ${idx + 1}${dateStr}`;
           roundSelect.appendChild(option);
           availableRounds.push(rid);
+          roundDates.push(roundDate);
         });
         
         document.getElementById('round-group').style.display = 'block';
         
-        // Auto-select first round if only one available
+        // Auto-select round based on current date
+        let autoSelectedRound = null;
+        
         if (availableRounds.length === 1) {
-          roundSelect.value = availableRounds[0];
-          selectRound(availableRounds[0]);
+          // Only one round - select it
+          autoSelectedRound = availableRounds[0];
+        } else if (availableRounds.length > 1) {
+          // Multiple rounds - find the round for today or the closest upcoming/first round
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // First, check if any round matches today's date
+          for (let i = 0; i < roundDates.length; i++) {
+            if (roundDates[i]) {
+              const roundDateOnly = new Date(roundDates[i]);
+              roundDateOnly.setHours(0, 0, 0, 0);
+              
+              if (roundDateOnly.getTime() === today.getTime()) {
+                // Found a round for today
+                autoSelectedRound = availableRounds[i];
+                console.log(`Auto-selecting Round ${i + 1} (today's date)`);
+                break;
+              }
+            }
+          }
+          
+          // If no round for today, check if we're before the first round
+          if (!autoSelectedRound) {
+            const firstRoundDate = roundDates[0];
+            if (firstRoundDate) {
+              const firstDateOnly = new Date(firstRoundDate);
+              firstDateOnly.setHours(0, 0, 0, 0);
+              
+              if (today < firstDateOnly) {
+                // Before the tournament starts - select Round 1
+                autoSelectedRound = availableRounds[0];
+                console.log('Auto-selecting Round 1 (before tournament start)');
+              }
+            } else {
+              // No date info available - default to Round 1
+              autoSelectedRound = availableRounds[0];
+              console.log('Auto-selecting Round 1 (no date info)');
+            }
+          }
+          
+          // If still no selection, find the closest upcoming round
+          if (!autoSelectedRound) {
+            for (let i = 0; i < roundDates.length; i++) {
+              if (roundDates[i]) {
+                const roundDateOnly = new Date(roundDates[i]);
+                roundDateOnly.setHours(0, 0, 0, 0);
+                
+                if (roundDateOnly >= today) {
+                  // Found an upcoming round
+                  autoSelectedRound = availableRounds[i];
+                  console.log(`Auto-selecting Round ${i + 1} (next upcoming round)`);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // If all rounds are in the past, select the last round
+          if (!autoSelectedRound) {
+            autoSelectedRound = availableRounds[availableRounds.length - 1];
+            console.log(`Auto-selecting Round ${availableRounds.length} (last round - all rounds past)`);
+          }
+        }
+        
+        // Apply auto-selection
+        if (autoSelectedRound) {
+          roundSelect.value = autoSelectedRound;
+          selectRound(autoSelectedRound);
         }
       }
 
@@ -1770,14 +1850,46 @@
       async function loadGroups() {
         let drawData = null;
         
-        // Try localStorage
-        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
-        drawData = draws[currentRoundId];
+        // First try Firebase for fresh data
+        if (db) {
+          try {
+            const snapshot = await db.ref('draws').once('value');
+            const firebaseDraws = snapshot.val() || {};
+            
+            // Try exact roundId match
+            drawData = firebaseDraws[currentRoundId];
+            
+            // Try alternative key format
+            if (!drawData) {
+              const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+              drawData = firebaseDraws[altRoundId];
+            }
+            
+            // Also update localStorage with Firebase data to keep in sync
+            if (Object.keys(firebaseDraws).length > 0) {
+              localStorage.setItem('draws', JSON.stringify(firebaseDraws));
+            }
+          } catch (e) {
+            console.error('Error loading draws from Firebase:', e);
+          }
+        }
         
-        // Try alternative key
+        // Fall back to localStorage if Firebase didn't have data
         if (!drawData) {
-          const altRoundId = currentRoundId.split('-').slice(-2).join('-');
-          drawData = draws[altRoundId];
+          const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+          drawData = draws[currentRoundId];
+          
+          // Try alternative key
+          if (!drawData) {
+            const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+            drawData = draws[altRoundId];
+          }
+        }
+        
+        // Validate that draw data belongs to current tournament
+        if (drawData && drawData.tournamentId && drawData.tournamentId !== currentTournament.tournamentId) {
+          console.warn('Draw data tournamentId mismatch, ignoring stale data');
+          drawData = null;
         }
         
         // Update groups count
@@ -1963,6 +2075,9 @@
           if (db) {
             await db.ref(`liveScores/${currentRoundId}`).remove();
             await db.ref(`scores/${currentRoundId}`).remove();
+            // Also clear match scores for match play tournaments
+            await db.ref(`liveMatchScores/${currentRoundId}`).remove();
+            console.log('Cleared liveScores, scores, and liveMatchScores from Firebase');
           }
           
           // Clear from localStorage
@@ -1999,7 +2114,7 @@
       }
 
       // Update sharing links
-      function updateLinks() {
+      async function updateLinks() {
         if (!currentTournament || !currentRoundId) {
           console.log('[updateLinks] No tournament or round selected, skipping');
           return;
@@ -2031,7 +2146,7 @@
         
         // Generate player group links
         if (isPlayerGroup) {
-          generatePlayerGroupLinks();
+          await generatePlayerGroupLinks();
         }
         
         // General scoring URL (for players/walking)
@@ -2102,19 +2217,48 @@
       }
 
       // Generate player group links
-      function generatePlayerGroupLinks() {
+      async function generatePlayerGroupLinks() {
         const container = document.getElementById('player-group-links-container');
         const countEl = document.getElementById('player-group-count-text');
         const baseUrl = window.location.origin;
         
-        // Get groups from draw data - use same key format as loadGroups()
-        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
-        let drawData = draws[currentRoundId];
+        let drawData = null;
         
-        // Try alternative key
+        // First try Firebase for fresh data
+        if (db) {
+          try {
+            const snapshot = await db.ref('draws').once('value');
+            const firebaseDraws = snapshot.val() || {};
+            
+            // Try exact roundId match
+            drawData = firebaseDraws[currentRoundId];
+            
+            // Try alternative key format
+            if (!drawData) {
+              const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+              drawData = firebaseDraws[altRoundId];
+            }
+          } catch (e) {
+            console.error('Error loading draws from Firebase:', e);
+          }
+        }
+        
+        // Fall back to localStorage if Firebase didn't have data
         if (!drawData) {
-          const altRoundId = currentRoundId.split('-').slice(-2).join('-');
-          drawData = draws[altRoundId];
+          const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+          drawData = draws[currentRoundId];
+          
+          // Try alternative key format
+          if (!drawData) {
+            const altRoundId = currentRoundId.split('-').slice(-2).join('-');
+            drawData = draws[altRoundId];
+          }
+        }
+        
+        // Validate that draw data belongs to current tournament
+        if (drawData && drawData.tournamentId && drawData.tournamentId !== currentTournament.tournamentId) {
+          console.warn('Draw data tournamentId mismatch, ignoring stale data');
+          drawData = null;
         }
         
         const groups = drawData?.groups || [];

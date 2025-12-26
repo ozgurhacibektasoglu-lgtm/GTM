@@ -261,6 +261,11 @@
             document.getElementById('match-format').value = tournament.matchFormat;
           }
           
+          // Load teams tournament setting
+          if (tournament.meta?.teamsTournament) {
+            document.getElementById('teams-tournament').value = tournament.meta.teamsTournament;
+          }
+          
           updateMatchTypeHelp();
         }
       }
@@ -316,6 +321,15 @@
         const isTeamsTournament = teamsTournament === 'yes';
         const displayType = isTeamsTournament ? 'Match Play (Teams)' : 'Match Play';
         
+        // Build meta object - preserve existing meta if editing, but update teamsTournament
+        let meta;
+        if (isEdit) {
+          meta = { ...getTournaments()[parseInt(editIndexParam, 10)].meta };
+          meta.teamsTournament = teamsTournament; // Update the teamsTournament value
+        } else {
+          meta = { courses: [course], teamsTournament: teamsTournament };
+        }
+        
         const tournament = {
           tournamentId: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].tournamentId : generateTournamentId(),
           name: name,
@@ -327,7 +341,7 @@
           hcpAllowance: hcpAllowance,
           createdAt: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].createdAt : now,
           updatedAt: now,
-          meta: isEdit ? getTournaments()[parseInt(editIndexParam, 10)].meta : { courses: [course], teamsTournament: teamsTournament }
+          meta: meta
         };
 
         // Add bracket-specific fields

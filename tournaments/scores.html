@@ -20,6 +20,39 @@
       .info-item { display: flex; flex-direction: column; }
       .info-label { color: #64748b; font-weight: 600; margin-bottom: 2px; }
       .info-value { color: #1e293b; font-weight: 500; }
+      .btn-import-live { 
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+        color: white; 
+        border: none; 
+        padding: 6px 12px; 
+        border-radius: 6px; 
+        font-size: 12px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: all 0.2s;
+        display: none;
+      }
+      .btn-import-live:hover { opacity: 0.9; transform: translateY(-1px); }
+      .btn-import-live:active { transform: translateY(0); }
+      .btn-import-live.has-live-scores { display: inline-flex; align-items: center; gap: 4px; }
+      .btn-import-live.importing { opacity: 0.7; pointer-events: none; }
+      .player-action-buttons { display: flex; gap: 6px; }
+      .btn-clear-scores { 
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+        color: white; 
+        border: none; 
+        padding: 6px 12px; 
+        border-radius: 6px; 
+        font-size: 12px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .btn-clear-scores:hover { opacity: 0.9; transform: translateY(-1px); }
+      .btn-clear-scores:active { transform: translateY(0); }
       .search-box { margin-bottom: 12px; }
       .search-box input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 14px; }
       .table-wrapper { overflow: auto; max-height: calc(100vh - 240px); border-radius: 8px; }
@@ -214,7 +247,17 @@
         <!-- Left Panel: Scorecard -->
         <div class="scorecard-panel">
           <div id="player-info" class="player-info" style="display: none;">
-            <h3 id="player-name">-</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <h3 id="player-name" style="margin: 0;">-</h3>
+              <div class="player-action-buttons">
+                <button id="btn-import-live" class="btn-import-live" onclick="importFromLiveScoring()" title="Import scores from live scoring">
+                  📥 Import Live
+                </button>
+                <button id="btn-clear-scores" class="btn-clear-scores" onclick="clearPlayerScores()" title="Clear all scores for this player">
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
             <div class="player-info-grid">
               <div class="info-item">
                 <span class="info-label">Reg No</span>
@@ -3035,6 +3078,9 @@
           currentRoundId = e.target.value;
           currentRoundIndex = roundIds.indexOf(currentRoundId);
           
+          // Clear live scores cache when switching rounds
+          liveScoresCache = null;
+          
           // Reload based on current entry method
           if (scoreEntryMethod === 'match-score') {
             loadMatchScores();
@@ -3090,6 +3136,9 @@
         if (importedCount > 0) {
           console.log(`📱 Loaded ${importedCount} scores from digital scorecards`);
         }
+
+        // Load live scores for the round (for import functionality)
+        await loadLiveScoresForRound();
 
         // Load existing scores (now includes digital scorecard scores)
         const scoresData = getScoresData();
@@ -3328,6 +3377,9 @@
 
         // Render scorecard
         renderScorecard(player);
+        
+        // Check if player has live scores available for import
+        checkLiveScoresForPlayer(player);
         
         // Focus on first hole input after a short delay (to ensure DOM is ready)
         setTimeout(() => {
@@ -4040,6 +4092,229 @@
         
         document.getElementById('status-text').textContent = 
           `${admittedPlayers.length} players | ${playersWithScores} with scores entered`;
+      }
+
+      // Store live scores for all players (loaded once per round)
+      let liveScoresCache = null;
+      
+      // Load live scores from Firebase
+      async function loadLiveScoresForRound() {
+        if (!currentRoundId) return null;
+        
+        try {
+          const db = firebase.database();
+          const snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
+          liveScoresCache = snapshot.val() || {};
+          console.log('Loaded live scores for round:', Object.keys(liveScoresCache).length, 'players');
+          return liveScoresCache;
+        } catch (e) {
+          console.error('Error loading live scores:', e);
+          return null;
+        }
+      }
+      
+      // Check if a player has live scores and update button visibility
+      function checkLiveScoresForPlayer(player) {
+        const btn = document.getElementById('btn-import-live');
+        if (!btn) return;
+        
+        if (!liveScoresCache) {
+          btn.classList.remove('has-live-scores');
+          return;
+        }
+        
+        // Try to find player in live scores by registration number or name key
+        const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+        const altKey = `${player.firstName}-${player.lastName}`;
+        
+        const liveData = liveScoresCache[playerKey] || liveScoresCache[altKey];
+        
+        if (liveData && liveData.holes && liveData.holes.some(h => h !== '' && h !== null)) {
+          // Player has live scores
+          const holesWithScores = liveData.holes.filter(h => h !== '' && h !== null).length;
+          btn.classList.add('has-live-scores');
+          btn.title = `Import ${holesWithScores} hole(s) from live scoring`;
+        } else {
+          btn.classList.remove('has-live-scores');
+        }
+      }
+      
+      // Import scores from live scoring for the selected player
+      async function importFromLiveScoring() {
+        if (!selectedPlayer) {
+          alert('Please select a player first');
+          return;
+        }
+        
+        const btn = document.getElementById('btn-import-live');
+        btn.classList.add('importing');
+        btn.innerHTML = '⏳ Importing...';
+        
+        try {
+          // Reload live scores to get the latest
+          await loadLiveScoresForRound();
+          
+          if (!liveScoresCache) {
+            alert('Could not load live scores. Please try again.');
+            return;
+          }
+          
+          // Find player's live scores
+          const playerKey = selectedPlayer.reg || `${selectedPlayer.firstName}-${selectedPlayer.lastName}`;
+          const altKey = `${selectedPlayer.firstName}-${selectedPlayer.lastName}`;
+          
+          const liveData = liveScoresCache[playerKey] || liveScoresCache[altKey];
+          
+          if (!liveData || !liveData.holes) {
+            alert('No live scores found for this player.');
+            return;
+          }
+          
+          // Count holes with data
+          const holesWithScores = liveData.holes.filter(h => h !== '' && h !== null).length;
+          
+          if (holesWithScores === 0) {
+            alert('No live scores found for this player.');
+            return;
+          }
+          
+          // Confirm import
+          const existingScores = scores[selectedPlayer.reg]?.holes?.filter(h => h !== '' && h !== null).length || 0;
+          let confirmMsg = `Import ${holesWithScores} hole(s) from live scoring?`;
+          if (existingScores > 0) {
+            confirmMsg += `\n\n⚠️ This will overwrite ${existingScores} existing score(s).`;
+          }
+          confirmMsg += '\n\nPlease verify the scores after import.';
+          
+          if (!confirm(confirmMsg)) {
+            return;
+          }
+          
+          // Import the scores
+          const playerScores = scores[selectedPlayer.reg];
+          
+          for (let i = 0; i < 18; i++) {
+            const liveScore = liveData.holes[i];
+            if (liveScore !== '' && liveScore !== null && liveScore !== undefined) {
+              // Handle 'X' (incomplete hole)
+              if (liveScore === 'X' || liveScore === 'x') {
+                playerScores.holes[i] = '';
+                playerScores.isIncompleteHole = playerScores.isIncompleteHole || [];
+                playerScores.isIncompleteHole[i] = true;
+              } else {
+                const score = parseInt(liveScore);
+                if (!isNaN(score)) {
+                  playerScores.holes[i] = score;
+                  // Clear any incomplete flag
+                  if (playerScores.isIncompleteHole) {
+                    playerScores.isIncompleteHole[i] = false;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Recalculate points/net scores
+          recalculatePlayerPoints(selectedPlayer);
+          
+          // Mark as imported from live scoring
+          playerScores.importedFromLive = true;
+          playerScores.importedAt = new Date().toISOString();
+          
+          // Save and refresh display
+          saveScores();
+          renderScorecard(selectedPlayer);
+          
+          // Show success message
+          alert(`✅ Successfully imported ${holesWithScores} hole(s) from live scoring.\n\nPlease verify the scores are correct before proceeding.`);
+          
+        } catch (e) {
+          console.error('Error importing live scores:', e);
+          alert('Error importing live scores. Please try again.');
+        } finally {
+          btn.classList.remove('importing');
+          btn.innerHTML = '📥 Import Live';
+        }
+      }
+      
+      // Recalculate points for a player after importing
+      function recalculatePlayerPoints(player) {
+        const playerScores = scores[player.reg];
+        if (!playerScores || !courseData || !courseData.pars) return;
+        
+        const phcp = player.phcp || 0;
+        const pars = courseData.pars;
+        const strokeIndexes = courseData.strokeIndexes || [];
+        
+        for (let i = 0; i < 18; i++) {
+          const score = playerScores.holes[i];
+          if (score && score !== '') {
+            const par = pars[i] || 4;
+            const si = strokeIndexes[i] || (i + 1);
+            const strokes = getStrokesForHole(phcp, si);
+            const netScore = parseInt(score) - strokes;
+            playerScores.points[i] = netScore;
+            
+            // Calculate Stableford points
+            const diff = netScore - par;
+            let stbf = 0;
+            if (diff <= -3) stbf = 5;       // Albatross or better
+            else if (diff === -2) stbf = 4;  // Eagle
+            else if (diff === -1) stbf = 3;  // Birdie
+            else if (diff === 0) stbf = 2;   // Par
+            else if (diff === 1) stbf = 1;   // Bogey
+            else stbf = 0;                   // Double bogey or worse
+            
+            playerScores.stablefordPoints = playerScores.stablefordPoints || [];
+            playerScores.stablefordPoints[i] = stbf;
+          } else {
+            playerScores.points[i] = '';
+            if (playerScores.stablefordPoints) {
+              playerScores.stablefordPoints[i] = '';
+            }
+          }
+        }
+      }
+
+      // Clear all scores for the selected player
+      function clearPlayerScores() {
+        if (!selectedPlayer) {
+          alert('Please select a player first');
+          return;
+        }
+        
+        // Count existing scores
+        const playerScores = scores[selectedPlayer.reg];
+        const existingScores = playerScores?.holes?.filter(h => h !== '' && h !== null).length || 0;
+        
+        if (existingScores === 0) {
+          alert('This player has no scores to clear.');
+          return;
+        }
+        
+        // Confirm clear
+        const confirmMsg = `Clear all ${existingScores} score(s) for ${selectedPlayer.firstName} ${selectedPlayer.lastName}?\n\nThis action cannot be undone.`;
+        
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+        
+        // Clear all scores
+        const numHoles = courseData?.pars?.length || 18;
+        scores[selectedPlayer.reg] = {
+          holes: Array(numHoles).fill(''),
+          points: Array(numHoles).fill(''),
+          stablefordPoints: Array(numHoles).fill(''),
+          isIncompleteHole: Array(numHoles).fill(false),
+          status: playerScores.status || '' // Preserve status (DQ, NS, etc.)
+        };
+        
+        // Save and refresh display
+        saveScores();
+        renderScorecard(selectedPlayer);
+        
+        // Show success message
+        alert(`✅ Cleared all scores for ${selectedPlayer.firstName} ${selectedPlayer.lastName}.`);
       }
 
       function saveScores() {
