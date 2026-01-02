@@ -1,0 +1,95 @@
+{
+  "rules": {
+    // Tournaments - public read, authenticated write
+    "tournaments": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Digital Scores - public read for live leaderboards, authenticated write
+    "digitalScores": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Players - public read for lookups, authenticated write
+    "players": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Courses - public read, authenticated write
+    "courses": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Clubs - authenticated only
+    "clubs": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Users - users can only read/write their own data
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    
+    // Club Users mapping - authenticated only
+    "clubUsers": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Player Users mapping - authenticated only  
+    "playerUsers": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Members - authenticated only
+    "members": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Rankings - public read, authenticated write
+    "rankings": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Online Admissions - public read for registration, authenticated write
+    "onlineAdmissions": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    // Preferences - authenticated only
+    "preferences": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // FCM Tokens for push notifications - authenticated only
+    "fcmTokens": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Notifications - authenticated only
+    "notifications": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    // Default: deny everything else
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
