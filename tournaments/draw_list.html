@@ -450,18 +450,221 @@
         return;
       }
       
-      // Save the published flag and the preview HTML to the tournament object
+      // Get current round
+      const roundId = document.getElementById('round-select').value;
+      const drawData = getDrawData(roundId);
       const tournaments = getTournaments();
       const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
-      if (idx !== -1) {
+      const tournament = tournaments[idx];
+      
+      if (idx !== -1 && drawData && drawData.groups) {
+        // === ENRICH DRAW DATA WITH BUGGY, PHCP, CATEGORY ===
+        const showHcp = document.getElementById('opt-hcp').checked;
+        const showPhcp = document.getElementById('opt-phcp').checked;
+        const showCategory = document.getElementById('opt-category').checked;
+        const showBuggy = document.getElementById('opt-buggy').checked;
+        const buggyStart = parseInt(document.getElementById('buggy-start').value) || 1;
+        const buggySkipInput = document.getElementById('buggy-skip').value;
+        
+        // Parse skip numbers
+        const skipNumbers = new Set();
+        if (buggySkipInput.trim()) {
+          buggySkipInput.split(',').forEach(num => {
+            const n = parseInt(num.trim());
+            if (!isNaN(n)) skipNumbers.add(n);
+          });
+        }
+        
+        // Helper function to get next available buggy number
+        function getNextBuggyNumber(current) {
+          while (skipNumbers.has(current)) { current++; }
+          return current;
+        }
+        
+        // Calculate buggy numbers
+        let currentBuggyNo = getNextBuggyNumber(buggyStart);
+        const usedBuggies = new Set();
+        Object.values(manualBuggyAssignments).forEach(num => usedBuggies.add(num));
+        
+        // Get admitted players data to enrich with HCP/PHCP
+        const admittedPlayers = getAdmittedPlayers(roundId);
+        const admittedByReg = {};
+        admittedPlayers.forEach(p => {
+          if (p.reg || p.regNo) {
+            admittedByReg[p.reg || p.regNo] = p;
+          }
+        });
+        
+        // Create enriched groups with player data
+        const enrichedGroups = drawData.groups.map((group, groupIdx) => {
+          let lastBuggyNo = null; // Track last assigned buggy for sharing
+          
+          const enrichedPlayers = (group.players || []).map((player, pIdx) => {
+            // Start with basic player data
+            let enrichedPlayer = { ...player };
+            
+            // Merge with admitted player data to get HCP, PHCP, etc.
+            const admittedPlayer = admittedByReg[player.reg || player.regNo];
+            if (admittedPlayer) {
+              enrichedPlayer = { ...admittedPlayer, ...enrichedPlayer };
+            }
+            
+            // Normalize handicap field name (some data has 'handicap', some has 'hcp')
+            if (enrichedPlayer.handicap !== undefined && enrichedPlayer.hcp === undefined) {
+              enrichedPlayer.hcp = enrichedPlayer.handicap;
+            }
+            // Always clean up the old 'handicap' field after normalization
+            delete enrichedPlayer.handicap;
+            
+            // Remove fields that are not selected (clean slate)
+            if (!showHcp) {
+              delete enrichedPlayer.hcp;
+            }
+            if (!showBuggy) {
+              delete enrichedPlayer.buggy;
+            }
+            if (!showPhcp) {
+              delete enrichedPlayer.phcp;
+            }
+            if (!showCategory) {
+              delete enrichedPlayer.category;
+            }
+            
+            // Add buggy number (only if checkbox is checked)
+            if (showBuggy) {
+              const key = `${groupIdx}_${pIdx}`;
+              if (manualBuggyAssignments[key]) {
+                enrichedPlayer.buggy = manualBuggyAssignments[key];
+                lastBuggyNo = enrichedPlayer.buggy;
+              } else if (pIdx % 2 === 0) {
+                // Even index (0, 2, 4...) gets a new buggy
+                while (usedBuggies.has(currentBuggyNo)) {
+                  currentBuggyNo = getNextBuggyNumber(currentBuggyNo + 1);
+                }
+                enrichedPlayer.buggy = currentBuggyNo;
+                usedBuggies.add(currentBuggyNo);
+                lastBuggyNo = currentBuggyNo;
+                currentBuggyNo = getNextBuggyNumber(currentBuggyNo + 1);
+              } else {
+                // Odd index (1, 3, 5...) shares with previous player
+                enrichedPlayer.buggy = lastBuggyNo || currentBuggyNo;
+              }
+              
+              // Ensure buggy is a number or string, not undefined
+              if (enrichedPlayer.buggy === undefined) {
+                console.warn(`⚠️ Buggy undefined for player ${pIdx} in group ${groupIdx}`);
+                enrichedPlayer.buggy = currentBuggyNo;
+              }
+            }
+            
+            // Add playing handicap (PHCP - only if checkbox is checked)
+            // Use existing PHCP from admitted players data, don't recalculate
+            if (showPhcp) {
+              // PHCP should already exist in player data from admissions
+              // Only calculate if it doesn't exist
+              if (!enrichedPlayer.phcp) {
+                const phcp = calculatePlayingHcp(enrichedPlayer, roundId);
+                if (phcp !== '-' && phcp !== undefined) {
+                  enrichedPlayer.phcp = phcp;
+                }
+              }
+            }
+            
+            // Add category (only if checkbox is checked)
+            if (showCategory && tournament) {
+              const categoryCodes = getPlayerCategories(player, tournament);
+              if (categoryCodes.length > 0) {
+                // Convert category codes to shortNames
+                const categoryNames = categoryCodes.map(code => {
+                  const cat = tournament.categories?.find(c => c.code === code);
+                  return cat?.shortName || cat?.name || code;
+                });
+                enrichedPlayer.category = categoryNames.join(', ');
+              }
+            }
+            
+            return enrichedPlayer;
+          });
+          
+          return { ...group, players: enrichedPlayers };
+        });
+        
+        // Save enriched draw data to Firebase
+        const enrichedRoundData = { 
+          ...drawData, 
+          groups: enrichedGroups,
+          publishedAt: new Date().toISOString(), // Add timestamp to force update
+          settings: {
+            showBuggy,
+            showPhcp,
+            showCategory
+          }
+        };
+        
+        // Update localStorage
+        const draws = JSON.parse(localStorage.getItem('draws') || '{}');
+        draws[roundId] = enrichedRoundData;
+        localStorage.setItem('draws', JSON.stringify(draws));
+        
+        // Log what we're saving for debugging
+        console.log('📝 Publishing draw with options:', {
+          showHcp,
+          showBuggy,
+          showPhcp,
+          showCategory,
+          roundId,
+          groupCount: enrichedGroups.length,
+          firstGroupPlayerCount: enrichedGroups[0]?.players?.length || 0,
+          samplePlayer: enrichedGroups[0]?.players?.[0] || null
+        });
+        
+        console.log('🔍 FULL ENRICHED DATA TO SAVE:', JSON.stringify(enrichedRoundData, null, 2));
+        console.log('🔍 First group data:', JSON.stringify(enrichedGroups[0], null, 2));
+        
+        // Force sync DIRECTLY to the specific round path in Firebase
+        if (typeof db !== 'undefined' && db && syncEnabled) {
+          console.log('🔥 About to save to Firebase path: draws/' + roundId);
+          // Sync directly to draws/{roundId} to avoid conflicts
+          db.ref('draws').child(roundId).set(enrichedRoundData)
+            .then(() => {
+              console.log('✓ Enriched draw data saved to Firebase with buggy/phcp/category');
+              console.log('✓ Round data path: draws/' + roundId);
+              console.log('✓ Sample player data:', enrichedGroups[0]?.players?.[0]);
+            })
+            .catch(err => {
+              console.error('❌ Failed to sync draws to Firebase:', err);
+              alert('Warning: Failed to save to Firebase. Please try again.');
+            });
+        } else {
+          console.warn('⚠️ Firebase sync not available or disabled!');
+          console.warn('db:', typeof db, 'syncEnabled:', syncEnabled);
+        }
+        
+        // === SAVE TOURNAMENT PUBLISHED STATE ===
         tournaments[idx].published = true;
         tournaments[idx].publishedHTML = previewHTML;
         tournaments[idx].publishedDate = new Date().toISOString();
+        tournaments[idx].lastModified = new Date().toISOString(); // Track modifications
+        
+        // Save display options for public view and iOS app
+        tournaments[idx].displayOptions = {
+          club: document.getElementById('opt-club')?.checked || false,
+          hcp: true, // Always show HCP
+          phcp: showPhcp,
+          teeColor: document.getElementById('opt-tee-color')?.checked || false,
+          category: showCategory,
+          buggy: showBuggy,
+          handicap: document.getElementById('opt-handicap')?.checked || false,
+          groupByTee: document.getElementById('opt-group-by-tee')?.checked || false
+        };
         
         localStorage.setItem('tournaments', JSON.stringify(tournaments));
-        // Sync to Firebase if needed
         if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
-          syncToFirebase('tournaments', tournaments);
+          syncToFirebase('tournaments', tournaments).then(() => {
+            console.log('✓ Tournament publish state saved to Firebase');
+          }).catch(err => {
+            console.error('❌ Failed to sync tournament state:', err);
+          });
         }
         
         // Update button appearance
@@ -470,7 +673,7 @@
         btn.innerHTML = '✓ Published - Click to Unpublish';
         btn.onclick = unpublishDrawList;
         
-        alert('Draw list published successfully!');
+        alert('Draw list published successfully! Check console for details.');
       }
     }
     
@@ -526,6 +729,9 @@
 
       const roundSelect = document.getElementById('round-select');
       
+      // Get roundId from URL parameter if provided
+      const urlRoundId = urlParams.get('roundId');
+      
       // Build round options matching draw.html logic
       if (tournament.meta && tournament.meta.rounds > 1) {
         roundSelect.innerHTML = '';
@@ -537,6 +743,10 @@
           const date = round.date ? formatDateDDMMYYYY(round.date) : 'TBD';
           const course = round.course || '';
           option.textContent = `Round ${index + 1}: ${date}${course ? ' (' + course + ')' : ''}`;
+          // Pre-select based on URL parameter
+          if (urlRoundId && roundId === urlRoundId) {
+            option.selected = true;
+          }
           roundSelect.appendChild(option);
         });
       } else {
@@ -571,11 +781,34 @@
     }
 
     // Calculate which categories a player belongs to (excluding result-only categories)
+    // PRIORITY: Uses stored categoryAssignments if available, otherwise calculates on-the-fly
     function getPlayerCategories(player, tournament) {
       if (!tournament || !tournament.categories || tournament.categories.length === 0) {
         return [];
       }
       
+      const playerId = player.reg || player.id;
+      
+      // PRIORITY 1: Check stored categoryAssignments (single source of truth)
+      if (tournament.categoryAssignments && playerId) {
+        const matchingFromStored = [];
+        for (const catCode in tournament.categoryAssignments) {
+          // Firebase may return arrays as objects with numeric keys - convert back to array
+          let playerIds = tournament.categoryAssignments[catCode];
+          if (playerIds && !Array.isArray(playerIds)) {
+            playerIds = Object.values(playerIds);
+          }
+          if (playerIds && playerIds.includes(playerId)) {
+            matchingFromStored.push(catCode);
+          }
+        }
+        if (matchingFromStored.length > 0) {
+          console.log(`Player ${playerId}: Using stored category assignments:`, matchingFromStored);
+          return matchingFromStored;
+        }
+      }
+      
+      // FALLBACK: Calculate on-the-fly (backward compatibility)
       const matchingCategories = [];
       const playerGender = (player.gender || '').toLowerCase();
       const playerHcp = parseFloat(player.hcp);
@@ -585,10 +818,25 @@
         // Skip result-only categories (like Gross, Junior, Senior)
         if (cat.isResultOnly) continue;
         
+        // Check if this is a manual category with explicit player list
+        if (cat.isManual === true) {
+          const manualPlayerIds = cat.players || cat.manualPlayers || [];
+          if (manualPlayerIds.includes(player.reg) || manualPlayerIds.includes(player.id)) {
+            matchingCategories.push(cat.code);
+          }
+          continue;
+        }
+        
+        // Check categoryTag first - if specified, player must have this tag
+        if (cat.categoryTag && cat.categoryTag !== '') {
+          const playerTag = player.categoryTag || player.tag || '';
+          if (playerTag !== cat.categoryTag) continue;
+        }
+        
         // Check gender match
         const catGender = (cat.gender || '').toLowerCase();
         let genderMatch = false;
-        if (!catGender || catGender === 'any' || catGender === '') {
+        if (!catGender || catGender === 'any' || catGender === '' || catGender === 'manual') {
           genderMatch = true;
         } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male' || playerGender === 'e')) {
           genderMatch = true;
@@ -598,19 +846,19 @@
         
         if (!genderMatch) continue;
         
-        // Check handicap range
-        if (cat.handicapMin !== undefined && cat.handicapMin !== null && cat.handicapMin !== '') {
+        // Check handicap range (skip if 'Manual')
+        if (cat.handicapMin !== undefined && cat.handicapMin !== null && cat.handicapMin !== '' && cat.handicapMin !== 'Manual') {
           if (isNaN(playerHcp) || playerHcp < parseFloat(cat.handicapMin)) continue;
         }
-        if (cat.handicapMax !== undefined && cat.handicapMax !== null && cat.handicapMax !== '') {
+        if (cat.handicapMax !== undefined && cat.handicapMax !== null && cat.handicapMax !== '' && cat.handicapMax !== 'Manual') {
           if (isNaN(playerHcp) || playerHcp > parseFloat(cat.handicapMax)) continue;
         }
         
-        // Check age range
-        if (cat.ageMin !== undefined && cat.ageMin !== null && cat.ageMin !== '') {
+        // Check age range (skip if 'Manual')
+        if (cat.ageMin !== undefined && cat.ageMin !== null && cat.ageMin !== '' && cat.ageMin !== 'Manual') {
           if (playerAge === null || playerAge < parseInt(cat.ageMin)) continue;
         }
-        if (cat.ageMax !== undefined && cat.ageMax !== null && cat.ageMax !== '') {
+        if (cat.ageMax !== undefined && cat.ageMax !== null && cat.ageMax !== '' && cat.ageMax !== 'Manual') {
           if (playerAge === null || playerAge > parseInt(cat.ageMax)) continue;
         }
         

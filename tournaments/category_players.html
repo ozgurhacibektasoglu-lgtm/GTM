@@ -79,6 +79,18 @@
         const tournament = getTournament();
         return tournament?.categories || [];
       }
+      
+      // Get stored category assignments (single source of truth)
+      function getCategoryAssignments(categoryCode) {
+        const tournament = getTournament();
+        if (!tournament || !tournament.categoryAssignments) return null;
+        let playerIds = tournament.categoryAssignments[categoryCode];
+        // Firebase may return arrays as objects with numeric keys - convert back to array
+        if (playerIds && !Array.isArray(playerIds)) {
+          playerIds = Object.values(playerIds);
+        }
+        return playerIds || null;
+      }
 
       function getAdmittedPlayers() {
         const tournament = getTournament();
@@ -109,12 +121,27 @@
       }
 
       function playerMatchesCategory(player, category) {
+        // For manual categories, check if player ID is in the players array
+        if (category.isManual === true) {
+          const manualPlayerIds = category.players || category.manualPlayers || [];
+          console.log('Manual category check - player:', player.reg, 'ids:', manualPlayerIds);
+          const matches = manualPlayerIds.includes(player.reg) || manualPlayerIds.includes(player.id);
+          console.log('Match result:', matches);
+          return matches;
+        }
+        
+        // Check categoryTag first - if specified, player must have this tag
+        if (category.categoryTag && category.categoryTag !== '') {
+          const playerTag = player.categoryTag || player.tag || '';
+          if (playerTag !== category.categoryTag) return false;
+        }
+        
         const playerGender = (player.gender || '').toLowerCase();
         const catGender = (category.gender || '').toLowerCase();
         
         // Check gender match
         let genderMatch = false;
-        if (!catGender || catGender === 'any' || catGender === '') {
+        if (!catGender || catGender === 'any' || catGender === '' || catGender === 'manual') {
           genderMatch = true;
         } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male')) {
           genderMatch = true;
@@ -124,19 +151,19 @@
         
         if (!genderMatch) return false;
         
-        // Check handicap
-        if (category.handicapMin !== undefined && category.handicapMin !== null && category.handicapMin !== '') {
+        // Check handicap (skip if Manual)
+        if (category.handicapMin !== undefined && category.handicapMin !== null && category.handicapMin !== '' && category.handicapMin !== 'Manual') {
           if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) < parseFloat(category.handicapMin)) return false;
         }
-        if (category.handicapMax !== undefined && category.handicapMax !== null && category.handicapMax !== '') {
+        if (category.handicapMax !== undefined && category.handicapMax !== null && category.handicapMax !== '' && category.handicapMax !== 'Manual') {
           if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) > parseFloat(category.handicapMax)) return false;
         }
         
-        // Check age
-        if (category.ageMin !== undefined && category.ageMin !== null && category.ageMin !== '') {
+        // Check age (skip if Manual)
+        if (category.ageMin !== undefined && category.ageMin !== null && category.ageMin !== '' && category.ageMin !== 'Manual') {
           if (player.age === undefined || player.age === null || parseInt(player.age) < parseInt(category.ageMin)) return false;
         }
-        if (category.ageMax !== undefined && category.ageMax !== null && category.ageMax !== '') {
+        if (category.ageMax !== undefined && category.ageMax !== null && category.ageMax !== '' && category.ageMax !== 'Manual') {
           if (player.age === undefined || player.age === null || parseInt(player.age) > parseInt(category.ageMax)) return false;
         }
         
@@ -291,7 +318,22 @@
         let html = '';
 
         categories.forEach(category => {
-          const playersInCategory = admittedPlayers.filter(p => playerMatchesCategory(p, category));
+          // PRIORITY 1: Use stored category assignments (single source of truth)
+          const storedPlayerIds = getCategoryAssignments(category.code);
+          let playersInCategory;
+          
+          if (storedPlayerIds && storedPlayerIds.length > 0) {
+            // Use stored assignments
+            playersInCategory = admittedPlayers.filter(p => {
+              const playerId = p.reg || p.id;
+              return storedPlayerIds.includes(playerId);
+            });
+            console.log(`Category ${category.code}: Using stored assignments (${playersInCategory.length} players)`);
+          } else {
+            // FALLBACK: Calculate on-the-fly (for backward compatibility)
+            playersInCategory = admittedPlayers.filter(p => playerMatchesCategory(p, category));
+            console.log(`Category ${category.code}: Calculated on-the-fly (${playersInCategory.length} players)`);
+          }
           
           // Sort by handicap
           playersInCategory.sort((a, b) => {

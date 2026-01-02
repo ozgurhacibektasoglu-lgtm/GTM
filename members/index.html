@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Members Administration</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { margin: 0; padding: 0; }
+      
+      /* Top Navigation Bar */
+      .top-nav {
+        background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      
+      .top-nav h1 {
+        margin: 0;
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+      
+      .btn-back-top:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+      }
+      
+      /* Action Buttons - Below Header */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      .btn { background: linear-gradient(180deg, #ec4899, #db2777); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: transform 0.08s; flex: 0 0 calc((100% - 70px) / 8); }
+      .btn:active { transform: translateY(1px); }
+      
+      .members-container { max-width: 1200px; margin: 24px auto; padding: 24px; }
+      .search-box { margin-bottom: 16px; }
+      .search-box input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e6e9ef; font-size: 15px; }
+      .table-wrapper { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); overflow-x: auto; }
+      table.members { width: 100%; border-collapse: collapse; }
+      table.members th { background: #f3f4f6; font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e5e7eb; position: sticky; top: 0; }
+      table.members th.sortable { cursor: pointer; user-select: none; }
+      table.members td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+      table.members tr { cursor: pointer; }
+      table.members tr.selected { background: #fce7f3; }
+      table.members tbody tr:hover { background: #fdf2f8; }
+      .sort-indicator { margin-left: 8px; font-size: 12px; color: #475569; }
+      #members-status { font-size: 13px; color: #475569; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <h1>👤 Members</h1>
+      <a href="../index.html" class="btn-back-top">← Back</a>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <div class="action-buttons">
+        <div class="button-row">
+          <button class="btn" id="btn-create-member">Create Member</button>
+          <button class="btn" id="btn-modify-member">Modify Member</button>
+          <button class="btn" id="btn-search-member">Search Member</button>
+          <button class="btn" id="btn-export-members" style="background: linear-gradient(180deg, #059669, #047857);">📤 Export</button>
+          <button class="btn" id="btn-import-members" style="background: linear-gradient(180deg, #8b5cf6, #7c3aed);">📥 Import</button>
+          <button class="btn" id="btn-delete-member" style="background: linear-gradient(180deg, #dc2626, #991b1b);">🗑️ Delete Member</button>
+          <input id="import-file" type="file" accept="application/json" style="display:none" />
+        </div>
+      </div>
+    </div>
+    
+    <main class="members-container">
+      <div class="search-box">
+        <input id="member-search" placeholder="Search by member ID, name, or email" />
+      </div>
+      <div id="members-status"></div>
+      
+      <div class="table-wrapper">
+        <table class="members" id="members-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-key="memberId">Member ID <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="firstName">First Name <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="lastName">Last Name <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="email">Email <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="mobile">Mobile <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="membershipType">Type <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="status">Status <span class="sort-indicator"></span></th>
+              <th class="sortable" data-key="joinDate">Join Date <span class="sort-indicator"></span></th>
+            </tr>
+          </thead>
+          <tbody id="members-body"></tbody>
+        </table>
+      </div>
+      
+      <div id="search-results" style="margin-top:18px"></div>
+    </main>
+
+    <script>
+      // Members admin: stored in localStorage under 'members'
+      
+      // Auto-recovery: If members array is empty but backup exists, restore it
+      (function autoRecover() {
+        try {
+          const current = localStorage.getItem('members');
+          const backup = localStorage.getItem('members_backup');
+          
+          if ((!current || current === '[]' || current === 'null') && backup && backup !== '[]') {
+            console.log('⚠️ Members data missing, restoring from backup...');
+            localStorage.setItem('members', backup);
+            console.log('✓ Members restored from backup');
+          }
+        } catch(e) {
+          console.error('Auto-recovery failed:', e);
+        }
+      })();
+      
+      // Local functions for members
+      function getMembers() {
+        try { 
+          const raw = localStorage.getItem('members'); 
+          return raw ? JSON.parse(raw) : [];
+        } catch(e) {
+          console.error(e);
+          return [];
+        }
+      }
+      
+      // Flag to prevent sync loops
+      let isSyncing = false;
+      let lastSyncTime = 0;
+      
+      function saveMembers(list) {
+        try{
+          // keep a backup of previous state to help recovery
+          const prev = localStorage.getItem('members');
+          if(prev) localStorage.setItem('members_backup', prev);
+          localStorage.setItem('members', JSON.stringify(list || []));
+          localStorage.setItem('members_backup_ts', new Date().toISOString());
+          
+          // Mark that we're syncing to prevent incoming updates from overwriting
+          isSyncing = true;
+          lastSyncTime = Date.now();
+          
+          // Sync to Firebase automatically
+          if (typeof syncToFirebase !== 'undefined') {
+            syncToFirebase('members', list || []).then(function() {
+              console.log('✓ Members synced to cloud:', (list || []).length);
+              setTimeout(function() { isSyncing = false; }, 2000); // Allow incoming updates after 2 sec
+            }).catch(function() {
+              isSyncing = false;
+            });
+          } else {
+            isSyncing = false;
+          }
+        } catch(e) { 
+          console.error('saveMembers error', e);
+          isSyncing = false;
+        }
+      }
+      
+      // Real-time listener for Firebase updates
+      function setupRealtimeSync() {
+        if (typeof firebase === 'undefined' || !firebase.database) {
+          console.log('Firebase not available for realtime sync');
+          return;
+        }
+        
+        try {
+          firebase.database().ref('members').on('value', function(snapshot) {
+            // Don't process if we just saved locally (prevents overwriting our own changes)
+            if (isSyncing) {
+              console.log('⏸ Ignoring Firebase update (local save in progress)');
+              return;
+            }
+            
+            const data = snapshot.val();
+            if (data) {
+              const currentLocal = getMembers();
+              
+              // Convert Firebase object format to array (or handle legacy array)
+              let membersArray = [];
+              if (Array.isArray(data)) {
+                membersArray = data; // Legacy format
+              } else if (typeof data === 'object') {
+                membersArray = Object.values(data); // New object format
+              }
+              
+              // Only update if Firebase has MORE data than local
+              if (membersArray.length > currentLocal.length) {
+                console.log('📥 Received update from cloud:', membersArray.length, 'members (local had', currentLocal.length, ')');
+                localStorage.setItem('members', JSON.stringify(membersArray));
+                loadMembers(); // Refresh the display
+              } else {
+                console.log('📥 Firebase has', membersArray.length, 'members, local has', currentLocal.length, '- keeping local');
+              }
+            }
+          });
+          console.log('✓ Real-time sync enabled');
+        } catch(e) {
+          console.error('Realtime sync setup failed:', e);
+        }
+      }
+
+      let sortState = { key: 'memberId', dir: 'asc' };
+      let selectedMemberId = null;
+
+      function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+      function loadMembers() {
+        const tbody = document.getElementById('members-body');
+        const status = document.getElementById('members-status');
+        const search = document.getElementById('member-search').value.toLowerCase();
+        
+        let members = getMembers();
+        
+        // Filter by search
+        if (search) {
+          members = members.filter(m => {
+            return (m.memberId && m.memberId.toLowerCase().includes(search)) ||
+                   (m.firstName && m.firstName.toLowerCase().includes(search)) ||
+                   (m.lastName && m.lastName.toLowerCase().includes(search)) ||
+                   (m.email && m.email.toLowerCase().includes(search));
+          });
+        }
+        
+        // Sort
+        const { key, dir } = sortState;
+        members.sort((a, b) => {
+          let va = a[key] || '', vb = b[key] || '';
+          if (typeof va === 'string') va = va.toLowerCase();
+          if (typeof vb === 'string') vb = vb.toLowerCase();
+          if (va < vb) return dir === 'asc' ? -1 : 1;
+          if (va > vb) return dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        
+        tbody.innerHTML = '';
+        members.forEach(m => {
+          const tr = document.createElement('tr');
+          if (m.memberId === selectedMemberId) tr.classList.add('selected');
+          tr.innerHTML = `
+            <td>${escapeHtml(m.memberId || '')}</td>
+            <td>${escapeHtml(m.firstName || '')}</td>
+            <td>${escapeHtml(m.lastName || '')}</td>
+            <td>${escapeHtml(m.email || '')}</td>
+            <td>${escapeHtml(m.mobile || '')}</td>
+            <td>${escapeHtml(m.membershipType || '')}</td>
+            <td>${escapeHtml(m.status || '')}</td>
+            <td>${escapeHtml(m.joinDate || '')}</td>
+          `;
+          tr.addEventListener('click', () => {
+            selectedMemberId = m.memberId;
+            loadMembers();
+          });
+          tbody.appendChild(tr);
+        });
+        
+        status.textContent = `${members.length} member(s) displayed`;
+      }
+
+      function setupSorting() {
+        document.querySelectorAll('th.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+            const key = th.getAttribute('data-key');
+            if (sortState.key === key) {
+              sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortState.key = key;
+              sortState.dir = 'asc';
+            }
+            loadMembers();
+            renderSortIndicators();
+          });
+        });
+      }
+
+      function renderSortIndicators() {
+        document.querySelectorAll('th.sortable').forEach(th => {
+          const indicator = th.querySelector('.sort-indicator');
+          const key = th.getAttribute('data-key');
+          if (key === sortState.key) {
+            indicator.textContent = sortState.dir === 'asc' ? '▲' : '▼';
+          } else {
+            indicator.textContent = '';
+          }
+        });
+      }
+
+      // Button handlers - placeholder implementations
+      document.getElementById('btn-create-member').addEventListener('click', () => {
+        alert('Create Member functionality - to be implemented');
+      });
+
+      document.getElementById('btn-modify-member').addEventListener('click', () => {
+        if (!selectedMemberId) {
+          alert('Please select a member from the table first.');
+          return;
+        }
+        alert('Modify Member functionality - to be implemented');
+      });
+
+      document.getElementById('btn-search-member').addEventListener('click', () => {
+        const searchBox = document.getElementById('member-search');
+        searchBox.focus();
+        searchBox.select();
+      });
+
+      document.getElementById('btn-export-members').addEventListener('click', () => {
+        const members = getMembers();
+        const dataStr = JSON.stringify(members, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'members_export_' + new Date().toISOString().split('T')[0] + '.json';
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById('btn-import-members').addEventListener('click', () => {
+        document.getElementById('import-file').click();
+      });
+
+      document.getElementById('import-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const imported = JSON.parse(evt.target.result);
+            if (!Array.isArray(imported)) {
+              alert('Invalid file format. Expected a JSON array.');
+              return;
+            }
+            const existing = getMembers();
+            const merged = [...existing, ...imported];
+            saveMembers(merged);
+            loadMembers();
+            alert(`✅ Imported ${imported.length} member(s)`);
+          } catch (err) {
+            alert('Error parsing JSON file: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      document.getElementById('btn-delete-member').addEventListener('click', () => {
+        if (!selectedMemberId) {
+          alert('Please select a member from the table first.');
+          return;
+        }
+        if (!confirm('Are you sure you want to delete this member?')) return;
+        
+        let members = getMembers();
+        members = members.filter(m => m.memberId !== selectedMemberId);
+        saveMembers(members);
+        selectedMemberId = null;
+        loadMembers();
+        alert('✅ Member deleted successfully');
+      });
+
+      // Init
+      setupSorting();
+      loadMembers();
+      renderSortIndicators();
+      
+      // Start real-time sync with Firebase after a short delay
+      setTimeout(function() {
+        setupRealtimeSync();
+      }, 1500);
+
+      // Replace history so back button goes to main page
+      history.replaceState(null, '', location.href);
+      window.addEventListener('popstate', function() {
+        window.location.href = '../index.html';
+      });
+
+      // Search
+      document.getElementById('member-search').addEventListener('input', () => { loadMembers() });
+    </script>
+  </body>
+</html>

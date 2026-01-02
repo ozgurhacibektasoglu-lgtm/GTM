@@ -103,6 +103,91 @@
       font-weight: 600;
     }
     
+    /* Bracket Match Header - VS layout */
+    .bracket-match-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .bracket-match-card .match-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+    
+    .bracket-match-card .match-title span {
+      color: #dc2626;
+      font-weight: 800;
+    }
+    
+    .bracket-match-card .players-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .bracket-match-card .player-side {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .bracket-match-card .player-side.left {
+      text-align: left;
+    }
+    
+    .bracket-match-card .player-side.right {
+      text-align: right;
+    }
+    
+    .bracket-match-card .player-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    
+    .bracket-match-card .player-hcp-info {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    
+    .bracket-match-card .player-hcp-info .hcp-row {
+      display: block;
+    }
+    
+    .bracket-match-card .vs-divider {
+      font-size: 14px;
+      font-weight: 800;
+      color: #dc2626;
+      padding: 0 4px;
+      align-self: center;
+    }
+    
+    /* Header course info */
+    .header-course {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+    
+    /* Match over notice for blocked holes */
+    .match-over-notice {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      text-align: center;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
     /* Current Hole Display - Compact Horizontal */
     .current-hole-card {
       background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
@@ -229,6 +314,83 @@
       font-weight: 700;
     }
     
+    /* Match Score Display (for bracket match play) */
+    .match-score-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      gap: 12px;
+    }
+    
+    .match-score-display .player-side {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.9;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .match-score-display .player-side.leading {
+      opacity: 1;
+      color: #fef08a;
+    }
+    
+    .match-score-display .match-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    
+    .match-score-display .match-status .arrow {
+      font-size: 16px;
+      animation: bounce-arrow 1s ease-in-out infinite;
+    }
+    
+    .match-score-display .match-status .arrow.left {
+      transform: scaleX(-1);
+    }
+    
+    .match-score-display .match-status.all-square {
+      background: rgba(255,255,255,0.25);
+    }
+    
+    .match-score-display .match-status.match-won {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      font-weight: 800;
+      animation: pulse-win 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-win {
+      0%, 100% { box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4); }
+      50% { box-shadow: 0 2px 16px rgba(5, 150, 105, 0.8); }
+    }
+
+    @keyframes bounce-arrow {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(3px); }
+    }
+    
+    .match-score-display .match-status .arrow.left {
+      animation: bounce-arrow-left 1s ease-in-out infinite;
+    }
+    
+    @keyframes bounce-arrow-left {
+      0%, 100% { transform: scaleX(-1) translateX(0); }
+      50% { transform: scaleX(-1) translateX(3px); }
+    }
+
     /* Legacy styles for compatibility */
     .hole-stats {
       display: none;
@@ -654,6 +816,17 @@
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     }
     
+    /* Finish Match state (bracket match play) */
+    .btn-save.btn-finish {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      animation: pulse-finish 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-finish {
+      0%, 100% { box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3); }
+      50% { box-shadow: 0 4px 20px rgba(5, 150, 105, 0.6); }
+    }
+    
     /* Modal for Full Scorecard */
     .modal-overlay {
       position: fixed;
@@ -773,6 +946,79 @@
       height: 4px;
       padding: 0;
       border: none;
+    }
+    
+    /* Match Play Scorecard Styles */
+    .match-play-table .player-label {
+      color: #059669;
+      font-weight: 700;
+    }
+    
+    .match-play-table .opponent-label {
+      color: #3b82f6;
+      font-weight: 700;
+    }
+    
+    .match-play-table .match-label {
+      color: #64748b;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    
+    .match-play-table .hcp-badge {
+      background: rgba(0,0,0,0.1);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 9px;
+      margin-left: 2px;
+    }
+    
+    .match-play-table .stroke-dot {
+      color: #dc2626;
+      font-weight: 800;
+      font-size: 10px;
+      position: relative;
+      top: -4px;
+    }
+    
+    .match-play-table .match-status-row td {
+      background: #f1f5f9;
+    }
+    
+    .match-play-table .match-cell {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+    }
+    
+    .match-play-table .match-cell.match-up {
+      color: #059669;
+      background: #d1fae5;
+    }
+    
+    .match-play-table .match-cell.match-down {
+      color: #dc2626;
+      background: #fee2e2;
+    }
+    
+    .match-play-table .match-cell.match-square {
+      color: #64748b;
+      background: #f1f5f9;
+    }
+    
+    .match-play-table .match-final {
+      font-weight: 800;
+      font-size: 10px;
+    }
+    
+    .match-play-table .match-final.match-up {
+      color: #059669;
+      background: #d1fae5;
+    }
+    
+    .match-play-table .match-final.match-down {
+      color: #dc2626;
+      background: #fee2e2;
     }
     
     /* Loading State */
@@ -1534,14 +1780,28 @@
             scores.player = savedScores.playerScores || Array(18).fill(null);
             scores.marksPlayer = savedScores.marksPlayerScores || Array(18).fill(null);
             
-            // Load scorecard signing status
-            if (savedScores.scorecardStatus) {
+            // Load scorecard signing status (check both old and new paths)
+            if (savedScores.status) {
+              scorecardStatus = savedScores.status;
+              console.log('Loaded scorecard status from status:', scorecardStatus);
+            } else if (savedScores.scorecardStatus) {
               scorecardStatus = savedScores.scorecardStatus;
-              console.log('Loaded scorecard status:', scorecardStatus);
+              console.log('Loaded scorecard status from scorecardStatus:', scorecardStatus);
             }
           }
         } catch (err) {
           console.log('Could not load scores from Firebase:', err);
+        }
+      }
+
+      // Also check localStorage for scorecard status (for offline or backup)
+      const localStatus = localStorage.getItem(`scorecardStatus_${roundId}_${playerId}`);
+      if (localStatus) {
+        const parsedStatus = JSON.parse(localStatus);
+        // Use local status if it shows locked (could be more recent)
+        if (parsedStatus.locked && !scorecardStatus.locked) {
+          scorecardStatus = parsedStatus;
+          console.log('Loaded locked status from localStorage:', scorecardStatus);
         }
       }
 
@@ -1629,10 +1889,13 @@
     // Calculate strokes for the player we mark on a hole
     function getMarksPlayerStrokes(si) {
       if (!marksPlayerData) return 0;
-      const phcp = parseInt(marksPlayerData.phcp) || 0;
+      // For bracket match play, use matchHcp (difference from lowest PHCP)
+      // For regular tournaments, use phcp
+      const isBracketMatch = digitalData.isBracketMatch;
+      const hcpForStrokes = isBracketMatch ? (parseInt(marksPlayerData.matchHcp) || 0) : (parseInt(marksPlayerData.phcp) || 0);
       let strokes = 0;
-      if (phcp > 0 && si <= phcp) strokes++;
-      if (phcp > 18 && si <= (phcp - 18)) strokes++;
+      if (hcpForStrokes > 0 && si <= hcpForStrokes) strokes++;
+      if (hcpForStrokes > 18 && si <= (hcpForStrokes - 18)) strokes++;
       return strokes;
     }
     
@@ -1664,6 +1927,128 @@
         </div>
       `;
     }
+    
+    // Render regular player card (non-bracket)
+    function renderRegularPlayerCard() {
+      return `
+        <div class="player-card">
+          <h2>${playerData.firstName} ${playerData.lastName}</h2>
+          <div class="player-details">
+            <span class="detail-item"><span class="label">HCP:</span> ${playerData.hcp || '-'}</span>
+            <span class="detail-item"><span class="label">PHCP:</span> ${playerData.phcp || '-'}</span>
+            <span class="detail-item"><span class="label">Tee:</span> ${playerData.groupTime || 'TBD'}</span>
+            ${playerData.marksPlayerName ? `<span class="detail-item"><span class="label">Marking:</span> <span class="marker-inline">${playerData.marksPlayerName}</span></span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Render bracket match header with both players
+    function renderBracketMatchHeader() {
+      if (!marksPlayerData) return renderRegularPlayerCard();
+      
+      const player1Name = `${playerData.firstName} ${playerData.lastName?.charAt(0) || ''}.`;
+      const player2Name = `${marksPlayerData.firstName} ${marksPlayerData.lastName?.charAt(0) || ''}.`;
+      
+      return `
+        <div class="bracket-match-card">
+          <div class="match-title">${player1Name} <span>VS</span> ${player2Name}</div>
+          <div class="players-row">
+            <div class="player-side left">
+              <div class="player-hcp-info">
+                <span class="hcp-row">HCP: ${playerData.hcp || '-'}</span>
+                <span class="hcp-row">PHCP: ${playerData.phcp || '-'}</span>
+                <span class="hcp-row"><strong>Match HCP: ${playerData.matchHcp || 0}</strong></span>
+              </div>
+            </div>
+            <div class="vs-divider"></div>
+            <div class="player-side right">
+              <div class="player-hcp-info">
+                <span class="hcp-row">HCP: ${marksPlayerData.hcp || '-'}</span>
+                <span class="hcp-row">PHCP: ${marksPlayerData.phcp || '-'}</span>
+                <span class="hcp-row"><strong>Match HCP: ${marksPlayerData.matchHcp || 0}</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Calculate match result for bracket matches
+    function calculateMatchResult() {
+      if (!digitalData.isBracketMatch || !marksPlayerData) return null;
+      
+      let playerUp = 0;
+      let holesPlayed = 0;
+      
+      const playerMatchHcp = parseInt(playerData.matchHcp) || 0;
+      const opponentMatchHcp = parseInt(marksPlayerData.matchHcp) || 0;
+      
+      for (let i = 0; i < 18; i++) {
+        const playerScore = scores.player[i];
+        const opponentScore = scores.marksPlayer[i];
+        
+        // Skip if either score is missing
+        if (playerScore === null || opponentScore === null) continue;
+        if (playerScore === 'X' || opponentScore === 'X') continue;
+        
+        holesPlayed++;
+        
+        const si = digitalData.strokeIndexes[i] || 99;
+        
+        // Calculate strokes
+        let playerStrokes = 0;
+        if (playerMatchHcp > 0) {
+          playerStrokes = si <= playerMatchHcp ? 1 : 0;
+          if (playerMatchHcp > 18 && si <= (playerMatchHcp - 18)) playerStrokes++;
+        }
+        
+        let opponentStrokes = 0;
+        if (opponentMatchHcp > 0) {
+          opponentStrokes = si <= opponentMatchHcp ? 1 : 0;
+          if (opponentMatchHcp > 18 && si <= (opponentMatchHcp - 18)) opponentStrokes++;
+        }
+        
+        // Net scores
+        const playerNet = playerScore - playerStrokes;
+        const opponentNet = opponentScore - opponentStrokes;
+        
+        // Determine hole winner
+        if (playerNet < opponentNet) {
+          playerUp++;
+        } else if (opponentNet < playerNet) {
+          playerUp--;
+        }
+      }
+      
+      const holesRemaining = 18 - holesPlayed;
+      const absUp = Math.abs(playerUp);
+      
+      // Match is finished when lead > remaining holes
+      const isFinished = absUp > holesRemaining && holesPlayed > 0;
+      
+      // Determine winner
+      let winner = null;
+      let resultText = '';
+      if (isFinished) {
+        if (playerUp > 0) {
+          winner = 'player';
+          resultText = `${playerData.firstName} wins ${absUp} & ${holesRemaining}`;
+        } else {
+          winner = 'opponent';
+          resultText = `${marksPlayerData.firstName} wins ${absUp} & ${holesRemaining}`;
+        }
+      }
+      
+      return {
+        playerUp,
+        holesPlayed,
+        holesRemaining,
+        isFinished,
+        winner,
+        resultText
+      };
+    }
 
     function render() {
       const hole = currentHole;
@@ -1671,17 +2056,30 @@
       const si = digitalData.strokeIndexes[hole - 1] || '-';
       const isLocked = scorecardStatus.locked;
       
+      // For bracket match play, use matchHcp (difference from lowest PHCP)
+      // For regular tournaments, use phcp
+      const isBracketMatch = digitalData.isBracketMatch;
+      const playerHcpForStrokes = isBracketMatch ? (parseInt(playerData.matchHcp) || 0) : (parseInt(playerData.phcp) || 0);
+      
       // Calculate player's strokes on this hole
-      const phcp = parseInt(playerData.phcp) || 0;
       let playerStrokes = 0;
-      if (phcp > 0) {
-        playerStrokes = si <= phcp ? 1 : 0;
-        if (phcp > 18 && si <= (phcp - 18)) playerStrokes++;
+      if (playerHcpForStrokes > 0) {
+        playerStrokes = si <= playerHcpForStrokes ? 1 : 0;
+        if (playerHcpForStrokes > 18 && si <= (playerHcpForStrokes - 18)) playerStrokes++;
       }
 
       // Get current scores for this hole
       const playerScore = scores.player[hole - 1];
       const marksPlayerScore = scores.marksPlayer[hole - 1];
+      
+      // Check if match is finished (for bracket matches)
+      const matchResult = isBracketMatch ? calculateMatchResult() : null;
+      const isMatchFinished = matchResult && matchResult.isFinished;
+      
+      // For bracket matches: check if this hole already has scores entered
+      // If match is finished and this hole has no scores, block entry
+      const holeHasScores = playerScore !== null || marksPlayerScore !== null;
+      const blockHoleEntry = isBracketMatch && isMatchFinished && !holeHasScores;
 
       document.getElementById('app').innerHTML = `
         <div class="header">
@@ -1689,23 +2087,15 @@
             <h1>📱 Digital Scorecard</h1>
             <span class="live-badge">${isLocked ? '🔒 LOCKED' : '● LIVE'}</span>
           </div>
-          <div class="header-info">${digitalData.tournamentName} • Round ${digitalData.roundIndex + 1}</div>
+          <div class="header-info">${digitalData.tournamentName} • ${isBracketMatch ? (digitalData.roundName || 'Match') : 'Round ' + (digitalData.roundIndex + 1)}</div>
+          ${isBracketMatch && digitalData.courseName ? `<div class="header-course">${digitalData.courseName}${digitalData.teeMenName ? ' • ' + digitalData.teeMenName : ''}</div>` : ''}
         </div>
         
         ${renderLockedBanner()}
         ${renderDisputeBanner()}
         
         <div class="container">
-          <!-- Player Card - Compact -->
-          <div class="player-card">
-            <h2>${playerData.firstName} ${playerData.lastName}</h2>
-            <div class="player-details">
-              <span class="detail-item"><span class="label">HCP:</span> ${playerData.hcp || '-'}</span>
-              <span class="detail-item"><span class="label">PHCP:</span> ${playerData.phcp || '-'}</span>
-              <span class="detail-item"><span class="label">Tee:</span> ${playerData.groupTime || 'TBD'}</span>
-              ${playerData.marksPlayerName ? `<span class="detail-item"><span class="label">Marking:</span> <span class="marker-inline">${playerData.marksPlayerName}</span></span>` : ''}
-            </div>
-          </div>
+          ${isBracketMatch ? renderBracketMatchHeader() : renderRegularPlayerCard()}
 
           <!-- Current Hole Display (Swipeable) -->
           <div class="current-hole-card" id="hole-card">
@@ -1746,16 +2136,22 @@
                 </div>
               ` : ''}
             </div>
+            ${renderMatchScore()}
           </div>
 
           <!-- Score Entry -->
-          <div class="score-entry-card" ${isLocked ? 'style="opacity: 0.6; pointer-events: none;"' : ''}>
+          <div class="score-entry-card" ${isLocked || blockHoleEntry ? 'style="opacity: 0.6; pointer-events: none;"' : ''}>
+            ${blockHoleEntry ? `
+              <div class="match-over-notice">
+                🏆 Match is over - no scores needed for remaining holes
+              </div>
+            ` : ''}
             ${hasDisputeOnHole(hole) ? `
               <div class="current-hole-dispute">
                 ⚠️ <strong>Dispute!</strong> Your marker entered ${markerScoresForMe[hole - 1] === 'X' ? 'X' : markerScoresForMe[hole - 1]} for you
               </div>
             ` : ''}
-            <div class="score-sections-row">
+            <div class="score-sections-row" ${blockHoleEntry ? 'style="display:none;"' : ''}>
               <!-- Player Score -->
               <div class="score-section">
                 <div class="score-section-header">
@@ -1826,6 +2222,104 @@
         html += `<span class="hole-dot ${isActive ? 'active' : ''} ${hasScore ? 'has-score' : ''} ${hasDispute ? 'dispute' : ''}"></span>`;
       }
       return html;
+    }
+    
+    // Calculate and render match score for bracket match play
+    function renderMatchScore() {
+      // Only show for bracket match play tournaments
+      if (!digitalData.isBracketMatch) return '';
+      if (!marksPlayerData) return '';
+      
+      // Calculate match score based on holes played
+      let playerUp = 0;
+      let holesPlayed = 0;
+      
+      // For bracket match play, use matchHcp (difference) instead of phcp
+      const playerMatchHcp = parseInt(playerData.matchHcp) || 0;
+      const opponentMatchHcp = parseInt(marksPlayerData.matchHcp) || 0;
+      
+      for (let i = 0; i < 18; i++) {
+        const playerScore = scores.player[i];
+        const opponentScore = scores.marksPlayer[i];
+        
+        // Skip if either score is missing
+        if (playerScore === null || opponentScore === null) continue;
+        if (playerScore === 'X' || opponentScore === 'X') continue;
+        
+        holesPlayed++;
+        
+        const si = digitalData.strokeIndexes[i] || 99;
+        
+        // Calculate strokes given on this hole using matchHcp
+        let playerStrokes = 0;
+        if (playerMatchHcp > 0) {
+          playerStrokes = si <= playerMatchHcp ? 1 : 0;
+          if (playerMatchHcp > 18 && si <= (playerMatchHcp - 18)) playerStrokes++;
+        }
+        
+        let opponentStrokes = 0;
+        if (opponentMatchHcp > 0) {
+          opponentStrokes = si <= opponentMatchHcp ? 1 : 0;
+          if (opponentMatchHcp > 18 && si <= (opponentMatchHcp - 18)) opponentStrokes++;
+        }
+        
+        // Net scores
+        const playerNet = playerScore - playerStrokes;
+        const opponentNet = opponentScore - opponentStrokes;
+        
+        // Determine hole winner
+        if (playerNet < opponentNet) {
+          playerUp++;
+        } else if (opponentNet < playerNet) {
+          playerUp--;
+        }
+      }
+      
+      const holesRemaining = 18 - holesPlayed;
+      const playerName = playerData.firstName || 'You';
+      const opponentName = marksPlayerData.firstName || 'Opponent';
+      
+      // Determine match status
+      let statusText = '';
+      let arrowHtml = '';
+      let statusClass = '';
+      let leadingPlayerClass = '';
+      let trailingPlayerClass = '';
+      
+      if (playerUp === 0) {
+        statusText = 'ALL SQUARE';
+        statusClass = 'all-square';
+      } else if (playerUp > 0) {
+        statusText = `${playerUp} UP`;
+        arrowHtml = '<span class="arrow left">➤</span>';
+        leadingPlayerClass = 'leading';
+      } else {
+        statusText = `${Math.abs(playerUp)} UP`;
+        arrowHtml = '<span class="arrow">➤</span>';
+        trailingPlayerClass = 'leading';
+      }
+      
+      // Check if match is dormie or won
+      let isMatchWon = false;
+      if (holesPlayed > 0 && Math.abs(playerUp) > holesRemaining && holesRemaining > 0) {
+        statusText = `${Math.abs(playerUp)} & ${holesRemaining}`;
+        isMatchWon = true;
+        statusClass = 'match-won';
+      } else if (holesRemaining === 0 && playerUp !== 0) {
+        statusText = `${Math.abs(playerUp)} UP`;
+      }
+      
+      return `
+        <div class="match-score-display">
+          <div class="player-side ${leadingPlayerClass}">${playerName}</div>
+          <div class="match-status ${statusClass}">
+            ${playerUp > 0 ? arrowHtml : ''}
+            <span>${statusText}</span>
+            ${playerUp < 0 ? arrowHtml : ''}
+          </div>
+          <div class="player-side ${trailingPlayerClass}">${opponentName}</div>
+        </div>
+      `;
     }
 
     // Swipe gesture handling
@@ -1958,19 +2452,30 @@
       } else {
         // Subsequent taps: adjust by delta
         newScore = currentScore + delta;
-        // Minimum score is 1
-        if (newScore < 1) newScore = 1;
+        // If going below 1, clear the score (set to null)
+        if (newScore < 1) {
+          newScore = null;
+        }
         // Maximum reasonable score is par + 8
-        if (newScore > par + 8) newScore = par + 8;
+        if (newScore !== null && newScore > par + 8) newScore = par + 8;
       }
       
       scores[type][holeIndex] = newScore;
       
-      // Update the display immediately without full re-render
+      // Save to localStorage
+      saveScoresToStorage();
+      
+      // For bracket matches, do a full re-render to update match score and save bar
+      if (digitalData.isBracketMatch) {
+        render();
+        return;
+      }
+      
+      // For non-bracket matches, update the display immediately without full re-render
       const displayId = type === 'player' ? 'player-score-display' : 'marksPlayer-score-display';
       const displayEl = document.getElementById(displayId);
       if (displayEl) {
-        displayEl.textContent = newScore;
+        displayEl.textContent = newScore !== null ? newScore : '';
         displayEl.className = 'score-display ' + getScoreDisplayClass(newScore, par);
       }
       
@@ -1979,9 +2484,6 @@
       if (dotsContainer) {
         dotsContainer.innerHTML = renderHoleDots();
       }
-      
-      // Save to localStorage
-      saveScoresToStorage();
     }
 
     function renderScoreButtons(type, par, currentScore) {
@@ -2018,26 +2520,66 @@
     function renderFullScorecard() {
       const pars = digitalData.pars;
       const sis = digitalData.strokeIndexes;
+      const isBracketMatch = digitalData.isBracketMatch;
       
       // Helper to calculate strokes received on a hole for a player
-      function getStrokesOnHole(player, holeIndex) {
-        if (!player) return 0;
-        const phcp = parseInt(player.phcp) || 0;
+      function getStrokesOnHole(matchHcp, holeIndex) {
         const si = sis[holeIndex] || 18;
         let strokes = 0;
-        if (phcp > 0 && si <= phcp) strokes++;
-        if (phcp > 18 && si <= (phcp - 18)) strokes++;
+        if (matchHcp > 0 && si <= matchHcp) strokes++;
+        if (matchHcp > 18 && si <= (matchHcp - 18)) strokes++;
         return strokes;
       }
+      
+      // For bracket matches, use matchHcp; otherwise use phcp
+      const playerMatchHcp = isBracketMatch ? (parseInt(playerData.matchHcp) || 0) : (parseInt(playerData.phcp) || 0);
+      const opponentMatchHcp = isBracketMatch ? (parseInt(marksPlayerData?.matchHcp) || 0) : (parseInt(marksPlayerData?.phcp) || 0);
       
       // Helper to get score value for totals (X = net double bogey)
       function getScoreForTotal(score, par, strokes) {
         if (score === null || score === undefined) return null;
         if (score === 'X') {
-          // Net double bogey = par + 2 + strokes received
           return par + 2 + strokes;
         }
         return score;
+      }
+      
+      // Calculate running match score for each hole
+      function calculateRunningMatchScore(upToHole) {
+        let playerUp = 0;
+        for (let i = 0; i <= upToHole; i++) {
+          const playerScore = scores.player[i];
+          const opponentScore = scores.marksPlayer[i];
+          
+          if (playerScore === null || opponentScore === null) continue;
+          if (playerScore === 'X' || opponentScore === 'X') continue;
+          
+          const playerStrokes = getStrokesOnHole(playerMatchHcp, i);
+          const opponentStrokes = getStrokesOnHole(opponentMatchHcp, i);
+          
+          const playerNet = playerScore - playerStrokes;
+          const opponentNet = opponentScore - opponentStrokes;
+          
+          if (playerNet < opponentNet) playerUp++;
+          else if (opponentNet < playerNet) playerUp--;
+        }
+        return playerUp;
+      }
+      
+      // Get match status text for a hole
+      function getMatchStatusForHole(holeIndex) {
+        const playerScore = scores.player[holeIndex];
+        const opponentScore = scores.marksPlayer[holeIndex];
+        
+        // If no scores yet, return empty
+        if (playerScore === null || opponentScore === null) return '';
+        if (playerScore === 'X' || opponentScore === 'X') return '-';
+        
+        const matchScore = calculateRunningMatchScore(holeIndex);
+        
+        if (matchScore === 0) return 'AS';
+        if (matchScore > 0) return `${matchScore}↑`;
+        return `${Math.abs(matchScore)}↓`;
       }
       
       // Calculate totals
@@ -2049,12 +2591,12 @@
       
       for (let i = 0; i < 9; i++) {
         front9Par += pars[i] || 0;
-        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerData, i));
+        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerMatchHcp, i));
         if (playerScoreVal !== null) {
           front9Player += playerScoreVal;
           front9PlayerCount++;
         }
-        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(marksPlayerData, i));
+        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(opponentMatchHcp, i));
         if (marksPlayerScoreVal !== null) {
           front9MarksPlayer += marksPlayerScoreVal;
           front9MarksPlayerCount++;
@@ -2063,12 +2605,12 @@
       
       for (let i = 9; i < 18; i++) {
         back9Par += pars[i] || 0;
-        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerData, i));
+        const playerScoreVal = getScoreForTotal(scores.player[i], pars[i] || 4, getStrokesOnHole(playerMatchHcp, i));
         if (playerScoreVal !== null) {
           back9Player += playerScoreVal;
           back9PlayerCount++;
         }
-        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(marksPlayerData, i));
+        const marksPlayerScoreVal = getScoreForTotal(scores.marksPlayer[i], pars[i] || 4, getStrokesOnHole(opponentMatchHcp, i));
         if (marksPlayerScoreVal !== null) {
           back9MarksPlayer += marksPlayerScoreVal;
           back9MarksPlayerCount++;
@@ -2086,95 +2628,199 @@
         return 'double';
       }
       
-      // Helper to display score (show X as X, numbers as numbers, empty as empty)
       function displayScore(score) {
         if (score === null || score === undefined) return '';
         if (score === 'X') return 'X';
         return score;
       }
+      
+      // Get match status class
+      function getMatchStatusClass(holeIndex) {
+        const status = getMatchStatusForHole(holeIndex);
+        if (status.includes('↑')) return 'match-up';
+        if (status.includes('↓')) return 'match-down';
+        if (status === 'AS') return 'match-square';
+        return '';
+      }
 
       let html = '<div style="overflow-x: auto;">';
       
-      // Front 9 table
-      html += `
-        <table class="scorecard-table" style="margin-bottom: 16px;">
-          <thead>
-            <tr>
-              <th style="text-align: left; min-width: 60px;">Hole</th>
-              ${[1,2,3,4,5,6,7,8,9].map(h => `<th>${h}</th>`).join('')}
-              <th class="total-cell">Out</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="row-label">Par</td>
-              ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${pars[i] || ''}</td>`).join('')}
-              <td class="total-cell">${front9Par}</td>
-            </tr>
-            <tr>
-              <td class="row-label">S.I.</td>
-              ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${sis[i] || ''}</td>`).join('')}
-              <td class="total-cell"></td>
-            </tr>
-            <tr class="separator-row"><td colspan="11"></td></tr>
-            <tr>
-              <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
-              ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
-              <td class="total-cell">${front9PlayerCount > 0 ? front9Player : '-'}</td>
-            </tr>
-            ${playerData.marksPlayerName ? `
+      // For bracket matches, show match play format
+      if (isBracketMatch && marksPlayerData) {
+        // Front 9 table - Match Play format
+        html += `
+          <table class="scorecard-table match-play-table" style="margin-bottom: 16px;">
+            <thead>
               <tr>
-                <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
-                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                <th style="text-align: left; min-width: 70px;">Hole</th>
+                ${[1,2,3,4,5,6,7,8,9].map(h => `<th>${h}</th>`).join('')}
+                <th class="total-cell">Out</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-label">Par</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+                <td class="total-cell">${front9Par}</td>
+              </tr>
+              <tr>
+                <td class="row-label">S.I.</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+                <td class="total-cell"></td>
+              </tr>
+              <tr class="separator-row"><td colspan="11"></td></tr>
+              <tr>
+                <td class="row-label player-label">${playerData.firstName} <span class="hcp-badge">${playerMatchHcp}</span></td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}${getStrokesOnHole(playerMatchHcp, i) > 0 ? '<span class="stroke-dot">•</span>' : ''}</td>`).join('')}
+                <td class="total-cell">${front9PlayerCount > 0 ? front9Player : '-'}</td>
+              </tr>
+              <tr class="match-status-row">
+                <td class="row-label match-label">Match</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="match-cell ${getMatchStatusClass(i)}">${getMatchStatusForHole(i)}</td>`).join('')}
+                <td class="total-cell"></td>
+              </tr>
+              <tr>
+                <td class="row-label opponent-label">${marksPlayerData.firstName} <span class="hcp-badge">${opponentMatchHcp}</span></td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}${getStrokesOnHole(opponentMatchHcp, i) > 0 ? '<span class="stroke-dot">•</span>' : ''}</td>`).join('')}
                 <td class="total-cell">${front9MarksPlayerCount > 0 ? front9MarksPlayer : '-'}</td>
               </tr>
-            ` : ''}
-          </tbody>
-        </table>
-      `;
-      
-      // Back 9 table
-      html += `
-        <table class="scorecard-table">
-          <thead>
-            <tr>
-              <th style="text-align: left; min-width: 60px;">Hole</th>
-              ${[10,11,12,13,14,15,16,17,18].map(h => `<th>${h}</th>`).join('')}
-              <th class="total-cell">In</th>
-              <th class="total-cell">Tot</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="row-label">Par</td>
-              ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${pars[i] || ''}</td>`).join('')}
-              <td class="total-cell">${back9Par}</td>
-              <td class="total-cell">${front9Par + back9Par}</td>
-            </tr>
-            <tr>
-              <td class="row-label">S.I.</td>
-              ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${sis[i] || ''}</td>`).join('')}
-              <td class="total-cell"></td>
-              <td class="total-cell"></td>
-            </tr>
-            <tr class="separator-row"><td colspan="12"></td></tr>
-            <tr>
-              <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
-              ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
-              <td class="total-cell">${back9PlayerCount > 0 ? back9Player : '-'}</td>
-              <td class="total-cell">${(front9PlayerCount + back9PlayerCount) > 0 ? front9Player + back9Player : '-'}</td>
-            </tr>
-            ${playerData.marksPlayerName ? `
+            </tbody>
+          </table>
+        `;
+        
+        // Back 9 table - Match Play format
+        const finalMatchScore = calculateRunningMatchScore(17);
+        let finalMatchText = 'AS';
+        if (finalMatchScore > 0) finalMatchText = `${finalMatchScore} UP`;
+        else if (finalMatchScore < 0) finalMatchText = `${Math.abs(finalMatchScore)} DN`;
+        
+        html += `
+          <table class="scorecard-table match-play-table">
+            <thead>
               <tr>
-                <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
-                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                <th style="text-align: left; min-width: 70px;">Hole</th>
+                ${[10,11,12,13,14,15,16,17,18].map(h => `<th>${h}</th>`).join('')}
+                <th class="total-cell">In</th>
+                <th class="total-cell">Tot</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-label">Par</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+                <td class="total-cell">${back9Par}</td>
+                <td class="total-cell">${front9Par + back9Par}</td>
+              </tr>
+              <tr>
+                <td class="row-label">S.I.</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+                <td class="total-cell"></td>
+                <td class="total-cell"></td>
+              </tr>
+              <tr class="separator-row"><td colspan="12"></td></tr>
+              <tr>
+                <td class="row-label player-label">${playerData.firstName} <span class="hcp-badge">${playerMatchHcp}</span></td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}${getStrokesOnHole(playerMatchHcp, i) > 0 ? '<span class="stroke-dot">•</span>' : ''}</td>`).join('')}
+                <td class="total-cell">${back9PlayerCount > 0 ? back9Player : '-'}</td>
+                <td class="total-cell">${(front9PlayerCount + back9PlayerCount) > 0 ? front9Player + back9Player : '-'}</td>
+              </tr>
+              <tr class="match-status-row">
+                <td class="row-label match-label">Match</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="match-cell ${getMatchStatusClass(i)}">${getMatchStatusForHole(i)}</td>`).join('')}
+                <td class="total-cell match-final ${finalMatchScore > 0 ? 'match-up' : finalMatchScore < 0 ? 'match-down' : 'match-square'}">${finalMatchText}</td>
+                <td class="total-cell"></td>
+              </tr>
+              <tr>
+                <td class="row-label opponent-label">${marksPlayerData.firstName} <span class="hcp-badge">${opponentMatchHcp}</span></td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}${getStrokesOnHole(opponentMatchHcp, i) > 0 ? '<span class="stroke-dot">•</span>' : ''}</td>`).join('')}
                 <td class="total-cell">${back9MarksPlayerCount > 0 ? back9MarksPlayer : '-'}</td>
                 <td class="total-cell">${(front9MarksPlayerCount + back9MarksPlayerCount) > 0 ? front9MarksPlayer + back9MarksPlayer : '-'}</td>
               </tr>
-            ` : ''}
-          </tbody>
-        </table>
-      `;
+            </tbody>
+          </table>
+        `;
+      } else {
+        // Regular stroke play format for non-bracket matches
+        html += `
+          <table class="scorecard-table" style="margin-bottom: 16px;">
+            <thead>
+              <tr>
+                <th style="text-align: left; min-width: 60px;">Hole</th>
+                ${[1,2,3,4,5,6,7,8,9].map(h => `<th>${h}</th>`).join('')}
+                <th class="total-cell">Out</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-label">Par</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+                <td class="total-cell">${front9Par}</td>
+              </tr>
+              <tr>
+                <td class="row-label">S.I.</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+                <td class="total-cell"></td>
+              </tr>
+              <tr class="separator-row"><td colspan="11"></td></tr>
+              <tr>
+                <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
+                ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
+                <td class="total-cell">${front9PlayerCount > 0 ? front9Player : '-'}</td>
+              </tr>
+              ${playerData.marksPlayerName ? `
+                <tr>
+                  <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
+                  ${[0,1,2,3,4,5,6,7,8].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                  <td class="total-cell">${front9MarksPlayerCount > 0 ? front9MarksPlayer : '-'}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+        `;
+        
+        // Back 9 table
+        html += `
+          <table class="scorecard-table">
+            <thead>
+              <tr>
+                <th style="text-align: left; min-width: 60px;">Hole</th>
+                ${[10,11,12,13,14,15,16,17,18].map(h => `<th>${h}</th>`).join('')}
+                <th class="total-cell">In</th>
+                <th class="total-cell">Tot</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-label">Par</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${pars[i] || ''}</td>`).join('')}
+                <td class="total-cell">${back9Par}</td>
+                <td class="total-cell">${front9Par + back9Par}</td>
+              </tr>
+              <tr>
+                <td class="row-label">S.I.</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td>${sis[i] || ''}</td>`).join('')}
+                <td class="total-cell"></td>
+                <td class="total-cell"></td>
+              </tr>
+              <tr class="separator-row"><td colspan="12"></td></tr>
+              <tr>
+                <td class="row-label" style="color: #059669; font-weight: 700;">${playerData.firstName}</td>
+                ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.player[i], pars[i])}">${displayScore(scores.player[i])}</td>`).join('')}
+                <td class="total-cell">${back9PlayerCount > 0 ? back9Player : '-'}</td>
+                <td class="total-cell">${(front9PlayerCount + back9PlayerCount) > 0 ? front9Player + back9Player : '-'}</td>
+              </tr>
+              ${playerData.marksPlayerName ? `
+                <tr>
+                  <td class="row-label" style="color: #3b82f6; font-weight: 700;">${marksPlayerData?.firstName || 'Marked'}</td>
+                  ${[9,10,11,12,13,14,15,16,17].map(i => `<td class="score-cell ${getScoreClass(scores.marksPlayer[i], pars[i])}">${displayScore(scores.marksPlayer[i])}</td>`).join('')}
+                  <td class="total-cell">${back9MarksPlayerCount > 0 ? back9MarksPlayer : '-'}</td>
+                  <td class="total-cell">${(front9MarksPlayerCount + back9MarksPlayerCount) > 0 ? front9MarksPlayer + back9MarksPlayer : '-'}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+        `;
+      }
       
       html += '</div>';
       return html;
@@ -2338,6 +2984,185 @@
       // Check if all holes are now complete
       if (isRoundComplete(scores.player)) {
         showToast('All 18 holes completed! 🎉', 'success');
+      }
+    }
+    
+    // Finish and lock bracket match when match is decided
+    async function finishBracketMatch() {
+      const matchResult = calculateMatchResult();
+      if (!matchResult || !matchResult.isFinished) {
+        showToast('Match is not yet decided', 'error');
+        return;
+      }
+      
+      // Save current scores first
+      const offlineData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`scores_${roundId}_${playerId}`, JSON.stringify(offlineData));
+
+      // Determine winner player data
+      const winnerId = matchResult.winner === 'player' ? playerId : playerData.marksPlayerId;
+      const winnerData = matchResult.winner === 'player' ? playerData : marksPlayerData;
+
+      // Prepare data for Firebase
+      const digitalScoresData = {
+        playerScores: scores.player,
+        marksPlayerScores: scores.marksPlayer,
+        playerId: playerId,
+        playerReg: playerData.reg || playerId,
+        playerHcp: playerData.handicap || playerData.hcp || 0,
+        playerName: `${playerData.firstName} ${playerData.lastName}`,
+        marksPlayerId: playerData.marksPlayerId,
+        marksPlayerName: playerData.marksPlayerName,
+        lastUpdated: Date.now(),
+        matchFinished: true,
+        matchResult: {
+          winner: winnerId,
+          winnerName: `${winnerData.firstName} ${winnerData.lastName}`,
+          resultText: matchResult.resultText,
+          holesPlayed: matchResult.holesPlayed
+        }
+      };
+      
+      // Get live scores data
+      const liveScoresInfo = syncToLiveScores(playerId, playerData, scores.player);
+      
+      // Sync to Firebase
+      await trySyncToFirebase(digitalScoresData, liveScoresInfo);
+      
+      // Update bracket with winner and advance to next round
+      await updateBracketWithWinner(winnerId, winnerData, matchResult);
+      
+      // Lock the scorecard
+      scorecardStatus.locked = true;
+      scorecardStatus.lockedAt = Date.now();
+      scorecardStatus.matchFinished = true;
+      scorecardStatus.matchResult = matchResult;
+      
+      // Save status
+      try {
+        if (db) {
+          await db.ref(`digitalScores/${roundId}/${playerId}/status`).set({
+            locked: true,
+            lockedAt: scorecardStatus.lockedAt,
+            matchFinished: true,
+            matchResult: matchResult
+          });
+        }
+      } catch (err) {
+        console.error('Error saving match status:', err);
+      }
+      
+      localStorage.setItem(`scorecardStatus_${roundId}_${playerId}`, JSON.stringify(scorecardStatus));
+      
+      showToast(`Match Complete! ${matchResult.resultText}`, 'success');
+      render();
+    }
+    
+    // Update the bracket data with the match winner and advance them
+    async function updateBracketWithWinner(winnerId, winnerData, matchResult) {
+      if (!db || !digitalData.matchId || !digitalData.tournamentId) {
+        console.log('Cannot update bracket - missing data');
+        return;
+      }
+      
+      try {
+        // Fetch current tournament data from Firebase
+        const tournamentRef = db.ref(`tournaments/${digitalData.tournamentId}`);
+        const snapshot = await tournamentRef.once('value');
+        const tournament = snapshot.val();
+        
+        if (!tournament || !tournament.bracketData) {
+          console.error('Tournament or bracket data not found');
+          return;
+        }
+        
+        const bracketData = tournament.bracketData;
+        const matchId = digitalData.matchId;
+        
+        // Create minimal winner object for bracket
+        const winnerForBracket = {
+          firstName: winnerData.firstName,
+          lastName: winnerData.lastName,
+          id: winnerId,
+          reg: winnerData.reg || winnerId,
+          hcp: winnerData.hcp
+        };
+        
+        // Parse matchId to find the match and update it
+        if (matchId.startsWith('prequal-')) {
+          const idx = parseInt(matchId.split('-')[1]);
+          if (bracketData.preQualMatches && bracketData.preQualMatches[idx]) {
+            const match = bracketData.preQualMatches[idx];
+            match.winner = winnerId;
+            match.matchResult = matchResult.resultText;
+            
+            // Advance to main bracket first round
+            const targetSlot = match.targetSlot;
+            if (targetSlot && bracketData.mainBracket && bracketData.mainBracket[0]) {
+              const matchNum = Math.floor((targetSlot - 1) / 2);
+              const slotNum = (targetSlot - 1) % 2;
+              
+              if (bracketData.mainBracket[0].matches[matchNum]) {
+                if (slotNum === 0) {
+                  bracketData.mainBracket[0].matches[matchNum].player1 = winnerForBracket;
+                } else {
+                  bracketData.mainBracket[0].matches[matchNum].player2 = winnerForBracket;
+                }
+              }
+            }
+          }
+        } else if (matchId.startsWith('round-')) {
+          const parts = matchId.split('-');
+          const roundIdx = parseInt(parts[1]);
+          const matchIdx = parseInt(parts[2]);
+          
+          if (bracketData.mainBracket && bracketData.mainBracket[roundIdx] && 
+              bracketData.mainBracket[roundIdx].matches[matchIdx]) {
+            const match = bracketData.mainBracket[roundIdx].matches[matchIdx];
+            match.winner = winnerId;
+            match.matchResult = matchResult.resultText;
+            
+            // Advance to next round (if not final)
+            if (roundIdx < bracketData.mainBracket.length - 1) {
+              const nextMatchNum = Math.floor(matchIdx / 2);
+              const nextSlot = matchIdx % 2;
+              
+              const nextRound = bracketData.mainBracket[roundIdx + 1];
+              if (nextRound && nextRound.matches[nextMatchNum]) {
+                if (nextSlot === 0) {
+                  nextRound.matches[nextMatchNum].player1 = winnerForBracket;
+                } else {
+                  nextRound.matches[nextMatchNum].player2 = winnerForBracket;
+                }
+              }
+            }
+          }
+        }
+        
+        // Save updated bracket to Firebase
+        await tournamentRef.child('bracketData').set(bracketData);
+        
+        // Also update localStorage for offline access
+        try {
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournamentIdx = tournaments.findIndex(t => t.tournamentId === digitalData.tournamentId);
+          if (tournamentIdx >= 0) {
+            tournaments[tournamentIdx].bracketData = bracketData;
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          }
+        } catch (e) {
+          console.error('Error updating localStorage:', e);
+        }
+        
+        console.log('✓ Bracket updated with winner:', winnerData.firstName, winnerData.lastName);
+        
+      } catch (err) {
+        console.error('Error updating bracket:', err);
+        showToast('Match saved but bracket update failed', 'warning');
       }
     }
 
@@ -2728,6 +3553,25 @@
       const allComplete = isRoundComplete(scores.player);
       const disputes = getDisputes();
       const hasDisputes = disputes.length > 0;
+      
+      // For bracket matches, check if match is finished
+      const isBracketMatch = digitalData.isBracketMatch;
+      const matchResult = isBracketMatch ? calculateMatchResult() : null;
+      const isMatchFinished = matchResult && matchResult.isFinished;
+      
+      // State 0: Bracket match finished - show "Finish & Submit"
+      if (isBracketMatch && isMatchFinished && !allComplete) {
+        return `
+          <div class="save-bar">
+            <button class="btn-save btn-finish" onclick="finishBracketMatch()">
+              🏆 Finish & Submit Match
+            </button>
+            <div style="text-align:center; font-size:12px; color:#059669; margin-top:6px;">
+              ${matchResult.resultText}
+            </div>
+          </div>
+        `;
+      }
       
       // State 1: Round not complete - show "Save & Next Hole"
       if (!allComplete) {

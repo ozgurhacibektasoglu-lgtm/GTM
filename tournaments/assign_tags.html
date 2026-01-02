@@ -1,0 +1,1395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Assign Player Tags</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { padding-top: 70px; background: #f8fafc; }
+      .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+      
+      .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      
+      .header-section h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #1e293b;
+      }
+      
+      .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+      }
+      
+      .btn-save {
+        background: linear-gradient(180deg, #10b981, #059669);
+        color: white;
+      }
+      
+      .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+      
+      .btn-back {
+        background: #fff;
+        color: #64748b;
+        border: 1px solid #e5e7eb;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+      }
+      
+      .btn-back:hover {
+        background: #f8fafc;
+      }
+      
+      .info-box {
+        background: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #1e40af;
+        font-size: 14px;
+      }
+      
+      .info-box strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+      
+      .tag-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      }
+      
+      .tag-buttons label {
+        font-weight: 600;
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .tag-btn {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 2px solid #e5e7eb;
+        background: white;
+        transition: all 0.2s;
+      }
+      
+      .tag-btn:hover {
+        border-color: #0b6efd;
+      }
+      
+      .tag-btn.active {
+        background: #0b6efd;
+        color: white;
+        border-color: #0b6efd;
+      }
+      
+      .tag-btn.clear {
+        background: #fef3c7;
+        border-color: #fbbf24;
+        color: #92400e;
+      }
+      
+      .custom-tag-input {
+        padding: 8px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        font-size: 14px;
+        width: 120px;
+      }
+      
+      .custom-tag-input:focus {
+        outline: none;
+        border-color: #0b6efd;
+      }
+      
+      .players-table-wrapper {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        overflow: hidden;
+      }
+      
+      .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      
+      .table-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      
+      .search-box {
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        width: 250px;
+      }
+      
+      .search-box:focus {
+        outline: none;
+        border-color: #0b6efd;
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      th {
+        background: #f8fafc;
+        font-weight: 600;
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 2px solid #e5e7eb;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+      }
+      
+      th.sortable:hover {
+        background: #e2e8f0;
+      }
+      
+      th.sortable::after {
+        content: '⇅';
+        margin-left: 6px;
+        opacity: 0.3;
+        font-size: 11px;
+      }
+      
+      th.sortable.asc::after {
+        content: '↑';
+        opacity: 1;
+      }
+      
+      th.sortable.desc::after {
+        content: '↓';
+        opacity: 1;
+      }
+      
+      td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 14px;
+      }
+      
+      tr:hover {
+        background: #f8fafc;
+      }
+      
+      tr.selected {
+        background: #dbeafe;
+      }
+      
+      .player-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      
+      .tag-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      
+      .tag-badge.empty {
+        background: #f1f5f9;
+        color: #94a3b8;
+      }
+      
+      .stats-bar {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      .stats-bar .count {
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      .select-all-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      /* Modal styles */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .modal-overlay.active {
+        display: flex;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #64748b;
+        padding: 0;
+        line-height: 1;
+      }
+      
+      .modal-close:hover {
+        color: #1e293b;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #374151;
+      }
+      
+      .form-group select,
+      .form-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      
+      .form-group select:focus,
+      .form-group input:focus {
+        outline: none;
+        border-color: #0b6efd;
+        box-shadow: 0 0 0 3px rgba(11, 110, 253, 0.1);
+      }
+      
+      .ranking-info {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #166534;
+      }
+      
+      .ranking-info.warning {
+        background: #fef3c7;
+        border-color: #fbbf24;
+        color: #92400e;
+      }
+      
+      .modal-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .btn-ranking {
+        background: linear-gradient(180deg, #8b5cf6, #7c3aed);
+        color: white;
+      }
+      
+      .btn-ranking:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      }
+      
+      .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>🏷️ Assign Player Tags<span id="tournament-name" style="font-weight: 400; font-size: 20px;"></span></h1>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-save" id="btn-save">💾 Save Tags</button>
+        <a href="#" id="btn-back" class="btn btn-back">← Back to Categories</a>
+      </div>
+    </div>
+    
+    <main class="container">
+      <div class="info-box">
+        <strong>ℹ️ How to use Player Tags:</strong>
+        1. Select players by clicking on them or using the checkbox<br>
+        2. Click a tag button (A, B, 1, 2, etc.) or enter a custom tag<br>
+        3. Save your changes<br>
+        4. Go to Categories page and create categories with the "Category Tag" filter to include only players with that tag
+      </div>
+      
+      <div class="tag-buttons">
+        <label>Assign Tag:</label>
+        <button class="tag-btn" data-tag="1">1</button>
+        <button class="tag-btn" data-tag="2">2</button>
+        <button class="tag-btn" data-tag="3">3</button>
+        <button class="tag-btn" data-tag="4">4</button>
+        <button class="tag-btn" data-tag="5">5</button>
+        <button class="tag-btn" data-tag="6">6</button>
+        <input type="text" class="custom-tag-input" id="custom-tag" placeholder="Custom tag...">
+        <button class="tag-btn" id="btn-apply-custom">Apply</button>
+        <button class="tag-btn clear" data-tag="">Clear Tag</button>
+        <button class="btn btn-ranking" id="btn-assign-from-ranking">🏆 Assign Tags from Rankings</button>
+      </div>
+      
+      <div class="players-table-wrapper">
+        <div class="table-header">
+          <div class="select-all-row">
+            <input type="checkbox" id="select-all" class="player-checkbox">
+            <label for="select-all" style="cursor: pointer; font-weight: 600;">Select All</label>
+            <span style="margin-left: 16px;" class="stats-bar">
+              <span>Selected: <span class="count" id="selected-count">0</span></span>
+              <span>Total: <span class="count" id="total-count">0</span></span>
+            </span>
+          </div>
+          <input type="text" class="search-box" id="search-box" placeholder="Search players...">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"></th>
+              <th class="sortable" data-sort="name">Name</th>
+              <th class="sortable" data-sort="hcp">HCP</th>
+              <th class="sortable" data-sort="gender">Gender</th>
+              <th class="sortable" data-sort="club">Club</th>
+              <th class="sortable" data-sort="tag">Tag</th>
+            </tr>
+          </thead>
+          <tbody id="players-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: #6b7280;">Loading players...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- Ranking Selection Modal -->
+    <div class="modal-overlay" id="ranking-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🏆 Assign Tags from Rankings</h3>
+          <button class="modal-close" onclick="closeRankingModal()">&times;</button>
+        </div>
+        
+        <div class="form-group">
+          <label for="ranking-select">Select Ranking:</label>
+          <select id="ranking-select" onchange="onRankingSelected()">
+            <option value="">-- Select a ranking --</option>
+          </select>
+          <div id="ranking-info-box" class="ranking-info" style="display: none;"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="ranking-tag-input">Tag to Assign:</label>
+          <input type="text" id="ranking-tag-input" placeholder="Enter tag (e.g., A, B, 1, 2...)">
+          <p style="font-size: 12px; color: #6b7280; margin-top: 6px;">
+            This tag will be assigned to all admitted players who are in the selected ranking.
+          </p>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeRankingModal()">Cancel</button>
+          <button class="btn btn-ranking" id="btn-apply-ranking-tag" onclick="applyTagFromRanking()">
+            Apply Tag
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      
+      if (!tournamentId) {
+        alert('No tournament selected. Redirecting...');
+        window.location.href = 'index.html';
+      }
+      
+      // Set back link
+      document.getElementById('btn-back').href = `categories.html?tournamentId=${tournamentId}`;
+      
+      let admittedPlayers = [];
+      let selectedPlayerIds = new Set();
+      let undoHistory = []; // Stack for undo functionality
+      const MAX_UNDO_HISTORY = 50;
+      let currentSort = { column: 'name', direction: 'asc' };
+      let firebaseKey = null; // Firebase key for the tournament
+      
+      async function init() {
+        await loadTournamentData();
+        await loadAdmittedPlayers();
+        renderPlayers();
+        setupEventListeners();
+      }
+      
+      async function loadTournamentData() {
+        try {
+          // Find the Firebase key for this tournament
+          const tournamentsSnap = await firebase.database().ref('tournaments').once('value');
+          const tournamentsData = tournamentsSnap.val();
+          
+          if (tournamentsData) {
+            for (const key in tournamentsData) {
+              if (tournamentsData[key] && tournamentsData[key].tournamentId === tournamentId) {
+                firebaseKey = key;
+                const tournament = tournamentsData[key];
+                document.getElementById('tournament-name').textContent = `: ${tournament.name || tournament.tournamentName || ''}`;
+                break;
+              }
+            }
+          }
+          
+          if (!firebaseKey) {
+            console.error('Tournament not found in Firebase:', tournamentId);
+          }
+        } catch (e) {
+          console.error('Error loading tournament:', e);
+        }
+      }
+      
+      async function loadAdmittedPlayers() {
+        try {
+          // Get tournament to find round IDs - use the correct Firebase key
+          let tournament = null;
+          
+          if (firebaseKey) {
+            const tournamentSnapshot = await firebase.database().ref(`tournaments/${firebaseKey}`).once('value');
+            tournament = tournamentSnapshot.val();
+          }
+          
+          // Also check localStorage tournaments
+          if (!tournament) {
+            const localTournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+            tournament = localTournaments.find(t => t.tournamentId === tournamentId);
+          }
+          
+          const roundIds = tournament?.meta?.roundIds || [];
+          console.log('Round IDs for tournament:', roundIds);
+          
+          // Also try localStorage for admitted players
+          const localAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          
+          const playersMap = {};
+          
+          // Load from localStorage first (has tag data)
+          for (const roundId of roundIds) {
+            if (localAdmitted[roundId] && Array.isArray(localAdmitted[roundId])) {
+              localAdmitted[roundId].forEach(p => {
+                if (p && p.reg) {
+                  playersMap[p.reg] = p;
+                }
+              });
+            }
+          }
+          
+          console.log('Players from localStorage:', Object.keys(playersMap).length);
+          
+          // If no local data, try Firebase
+          if (Object.keys(playersMap).length === 0) {
+            for (const roundId of roundIds) {
+              const snapshot = await firebase.database().ref(`admittedPlayers/${roundId}`).once('value');
+              const roundPlayers = snapshot.val();
+              
+              console.log('Firebase admittedPlayers for', roundId, ':', roundPlayers);
+              
+              if (roundPlayers) {
+                if (Array.isArray(roundPlayers)) {
+                  roundPlayers.forEach(p => {
+                    if (p && p.reg) {
+                      playersMap[p.reg] = p;
+                    }
+                  });
+                } else {
+                  // Handle object format
+                  Object.values(roundPlayers).forEach(p => {
+                    if (p && p.reg) {
+                      playersMap[p.reg] = p;
+                    }
+                  });
+                }
+              }
+            }
+            console.log('Players from Firebase:', Object.keys(playersMap).length);
+          }
+          
+          // Also load all players data for additional info
+          const allPlayersSnapshot = await firebase.database().ref('players').once('value');
+          const allPlayersData = allPlayersSnapshot.val() || {};
+          
+          // Build admitted players list
+          admittedPlayers = Object.entries(playersMap).map(([id, player]) => {
+            const fullPlayer = allPlayersData[id] || player;
+            return {
+              id: id,
+              reg: id,
+              firstName: player.firstName || fullPlayer.firstName || '',
+              lastName: player.lastName || fullPlayer.lastName || '',
+              hcp: player.hcp !== undefined ? player.hcp : (fullPlayer.hcp || 0),
+              gender: player.gender || fullPlayer.gender || '',
+              club: player.homeClub || player.club || fullPlayer.homeClub || fullPlayer.club || '',
+              categoryTag: player.categoryTag || player.tag || ''
+            };
+          });
+          
+          // Sort by last name
+          admittedPlayers.sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+          
+          document.getElementById('total-count').textContent = admittedPlayers.length;
+          console.log('Loaded admitted players:', admittedPlayers.length);
+          
+        } catch (e) {
+          console.error('Error loading admitted players:', e);
+        }
+      }
+      
+      function renderPlayers(searchTerm = '') {
+        const tbody = document.getElementById('players-body');
+        
+        let filteredPlayers = admittedPlayers;
+        
+        if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          filteredPlayers = admittedPlayers.filter(p => 
+            (p.firstName || '').toLowerCase().includes(term) ||
+            (p.lastName || '').toLowerCase().includes(term) ||
+            (p.club || '').toLowerCase().includes(term) ||
+            (p.categoryTag || '').toLowerCase().includes(term)
+          );
+        }
+        
+        if (filteredPlayers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6b7280;">No players found</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = filteredPlayers.map(player => {
+          const isSelected = selectedPlayerIds.has(player.id);
+          const tagDisplay = player.categoryTag 
+            ? `<span class="tag-badge">${escapeHtml(player.categoryTag)}</span>`
+            : `<span class="tag-badge empty">-</span>`;
+          const gender = formatGender(player.gender);
+          
+          return `
+            <tr class="${isSelected ? 'selected' : ''}" data-player-id="${player.id}">
+              <td><input type="checkbox" class="player-checkbox" ${isSelected ? 'checked' : ''} data-player-id="${player.id}"></td>
+              <td><strong>${escapeHtml(player.firstName)} ${escapeHtml(player.lastName)}</strong></td>
+              <td>${formatHcp(player.hcp)}</td>
+              <td>${gender}</td>
+              <td>${escapeHtml(player.club || '-')}</td>
+              <td>${tagDisplay}</td>
+            </tr>
+          `;
+        }).join('');
+        
+        // Add click handlers for rows
+        tbody.querySelectorAll('tr').forEach(row => {
+          row.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox') {
+              const checkbox = row.querySelector('.player-checkbox');
+              checkbox.checked = !checkbox.checked;
+              togglePlayerSelection(row.dataset.playerId, checkbox.checked);
+            }
+          });
+          
+          row.querySelector('.player-checkbox').addEventListener('change', (e) => {
+            togglePlayerSelection(row.dataset.playerId, e.target.checked);
+          });
+        });
+      }
+      
+      function togglePlayerSelection(playerId, selected) {
+        if (selected) {
+          selectedPlayerIds.add(playerId);
+        } else {
+          selectedPlayerIds.delete(playerId);
+        }
+        
+        // Update row styling
+        const row = document.querySelector(`tr[data-player-id="${playerId}"]`);
+        if (row) {
+          row.classList.toggle('selected', selected);
+        }
+        
+        document.getElementById('selected-count').textContent = selectedPlayerIds.size;
+        
+        // Update select all checkbox
+        const allCheckbox = document.getElementById('select-all');
+        const visibleRows = document.querySelectorAll('#players-body tr[data-player-id]');
+        const allSelected = Array.from(visibleRows).every(row => selectedPlayerIds.has(row.dataset.playerId));
+        allCheckbox.checked = allSelected && visibleRows.length > 0;
+      }
+      
+      function assignTagToSelected(tag) {
+        if (selectedPlayerIds.size === 0) {
+          alert('Please select at least one player.');
+          return;
+        }
+        
+        // Save state for undo
+        saveUndoState();
+        
+        selectedPlayerIds.forEach(playerId => {
+          const player = admittedPlayers.find(p => p.id === playerId);
+          if (player) {
+            player.categoryTag = tag;
+          }
+        });
+        
+        // Clear selection before re-rendering
+        selectedPlayerIds.clear();
+        document.getElementById('selected-count').textContent = '0';
+        document.getElementById('select-all').checked = false;
+        
+        renderPlayers(document.getElementById('search-box').value);
+      }
+      
+      // Save current tag state for undo
+      function saveUndoState() {
+        const state = admittedPlayers.map(p => ({
+          id: p.id,
+          categoryTag: p.categoryTag || ''
+        }));
+        undoHistory.push(state);
+        if (undoHistory.length > MAX_UNDO_HISTORY) {
+          undoHistory.shift(); // Remove oldest state
+        }
+      }
+      
+      // Undo last tag assignment
+      function undoLastAction() {
+        if (undoHistory.length === 0) {
+          showToast('Nothing to undo');
+          return;
+        }
+        
+        const previousState = undoHistory.pop();
+        
+        // Restore previous tags
+        previousState.forEach(saved => {
+          const player = admittedPlayers.find(p => p.id === saved.id);
+          if (player) {
+            player.categoryTag = saved.categoryTag;
+          }
+        });
+        
+        renderPlayers(document.getElementById('search-box').value);
+        showToast('Undo successful');
+      }
+      
+      // Show toast notification
+      function showToast(message) {
+        let toast = document.getElementById('undo-toast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'undo-toast';
+          toast.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; transition: opacity 0.3s;';
+          document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => {
+          toast.style.opacity = '0';
+        }, 2000);
+      }
+      
+      async function saveTags(silent = false) {
+        try {
+          // Get tournament from localStorage (more reliable)
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const tournament = tournaments.find(t => t.tournamentId === tournamentId);
+          
+          if (!tournament) {
+            if (!silent) alert('Tournament not found');
+            return;
+          }
+          
+          const roundIds = tournament?.meta?.roundIds || [];
+          
+          // Update localStorage admitted players with tags
+          const localAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          
+          let updated = false;
+          roundIds.forEach(roundId => {
+            if (localAdmitted[roundId] && Array.isArray(localAdmitted[roundId])) {
+              localAdmitted[roundId].forEach(p => {
+                const updatedPlayer = admittedPlayers.find(ap => ap.id === p.reg || ap.reg === p.reg);
+                if (updatedPlayer) {
+                  p.categoryTag = updatedPlayer.categoryTag || '';
+                  updated = true;
+                }
+              });
+            }
+          });
+          
+          if (updated) {
+            localStorage.setItem('admittedPlayers', JSON.stringify(localAdmitted));
+            
+            // Also sync to Firebase admittedPlayers
+            for (const roundId of roundIds) {
+              if (localAdmitted[roundId]) {
+                await firebase.database().ref(`admittedPlayers/${roundId}`).set(localAdmitted[roundId]);
+              }
+            }
+            
+            // Recalculate category assignments after tags are saved
+            await recalculateCategoryAssignments();
+            
+            if (!silent) {
+              alert('Tags saved successfully! Category assignments updated.');
+            }
+            console.log('Tags saved successfully');
+          } else {
+            if (!silent) {
+              alert('No changes to save.');
+            }
+          }
+        } catch (e) {
+          console.error('Error saving tags:', e);
+          if (!silent) {
+            alert('Error saving tags: ' + e.message);
+          }
+        }
+      }
+      
+      // Recalculate and save category assignments to tournament
+      async function recalculateCategoryAssignments() {
+        try {
+          // Get tournaments from localStorage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (idx === -1) {
+            console.log('Tournament not found in localStorage');
+            return;
+          }
+          
+          const tournament = tournaments[idx];
+          const categories = tournament.categories || [];
+          
+          if (categories.length === 0) {
+            console.log('No categories to assign');
+            return;
+          }
+          
+          // Get all admitted players from localStorage
+          const localAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          const roundIds = tournament.meta?.roundIds || [];
+          const allAdmittedPlayers = [];
+          
+          roundIds.forEach(roundId => {
+            if (localAdmitted[roundId] && Array.isArray(localAdmitted[roundId])) {
+              localAdmitted[roundId].forEach(player => {
+                if (!allAdmittedPlayers.find(p => p.reg === player.reg)) {
+                  allAdmittedPlayers.push(player);
+                }
+              });
+            }
+          });
+          
+          // Build category assignments
+          const categoryAssignments = {};
+          
+          categories.forEach(cat => {
+            if (cat.isResultOnly) return; // Skip result-only categories
+            
+            const playersInCategory = [];
+            
+            allAdmittedPlayers.forEach(player => {
+              const playerId = player.reg || player.id;
+              if (!playerId) return;
+              
+              // Check if player matches category
+              if (playerMatchesCategory(player, cat)) {
+                playersInCategory.push(playerId);
+              }
+            });
+            
+            categoryAssignments[cat.code] = playersInCategory;
+          });
+          
+          // Save to tournament
+          tournaments[idx].categoryAssignments = categoryAssignments;
+          localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          
+          // Sync to Firebase
+          await firebase.database().ref('tournaments').set(tournaments);
+          console.log('✓ Category assignments recalculated and saved');
+          
+        } catch (e) {
+          console.error('Error recalculating category assignments:', e);
+        }
+      }
+      
+      // Helper function to check if player matches category (same logic as categories.html)
+      function playerMatchesCategory(player, category) {
+        // Check if this is a manual category with explicit player list
+        if (category.isManual === true) {
+          const manualPlayerIds = category.players || category.manualPlayers || [];
+          return manualPlayerIds.includes(player.reg) || manualPlayerIds.includes(player.id);
+        }
+        
+        // Check categoryTag first - if specified, player must have this tag
+        if (category.categoryTag && category.categoryTag !== '') {
+          const playerTag = player.categoryTag || player.tag || '';
+          if (playerTag !== category.categoryTag) return false;
+        }
+        
+        // Check gender
+        const playerGender = (player.gender || '').toLowerCase();
+        const catGender = (category.gender || '').toLowerCase();
+        
+        let genderMatch = false;
+        if (!catGender || catGender === 'any' || catGender === '' || catGender === 'manual') {
+          genderMatch = true;
+        } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male')) {
+          genderMatch = true;
+        } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female')) {
+          genderMatch = true;
+        }
+        
+        if (!genderMatch) return false;
+        
+        // Check handicap
+        if (category.handicapMin !== undefined && category.handicapMin !== null && category.handicapMin !== '' && category.handicapMin !== 'Manual') {
+          if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) < parseFloat(category.handicapMin)) return false;
+        }
+        if (category.handicapMax !== undefined && category.handicapMax !== null && category.handicapMax !== '' && category.handicapMax !== 'Manual') {
+          if (player.hcp === undefined || player.hcp === null || parseFloat(player.hcp) > parseFloat(category.handicapMax)) return false;
+        }
+        
+        // Check age
+        if (category.ageMin !== undefined && category.ageMin !== null && category.ageMin !== '' && category.ageMin !== 'Manual') {
+          if (player.age === undefined || player.age === null || parseInt(player.age) < parseInt(category.ageMin)) return false;
+        }
+        if (category.ageMax !== undefined && category.ageMax !== null && category.ageMax !== '' && category.ageMax !== 'Manual') {
+          if (player.age === undefined || player.age === null || parseInt(player.age) > parseInt(category.ageMax)) return false;
+        }
+        
+        return true;
+      }
+      
+      // Sort players based on column and direction
+      function sortPlayers(column, direction) {
+        admittedPlayers.sort((a, b) => {
+          let valA, valB;
+          
+          switch(column) {
+            case 'name':
+              valA = ((a.lastName || '') + ' ' + (a.firstName || '')).toLowerCase();
+              valB = ((b.lastName || '') + ' ' + (b.firstName || '')).toLowerCase();
+              break;
+            case 'hcp':
+              valA = a.hcp !== undefined && a.hcp !== null && a.hcp !== '' ? parseFloat(a.hcp) : 999;
+              valB = b.hcp !== undefined && b.hcp !== null && b.hcp !== '' ? parseFloat(b.hcp) : 999;
+              break;
+            case 'gender':
+              valA = (a.gender || '').toLowerCase();
+              valB = (b.gender || '').toLowerCase();
+              break;
+            case 'club':
+              valA = (a.club || '').toLowerCase();
+              valB = (b.club || '').toLowerCase();
+              break;
+            case 'tag':
+              valA = (a.categoryTag || '').toLowerCase();
+              valB = (b.categoryTag || '').toLowerCase();
+              break;
+            default:
+              return 0;
+          }
+          
+          if (valA < valB) return direction === 'asc' ? -1 : 1;
+          if (valA > valB) return direction === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+      
+      // Handle column header click for sorting
+      function handleSortClick(column) {
+        // Toggle direction if same column, otherwise default to asc
+        if (currentSort.column === column) {
+          currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort.column = column;
+          currentSort.direction = 'asc';
+        }
+        
+        // Update header visual indicators
+        document.querySelectorAll('th.sortable').forEach(th => {
+          th.classList.remove('asc', 'desc');
+          if (th.dataset.sort === currentSort.column) {
+            th.classList.add(currentSort.direction);
+          }
+        });
+        
+        sortPlayers(currentSort.column, currentSort.direction);
+        renderPlayers(document.getElementById('search-box').value);
+      }
+      
+      // ========== RANKING TAG ASSIGNMENT FUNCTIONS ==========
+      
+      let availableRankings = [];
+      let rankingPlayersMap = {}; // Cache for ranking players
+      
+      // Open the ranking modal
+      function openRankingModal() {
+        loadActiveRankings();
+        document.getElementById('ranking-modal').classList.add('active');
+        document.getElementById('ranking-select').value = '';
+        document.getElementById('ranking-tag-input').value = '';
+        document.getElementById('ranking-info-box').style.display = 'none';
+      }
+      
+      // Close the ranking modal
+      function closeRankingModal() {
+        document.getElementById('ranking-modal').classList.remove('active');
+      }
+      
+      // Load active rankings from Firebase
+      async function loadActiveRankings() {
+        try {
+          const select = document.getElementById('ranking-select');
+          select.innerHTML = '<option value="">Loading rankings...</option>';
+          
+          // Load rankings from Firebase
+          const rankingsSnapshot = await firebase.database().ref('rankings').once('value');
+          const rankingsData = rankingsSnapshot.val() || {};
+          
+          // Filter only active rankings
+          availableRankings = Object.values(rankingsData).filter(r => r.status === 'active');
+          
+          if (availableRankings.length === 0) {
+            select.innerHTML = '<option value="">No active rankings found</option>';
+            return;
+          }
+          
+          select.innerHTML = '<option value="">-- Select a ranking --</option>' +
+            availableRankings.map(r => 
+              `<option value="${r.id}">${r.name}</option>`
+            ).join('');
+            
+        } catch (e) {
+          console.error('Error loading rankings:', e);
+          document.getElementById('ranking-select').innerHTML = 
+            '<option value="">Error loading rankings</option>';
+        }
+      }
+      
+      // When a ranking is selected, load its player data
+      async function onRankingSelected() {
+        const rankingId = document.getElementById('ranking-select').value;
+        const infoBox = document.getElementById('ranking-info-box');
+        
+        if (!rankingId) {
+          infoBox.style.display = 'none';
+          return;
+        }
+        
+        infoBox.style.display = 'block';
+        infoBox.className = 'ranking-info';
+        infoBox.textContent = 'Loading ranking data...';
+        
+        try {
+          // Load ranking results from Firebase
+          const resultsSnapshot = await firebase.database()
+            .ref(`rankingResults/${rankingId}`)
+            .once('value');
+          
+          if (!resultsSnapshot.exists()) {
+            infoBox.className = 'ranking-info warning';
+            infoBox.innerHTML = '⚠️ No calculated results found for this ranking.<br>Please go to Rankings and click "Calculate" first.';
+            rankingPlayersMap[rankingId] = [];
+            return;
+          }
+          
+          const rankingResults = resultsSnapshot.val();
+          const players = rankingResults.players || [];
+          
+          // Cache the player IDs for this ranking
+          rankingPlayersMap[rankingId] = players.map(p => p.playerId);
+          
+          // Count how many admitted players are in this ranking
+          const admittedIds = admittedPlayers.map(p => p.id || p.reg);
+          const matchingPlayers = players.filter(p => 
+            admittedIds.includes(p.playerId)
+          );
+          
+          infoBox.className = 'ranking-info';
+          infoBox.innerHTML = `
+            <strong>${rankingResults.rankingName}</strong><br>
+            Total players in ranking: ${players.length}<br>
+            Matching admitted players: <strong>${matchingPlayers.length}</strong><br>
+            <small>Calculated: ${new Date(rankingResults.calculatedAt).toLocaleString()}</small>
+          `;
+          
+        } catch (e) {
+          console.error('Error loading ranking results:', e);
+          infoBox.className = 'ranking-info warning';
+          infoBox.textContent = '⚠️ Error loading ranking data.';
+        }
+      }
+      
+      // Apply tag from ranking to matching players
+      async function applyTagFromRanking() {
+        const rankingId = document.getElementById('ranking-select').value;
+        const tag = document.getElementById('ranking-tag-input').value.trim();
+        
+        if (!rankingId) {
+          alert('Please select a ranking.');
+          return;
+        }
+        
+        if (!tag) {
+          alert('Please enter a tag to assign.');
+          return;
+        }
+        
+        const rankingPlayers = rankingPlayersMap[rankingId];
+        
+        if (!rankingPlayers || rankingPlayers.length === 0) {
+          alert('No player data available for this ranking. Please calculate the ranking first.');
+          return;
+        }
+        
+        // Save state for undo
+        saveUndoState();
+        
+        // Find matching players and assign tag
+        let assignedCount = 0;
+        admittedPlayers.forEach(player => {
+          const playerId = player.id || player.reg;
+          if (rankingPlayers.includes(playerId)) {
+            player.categoryTag = tag;
+            assignedCount++;
+          }
+        });
+        
+        if (assignedCount === 0) {
+          alert('No matching players found between admitted players and the selected ranking.');
+          return;
+        }
+        
+        // Auto-save the tags immediately (silent mode)
+        await saveTags(true);
+        
+        // Create category automatically
+        await createCategoryForTag(tag);
+        
+        // Re-render the table
+        renderPlayers(document.getElementById('search-box').value);
+        
+        // Show success message
+        const ranking = availableRankings.find(r => r.id === rankingId);
+        showToast(`Assigned tag "${tag}" to ${assignedCount} players, saved tags, and created category "Cat ${tag}"`);
+        
+        // Keep modal open so user can assign more tags
+        // Clear the tag input for next assignment
+        document.getElementById('ranking-tag-input').value = '';
+      }
+      
+      // Create a category for the tag
+      async function createCategoryForTag(tag) {
+        try {
+          // Load tournaments from localStorage
+          const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const idx = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (idx === -1) {
+            console.error('Tournament not found in localStorage');
+            return;
+          }
+          
+          const tournament = tournaments[idx];
+          const categories = tournament.categories || [];
+          
+          // Check if category with this tag already exists
+          const existingCat = categories.find(c => c.categoryTag === tag);
+          if (existingCat) {
+            console.log(`Category with tag "${tag}" already exists: ${existingCat.name}`);
+            // Still need to update assignments for existing category
+          }
+          
+          let categoryCode;
+          
+          if (!existingCat) {
+            // Generate unique category code
+            categoryCode = `CAT_${tag}_${Date.now()}`;
+            
+            // Create new category with tag filter, all other parameters as "any"
+            const newCategory = {
+              code: categoryCode,
+              name: `Cat ${tag}`,
+              shortName: `Cat ${tag}`,
+              categoryTag: tag,
+              gender: '',
+              handicapMin: '',
+              handicapMax: '',
+              ageMin: '',
+              ageMax: '',
+              isManual: false,
+              isResultOnly: false,
+              tournamentType: tournament.meta?.scoringMode || 'Stableford Net',
+              createdAt: new Date().toISOString()
+            };
+            
+            // Add to categories
+            categories.push(newCategory);
+            tournaments[idx].categories = categories;
+          } else {
+            categoryCode = existingCat.code;
+          }
+          
+          // Read fresh admittedPlayers from localStorage to get updated tags
+          const localAdmitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+          const roundIds = tournament.meta?.roundIds || [];
+          
+          // Collect all admitted players with this tag from localStorage
+          const playersWithTag = [];
+          roundIds.forEach(roundId => {
+            if (localAdmitted[roundId] && Array.isArray(localAdmitted[roundId])) {
+              localAdmitted[roundId].forEach(p => {
+                if (p.categoryTag === tag) {
+                  const playerId = p.reg || p.id;
+                  if (playerId && !playersWithTag.includes(playerId)) {
+                    playersWithTag.push(playerId);
+                  }
+                }
+              });
+            }
+          });
+          
+          // Update categoryAssignments
+          if (!tournaments[idx].categoryAssignments) {
+            tournaments[idx].categoryAssignments = {};
+          }
+          tournaments[idx].categoryAssignments[categoryCode] = playersWithTag;
+          
+          console.log(`Category "${categoryCode}" has ${playersWithTag.length} players assigned`);
+          console.log(`Players with tag "${tag}":`, playersWithTag);
+          
+          // Save to localStorage
+          localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          
+          // Sync to Firebase
+          await firebase.database().ref('tournaments').set(tournaments);
+          
+          console.log(`✓ Created/updated category "Cat ${tag}" with ${playersWithTag.length} players`);
+          
+        } catch (e) {
+          console.error('Error creating category:', e);
+        }
+      }
+      
+      // ========== END RANKING TAG ASSIGNMENT FUNCTIONS ==========
+      
+      function setupEventListeners() {
+        // Keyboard shortcuts for undo (Cmd+Z / Ctrl+Z)
+        document.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undoLastAction();
+          }
+        });
+        
+        // Sortable column headers
+        document.querySelectorAll('th.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+            handleSortClick(th.dataset.sort);
+          });
+        });
+        
+        // Tag buttons
+        document.querySelectorAll('.tag-btn[data-tag]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            assignTagToSelected(btn.dataset.tag);
+          });
+        });
+        
+        // Custom tag
+        document.getElementById('btn-apply-custom').addEventListener('click', () => {
+          const customTag = document.getElementById('custom-tag').value.trim();
+          if (customTag) {
+            assignTagToSelected(customTag);
+            document.getElementById('custom-tag').value = '';
+          } else {
+            alert('Please enter a custom tag.');
+          }
+        });
+        
+        // Assign tags from rankings button
+        document.getElementById('btn-assign-from-ranking').addEventListener('click', () => {
+          openRankingModal();
+        });
+        
+        // Save button
+        document.getElementById('btn-save').addEventListener('click', () => saveTags(false));
+        
+        // Search
+        document.getElementById('search-box').addEventListener('input', (e) => {
+          renderPlayers(e.target.value);
+        });
+        
+        // Select all
+        document.getElementById('select-all').addEventListener('change', (e) => {
+          const visibleRows = document.querySelectorAll('#players-body tr[data-player-id]');
+          visibleRows.forEach(row => {
+            const playerId = row.dataset.playerId;
+            const checkbox = row.querySelector('.player-checkbox');
+            checkbox.checked = e.target.checked;
+            if (e.target.checked) {
+              selectedPlayerIds.add(playerId);
+              row.classList.add('selected');
+            } else {
+              selectedPlayerIds.delete(playerId);
+              row.classList.remove('selected');
+            }
+          });
+          document.getElementById('selected-count').textContent = selectedPlayerIds.size;
+        });
+      }
+      
+      function formatHcp(hcp) {
+        if (hcp === undefined || hcp === null || hcp === '') return '-';
+        const num = parseFloat(hcp);
+        if (isNaN(num)) return hcp;
+        if (num < 0) return '+' + Math.abs(num).toFixed(1);
+        return num.toFixed(1);
+      }
+      
+      function formatGender(gender) {
+        if (!gender) return '-';
+        const g = gender.toLowerCase();
+        if (g === 'm' || g === 'male') return 'M';
+        if (g === 'f' || g === 'female') return 'F';
+        return gender;
+      }
+      
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      
+      // Initialize on load - ensure Firebase is ready first
+      if (typeof initFirebase === 'function') {
+        initFirebase();
+      }
+      
+      // Wait for Firebase to be ready, then init
+      function waitForFirebase(callback, maxAttempts = 50) {
+        let attempts = 0;
+        const check = () => {
+          attempts++;
+          if (window.db || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0)) {
+            callback();
+          } else if (attempts < maxAttempts) {
+            setTimeout(check, 100);
+          } else {
+            console.error('Firebase failed to initialize after', maxAttempts, 'attempts');
+          }
+        };
+        check();
+      }
+      
+      waitForFirebase(() => {
+        init();
+      });
+    </script>
+  </body>
+</html>

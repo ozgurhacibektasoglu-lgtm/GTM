@@ -213,6 +213,116 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     
+    /* Membership Types Table */
+    .membership-type-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: 1.8fr 1.1fr 2fr 1fr 0.9fr 100px;
+      gap: 12px;
+      align-items: start;
+    }
+    
+    .membership-type-item .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .membership-type-item .field label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+      display: block;
+    }
+    
+    .membership-type-item .field input,
+    .membership-type-item .field select {
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 100%;
+      height: 42px;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+    
+    .membership-type-item .actions {
+      display: flex;
+      gap: 8px;
+      border: none;
+      padding: 0;
+      margin: 0;
+      padding-top: 22px;
+    }
+    
+    .membership-type-item .btn-delete {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    
+    .membership-type-item .btn-delete:hover {
+      background: #fecaca;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    
+    .status-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      height: 42px;
+    }
+    
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-badge.active {
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+    
+    .status-badge.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    
     /* Modal styles */
     .modal {
       display: none;
@@ -444,6 +554,20 @@
         
       </div>
       
+      <!-- Membership Types Configuration -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">
+            👥 Membership Types
+          </div>
+          <button type="button" class="btn btn-primary" id="addMembershipTypeBtn" style="width: auto; padding: 8px 16px; font-size: 13px;">+ Add Type</button>
+        </div>
+        
+        <div id="membershipTypesList" style="margin-top: 20px;">
+          <!-- Membership types will be rendered here -->
+        </div>
+      </div>
+      
       <!-- Tournament Preferences -->
       <div class="section">
         <div class="section-header">
@@ -632,6 +756,185 @@
     
     // Save button
     document.getElementById('saveBtn').addEventListener('click', savePreferences);
+    
+    // ============ MEMBERSHIP TYPES MANAGEMENT ============
+    let membershipTypes = [];
+    
+    function loadMembershipTypes() {
+      try {
+        const prefs = localStorage.getItem('preferences');
+        if (prefs) {
+          const data = JSON.parse(prefs);
+          membershipTypes = data.membershipTypes || [];
+        }
+        renderMembershipTypes();
+      } catch(e) {
+        console.error('Error loading membership types:', e);
+      }
+    }
+    
+    function renderMembershipTypes() {
+      const container = document.getElementById('membershipTypesList');
+      
+      if (membershipTypes.length === 0) {
+        container.innerHTML = '<div class="empty-state">No membership types defined. Click "+ Add Type" to create one.</div>';
+        return;
+      }
+      
+      container.innerHTML = membershipTypes.map((type, index) => `
+        <div class="membership-type-item">
+          <div class="field">
+            <label>Type Name</label>
+            <input type="text" value="${escapeHtml(type.name)}" data-index="${index}" data-field="name" class="membership-field" placeholder="e.g., Individual, Family, Junior">
+          </div>
+          <div class="field">
+            <label>Annual Fee (₺)</label>
+            <input type="number" value="${type.fee}" data-index="${index}" data-field="fee" class="membership-field" placeholder="0" min="0" step="100">
+          </div>
+          <div class="field">
+            <label>Period Type</label>
+            <select data-index="${index}" data-field="periodType" class="membership-field">
+              <option value="rolling" ${(!type.periodType || type.periodType === 'rolling') ? 'selected' : ''}>Rolling (1 year from payment)</option>
+              <option value="calendar" ${type.periodType === 'calendar' ? 'selected' : ''}>Calendar Year (Jan-Dec)</option>
+              <option value="custom" ${type.periodType === 'custom' ? 'selected' : ''}>Custom Period</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Max Members</label>
+            <input type="number" value="${type.maxMembers || ''}" data-index="${index}" data-field="maxMembers" class="membership-field" placeholder="Unlimited" min="1">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <div class="status-toggle" data-index="${index}">
+              <span class="status-badge ${type.status === 'inactive' ? 'inactive' : 'active'}">
+                ${type.status === 'inactive' ? 'Inactive' : 'Active'}
+              </span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn-delete" data-index="${index}">🗑️ Delete</button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Attach event listeners
+      document.querySelectorAll('.membership-field').forEach(input => {
+        input.addEventListener('input', handleMembershipFieldChange);
+      });
+      
+      document.querySelectorAll('.status-toggle').forEach(toggle => {
+        toggle.addEventListener('click', handleStatusToggle);
+      });
+      
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', handleDeleteMembershipType);
+      });
+    }
+    
+    function handleMembershipFieldChange(e) {
+      const index = parseInt(e.target.dataset.index);
+      const field = e.target.dataset.field;
+      const value = e.target.value;
+      
+      if (field === 'fee' || field === 'maxMembers') {
+        membershipTypes[index][field] = value ? parseFloat(value) : (field === 'maxMembers' ? null : 0);
+      } else {
+        membershipTypes[index][field] = value;
+      }
+      
+      saveMembershipTypesToPreferences();
+    }
+    
+    function handleStatusToggle(e) {
+      const index = parseInt(e.currentTarget.dataset.index);
+      const currentStatus = membershipTypes[index].status || 'active';
+      membershipTypes[index].status = currentStatus === 'active' ? 'inactive' : 'active';
+      saveMembershipTypesToPreferences();
+      renderMembershipTypes();
+    }
+    
+    function handleDeleteMembershipType(e) {
+      const index = parseInt(e.target.dataset.index);
+      const type = membershipTypes[index];
+      const typeName = type.name || 'Unnamed Type';
+      
+      // Check if any members have this membership type
+      const hasMembers = checkIfMembershipTypeHasMembers(type.name);
+      
+      if (hasMembers) {
+        alert(`Cannot delete "${typeName}" - there are members currently using this membership type.\n\n` +
+              `Please:\n` +
+              `1. Change those members to a different membership type, OR\n` +
+              `2. Set this type to "Inactive" to prevent new members from using it.\n\n` +
+              `You can view and manage members in the Members page.`);
+        return;
+      }
+      
+      if (confirm(`Are you sure you want to delete membership type "${typeName}"?`)) {
+        membershipTypes.splice(index, 1);
+        saveMembershipTypesToPreferences();
+        renderMembershipTypes();
+      }
+    }
+    
+    function checkIfMembershipTypeHasMembers(typeName) {
+      try {
+        const members = JSON.parse(localStorage.getItem('members') || '[]');
+        return members.some(member => member.membershipType === typeName);
+      } catch(e) {
+        console.error('Error checking members:', e);
+        return false; // If we can't check, allow deletion
+      }
+    }
+    
+    function addNewMembershipType() {
+      membershipTypes.push({
+        name: '',
+        fee: 0,
+        periodType: 'rolling',
+        maxMembers: null,
+        status: 'active'
+      });
+      saveMembershipTypesToPreferences();
+      renderMembershipTypes();
+      
+      // Focus on the new type's name field
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('.membership-field[data-field="name"]');
+        if (inputs.length > 0) {
+          inputs[inputs.length - 1].focus();
+        }
+      }, 100);
+    }
+    
+    function saveMembershipTypesToPreferences() {
+      try {
+        const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+        prefs.membershipTypes = membershipTypes;
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+        
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('preferences', prefs);
+        }
+      } catch(e) {
+        console.error('Error saving membership types:', e);
+      }
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+    
+    // Event listeners for membership types
+    document.getElementById('addMembershipTypeBtn').addEventListener('click', addNewMembershipType);
+    
+    // Initialize membership types
+    loadMembershipTypes();
+    
+    // ============ END MEMBERSHIP TYPES MANAGEMENT ============
     
     // Age Groups Modal Management
     let ageGroups = [];

@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Rankings - GTM</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .top-nav {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .top-nav h1 {
+      margin: 0;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .btn-back-top {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-back-top:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    .action-bar {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(11, 110, 253, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .rankings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .ranking-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .ranking-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      border-color: #0b6efd;
+    }
+
+    .ranking-card.active {
+      border-color: #10b981;
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    }
+
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .ranking-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 4px 0;
+    }
+
+    .ranking-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .ranking-status.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .ranking-status.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .ranking-info {
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .ranking-info strong {
+      color: #334155;
+    }
+
+    .ranking-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .ranking-actions button {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 900px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 20px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      color: #1e293b;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    .btn-close:hover {
+      background: #f1f5f9;
+    }
+
+    .form-section {
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .form-section h3 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .tournament-selector {
+      margin-top: 12px;
+    }
+
+    .tournament-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      background: white;
+    }
+
+    .tournament-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tournament-item:hover {
+      background: #e0e7ff;
+    }
+
+    .tournament-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .tournament-item label {
+      flex: 1;
+      cursor: pointer;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .tournament-item .tournament-date {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      color: #1e293b;
+    }
+
+    .empty-state p {
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+
+    .point-system-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .point-system-grid label {
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .point-system-grid input {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .selected-count {
+      background: #0b6efd;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <h1>🏆 Tournament Rankings</h1>
+    <a href="index.html" class="btn-back-top">← Back to Tournaments</a>
+  </div>
+
+  <div class="container">
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="createNewRanking()">
+        ➕ Create New Ranking
+      </button>
+      <button class="btn btn-success" onclick="syncToFirebase()">
+        ☁️ Sync to Firebase
+      </button>
+    </div>
+
+    <div id="rankingsContainer" class="rankings-grid"></div>
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">🏆</div>
+      <h3>No Rankings Yet</h3>
+      <p>Create your first ranking system to track player performance across tournaments</p>
+      <button class="btn btn-primary" onclick="createNewRanking()">
+        Create First Ranking
+      </button>
+    </div>
+  </div>
+
+  <!-- Create/Edit Ranking Modal -->
+  <div id="rankingModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Create New Ranking</h2>
+        <button class="btn-close" onclick="closeModal()">×</button>
+      </div>
+
+      <form id="rankingForm">
+        <input type="hidden" id="rankingId">
+
+        <!-- Basic Information -->
+        <div class="form-section">
+          <h3>📋 Basic Information</h3>
+          <div class="form-grid">
+            <!-- 1st line: Ranking Name, Status, Calculation Method -->
+            <div class="form-field">
+              <label>Ranking Name *</label>
+              <input type="text" id="rankingName" required placeholder="e.g., Club Championship 2025">
+            </div>
+            <div class="form-field">
+              <label>Status</label>
+              <select id="rankingStatus">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Calculation Method</label>
+              <select id="calculationMethod">
+                <option value="total-score">Total Score</option>
+                <option value="best-rounds">Best Rounds</option>
+                <option value="average-score">Average Score</option>
+              </select>
+            </div>
+            
+            <!-- 2nd line: Total Rounds, Valid Results, Scoring Method -->
+            <div class="form-field">
+              <label>Total No. of Rounds</label>
+              <input type="number" id="totalRounds" min="1" placeholder="e.g., 10 total rounds">
+            </div>
+            <div class="form-field">
+              <label>Valid No. of Results</label>
+              <input type="number" id="validResults" min="1" placeholder="e.g., 5 best results">
+            </div>
+            <div class="form-field">
+              <label>Scoring Method</label>
+              <select id="scoringBasis">
+                <option value="tournament">Tournament Aggregate (Total Result)</option>
+                <option value="round">Individual Rounds (Each Round Counts)</option>
+              </select>
+            </div>
+            
+            <!-- 3rd line: Gender, Members Only -->
+            <div class="form-field">
+              <label>Gender</label>
+              <select id="rankingGender">
+                <option value="all">All</option>
+                <option value="male">Male Only</option>
+                <option value="female">Female Only</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Members Only</label>
+              <select id="membersOnly">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            
+            <!-- 4th line: Min Age, Max Age -->
+            <div class="form-field">
+              <label>Min Age</label>
+              <input type="number" id="minAge" min="0" max="120" placeholder="Leave empty for no limit">
+            </div>
+            <div class="form-field">
+              <label>Max Age</label>
+              <input type="number" id="maxAge" min="0" max="120" placeholder="Leave empty for no limit">
+            </div>
+          </div>
+        </div>
+
+        <!-- Point System -->
+        <div class="form-section">
+          <h3>💯 Point System</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Point Type</label>
+              <select id="pointType" onchange="togglePointSystem()">
+                <option value="position">Position-based (1st, 2nd, 3rd...)</option>
+                <option value="score">Score-based (Gross/Net Score)</option>
+                <option value="custom">Custom Points</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Score Type</label>
+              <select id="scoreType">
+                <option value="gross">Gross Score</option>
+                <option value="net">Net Score</option>
+                <option value="stableford">Stableford Points</option>
+              </select>
+            </div>
+          </div>
+          
+          <div id="positionPointsSection" class="point-system-grid" style="margin-top: 16px;">
+            <label>1st Place:</label>
+            <input type="number" id="points1st" value="100" min="0">
+            <label>2nd Place:</label>
+            <input type="number" id="points2nd" value="80" min="0">
+            <label>3rd Place:</label>
+            <input type="number" id="points3rd" value="60" min="0">
+            <label>4th Place:</label>
+            <input type="number" id="points4th" value="50" min="0">
+            <label>5th Place:</label>
+            <input type="number" id="points5th" value="40" min="0">
+            <label>Participation:</label>
+            <input type="number" id="pointsParticipation" value="10" min="0">
+          </div>
+        </div>
+
+        <!-- Criteria -->
+        <div class="form-section">
+          <h3>⚙️ Ranking Criteria</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Minimum Participation</label>
+              <input type="number" id="minParticipation" value="1" min="0" placeholder="Minimum tournaments to qualify">
+            </div>
+            <div class="form-field">
+              <label>Count Best N Tournaments</label>
+              <input type="number" id="countBest" min="0" placeholder="Leave empty to count all">
+            </div>
+            <div class="form-field">
+              <label>Tie-Break Method</label>
+              <select id="tieBreakMethod">
+                <option value="best-finish">Best Finish</option>
+                <option value="most-wins">Most Wins</option>
+                <option value="total-score">Total Score</option>
+                <option value="latest-tournament">Latest Tournament Result</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Admission Criteria</label>
+              <select id="admissionCriteria">
+                <option value="all">All Players</option>
+                <option value="members-only">Members Only</option>
+                <option value="specific-club">Specific Club</option>
+                <option value="handicap-range">Handicap Range</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="admissionDetails" style="margin-top: 16px; display: none;">
+            <div class="form-grid">
+              <div class="form-field" id="clubField" style="display: none;">
+                <label>Club Name</label>
+                <input type="text" id="admissionClub" placeholder="Enter club name">
+              </div>
+              <div class="form-field" id="handicapMinField" style="display: none;">
+                <label>Min Handicap</label>
+                <input type="number" id="admissionHcpMin" step="0.1">
+              </div>
+              <div class="form-field" id="handicapMaxField" style="display: none;">
+                <label>Max Handicap</label>
+                <input type="number" id="admissionHcpMax" step="0.1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Ranking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tournament Selection Modal -->
+  <div id="tournamentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎯 Select Tournaments</h2>
+        <button class="btn-close" onclick="closeTournamentModal()">×</button>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <button type="button" class="btn" id="toggleClubTournaments" onclick="toggleTournamentSource()" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">
+          📂 Select from Other Clubs
+        </button>
+        <span id="tournamentSourceLabel" style="margin-left: 12px; color: #64748b; font-size: 14px;">Showing: My Club Tournaments</span>
+      </div>
+      <div class="tournament-selector">
+        <div class="tournament-list" id="tournamentList"></div>
+      </div>
+      <div class="modal-footer" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeTournamentModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
+
+  <script>
+    let rankings = [];
+    let tournaments = [];
+    let currentEditingId = null;
+    let showAllClubTournaments = false;
+    let userClubPrefix = ''; // Will be set from user's loginName (e.g., 'KLA' from 'klassis')
+
+    // Gate: require authentication and get user club prefix
+    (async function(){
+      const { user, role } = await window.Auth.requireAuth();
+      window.currentUserId = user.uid;
+      window.currentUserRole = role;
+      try {
+        const profile = await window.Auth.getUserProfile();
+        const loginName = profile?.loginName || '';
+        // Extract club prefix from loginName (e.g., 'klassis' -> 'KLA', 'tauros' -> 'TAU')
+        userClubPrefix = loginName.substring(0, 3).toUpperCase();
+        console.log('User club prefix:', userClubPrefix);
+      } catch(e) {
+        console.error('Error getting user profile:', e);
+      }
+      // Initialize after auth is ready
+      loadData();
+    })();
+
+    // Initialize will be called after auth is ready
+    async function loadData() {
+      try {
+        // Load rankings from Firebase
+        const rankingsSnapshot = await firebase.database().ref('rankings').once('value');
+        if (rankingsSnapshot.exists()) {
+          const firebaseRankings = rankingsSnapshot.val();
+          // Convert object to array
+          rankings = Object.values(firebaseRankings);
+          console.log(`Loaded ${rankings.length} rankings from Firebase`);
+        } else {
+          // Fallback to localStorage if nothing in Firebase
+          rankings = JSON.parse(localStorage.getItem('rankings') || '[]');
+          console.log(`Loaded ${rankings.length} rankings from localStorage`);
+        }
+
+        // Load tournaments from Firebase
+        const tournamentsSnapshot = await firebase.database().ref('tournaments').once('value');
+        if (tournamentsSnapshot.exists()) {
+          const firebaseTournaments = tournamentsSnapshot.val();
+          // Convert object to array
+          tournaments = Object.values(firebaseTournaments);
+          console.log(`Loaded ${tournaments.length} tournaments from Firebase`);
+        } else {
+          // Fallback to localStorage if nothing in Firebase
+          tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          console.log(`Loaded ${tournaments.length} tournaments from localStorage`);
+        }
+      } catch (error) {
+        console.error('Error loading data from Firebase:', error);
+        // Fallback to localStorage on error
+        rankings = JSON.parse(localStorage.getItem('rankings') || '[]');
+        tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+      }
+
+      renderRankings();
+    }
+
+    // Helper function to format tournament dates
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    function padDay(n){ return String(n).padStart(2,'0'); }
+    function formatSingleDate(dateStr){
+      if (!dateStr) return '-';
+      const dt = new Date(dateStr);
+      if (Number.isNaN(dt.getTime())) return '-';
+      return `${padDay(dt.getDate())} ${MONTHS[dt.getMonth()]}. ${dt.getFullYear()}`;
+    }
+    function formatTournamentDate(t){
+      if (!t.meta) return formatSingleDate(t.date);
+      const roundsData = Array.isArray(t.meta.roundsData) ? t.meta.roundsData.filter(r => r && r.date) : [];
+      if (roundsData.length === 0) return formatSingleDate(t.date);
+      if (roundsData.length === 1) return formatSingleDate(roundsData[0].date);
+      const dates = roundsData.map(r => new Date(r.date)).filter(d => !Number.isNaN(d.getTime())).sort((a,b)=>a-b);
+      if (!dates.length) return formatSingleDate(t.date);
+      const first = dates[0];
+      const last = dates[dates.length-1];
+      const sameMonth = first.getMonth() === last.getMonth() && first.getFullYear() === last.getFullYear();
+      if (sameMonth){
+        return `${padDay(first.getDate())}-${padDay(last.getDate())} ${MONTHS[first.getMonth()]}. ${last.getFullYear()}`;
+      }
+      const yearDisplay = first.getFullYear() === last.getFullYear() ? last.getFullYear() : `${first.getFullYear()}/${last.getFullYear()}`;
+      return `${padDay(first.getDate())} ${MONTHS[first.getMonth()]}. - ${padDay(last.getDate())} ${MONTHS[last.getMonth()]}. ${yearDisplay}`;
+    }
+
+    // Helper to get tournament start date for sorting
+    function getTournamentStartDate(t) {
+      if (t.meta && Array.isArray(t.meta.roundsData) && t.meta.roundsData.length > 0) {
+        const dates = t.meta.roundsData
+          .filter(r => r && r.date)
+          .map(r => new Date(r.date))
+          .filter(d => !Number.isNaN(d.getTime()))
+          .sort((a,b) => a - b);
+        if (dates.length > 0) return dates[0];
+      }
+      return t.date ? new Date(t.date) : new Date(0);
+    }
+
+    function renderRankings() {
+      const container = document.getElementById('rankingsContainer');
+      const emptyState = document.getElementById('emptyState');
+
+      if (rankings.length === 0) {
+        container.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      container.style.display = 'grid';
+      emptyState.style.display = 'none';
+
+      container.innerHTML = rankings.map(ranking => `
+        <div class="ranking-card ${ranking.status === 'active' ? 'active' : ''}" onclick="viewRanking('${ranking.id}')">
+          <div class="ranking-header">
+            <div>
+              <h3 class="ranking-title">${ranking.name}</h3>
+            </div>
+            <span class="ranking-status ${ranking.status}">${ranking.status}</span>
+          </div>
+          <div class="ranking-info">
+
+            <p><strong>Categories:</strong> ${ranking.categories?.length || 0} | <strong>Valid Results:</strong> ${ranking.validResults || 'All'} | <strong>Total Rounds:</strong> ${ranking.totalRounds || 'N/A'}</p>
+            <p><strong>Basis:</strong> ${ranking.scoringBasis === 'round' ? 'Individual Rounds' : 'Tournament Aggregate'} | <strong>Method:</strong> ${ranking.calculationMethod || 'total-score'}</p>
+            <p><strong>Gender:</strong> ${ranking.gender || 'all'} | <strong>Members Only:</strong> ${ranking.membersOnly ? 'Yes' : 'No'} | <strong>Age:</strong> ${ranking.minAge || '0'}-${ranking.maxAge || '∞'}</p>
+          </div>
+          <div class="ranking-actions" onclick="event.stopPropagation()">
+            <button class="btn btn-primary" onclick="editRanking('${ranking.id}')">
+              ✏️ Edit
+            </button>
+            <button class="btn" onclick="openTournamentModalForRanking('${ranking.id}')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">
+              ➕ Add Tournament
+            </button>
+            <button class="btn btn-success" onclick="calculateRanking('${ranking.id}')">
+              📊 Calculate
+            </button>
+            <button class="btn btn-danger" onclick="deleteRanking('${ranking.id}')">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function createNewRanking() {
+      currentEditingId = null;
+      document.getElementById('modalTitle').textContent = 'Create New Ranking';
+      document.getElementById('rankingForm').reset();
+      document.getElementById('rankingId').value = '';
+      loadTournamentList();
+      document.getElementById('rankingModal').classList.add('active');
+    }
+
+    function editRanking(id) {
+      currentEditingId = id;
+      const ranking = rankings.find(r => r.id === id);
+      if (!ranking) return;
+
+      document.getElementById('modalTitle').textContent = 'Edit Ranking';
+      document.getElementById('rankingId').value = ranking.id;
+      document.getElementById('rankingName').value = ranking.name;
+      document.getElementById('rankingStatus').value = ranking.status;
+
+      document.getElementById('validResults').value = ranking.validResults || '';
+      document.getElementById('totalRounds').value = ranking.totalRounds || '';
+      document.getElementById('scoringBasis').value = ranking.scoringBasis || 'tournament';
+      document.getElementById('calculationMethod').value = ranking.calculationMethod || 'total-score';
+      document.getElementById('rankingGender').value = ranking.gender || 'all';
+      document.getElementById('membersOnly').value = ranking.membersOnly ? 'yes' : 'no';
+      document.getElementById('minAge').value = ranking.minAge || '';
+      document.getElementById('maxAge').value = ranking.maxAge || '';
+      document.getElementById('pointType').value = ranking.pointType || 'position';
+      document.getElementById('scoreType').value = ranking.scoreType || 'gross';
+      document.getElementById('minParticipation').value = ranking.minParticipation || 1;
+      document.getElementById('countBest').value = ranking.countBest || '';
+      document.getElementById('tieBreakMethod').value = ranking.tieBreakMethod || 'best-finish';
+      document.getElementById('admissionCriteria').value = ranking.admissionCriteria || 'all';
+      
+      // Load point values
+      if (ranking.pointValues) {
+        document.getElementById('points1st').value = ranking.pointValues.first || 100;
+        document.getElementById('points2nd').value = ranking.pointValues.second || 80;
+        document.getElementById('points3rd').value = ranking.pointValues.third || 60;
+        document.getElementById('points4th').value = ranking.pointValues.fourth || 50;
+        document.getElementById('points5th').value = ranking.pointValues.fifth || 40;
+        document.getElementById('pointsParticipation').value = ranking.pointValues.participation || 10;
+      }
+
+      togglePointSystem();
+      toggleAdmissionDetails();
+      document.getElementById('rankingModal').classList.add('active');
+    }
+
+    async function loadTournamentList(selectedIds = []) {
+      const container = document.getElementById('tournamentList');
+      container.innerHTML = '<p style="text-align: center; color: #64748b; padding: 20px;">Loading tournaments and categories...</p>';
+      
+      try {
+        // Filter tournaments based on toggle state
+        let filteredTournaments = tournaments;
+        if (!showAllClubTournaments && userClubPrefix) {
+          filteredTournaments = tournaments.filter(t => {
+            const tournamentId = t.tournamentId || t.id || '';
+            return tournamentId.startsWith(userClubPrefix + '-');
+          });
+        }
+        
+        if (filteredTournaments.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: #64748b; padding: 20px;">No tournaments available</p>';
+          return;
+        }
+        
+        // Sort tournaments by date (newest first)
+        filteredTournaments.sort((a, b) => {
+          const dateA = getTournamentStartDate(a);
+          const dateB = getTournamentStartDate(b);
+          return dateB - dateA;
+        });
+        
+        // Categories are already in the tournament object from localStorage
+        const tournamentsWithCategories = filteredTournaments.map(t => {
+          const categories = t.categories || [];
+          const tournamentId = t.tournamentId || t.id;
+          console.log(`Categories for ${tournamentId}:`, categories);
+          return { ...t, categories: Array.isArray(categories) ? categories : [] };
+        });
+        
+        // Build HTML with expandable tournament sections
+        container.innerHTML = tournamentsWithCategories.map(t => {
+          const tournamentId = t.tournamentId || t.id || '';
+          const isOwnClub = tournamentId.startsWith(userClubPrefix + '-');
+          const clubLabel = !isOwnClub ? ` <span style="color: #8b5cf6; font-size: 12px;">(Other Club)</span>` : '';
+          const formattedDate = formatTournamentDate(t);
+          const hasCategories = t.categories && t.categories.length > 0;
+          
+          return `
+            <div class="tournament-group" style="margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+              <div class="tournament-header" onclick="toggleTournamentExpand('${tournamentId}')" style="padding: 12px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${t.name}${clubLabel}</strong>
+                  <span style="color: #64748b; font-size: 13px; margin-left: 8px;">${formattedDate}</span>
+                  <span style="color: #64748b; font-size: 12px; margin-left: 8px;">(${hasCategories ? t.categories.length : 0} categories)</span>
+                </div>
+                <span id="expand-icon-${tournamentId}" style="font-size: 18px;">▼</span>
+              </div>
+              <div id="categories-${tournamentId}" class="categories-list" style="display: none; padding: 8px; background: white;">
+                ${hasCategories ? t.categories.map((cat, idx) => {
+                  const categoryId = `${tournamentId}_cat_${idx}`;
+                  const isSelected = selectedIds.includes(categoryId);
+                  return `
+                    <div class="category-item" style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">
+                      <input type="checkbox" 
+                             id="cat_${categoryId}" 
+                             value="${categoryId}"
+                             data-tournament-id="${tournamentId}"
+                             data-category-index="${idx}"
+                             ${isSelected ? 'checked' : ''}
+                             onchange="toggleCategorySelection('${categoryId}', '${tournamentId}', ${idx})">
+                      <label for="cat_${categoryId}" style="margin-left: 8px; cursor: pointer;">
+                        ${cat.name || cat.categoryName || 'Unnamed Category'}
+                        <span style="color: #64748b; font-size: 12px; margin-left: 8px;">
+                          (${cat.gender || 'All'}, HCP: ${cat.handicapMin || '0'}-${cat.handicapMax || '∞'})
+                        </span>
+                      </label>
+                    </div>
+                  `;
+                }).join('') : '<p style="padding: 12px; color: #94a3b8; text-align: center; margin: 0;">No categories defined</p>'}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (error) {
+        console.error('Error loading tournament categories:', error);
+        container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 20px;">Error loading tournaments</p>';
+      }
+    }
+
+    function toggleTournamentExpand(tournamentId) {
+      const categoriesDiv = document.getElementById(`categories-${tournamentId}`);
+      const icon = document.getElementById(`expand-icon-${tournamentId}`);
+      
+      if (categoriesDiv.style.display === 'none') {
+        categoriesDiv.style.display = 'block';
+        icon.textContent = '▲';
+      } else {
+        categoriesDiv.style.display = 'none';
+        icon.textContent = '▼';
+      }
+    }
+
+    function toggleCategorySelection(categoryId, tournamentId, categoryIndex) {
+      // Store selection in a global variable for tracking
+      if (!window.selectedCategories) {
+        window.selectedCategories = [];
+      }
+      
+      const checkbox = document.getElementById(`cat_${categoryId}`);
+      if (checkbox.checked) {
+        window.selectedCategories.push({
+          id: categoryId,
+          tournamentId: tournamentId,
+          categoryIndex: categoryIndex
+        });
+      } else {
+        window.selectedCategories = window.selectedCategories.filter(c => c.id !== categoryId);
+      }
+    }
+
+    function toggleTournamentSource() {
+      showAllClubTournaments = !showAllClubTournaments;
+      const btn = document.getElementById('toggleClubTournaments');
+      const label = document.getElementById('tournamentSourceLabel');
+      
+      if (showAllClubTournaments) {
+        btn.textContent = '🏠 Show My Club Only';
+        label.textContent = 'Showing: All Clubs Tournaments';
+      } else {
+        btn.textContent = '📂 Select from Other Clubs';
+        label.textContent = 'Showing: My Club Tournaments';
+      }
+      
+      // Reload tournament list preserving current selections
+      const selectedIds = tournaments.filter(t => t.selected).map(t => t.tournamentId || t.id);
+      loadTournamentList(selectedIds);
+    }
+
+    function togglePointSystem() {
+      const pointType = document.getElementById('pointType').value;
+      const positionSection = document.getElementById('positionPointsSection');
+      positionSection.style.display = pointType === 'position' ? 'grid' : 'none';
+    }
+
+    function toggleAdmissionDetails() {
+      const criteria = document.getElementById('admissionCriteria').value;
+      const details = document.getElementById('admissionDetails');
+      const clubField = document.getElementById('clubField');
+      const hcpMinField = document.getElementById('handicapMinField');
+      const hcpMaxField = document.getElementById('handicapMaxField');
+
+      details.style.display = criteria !== 'all' ? 'block' : 'none';
+      clubField.style.display = criteria === 'specific-club' ? 'block' : 'none';
+      hcpMinField.style.display = criteria === 'handicap-range' ? 'block' : 'none';
+      hcpMaxField.style.display = criteria === 'handicap-range' ? 'block' : 'none';
+    }
+
+    document.getElementById('admissionCriteria').addEventListener('change', toggleAdmissionDetails);
+
+    document.getElementById('rankingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Get existing data if editing
+      let existingCategories = [];
+      let selectedTournaments = [];
+      if (currentEditingId) {
+        const existingRanking = rankings.find(r => r.id === currentEditingId);
+        selectedTournaments = existingRanking ? (existingRanking.tournaments || []) : [];
+        existingCategories = existingRanking ? (existingRanking.categories || []) : [];
+      }
+
+      const rankingData = {
+        id: document.getElementById('rankingId').value || 'rank_' + Date.now(),
+        name: document.getElementById('rankingName').value,
+        status: document.getElementById('rankingStatus').value,
+
+        validResults: parseInt(document.getElementById('validResults').value) || null,
+        totalRounds: parseInt(document.getElementById('totalRounds').value) || null,
+        scoringBasis: document.getElementById('scoringBasis').value,
+        calculationMethod: document.getElementById('calculationMethod').value,
+        gender: document.getElementById('rankingGender').value,
+        membersOnly: document.getElementById('membersOnly').value === 'yes',
+        minAge: parseInt(document.getElementById('minAge').value) || null,
+        maxAge: parseInt(document.getElementById('maxAge').value) || null,
+        tournaments: selectedTournaments,
+        categories: existingCategories,  // Preserve existing categories
+        pointType: document.getElementById('pointType').value,
+        scoreType: document.getElementById('scoreType').value,
+        minParticipation: parseInt(document.getElementById('minParticipation').value),
+        countBest: parseInt(document.getElementById('countBest').value) || null,
+        tieBreakMethod: document.getElementById('tieBreakMethod').value,
+        admissionCriteria: document.getElementById('admissionCriteria').value,
+        pointValues: {
+          first: parseInt(document.getElementById('points1st').value),
+          second: parseInt(document.getElementById('points2nd').value),
+          third: parseInt(document.getElementById('points3rd').value),
+          fourth: parseInt(document.getElementById('points4th').value),
+          fifth: parseInt(document.getElementById('points5th').value),
+          participation: parseInt(document.getElementById('pointsParticipation').value)
+        },
+        updatedAt: new Date().toISOString()
+      };
+
+      // Handle admission details
+      if (rankingData.admissionCriteria === 'specific-club') {
+        rankingData.admissionClub = document.getElementById('admissionClub').value;
+      } else if (rankingData.admissionCriteria === 'handicap-range') {
+        rankingData.admissionHcpMin = parseFloat(document.getElementById('admissionHcpMin').value);
+        rankingData.admissionHcpMax = parseFloat(document.getElementById('admissionHcpMax').value);
+      }
+
+      if (currentEditingId) {
+        const index = rankings.findIndex(r => r.id === currentEditingId);
+        rankings[index] = { ...rankings[index], ...rankingData };
+      } else {
+        rankingData.createdAt = new Date().toISOString();
+        rankings.push(rankingData);
+      }
+
+      localStorage.setItem('rankings', JSON.stringify(rankings));
+      // Auto-save to Firebase
+      const savedRanking = currentEditingId ? rankings.find(r => r.id === currentEditingId) : rankingData;
+      firebase.database().ref(`rankings/${savedRanking.id}`).set(savedRanking).catch(err => {
+        console.error('Error auto-saving ranking to Firebase:', err);
+      });
+      closeModal();
+      renderRankings();
+    });
+
+    function deleteRanking(id) {
+      if (!confirm('Are you sure you want to delete this ranking?')) return;
+      
+      rankings = rankings.filter(r => r.id !== id);
+      localStorage.setItem('rankings', JSON.stringify(rankings));
+      // Remove from Firebase
+      firebase.database().ref(`rankings/${id}`).remove().catch(err => {
+        console.error('Error removing ranking from Firebase:', err);
+      });
+      renderRankings();
+    }
+
+    function viewRanking(id) {
+      window.location.href = `ranking_results.html?id=${id}`;
+    }
+
+    function calculateRanking(id) {
+      window.location.href = `ranking_results.html?id=${id}`;
+    }
+
+    function closeModal() {
+      document.getElementById('rankingModal').classList.remove('active');
+    }
+
+    function openTournamentModal() {
+      loadTournamentList();
+      document.getElementById('tournamentModal').classList.add('active');
+    }
+
+    function openTournamentModalForRanking(rankingId) {
+      const ranking = rankings.find(r => r.id === rankingId);
+      if (!ranking) return;
+      
+      currentEditingId = rankingId;
+      
+      // Initialize selectedCategories from ranking
+      window.selectedCategories = ranking.categories || [];
+      const selectedIds = window.selectedCategories.map(c => c.id);
+      
+      loadTournamentList(selectedIds);
+      document.getElementById('tournamentModal').classList.add('active');
+    }
+
+    function closeTournamentModal() {
+      document.getElementById('tournamentModal').classList.remove('active');
+      
+      // If we were editing a ranking directly, save the category selections
+      if (currentEditingId) {
+        const ranking = rankings.find(r => r.id === currentEditingId);
+        if (ranking) {
+          ranking.categories = window.selectedCategories || [];
+          localStorage.setItem('rankings', JSON.stringify(rankings));
+          
+          // Also sync to Firebase
+          firebase.database().ref(`rankings/${ranking.id}`).set(ranking).then(() => {
+            console.log('Ranking categories saved to Firebase');
+          }).catch(err => {
+            console.error('Error saving ranking to Firebase:', err);
+          });
+          
+          renderRankings();
+        }
+        currentEditingId = null;
+      }
+      
+      updateSelectedTournamentsList();
+    }
+
+    async function updateSelectedTournamentsList() {
+      const selectedCategories = window.selectedCategories || [];
+      const container = document.getElementById('selectedTournamentsList');
+      
+      if (selectedCategories.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center; margin: 8px 0; font-size: 13px;">No categories selected</p>';
+        document.getElementById('selectedCount').textContent = '0 selected';
+        return;
+      }
+      
+      try {
+        // Get category details using compat API
+        const categoryDetails = await Promise.all(selectedCategories.map(async (sel) => {
+          const tournament = tournaments.find(t => (t.tournamentId || t.id) === sel.tournamentId);
+          const snapshot = await firebase.database().ref(`categories/${sel.tournamentId}`).once('value');
+          const categories = snapshot.exists() ? snapshot.val() : [];
+          const category = categories[sel.categoryIndex];
+          
+          return {
+            ...sel,
+            tournamentName: tournament?.name || 'Unknown Tournament',
+            categoryName: category?.name || category?.categoryName || 'Unknown Category'
+          };
+        }));
+        
+        container.innerHTML = categoryDetails.map(cat => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #f1f5f9;">
+            <span style="font-size: 13px;">
+              <strong>${cat.categoryName}</strong>
+              <span style="color: #64748b; margin-left: 4px;">(${cat.tournamentName})</span>
+            </span>
+            <button type="button" onclick="removeCategory('${cat.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 4px;">×</button>
+          </div>
+        `).join('');
+        
+        document.getElementById('selectedCount').textContent = `${selectedCategories.length} selected`;
+      } catch (error) {
+        console.error('Error updating selected list:', error);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; margin: 8px 0; font-size: 13px;">Error loading selections</p>';
+      }
+    }
+
+    function removeCategory(categoryId) {
+      if (!window.selectedCategories) window.selectedCategories = [];
+      window.selectedCategories = window.selectedCategories.filter(c => c.id !== categoryId);
+      
+      // Uncheck the checkbox
+      const checkbox = document.getElementById(`cat_${categoryId}`);
+      if (checkbox) checkbox.checked = false;
+      
+      updateSelectedTournamentsList();
+    }
+
+    async function syncToFirebase() {
+      try {
+        for (const ranking of rankings) {
+          await firebase.database().ref(`rankings/${ranking.id}`).set(ranking);
+        }
+        
+        alert(`Successfully synced ${rankings.length} rankings to Firebase`);
+      } catch (error) {
+        console.error('Sync error:', error);
+        alert('Error syncing to Firebase: ' + error.message);
+      }
+    }
+
+    window.createNewRanking = createNewRanking;
+    window.editRanking = editRanking;
+    window.deleteRanking = deleteRanking;
+    window.viewRanking = viewRanking;
+    window.calculateRanking = calculateRanking;
+    window.closeModal = closeModal;
+    window.openTournamentModal = openTournamentModal;
+    window.openTournamentModalForRanking = openTournamentModalForRanking;
+    window.closeTournamentModal = closeTournamentModal;
+    window.removeCategory = removeCategory;
+    window.toggleTournamentExpand = toggleTournamentExpand;
+    window.toggleCategorySelection = toggleCategorySelection;
+    window.toggleTournamentSource = toggleTournamentSource;
+    window.togglePointSystem = togglePointSystem;
+    window.toggleAdmissionDetails = toggleAdmissionDetails;
+    window.syncToFirebase = syncToFirebase;
+  </script>
+</body>
+</html>

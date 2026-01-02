@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manual Category Assignment</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="../firebase-config.js"></script>
+    
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+      body { padding-top: 70px; background: #f8fafc; }
+      .container { max-width: 1600px; margin: 24px auto; padding: 0 24px; }
+      
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 24px;
+        min-height: calc(100vh - 150px);
+      }
+      
+      /* Left side - Categories */
+      .categories-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 20px;
+      }
+      
+      .categories-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      
+      .categories-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #1e293b;
+      }
+      
+      .btn-add-category {
+        background: linear-gradient(180deg, #10b981, #059669);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .btn-add-category:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+      
+      .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      
+      .category-box {
+        background: #f8fafc;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 200px;
+      }
+      
+      .category-box.drag-over {
+        border-color: #10b981;
+        background: #ecfdf5;
+      }
+      
+      .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .category-name-input {
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        background: transparent;
+        color: #1e293b;
+        width: 180px;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+      
+      .category-name-input:focus {
+        outline: none;
+        background: #fff;
+        border: 1px solid #0b6efd;
+      }
+      
+      .category-count {
+        font-size: 13px;
+        color: #64748b;
+        background: #e5e7eb;
+        padding: 2px 8px;
+        border-radius: 10px;
+      }
+      
+      .btn-remove-category {
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .btn-remove-category:hover {
+        background: #fecaca;
+      }
+      
+      .category-players {
+        min-height: 120px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 8px;
+        border: 2px dashed transparent;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      
+      .category-players.drag-over {
+        background: #dbeafe;
+        border-color: #0b6efd;
+      }
+      
+      .player-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        cursor: grab;
+        transition: all 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .player-card:hover {
+        border-color: #0b6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .player-card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+      }
+      
+      .player-card .player-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 14px;
+      }
+      
+      .player-card .player-info {
+        font-size: 12px;
+        color: #64748b;
+      }
+      
+      .player-card .btn-remove-player {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 14px;
+      }
+      
+      .player-card .btn-remove-player:hover {
+        color: #dc2626;
+      }
+      
+      /* Right side - Admitted Players */
+      .players-section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .players-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      
+      .players-header h2 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      
+      .players-search {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      
+      .players-search:focus {
+        outline: none;
+        border-color: #0b6efd;
+      }
+      
+      .players-list {
+        flex: 1;
+        overflow-y: auto;
+        max-height: calc(100vh - 300px);
+      }
+      
+      .players-list .player-card {
+        cursor: grab;
+      }
+      
+      .players-list .player-card.assigned {
+        opacity: 0.4;
+        background: #f1f5f9;
+        cursor: not-allowed;
+      }
+      
+      .player-card .assigned-badge {
+        font-size: 10px;
+        background: #dbeafe;
+        color: #1d4ed8;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      
+      .empty-message {
+        text-align: center;
+        color: #94a3b8;
+        padding: 40px 20px;
+        font-size: 14px;
+      }
+      
+      /* Action buttons */
+      .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+      }
+      
+      .btn-save {
+        background: linear-gradient(180deg, #0b6efd, #0a58d1);
+        color: white;
+      }
+      
+      .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(11, 110, 253, 0.3);
+      }
+      
+      .btn-back {
+        background: #fff;
+        color: #64748b;
+        border: 1px solid #e5e7eb;
+      }
+      
+      .btn-back:hover {
+        background: #f8fafc;
+      }
+      
+      .stats-bar {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+        color: #64748b;
+      }
+      
+      .stats-bar span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .stats-bar .count {
+        font-weight: 700;
+        color: #1e293b;
+      }
+      
+      @media (max-width: 1100px) {
+        .main-layout {
+          grid-template-columns: 1fr;
+        }
+        .players-section {
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>✋ Manual Category Assignment<span id="tournament-name" style="font-weight: 400; font-size: 20px;"></span></h1>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-save" id="btn-save">💾 Save Categories</button>
+        <a href="#" id="btn-back" class="btn btn-back">← Back to Categories</a>
+      </div>
+    </div>
+    
+    <main class="container">
+      <div class="action-bar">
+        <div class="stats-bar">
+          <span>Total Players: <span class="count" id="total-players">0</span></span>
+          <span>Assigned: <span class="count" id="assigned-players">0</span></span>
+          <span>Unassigned: <span class="count" id="unassigned-players">0</span></span>
+        </div>
+      </div>
+      
+      <div class="main-layout">
+        <!-- Left: Categories -->
+        <div class="categories-section">
+          <div class="categories-header">
+            <h2>📁 Categories</h2>
+            <button class="btn-add-category" id="btn-add-category">
+              <span>➕</span> Add Category
+            </button>
+          </div>
+          <div class="categories-grid" id="categories-grid">
+            <div class="empty-message" id="no-categories-message">
+              No categories yet. Click "Add Category" to create one.
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right: Admitted Players -->
+        <div class="players-section">
+          <div class="players-header">
+            <h2>👥 Admitted Players</h2>
+            <input type="text" class="players-search" id="players-search" placeholder="Search players..." />
+          </div>
+          <div class="players-list" id="players-list">
+            <div class="empty-message">Loading players...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const tournamentId = urlParams.get('tournamentId');
+      
+      if (!tournamentId) {
+        alert('No tournament selected. Redirecting...');
+        window.location.href = 'index.html';
+      }
+      
+      // Set back link
+      document.getElementById('btn-back').href = `categories.html?tournamentId=${tournamentId}`;
+      
+      // Data
+      let categories = [];
+      let admittedPlayers = [];
+      let allPlayersData = {};
+      let categoryIdCounter = 0;
+      
+      // Initialize
+      async function init() {
+        await loadTournamentData();
+        await loadAdmittedPlayers();
+        renderCategories();
+        renderPlayers();
+        updateStats();
+        setupEventListeners();
+      }
+      
+      async function loadTournamentData() {
+        try {
+          const snapshot = await firebase.database().ref(`tournaments/${tournamentId}`).once('value');
+          const tournament = snapshot.val();
+          if (tournament) {
+            document.getElementById('tournament-name').textContent = `: ${tournament.name || tournament.tournamentName || ''}`;
+            
+            // Load existing categories if any
+            if (tournament.categories && tournament.categories.length > 0) {
+              // Only load non-manual categories or prompt user
+              // For now, start fresh for manual assignment
+            }
+          }
+        } catch (e) {
+          console.error('Error loading tournament:', e);
+        }
+      }
+      
+      async function loadAdmittedPlayers() {
+        try {
+          // Get tournament to find round IDs
+          const tournamentSnapshot = await firebase.database().ref(`tournaments/${tournamentId}`).once('value');
+          const tournament = tournamentSnapshot.val();
+          const roundIds = tournament?.meta?.roundIds || [];
+          
+          // Load admitted players from each round
+          const playersMap = {};
+          
+          for (const roundId of roundIds) {
+            const snapshot = await firebase.database().ref(`admittedPlayers/${roundId}`).once('value');
+            const roundPlayers = snapshot.val();
+            
+            if (roundPlayers) {
+              if (Array.isArray(roundPlayers)) {
+                roundPlayers.forEach(p => {
+                  if (p && p.reg) {
+                    playersMap[p.reg] = p;
+                  }
+                });
+              } else {
+                Object.assign(playersMap, roundPlayers);
+              }
+            }
+          }
+          
+          // Also load all players data for additional info
+          const allPlayersSnapshot = await firebase.database().ref('players').once('value');
+          allPlayersData = allPlayersSnapshot.val() || {};
+          
+          // Build admitted players list
+          admittedPlayers = Object.entries(playersMap).map(([id, player]) => {
+            const fullPlayer = allPlayersData[id] || player;
+            return {
+              id: id,
+              firstName: player.firstName || fullPlayer.firstName || '',
+              lastName: player.lastName || fullPlayer.lastName || '',
+              hcp: player.hcp !== undefined ? player.hcp : (fullPlayer.hcp || 0),
+              gender: player.gender || fullPlayer.gender || '',
+              club: player.homeClub || player.club || fullPlayer.homeClub || fullPlayer.club || '',
+              assignedCategory: null
+            };
+          });
+          
+          // Sort by last name
+          admittedPlayers.sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+          
+          console.log('Loaded admitted players:', admittedPlayers.length);
+          
+        } catch (e) {
+          console.error('Error loading admitted players:', e);
+        }
+      }
+      
+      function setupEventListeners() {
+        // Add category button
+        document.getElementById('btn-add-category').addEventListener('click', addCategory);
+        
+        // Save button
+        document.getElementById('btn-save').addEventListener('click', saveCategories);
+        
+        // Search
+        document.getElementById('players-search').addEventListener('input', (e) => {
+          renderPlayers(e.target.value);
+        });
+      }
+      
+      function addCategory() {
+        categoryIdCounter++;
+        const newCategory = {
+          id: `cat-${categoryIdCounter}`,
+          name: `Category ${categoryIdCounter}`,
+          players: []
+        };
+        categories.push(newCategory);
+        renderCategories();
+        updateStats();
+      }
+      
+      function removeCategory(categoryId) {
+        const category = categories.find(c => c.id === categoryId);
+        if (category && category.players.length > 0) {
+          if (!confirm(`This category has ${category.players.length} player(s). Remove anyway?`)) {
+            return;
+          }
+          // Unassign players
+          category.players.forEach(playerId => {
+            const player = admittedPlayers.find(p => p.id === playerId);
+            if (player) player.assignedCategory = null;
+          });
+        }
+        categories = categories.filter(c => c.id !== categoryId);
+        renderCategories();
+        renderPlayers();
+        updateStats();
+      }
+      
+      function updateCategoryName(categoryId, newName) {
+        const category = categories.find(c => c.id === categoryId);
+        if (category) {
+          category.name = newName;
+        }
+      }
+      
+      function renderCategories() {
+        const grid = document.getElementById('categories-grid');
+        
+        if (categories.length === 0) {
+          grid.innerHTML = '<div class="empty-message" id="no-categories-message">No categories yet. Click "Add Category" to create one.</div>';
+          return;
+        }
+        
+        grid.innerHTML = categories.map(cat => `
+          <div class="category-box" data-category-id="${cat.id}">
+            <div class="category-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="text" class="category-name-input" value="${escapeHtml(cat.name)}" 
+                       onchange="updateCategoryName('${cat.id}', this.value)" />
+                <span class="category-count">${cat.players.length}</span>
+              </div>
+              <button class="btn-remove-category" onclick="removeCategory('${cat.id}')" title="Remove category">×</button>
+            </div>
+            <div class="category-players drop-zone" data-category-id="${cat.id}"
+                 ondrop="dropPlayer(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)">
+              ${cat.players.map(playerId => {
+                const player = admittedPlayers.find(p => p.id === playerId);
+                if (!player) return '';
+                return `
+                  <div class="player-card" data-player-id="${playerId}">
+                    <div>
+                      <div class="player-name">${escapeHtml(player.firstName)} ${escapeHtml(player.lastName)}</div>
+                      <div class="player-info">HCP: ${player.hcp}</div>
+                    </div>
+                    <button class="btn-remove-player" onclick="removePlayerFromCategory('${cat.id}', '${playerId}')" title="Remove">×</button>
+                  </div>
+                `;
+              }).join('')}
+              ${cat.players.length === 0 ? '<div class="empty-message" style="padding: 20px;">Drag players here</div>' : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      function renderPlayers(searchTerm = '') {
+        const list = document.getElementById('players-list');
+        
+        let filteredPlayers = admittedPlayers;
+        
+        if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          filteredPlayers = admittedPlayers.filter(p => 
+            (p.firstName || '').toLowerCase().includes(term) ||
+            (p.lastName || '').toLowerCase().includes(term) ||
+            (p.club || '').toLowerCase().includes(term)
+          );
+        }
+        
+        if (filteredPlayers.length === 0) {
+          list.innerHTML = '<div class="empty-message">No players found</div>';
+          return;
+        }
+        
+        list.innerHTML = filteredPlayers.map(player => {
+          const isAssigned = player.assignedCategory !== null;
+          const category = isAssigned ? categories.find(c => c.id === player.assignedCategory) : null;
+          
+          return `
+            <div class="player-card ${isAssigned ? 'assigned' : ''}" 
+                 data-player-id="${player.id}"
+                 draggable="${!isAssigned}"
+                 ondragstart="dragStart(event)"
+                 ondragend="dragEnd(event)">
+              <div>
+                <div class="player-name">${escapeHtml(player.firstName)} ${escapeHtml(player.lastName)}</div>
+                <div class="player-info">HCP: ${player.hcp} ${player.club ? '• ' + escapeHtml(player.club) : ''}</div>
+              </div>
+              ${isAssigned ? `<span class="assigned-badge">${escapeHtml(category?.name || 'Assigned')}</span>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+      
+      function updateStats() {
+        const total = admittedPlayers.length;
+        const assigned = admittedPlayers.filter(p => p.assignedCategory !== null).length;
+        const unassigned = total - assigned;
+        
+        document.getElementById('total-players').textContent = total;
+        document.getElementById('assigned-players').textContent = assigned;
+        document.getElementById('unassigned-players').textContent = unassigned;
+      }
+      
+      // Drag and Drop
+      function dragStart(event) {
+        const playerId = event.target.dataset.playerId;
+        console.log('Drag started for player:', playerId);
+        event.dataTransfer.setData('text/plain', playerId);
+        event.dataTransfer.effectAllowed = 'move';
+        event.target.classList.add('dragging');
+      }
+      
+      function dragEnd(event) {
+        event.target.classList.remove('dragging');
+      }
+      
+      function dragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        event.currentTarget.classList.add('drag-over');
+      }
+      
+      function dragLeave(event) {
+        event.currentTarget.classList.remove('drag-over');
+      }
+      
+      function dropPlayer(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.currentTarget.classList.remove('drag-over');
+        
+        const playerId = event.dataTransfer.getData('text/plain');
+        const categoryId = event.currentTarget.dataset.categoryId;
+        
+        console.log('Drop - playerId:', playerId, 'categoryId:', categoryId);
+        
+        if (playerId && categoryId) {
+          assignPlayerToCategory(playerId, categoryId);
+        }
+      }
+      
+      function assignPlayerToCategory(playerId, categoryId) {
+        const player = admittedPlayers.find(p => p.id === playerId);
+        const category = categories.find(c => c.id === categoryId);
+        
+        if (!player || !category) return;
+        
+        // Remove from previous category if assigned
+        if (player.assignedCategory) {
+          const prevCategory = categories.find(c => c.id === player.assignedCategory);
+          if (prevCategory) {
+            prevCategory.players = prevCategory.players.filter(id => id !== playerId);
+          }
+        }
+        
+        // Assign to new category
+        player.assignedCategory = categoryId;
+        if (!category.players.includes(playerId)) {
+          category.players.push(playerId);
+        }
+        
+        renderCategories();
+        renderPlayers(document.getElementById('players-search').value);
+        updateStats();
+      }
+      
+      function removePlayerFromCategory(categoryId, playerId) {
+        const category = categories.find(c => c.id === categoryId);
+        const player = admittedPlayers.find(p => p.id === playerId);
+        
+        if (category) {
+          category.players = category.players.filter(id => id !== playerId);
+        }
+        if (player) {
+          player.assignedCategory = null;
+        }
+        
+        renderCategories();
+        renderPlayers(document.getElementById('players-search').value);
+        updateStats();
+      }
+      
+      async function saveCategories() {
+        if (categories.length === 0) {
+          alert('Please create at least one category.');
+          return;
+        }
+        
+        const unassignedCount = admittedPlayers.filter(p => p.assignedCategory === null).length;
+        if (unassignedCount > 0) {
+          if (!confirm(`${unassignedCount} player(s) are not assigned to any category. Save anyway?`)) {
+            return;
+          }
+        }
+        
+        try {
+          // Build categories array for saving
+          // Manual categories have isManual=true and store players in the 'players' array
+          // Set criteria fields to indicate "Manual" assignment
+          const categoriesToSave = categories.map((cat, index) => ({
+            name: cat.name,
+            categoryName: cat.name,
+            code: `MAN${index + 1}`,
+            shortName: cat.name.substring(0, 6),
+            isManual: true,
+            players: cat.players, // Store player IDs directly in players array
+            // Set criteria to "Manual" to indicate these are not auto-matched
+            handicapMin: 'Manual',
+            handicapMax: 'Manual',
+            ageMin: 'Manual',
+            ageMax: 'Manual',
+            gender: 'Manual',
+            tournamentType: 'Stableford Net'
+          }));
+          
+          // Get current tournament
+          const snapshot = await firebase.database().ref(`tournaments/${tournamentId}`).once('value');
+          const tournament = snapshot.val();
+          
+          if (!tournament) {
+            alert('Tournament not found.');
+            return;
+          }
+          
+          // Update tournament categories
+          tournament.categories = categoriesToSave;
+          
+          // Save to Firebase
+          await firebase.database().ref(`tournaments/${tournamentId}`).set(tournament);
+          
+          // Also update localStorage for compatibility
+          const localTournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+          const localIndex = localTournaments.findIndex(t => t.tournamentId === tournamentId);
+          console.log('LocalStorage update - found at index:', localIndex);
+          console.log('Categories to save:', categoriesToSave);
+          
+          if (localIndex !== -1) {
+            localTournaments[localIndex].categories = categoriesToSave;
+            localStorage.setItem('tournaments', JSON.stringify(localTournaments));
+            console.log('Updated localStorage with categories');
+          } else {
+            console.warn('Tournament not found in localStorage, adding it');
+            // Tournament might not be in localStorage yet - add it
+            localTournaments.push(tournament);
+            localStorage.setItem('tournaments', JSON.stringify(localTournaments));
+          }
+          
+          alert('Categories saved successfully!');
+          window.location.href = `categories.html?tournamentId=${tournamentId}`;
+          
+        } catch (e) {
+          console.error('Error saving categories:', e);
+          alert('Error saving categories: ' + e.message);
+        }
+      }
+      
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      
+      // Make functions available globally
+      window.removeCategory = removeCategory;
+      window.updateCategoryName = updateCategoryName;
+      window.removePlayerFromCategory = removePlayerFromCategory;
+      window.dragStart = dragStart;
+      window.dragEnd = dragEnd;
+      window.dragOver = dragOver;
+      window.dragLeave = dragLeave;
+      window.dropPlayer = dropPlayer;
+      
+      // Initialize on load - ensure Firebase is ready first
+      if (typeof initFirebase === 'function') {
+        initFirebase();
+      }
+      
+      // Wait for Firebase to be ready, then init
+      function waitForFirebase(callback, maxAttempts = 50) {
+        let attempts = 0;
+        const check = () => {
+          attempts++;
+          if (window.db || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0)) {
+            callback();
+          } else if (attempts < maxAttempts) {
+            setTimeout(check, 100);
+          } else {
+            console.error('Firebase failed to initialize after', maxAttempts, 'attempts');
+          }
+        };
+        check();
+      }
+      
+      waitForFirebase(() => {
+        init();
+      });
+    </script>
+  </body>
+</html>

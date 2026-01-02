@@ -6,37 +6,96 @@
     <title>Results Display</title>
     <link rel="stylesheet" href="../styles.css">
     <style>
-      body{padding-top:70px}
-      .results-display-container { max-width: 1000px; margin: 36px auto; padding: 24px; }
-      .results-header { text-align: center; margin-bottom: 32px; }
-      .results-header h1 { margin: 0; font-size: 28px; color: #1e293b; }
-      .results-header .category-name { font-size: 20px; color: #64748b; margin-top: 8px; }
-      .results-table-wrapper { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.06); overflow-x: auto; padding: 24px; }
-      .results-table { width: auto; border-collapse: collapse; font-size: 14px; }
+      body { 
+        background: #f8fafc; 
+        font-family: system-ui,-apple-system,sans-serif; 
+        color: #1e293b; 
+        margin: 0; 
+        padding: 0;
+        padding-top: 0;
+      }
+      .container { 
+        max-width: 1200px; 
+        margin: 0 auto; 
+        padding: 20px; 
+      }
+      .header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 30px 20px;
+        text-align: center;
+        margin-bottom: 24px;
+        border-radius: 12px;
+      }
+      .header h1 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .header .subtitle {
+        opacity: 0.9;
+        font-size: 16px;
+      }
+      .results-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(2,6,23,0.08);
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .results-card-header {
+        background: #f8fafc;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .results-card-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      .results-table-wrapper { 
+        background: white; 
+        overflow-x: auto; 
+        padding: 16px; 
+      }
+      .results-table { width: 100%; border-collapse: collapse; font-size: 14px; }
       .results-table thead th { 
         background: #f8fafc; 
-        padding: 10px 12px; 
+        padding: 12px 16px; 
         text-align: left; 
         font-weight: 600; 
+        font-size: 13px;
         color: #475569;
         border-bottom: 2px solid #e2e8f0;
         white-space: nowrap;
       }
       .results-table thead th.text-center { text-align: center; }
       .results-table thead th.text-right { text-align: right; }
+      .results-table tbody tr {
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .results-table tbody tr:hover { background: #f0f9ff; }
       .results-table tbody td { 
-        padding: 8px 12px; 
+        padding: 12px 16px; 
         border-bottom: 1px solid #f1f5f9;
         color: #1e293b;
+        font-size: 14px;
       }
       .results-table tbody td.text-center { text-align: center; }
       .results-table tbody td.text-right { text-align: right; }
-      .results-table tbody tr:hover { background: #f8fafc; }
-      .results-table tbody tr.status-row { background: #fef2f2; }
+      .results-table tbody tr.status-row { background: #fef2f2; opacity: 0.8; }
       .results-table tbody tr.status-row:hover { background: #fee2e2; }
-      .rank-cell { font-weight: 600; color: #0f172a; font-size: 15px; }
-      .player-cell { font-weight: 500; color: #0f172a; }
-      .total-cell { font-weight: 700; color: #0f172a; font-size: 15px; background: #f1f5f9; }
+      .rank-cell { font-weight: 700; color: #0f172a; font-size: 16px; text-align: center; width: 50px; }
+      .rank-1 { color: #eab308; }
+      .rank-2 { color: #94a3b8; }
+      .rank-3 { color: #b45309; }
+      .player-cell { font-weight: 600; color: #1e293b; }
+      .total-cell { font-weight: 700; color: #0f172a; font-size: 16px; background: #f1f5f9; text-align: center; }
+      .status-indicator { color: #dc2626 !important; font-weight: 700; font-size: 13px; }
       /* Team results specific styles */
       .team-results-table { width: 100%; table-layout: fixed; }
       .team-results-table .col-rank { width: 50px; }
@@ -104,39 +163,243 @@
         color: #0b6efd; 
         border: 1px solid #e6e9ef; 
       }
+      
+      /* Scorecard Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      }
+      .modal-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+      }
+      .modal-header h3 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .modal-close {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-close:hover {
+        background: rgba(255,255,255,0.3);
+      }
+      .modal-body {
+        padding: 24px;
+      }
+      .scorecard-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .scorecard-info-item {
+        background: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 8px;
+      }
+      .scorecard-info-item label {
+        font-size: 12px;
+        color: #64748b;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .scorecard-info-item span {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .scorecard-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .scorecard-table th, .scorecard-table td {
+        padding: 8px 6px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+      }
+      .scorecard-table thead th {
+        background: #f1f5f9;
+        font-weight: 600;
+        color: #475569;
+      }
+      .scorecard-table .hole-row th {
+        background: #1e3a8a;
+        color: white;
+      }
+      .scorecard-table .par-row td {
+        background: #f8fafc;
+        font-weight: 500;
+      }
+      .scorecard-table .score-row td {
+        font-weight: 600;
+      }
+      .scorecard-table .total-cell {
+        background: #f1f5f9;
+        font-weight: 700;
+      }
+      /* Standard golf scorecard colors */
+      .score-eagle { background: #fbbf24; color: #78350f; }
+      .score-birdie { background: #fecaca; color: #b91c1c; }
+      .score-bogey { background: #bfdbfe; color: #1e40af; }
+      .score-double { background: #1e293b; color: white; }
+      .score-worse { background: #0f172a; color: white; }
+      
+      /* Mobile responsiveness */
+      @media (max-width: 640px) {
+        .container { padding: 12px; }
+        .header { padding: 20px 16px; border-radius: 0; margin: -12px -12px 16px -12px; }
+        .header h1 { font-size: 22px; }
+        .results-table thead th, .results-table tbody td { padding: 10px 8px; font-size: 13px; }
+        .modal-content { border-radius: 12px; max-height: 95vh; }
+        .modal-header { padding: 16px; }
+        .modal-body { padding: 16px; }
+        .scorecard-table { font-size: 11px; }
+        .scorecard-table th, .scorecard-table td { padding: 6px 3px; }
+        .action-buttons { flex-wrap: wrap; }
+      }
+      
       @media print {
-        .action-buttons, .btn { display: none; }
-        .results-display-container { margin: 0; padding: 20px; }
+        .action-buttons, .btn, .modal-overlay { display: none !important; }
+        .container { margin: 0; padding: 20px; }
         .warning-message { display: none; }
+        .results-card { box-shadow: none; }
       }
     </style>
   </head>
   <body>
-    <div class="top-nav">
-      <h1>🏆 Results Display</h1>
-      <a href="#" onclick="window.close(); return false;" class="btn-back-top">✕ Close</a>
-    </div>
-    <main class="results-display-container">
-      <div class="results-header">
+    <div class="container">
+      <div class="header">
         <h1 id="tournament-name">Tournament Results</h1>
-        <div class="category-name" id="category-name"></div>
+        <div class="subtitle" id="category-name"></div>
       </div>
 
       <div id="warning-container"></div>
 
-      <div class="results-table-wrapper">
-        <table class="results-table" id="results-table">
-          <thead id="table-head"></thead>
-          <tbody id="table-body"></tbody>
-        </table>
+      <div class="results-card">
+        <div class="results-card-header">
+          <h2 id="results-title">Results</h2>
+        </div>
+        <div class="results-table-wrapper">
+          <table class="results-table" id="results-table">
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
       </div>
 
+      <div id="save-status" style="display: none; padding: 12px 20px; border-radius: 8px; margin-bottom: 16px; font-weight: 500; text-align: center;"></div>
+      
       <div class="action-buttons">
-        <button class="btn btn-print" onclick="window.print()">Print Results</button>
-        <button class="btn btn-back" onclick="window.close()">Close</button>
+        <button class="btn" id="save-btn" style="background: linear-gradient(180deg, #10b981, #059669);" onclick="manualSaveResults()">💾 Save Results to Firebase</button>
+        <button class="btn btn-print" onclick="window.print()">🖨️ Print Results</button>
+        <button class="btn btn-back" onclick="window.close()">✕ Close</button>
       </div>
-    </main>
+    </div>
+    
+    <!-- Scorecard Modal -->
+    <div class="modal-overlay" id="scorecard-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-player-name">Player Scorecard</h3>
+          <button class="modal-close" onclick="closeScorecardModal()">×</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Scorecard content -->
+        </div>
+      </div>
+    </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script>
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+        authDomain: "gtm-management-6350e.firebaseapp.com",
+        databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com",
+        projectId: "gtm-management-6350e",
+        storageBucket: "gtm-management-6350e.firebasestorage.app",
+        messagingSenderId: "461806742170",
+        appId: "1:461806742170:web:9a2af43d50c0a26718cd23"
+      };
+      
+      // Initialize Firebase
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const db = firebase.database();
+      
+      // Load data from Firebase to localStorage
+      async function loadFromFirebase() {
+        try {
+          const [tournamentsSnap, scoresSnap, admittedSnap, coursesSnap] = await Promise.all([
+            db.ref('tournaments').once('value'),
+            db.ref('scores').once('value'),
+            db.ref('admittedPlayers').once('value'),
+            db.ref('courses').once('value')
+          ]);
+          
+          if (tournamentsSnap.val()) {
+            const data = tournamentsSnap.val();
+            const arr = Array.isArray(data) ? data.filter(t => t) : Object.values(data).filter(t => t);
+            localStorage.setItem('tournaments', JSON.stringify(arr));
+          }
+          if (scoresSnap.val()) {
+            localStorage.setItem('scores', JSON.stringify(scoresSnap.val()));
+          }
+          if (admittedSnap.val()) {
+            localStorage.setItem('admittedPlayers', JSON.stringify(admittedSnap.val()));
+          }
+          if (coursesSnap.val()) {
+            const data = coursesSnap.val();
+            const arr = Array.isArray(data) ? data.filter(c => c) : Object.values(data).filter(c => c);
+            localStorage.setItem('courses', JSON.stringify(arr));
+          }
+          console.log('✓ Data loaded from Firebase');
+        } catch (e) {
+          console.error('Firebase load error:', e);
+        }
+      }
+    </script>
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
@@ -146,6 +409,9 @@
       const showHcp = urlParams.get('hcp') === 'yes';
       const showPhcp = urlParams.get('phcp') === 'yes';
       const showToPar = urlParams.get('topar') === 'yes';
+      
+      // Store current calculated results for manual save
+      let currentCalculatedResults = null;
 
       function getTournaments() {
         try {
@@ -240,7 +506,7 @@
       }
 
       // Save calculated results to tournament data (localStorage and Firebase)
-      function saveCalculatedResults(categoryCode, resultsData) {
+      async function saveCalculatedResults(categoryCode, resultsData) {
         try {
           const tournaments = getTournaments();
           const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
@@ -270,17 +536,96 @@
               console.error('✗ ERROR: calculatedResults NOT found in localStorage after save!');
             }
             
-            // Sync to Firebase
-            if (typeof syncToFirebase !== 'undefined') {
-              syncToFirebase('tournaments', tournaments)
-                .then(() => console.log('✓ Results synced to Firebase'))
-                .catch(e => console.error('✗ Firebase sync failed:', e));
+            // Save directly to Firebase
+            try {
+              // Find the Firebase key for this tournament
+              const tournamentsSnap = await db.ref('tournaments').once('value');
+              const tournamentsData = tournamentsSnap.val();
+              
+              if (tournamentsData) {
+                // Find the key for our tournament
+                let firebaseKey = null;
+                for (const key in tournamentsData) {
+                  if (tournamentsData[key] && tournamentsData[key].tournamentId === tournamentId) {
+                    firebaseKey = key;
+                    break;
+                  }
+                }
+                
+                if (firebaseKey) {
+                  // Save calculatedResults for this category
+                  await db.ref(`tournaments/${firebaseKey}/calculatedResults/${categoryCode}`).set({
+                    results: resultsData,
+                    calculatedAt: new Date().toISOString()
+                  });
+                  console.log(`✓ Results synced to Firebase for category ${categoryCode}`);
+                } else {
+                  console.error('✗ Could not find tournament key in Firebase');
+                }
+              }
+            } catch (firebaseError) {
+              console.error('✗ Firebase sync failed:', firebaseError);
+              throw firebaseError;
             }
           } else {
             console.error('Tournament not found in array, cannot save results');
+            throw new Error('Tournament not found');
           }
         } catch (err) {
           console.error('Error saving calculated results:', err);
+          throw err;
+        }
+      }
+
+      // Manual save button handler
+      async function manualSaveResults() {
+        const saveBtn = document.getElementById('save-btn');
+        const statusDiv = document.getElementById('save-status');
+        
+        if (!currentCalculatedResults || currentCalculatedResults.length === 0) {
+          statusDiv.style.display = 'block';
+          statusDiv.style.background = '#fef2f2';
+          statusDiv.style.color = '#dc2626';
+          statusDiv.innerHTML = '❌ No results to save. Please refresh the page.';
+          setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
+          return;
+        }
+        
+        // Show loading state
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '⏳ Saving...';
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = '#fef3cd';
+        statusDiv.style.color = '#856404';
+        statusDiv.innerHTML = '⏳ Saving results to Firebase...';
+        
+        try {
+          await saveCalculatedResults(categoryCode, currentCalculatedResults);
+          
+          // Success
+          statusDiv.style.background = '#d4edda';
+          statusDiv.style.color = '#155724';
+          statusDiv.innerHTML = `✅ Results saved to Firebase for category "${categoryCode}"!`;
+          saveBtn.innerHTML = '✅ Saved!';
+          saveBtn.style.background = 'linear-gradient(180deg, #10b981, #059669)';
+          
+          setTimeout(() => {
+            saveBtn.innerHTML = '💾 Save Results to Firebase';
+            saveBtn.disabled = false;
+            statusDiv.style.display = 'none';
+          }, 3000);
+        } catch (err) {
+          // Error
+          statusDiv.style.background = '#f8d7da';
+          statusDiv.style.color = '#721c24';
+          statusDiv.innerHTML = `❌ Failed to save: ${err.message}`;
+          saveBtn.innerHTML = '❌ Save Failed';
+          saveBtn.disabled = false;
+          
+          setTimeout(() => {
+            saveBtn.innerHTML = '💾 Save Results to Firebase';
+            statusDiv.style.display = 'none';
+          }, 5000);
         }
       }
 
@@ -418,8 +763,38 @@
         const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
         const isTeamCategory = categoryCode === 'TEAM';
         
-        // Filter players who belong to this category
-        return allPlayers.filter(player => {
+        // Debug: Log tournament categoryAssignments
+        console.log('Tournament categoryAssignments:', tournament?.categoryAssignments);
+        console.log('Looking for category:', categoryCode);
+        
+        // PRIORITY 1: Use stored categoryAssignments (single source of truth)
+        let storedPlayerIds = tournament?.categoryAssignments?.[categoryCode];
+        
+        // Firebase may return arrays as objects with numeric keys - convert back to array
+        if (storedPlayerIds && !Array.isArray(storedPlayerIds)) {
+          console.log('Converting Firebase object to array:', storedPlayerIds);
+          storedPlayerIds = Object.values(storedPlayerIds);
+        }
+        
+        console.log('Stored player IDs for this category:', storedPlayerIds);
+        
+        if (storedPlayerIds && storedPlayerIds.length > 0) {
+          console.log(`Category ${categoryCode}: Using stored assignments (${storedPlayerIds.length} player IDs)`);
+          return allPlayers.filter(player => {
+            const playerId = player.reg || player.id;
+            // In team tournaments, all players belong to TEAM category
+            if (isTeamTournament && isTeamCategory) {
+              return true;
+            }
+            return storedPlayerIds.includes(playerId);
+          });
+        }
+        
+        // FALLBACK: Check player-level categories (for backward compatibility)
+        console.log(`Category ${categoryCode}: Falling back to player-level categories (no stored assignments found)`);
+        console.log('All players count:', allPlayers.length);
+        
+        const filteredPlayers = allPlayers.filter(player => {
           // In team tournaments, all players belong to TEAM category
           if (isTeamTournament && isTeamCategory) {
             return true;
@@ -429,6 +804,9 @@
           }
           return player.category === categoryCode;
         });
+        
+        console.log('Filtered players (fallback):', filteredPlayers.length);
+        return filteredPlayers;
       }
 
       function calculateNetScore(grossScore, hcp) {
@@ -1002,7 +1380,7 @@
 
       // ==================== TEAM RESULTS FUNCTIONS ====================
 
-      function generateTeamResults() {
+      async function generateTeamResults() {
         const tournament = getTournament();
         if (!tournament) {
           alert('Tournament not found');
@@ -1473,23 +1851,34 @@
         
         // Save calculated team results to Firebase
         console.log('Preparing to save team results for category:', categoryCode);
+        // Note: Firebase doesn't accept undefined values, so we convert them to null
         const teamResultsToSave = teamResults.map(tr => ({
           type: 'team',
-          teamId: tr.team.teamId,
-          teamName: tr.team.name,
-          rank: tr.rank,
-          total: tr.teamTotal,
-          roundTotals: tr.roundTotals,
-          avgHcp: tr.avgHcp,
-          players: tr.playerScoresData.map(ps => ({
-            reg: ps.player.reg,
-            firstName: ps.player.firstName,
-            lastName: ps.player.lastName,
-            club: ps.player.club || ps.player.homeClub
+          teamId: tr.team.teamId || null,
+          teamName: tr.team.name || '',
+          rank: tr.rank !== undefined ? tr.rank : null,
+          total: tr.teamTotal !== undefined ? tr.teamTotal : null,
+          roundTotals: tr.roundTotals || [],
+          avgHcp: tr.avgHcp !== undefined ? tr.avgHcp : null,
+          players: (tr.playerScoresData || []).map(ps => ({
+            reg: ps.player.reg || null,
+            firstName: ps.player.firstName || '',
+            lastName: ps.player.lastName || '',
+            club: ps.player.club || ps.player.homeClub || null
           }))
         }));
         console.log('Team results to save:', teamResultsToSave.length, 'teams');
-        saveCalculatedResults(categoryCode, teamResultsToSave);
+        
+        // Store in global variable for manual save button
+        currentCalculatedResults = teamResultsToSave;
+        console.log(`✓ Stored ${currentCalculatedResults.length} team results for category ${categoryCode}`);
+        
+        // Try to auto-save to Firebase
+        try {
+          await saveCalculatedResults(categoryCode, teamResultsToSave);
+        } catch (err) {
+          console.error('Auto-save failed, use manual save button:', err);
+        }
       }
 
       // ==================== END TEAM RESULTS FUNCTIONS ====================
@@ -1515,7 +1904,7 @@
         return hasAnyScore ? totalToPar : null;
       }
 
-      function generateResults() {
+      async function generateResults() {
         const tournament = getTournament();
         if (!tournament) {
           alert('Tournament not found');
@@ -1731,10 +2120,16 @@
         
         allResults.forEach(pr => {
           const isStatusRow = pr.hasStatus;
-          bodyHTML += `<tr${isStatusRow ? ' class="status-row"' : ''}>`;
+          const playerId = pr.player.reg || pr.player.id || pr.player.odaNo || `${pr.player.firstName}_${pr.player.lastName}`;
+          const rankClass = !isStatusRow && pr.rank && pr.rank <= 3 ? `rank-${pr.rank}` : '';
+          bodyHTML += `<tr${isStatusRow ? ' class="status-row"' : ''} onclick="showScorecard('${playerId}')">`;
           
-          // Rank
-          bodyHTML += `<td class="text-center rank-cell">${pr.rank || '-'}</td>`;
+          // Rank - with special class for top 3
+          if (isStatusRow) {
+            bodyHTML += `<td class="text-center rank-cell status-indicator">${pr.status}</td>`;
+          } else {
+            bodyHTML += `<td class="text-center rank-cell ${rankClass}">${pr.rank || '-'}</td>`;
+          }
           
           // Player
           bodyHTML += `<td class="player-cell">${pr.player.firstName} ${pr.player.lastName}</td>`;
@@ -1803,29 +2198,251 @@
         document.getElementById('table-body').innerHTML = bodyHTML;
         
         // Save calculated individual results to Firebase
+        // Note: Firebase doesn't accept undefined values, so we convert them to null
         const allPlayerResults = [...normalPlayers, ...statusPlayers];
         const individualResultsToSave = allPlayerResults.map(pr => ({
           type: 'individual',
-          reg: pr.player.reg,
-          firstName: pr.player.firstName,
-          lastName: pr.player.lastName,
-          club: pr.player.club || pr.player.homeClub,
-          nationality: pr.player.nationality || pr.player.country,
-          rank: pr.rank,
-          total: pr.total,
-          roundScores: pr.roundScores,
+          reg: pr.player.reg || null,
+          firstName: pr.player.firstName || '',
+          lastName: pr.player.lastName || '',
+          club: pr.player.club || pr.player.homeClub || null,
+          nationality: pr.player.nationality || pr.player.country || null,
+          rank: pr.rank !== undefined ? pr.rank : null,
+          total: pr.total !== undefined ? pr.total : null,
+          roundScores: pr.roundScores || [],
           status: pr.status || null,
-          hcp: pr.player.hcp,
-          phcp: pr.player.phcp
+          hcp: pr.player.hcp !== undefined ? pr.player.hcp : null,
+          phcp: pr.player.phcp !== undefined ? pr.player.phcp : null
         }));
-        saveCalculatedResults(categoryCode, individualResultsToSave);
+        
+        // Store in global variable for manual save button
+        currentCalculatedResults = individualResultsToSave;
+        console.log(`✓ Stored ${currentCalculatedResults.length} results for category ${categoryCode}`);
+        
+        // Try to auto-save to Firebase
+        try {
+          await saveCalculatedResults(categoryCode, individualResultsToSave);
+        } catch (err) {
+          console.error('Auto-save failed, use manual save button:', err);
+        }
       }
 
+      // ==================== SCORECARD MODAL FUNCTIONS ====================
+      
+      function showScorecard(playerId) {
+        const modal = document.getElementById('scorecard-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-player-name');
+        
+        // Find player from admitted players
+        const tournament = getTournament();
+        const roundIds = tournament?.meta?.roundIds || [];
+        
+        let player = null;
+        const admitted = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        
+        for (const roundId of roundIds) {
+          const roundPlayers = admitted[roundId] || [];
+          player = roundPlayers.find(p => p.reg === playerId || p.id === playerId || p.odaNo === playerId || `${p.firstName}_${p.lastName}` === playerId);
+          if (player) break;
+        }
+        
+        if (!player) {
+          modalTitle.textContent = 'Player Not Found';
+          modalBody.innerHTML = '<p>Could not find player details.</p>';
+          modal.classList.add('active');
+          return;
+        }
+        
+        modalTitle.textContent = `${player.firstName} ${player.lastName}`;
+        
+        // Build scorecard content
+        let html = '<div class="scorecard-info">';
+        html += `<div class="scorecard-info-item"><label>Club</label><span>${player.club || player.homeClub || '-'}</span></div>`;
+        html += `<div class="scorecard-info-item"><label>HCP</label><span>${player.hcp !== undefined ? player.hcp : '-'}</span></div>`;
+        if (player.phcp !== undefined) {
+          html += `<div class="scorecard-info-item"><label>Playing HCP</label><span>${player.phcp}</span></div>`;
+        }
+        html += '</div>';
+        
+        // Get courses
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        const scores = getScores();
+        
+        // Get hole-by-hole scores for each round
+        roundIds.forEach((roundId, roundIdx) => {
+          const roundScores = scores[roundId] || {};
+          const playerScore = roundScores[playerId];
+          
+          // Get course info
+          const roundData = tournament.meta?.roundsData?.[roundIdx];
+          const courseId = roundData?.course || '';
+          const course = courses.find(c => c.courseId === courseId || c.courseName === courseId || c.id === courseId || c.name === courseId);
+          
+          html += `<h4 style="margin: 24px 0 12px 0;">Round ${roundIdx + 1}${course?.courseName || course?.name ? ': ' + (course.courseName || course.name) : ''}</h4>`;
+          
+          if (playerScore && playerScore.holes && Array.isArray(playerScore.holes)) {
+            html += renderHoleByHoleTable(playerScore, course);
+          } else {
+            html += '<p style="color:#64748b;">No scorecard available for this round</p>';
+          }
+        });
+        
+        modalBody.innerHTML = html;
+        modal.classList.add('active');
+      }
+      
+      function renderHoleByHoleTable(playerScore, course) {
+        const holes = playerScore.holes;
+        if (!Array.isArray(holes) || holes.length === 0) {
+          return '<p style="color:#64748b;">No hole-by-hole scores available</p>';
+        }
+        
+        // Get stableford points if available
+        const stbPoints = playerScore.stablefordPoints || [];
+        const hasStableford = stbPoints.length > 0;
+        
+        // Get par values from course or default
+        let pars = [];
+        if (course && course.pars && Array.isArray(course.pars)) {
+          pars = course.pars.map(p => parseInt(p) || 4);
+        } else if (course && course.holes) {
+          pars = course.holes.map(h => h.par || 4);
+        } else {
+          pars = Array(18).fill(4);
+        }
+        
+        let html = '<table class="scorecard-table">';
+        
+        // Front 9
+        html += '<tr class="hole-row"><th>Hole</th>';
+        for (let i = 1; i <= 9; i++) html += `<th>${i}</th>`;
+        html += '<th>Out</th></tr>';
+        
+        html += '<tr class="par-row"><td>Par</td>';
+        let frontPar = 0;
+        for (let i = 0; i < 9; i++) {
+          const par = pars[i] || 4;
+          frontPar += par;
+          html += `<td>${par}</td>`;
+        }
+        html += `<td class="total-cell">${frontPar}</td></tr>`;
+        
+        html += '<tr class="score-row"><td>Gross</td>';
+        let frontScore = 0;
+        for (let i = 0; i < 9; i++) {
+          const score = parseInt(holes[i]) || 0;
+          const par = pars[i] || 4;
+          const scoreClass = getScoreClass(score, par);
+          frontScore += score;
+          html += `<td class="${scoreClass}">${score || '-'}</td>`;
+        }
+        html += `<td class="total-cell">${frontScore || '-'}</td></tr>`;
+        
+        // Stableford points row for front 9
+        if (hasStableford) {
+          html += '<tr class="score-row"><td>Points</td>';
+          let frontStb = 0;
+          for (let i = 0; i < 9; i++) {
+            const pts = parseInt(stbPoints[i]) || 0;
+            frontStb += pts;
+            html += `<td>${pts}</td>`;
+          }
+          html += `<td class="total-cell">${frontStb}</td></tr>`;
+        }
+        
+        // Back 9
+        if (holes.length > 9) {
+          html += '<tr class="hole-row"><th>Hole</th>';
+          for (let i = 10; i <= 18; i++) html += `<th>${i}</th>`;
+          html += '<th>In</th></tr>';
+          
+          html += '<tr class="par-row"><td>Par</td>';
+          let backPar = 0;
+          for (let i = 9; i < 18; i++) {
+            const par = pars[i] || 4;
+            backPar += par;
+            html += `<td>${par}</td>`;
+          }
+          html += `<td class="total-cell">${backPar}</td></tr>`;
+          
+          html += '<tr class="score-row"><td>Gross</td>';
+          let backScore = 0;
+          for (let i = 9; i < 18; i++) {
+            const score = parseInt(holes[i]) || 0;
+            const par = pars[i] || 4;
+            const scoreClass = getScoreClass(score, par);
+            backScore += score;
+            html += `<td class="${scoreClass}">${score || '-'}</td>`;
+          }
+          html += `<td class="total-cell">${backScore || '-'}</td></tr>`;
+          
+          // Stableford points row for back 9
+          if (hasStableford) {
+            html += '<tr class="score-row"><td>Points</td>';
+            let backStb = 0;
+            for (let i = 9; i < 18; i++) {
+              const pts = parseInt(stbPoints[i]) || 0;
+              backStb += pts;
+              html += `<td>${pts}</td>`;
+            }
+            html += `<td class="total-cell">${backStb}</td></tr>`;
+          }
+          
+          // Total row
+          html += '<tr style="height: 8px;"><td colspan="11"></td></tr>';
+          html += '<tr class="score-row"><td><strong>Total</strong></td>';
+          html += `<td colspan="9" style="text-align: right;"><strong>Gross: ${frontScore + backScore}</strong></td>`;
+          if (hasStableford) {
+            const totalStb = stbPoints.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+            html += `<td class="total-cell"><strong>${totalStb} pts</strong></td></tr>`;
+          } else {
+            html += `<td class="total-cell"><strong>${frontScore + backScore}</strong></td></tr>`;
+          }
+        }
+        
+        html += '</table>';
+        return html;
+      }
+      
+      function getScoreClass(score, par) {
+        if (!score || !par) return '';
+        const diff = score - par;
+        if (diff <= -2) return 'score-eagle';
+        if (diff === -1) return 'score-birdie';
+        if (diff === 1) return 'score-bogey';
+        if (diff === 2) return 'score-double';
+        if (diff > 2) return 'score-worse';
+        return '';
+      }
+      
+      function closeScorecardModal() {
+        document.getElementById('scorecard-modal').classList.remove('active');
+      }
+      
+      // Close modal on overlay click
+      document.getElementById('scorecard-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'scorecard-modal') closeScorecardModal();
+      });
+      
+      // Close modal on escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeScorecardModal();
+      });
+      
+      // ==================== END SCORECARD MODAL FUNCTIONS ====================
+
       // Generate results on page load
-      if (!tournamentId || !categoryCode) {
-        alert('Missing parameters');
-        window.close();
-      } else {
+      async function initPage() {
+        if (!tournamentId || !categoryCode) {
+          alert('Missing parameters');
+          window.close();
+          return;
+        }
+        
+        // Load from Firebase first
+        await loadFromFirebase();
+        
         // Check if this is a team category in a team tournament
         if (isTeamCategory()) {
           generateTeamResults();
@@ -1833,6 +2450,8 @@
           generateResults();
         }
       }
+      
+      initPage();
     </script>
   </body>
 </html>

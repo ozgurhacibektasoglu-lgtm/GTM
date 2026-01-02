@@ -1,0 +1,1380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tournament Results</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body { 
+      background: #f8fafc; 
+      font-family: system-ui,-apple-system,sans-serif; 
+      color: #1e293b; 
+      margin: 0; 
+      padding: 0;
+    }
+    .container { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      padding: 20px; 
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+      margin-bottom: 24px;
+      border-radius: 12px;
+    }
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .header .subtitle {
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    .category-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(2,6,23,0.08);
+    }
+    .category-tab {
+      padding: 10px 20px;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      transition: all 0.2s;
+    }
+    .category-tab:hover {
+      background: #e2e8f0;
+    }
+    .category-tab.active {
+      background: #0b6efd;
+      color: white;
+    }
+    .results-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(2,6,23,0.08);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .results-card-header {
+      background: #f8fafc;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .results-card-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #1e293b;
+    }
+    .results-table-wrapper {
+      overflow-x: auto;
+    }
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .results-table thead th {
+      background: #f8fafc;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .results-table thead th.text-center { text-align: center; }
+    .results-table tbody tr {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .results-table tbody tr:hover {
+      background: #f0f9ff;
+    }
+    .results-table tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    .results-table tbody td.text-center { text-align: center; }
+    .rank-cell {
+      font-weight: 700;
+      font-size: 16px;
+      color: #0f172a;
+      width: 50px;
+      text-align: center;
+    }
+    .rank-1 { color: #eab308; }
+    .rank-2 { color: #94a3b8; }
+    .rank-3 { color: #b45309; }
+    .status-row {
+      background: #f8fafc;
+      opacity: 0.8;
+    }
+    .status-indicator {
+      color: #dc2626 !important;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .player-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .player-club {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .score-cell {
+      font-weight: 700;
+      font-size: 16px;
+      text-align: center;
+    }
+    .round-score {
+      text-align: center;
+      font-weight: 500;
+    }
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+      font-size: 16px;
+    }
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+      font-size: 16px;
+    }
+    .error-message {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    /* Scorecard Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+    }
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .modal-close {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-close:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .modal-body {
+      padding: 24px;
+    }
+    .scorecard-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .scorecard-info-item {
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+    .scorecard-info-item label {
+      font-size: 12px;
+      color: #64748b;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .scorecard-info-item span {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .scorecard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .scorecard-table th, .scorecard-table td {
+      padding: 8px 6px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+    .scorecard-table thead th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #475569;
+    }
+    .scorecard-table .hole-row th {
+      background: #1e3a8a;
+      color: white;
+    }
+    .scorecard-table .par-row td {
+      background: #f8fafc;
+      font-weight: 500;
+    }
+    .scorecard-table .score-row td {
+      font-weight: 600;
+    }
+    .scorecard-table .total-cell {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+    /* Standard golf scorecard colors */
+    .score-eagle { background: #fbbf24; color: #78350f; } /* Gold/Yellow for eagle or better */
+    .score-birdie { background: #fecaca; color: #b91c1c; } /* Red/Pink for birdie */
+    .score-bogey { background: #bfdbfe; color: #1e40af; } /* Blue for bogey */
+    .score-double { background: #1e293b; color: white; } /* Dark/Black for double bogey */
+    .score-worse { background: #0f172a; color: white; } /* Darker for worse than double */
+    
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+      .container { padding: 12px; }
+      .header { padding: 20px 16px; border-radius: 0; margin: -12px -12px 16px -12px; }
+      .header h1 { font-size: 22px; }
+      .category-tabs { padding: 12px; gap: 6px; }
+      .category-tab { padding: 8px 14px; font-size: 13px; }
+      .results-table thead th, .results-table tbody td { padding: 10px 8px; font-size: 13px; }
+      .modal-content { border-radius: 12px; max-height: 95vh; }
+      .modal-header { padding: 16px; }
+      .modal-body { padding: 16px; }
+      .scorecard-table { font-size: 11px; }
+      .scorecard-table th, .scorecard-table td { padding: 6px 3px; }
+    }
+    
+    @media print {
+      .category-tabs, .modal-overlay { display: none !important; }
+      .results-card { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 id="tournament-name">Tournament Results</h1>
+      <div class="subtitle" id="tournament-info"></div>
+    </div>
+    
+    <div class="category-tabs" id="category-tabs">
+      <!-- Category buttons will be inserted here -->
+    </div>
+    
+    <div class="results-card">
+      <div class="results-card-header">
+        <h2 id="category-title">Select a Category</h2>
+      </div>
+      <div class="results-table-wrapper">
+        <div id="results-content">
+          <div class="loading">Loading results...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scorecard Modal -->
+  <div class="modal-overlay" id="scorecard-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-player-name">Player Scorecard</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Scorecard content -->
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
+      authDomain: "gtm-management-6350e.firebaseapp.com",
+      databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com",
+      projectId: "gtm-management-6350e",
+      storageBucket: "gtm-management-6350e.firebasestorage.app",
+      messagingSenderId: "461806742170",
+      appId: "1:461806742170:web:9a2af43d50c0a26718cd23"
+    };
+    
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    
+    // Get tournament ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('tournamentId');
+    
+    // Global data
+    let tournament = null;
+    let allScores = {};
+    let allAdmittedPlayers = {};
+    let allCourses = [];
+    let holeByHoleScores = {};
+    let selectedCategory = null;
+    let displaySettings = { columns: ['hcp', 'roundScores'], playerInfo: 'club' }; // Default settings
+    
+    // Load all data from Firebase
+    async function loadData() {
+      if (!tournamentId) {
+        showError('No tournament specified');
+        return;
+      }
+      
+      try {
+        const [tournamentsSnap, scoresSnap, admittedSnap, coursesSnap, holeByHoleSnap] = await Promise.all([
+          db.ref('tournaments').once('value'),
+          db.ref('scores').once('value'),
+          db.ref('admittedPlayers').once('value'),
+          db.ref('courses').once('value'),
+          db.ref('holeByHoleScores').once('value')
+        ]);
+        
+        // Find tournament
+        const tournamentsData = tournamentsSnap.val();
+        console.log('Raw tournaments data from Firebase:', tournamentsData);
+        
+        if (tournamentsData) {
+          const arr = Array.isArray(tournamentsData) ? tournamentsData : Object.values(tournamentsData);
+          tournament = arr.find(t => t && t.tournamentId === tournamentId);
+          console.log('Found tournament:', tournament?.name);
+          console.log('Tournament calculatedResults:', tournament?.calculatedResults);
+        }
+        
+        if (!tournament) {
+          showError('Tournament not found');
+          return;
+        }
+        
+        // Load display settings from tournament object directly
+        if (tournament.resultsDisplaySettings) {
+          const settings = tournament.resultsDisplaySettings;
+          console.log('Found resultsDisplaySettings in tournament:', settings);
+          if (settings.columns) displaySettings.columns = settings.columns;
+          if (settings.playerInfo) displaySettings.playerInfo = settings.playerInfo;
+        } else {
+          console.log('No resultsDisplaySettings found in tournament, using defaults');
+        }
+        console.log('Final displaySettings:', displaySettings);
+        
+        // Load other data
+        allScores = scoresSnap.val() || {};
+        allAdmittedPlayers = admittedSnap.val() || {};
+        holeByHoleScores = holeByHoleSnap.val() || {};
+        
+        const coursesData = coursesSnap.val();
+        if (coursesData) {
+          allCourses = Array.isArray(coursesData) ? coursesData : Object.values(coursesData);
+        }
+        
+        // Render page
+        renderHeader();
+        
+        // Check if this is a Match Play tournament
+        const tournamentType = (tournament.type || '').toLowerCase();
+        const isMatchPlay = tournamentType.includes('match');
+        
+        if (isMatchPlay) {
+          // Hide category tabs and show match play results directly
+          document.getElementById('category-tabs').style.display = 'none';
+          document.getElementById('category-title').textContent = 'Match Play Results';
+          renderMatchPlayResults();
+        } else {
+          // Regular category-based tournament
+          renderCategoryTabs();
+          
+          // Auto-select first category
+          const categories = tournament.categories || [];
+          if (categories.length > 0) {
+            selectCategory(categories[0].code);
+          } else {
+            document.getElementById('results-content').innerHTML = '<div class="no-results">No categories defined for this tournament</div>';
+          }
+        }
+        
+      } catch (e) {
+        console.error('Error loading data:', e);
+        showError('Failed to load tournament data');
+      }
+    }
+    
+    function showError(message) {
+      document.getElementById('results-content').innerHTML = `<div class="error-message">${message}</div>`;
+    }
+    
+    function renderHeader() {
+      document.getElementById('tournament-name').textContent = tournament.name || 'Tournament Results';
+      
+      let info = [];
+      if (tournament.date) {
+        info.push(formatDate(tournament.date));
+      }
+      // Get course name from courses data
+      const courseId = tournament.meta?.roundsData?.[0]?.course;
+      if (courseId) {
+        const course = allCourses.find(c => c.id === courseId || c.courseId === courseId || c.name === courseId);
+        if (course && course.name) {
+          info.push(course.name);
+        } else {
+          // Fallback to courseId if no name found
+          info.push(courseId);
+        }
+      }
+      document.getElementById('tournament-info').textContent = info.join(' • ');
+      document.title = `Results - ${tournament.name || 'Tournament'}`;
+    }
+    
+    function renderCategoryTabs() {
+      const tabs = document.getElementById('category-tabs');
+      const categories = tournament.categories || [];
+      
+      if (categories.length === 0) {
+        tabs.style.display = 'none';
+        return;
+      }
+      
+      // Debug: show which categories have calculated results
+      const calculatedCodes = Object.keys(tournament.calculatedResults || {});
+      console.log('Categories in tournament:', categories.map(c => ({code: c.code, name: c.name})));
+      console.log('Categories with calculatedResults:', calculatedCodes);
+      
+      tabs.innerHTML = categories.map(cat => {
+        const hasResults = calculatedCodes.includes(cat.code);
+        return `<button class="category-tab${hasResults ? '' : ' no-results'}" data-code="${cat.code}" onclick="selectCategory('${cat.code}')" title="${hasResults ? 'Results available' : 'No pre-calculated results'}">${cat.name}${hasResults ? '' : ' *'}</button>`;
+      }).join('');
+    }
+    
+    function selectCategory(code) {
+      selectedCategory = code;
+      
+      // Update active tab
+      document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.code === code);
+      });
+      
+      // Get category name
+      const category = tournament.categories?.find(c => c.code === code);
+      document.getElementById('category-title').textContent = category?.name || code;
+      
+      // Render results
+      renderResults(code);
+    }
+    
+    function renderResults(categoryCode) {
+      const content = document.getElementById('results-content');
+      
+      // Check for pre-calculated results from results_display.html
+      console.log('=== renderResults for category:', categoryCode, '===');
+      console.log('tournament.calculatedResults:', tournament.calculatedResults);
+      const calculatedData = tournament.calculatedResults?.[categoryCode];
+      console.log('calculatedData for this category:', calculatedData);
+      
+      if (calculatedData?.results && calculatedData.results.length > 0) {
+        console.log(`✓ Using pre-calculated results for ${categoryCode}:`, calculatedData.results.length, 'entries');
+        console.log('First result:', calculatedData.results[0]);
+        console.log('Calculated at:', calculatedData.calculatedAt);
+        renderResultsTable(calculatedData.results, true);
+        return;
+      }
+      
+      // Fallback: Calculate results from scores (basic - no tiebreakers)
+      console.log(`✗ No pre-calculated results for ${categoryCode}, calculating from scores...`);
+      const results = calculateResults(categoryCode);
+      if (results.length === 0) {
+        content.innerHTML = '<div class="no-results">No results available for this category yet.<br><small style="color:#94a3b8;">Results will appear after the tournament admin generates them.</small></div>';
+        return;
+      }
+      
+      renderResultsTable(results, false);
+    }
+    
+    function calculateResults(categoryCode) {
+      // Get players in this category from admitted players
+      const roundIds = tournament.meta?.roundIds || [];
+      if (roundIds.length === 0) return [];
+      
+      // Get category to check tournament type (Stableford vs Stroke)
+      const category = tournament.categories?.find(c => c.code === categoryCode);
+      const tournamentType = (category?.tournamentType || '').toUpperCase();
+      const isStableford = tournamentType.includes('STABLEFORD');
+      const isNet = tournamentType.includes('NET');
+      const isStrokePlay = !isStableford && !isNet; // Stroke Play (gross) excludes players with X scores
+      
+      // Get all admitted players from first round (they should be same across rounds)
+      let players = [];
+      const firstRoundPlayers = allAdmittedPlayers[roundIds[0]] || [];
+      
+      // PRIORITY 1: Use stored categoryAssignments (single source of truth)
+      let storedPlayerIds = tournament?.categoryAssignments?.[categoryCode];
+      
+      // Firebase may return arrays as objects with numeric keys - convert back to array
+      if (storedPlayerIds && !Array.isArray(storedPlayerIds)) {
+        storedPlayerIds = Object.values(storedPlayerIds);
+      }
+      
+      if (storedPlayerIds && storedPlayerIds.length > 0 && category) {
+        console.log(`Category ${categoryCode}: Using stored assignments (${storedPlayerIds.length} player IDs)`);
+        players = firstRoundPlayers.filter(p => {
+          const playerId = p.reg || p.id;
+          return storedPlayerIds.includes(playerId);
+        });
+      } else if (category) {
+        // FALLBACK: Check player-level categories (for backward compatibility)
+        console.log(`Category ${categoryCode}: Falling back to player-level categories`);
+        players = firstRoundPlayers.filter(p => {
+          // Check if player's categories array includes this category code
+          if (p.categories && Array.isArray(p.categories)) {
+            return p.categories.includes(categoryCode);
+          }
+          // Or check single category field
+          return p.category === categoryCode;
+        });
+      } else {
+        players = [...firstRoundPlayers];
+      }
+      
+      if (players.length === 0) return [];
+      
+      // Helper function to check if player has incomplete holes (X scores)
+      function playerHasIncompleteHoles(playerId) {
+        for (const roundId of roundIds) {
+          const roundScores = allScores[roundId] || {};
+          const playerScore = roundScores[playerId];
+          if (!playerScore) continue;
+          
+          // Check incompleteHoles array
+          if (playerScore.incompleteHoles && playerScore.incompleteHoles.length > 0) {
+            return true;
+          }
+          
+          // Check isIncompleteHole object
+          if (playerScore.isIncompleteHole) {
+            const hasIncomplete = Object.values(playerScore.isIncompleteHole).some(v => v === true);
+            if (hasIncomplete) return true;
+          }
+        }
+        return false;
+      }
+      
+      // For Stroke Play (gross), filter out players with incomplete holes (X scores)
+      if (isStrokePlay) {
+        const originalCount = players.length;
+        players = players.filter(p => {
+          const playerId = p.id || p.reg || p.odaNo;
+          return !playerHasIncompleteHoles(playerId);
+        });
+        const excludedCount = originalCount - players.length;
+        if (excludedCount > 0) {
+          console.log(`Stroke Play: Excluded ${excludedCount} player(s) with incomplete holes (X scores)`);
+        }
+      }
+      
+      // Get scores for each player
+      const results = players.map(player => {
+        const playerId = player.id || player.reg || player.odaNo;
+        const playerScores = [];
+        const playerScoresDetailed = []; // For front9/back9
+        let total = 0;
+        let totalStableford = 0;
+        let hasAnyScore = false;
+        let playerStatus = null; // NS, NR, DQ, WD etc.
+        let hasIncompleteHoles = false; // Track if player has X (incomplete) holes
+        let hasValidScore = false; // Track if player has at least one valid (non-zero) score
+        
+        roundIds.forEach((roundId, idx) => {
+          const roundScores = allScores[roundId] || {};
+          // Scores are keyed by player ID (e.g., "P10", "P4269")
+          const playerScore = roundScores[playerId];
+          
+          if (playerScore) {
+            hasAnyScore = true;
+            
+            // Check for status (NS, NR, DQ, WD)
+            const status = playerScore.status || playerScore.playerStatus;
+            if (status && status !== 'OK') {
+              const upperStatus = status.toUpperCase();
+              if (['NS', 'NR', 'DQ', 'WD', 'DNF', 'RTD'].includes(upperStatus)) {
+                playerStatus = upperStatus;
+              }
+            }
+            
+            // Check for incomplete holes (X scores)
+            if (playerScore.incompleteHoles && playerScore.incompleteHoles.length > 0) {
+              hasIncompleteHoles = true;
+            }
+            if (playerScore.isIncompleteHole) {
+              const hasIncomplete = Object.values(playerScore.isIncompleteHole).some(v => v === true);
+              if (hasIncomplete) hasIncompleteHoles = true;
+            }
+            
+            if (isStableford) {
+              // Stableford: sum of stableford points
+              const stbPoints = playerScore.stablefordPoints;
+              if (stbPoints && Array.isArray(stbPoints)) {
+                // Check if any valid points exist (not all zeros/empty)
+                const validPoints = stbPoints.filter(p => p !== null && p !== undefined && p !== '' && p !== 0);
+                if (validPoints.length > 0) hasValidScore = true;
+                
+                const front9 = stbPoints.slice(0, 9).reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+                const back9 = stbPoints.slice(9, 18).reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+                const roundTotal = front9 + back9;
+                playerScores.push(roundTotal);
+                playerScoresDetailed.push({ total: roundTotal, front9, back9 });
+                totalStableford += roundTotal;
+              } else {
+                playerScores.push('-');
+                playerScoresDetailed.push({ total: '-', front9: '-', back9: '-' });
+              }
+            } else {
+              // Stroke: sum of holes or gross score
+              const holes = playerScore.holes;
+              if (holes && Array.isArray(holes)) {
+                // Check if any valid scores exist (not all zeros/empty)
+                const validHoles = holes.filter(h => h !== null && h !== undefined && h !== '' && h !== 0 && h !== '0');
+                if (validHoles.length > 0) hasValidScore = true;
+                
+                const front9 = holes.slice(0, 9).reduce((sum, h) => sum + (parseInt(h) || 0), 0);
+                const back9 = holes.slice(9, 18).reduce((sum, h) => sum + (parseInt(h) || 0), 0);
+                const grossScore = front9 + back9;
+                playerScores.push(grossScore);
+                playerScoresDetailed.push({ total: grossScore, front9, back9 });
+                total += grossScore;
+              } else if (playerScore.gross) {
+                hasValidScore = true;
+                playerScores.push(playerScore.gross);
+                playerScoresDetailed.push({ total: playerScore.gross, front9: '-', back9: '-' });
+                total += playerScore.gross;
+              } else {
+                playerScores.push('-');
+                playerScoresDetailed.push({ total: '-', front9: '-', back9: '-' });
+              }
+            }
+          } else {
+            playerScores.push('-');
+            playerScoresDetailed.push({ total: '-', front9: '-', back9: '-' });
+          }
+        });
+        
+        // Also check player object for status
+        if (!playerStatus && player.status) {
+          const status = player.status.toUpperCase();
+          if (['NS', 'NR', 'DQ', 'WD', 'DNF', 'RTD'].includes(status)) {
+            playerStatus = status;
+          }
+        }
+        
+        // Note: Players with incomplete holes (X scores) are filtered out for Stroke Play above
+        // For Stableford/Net, they continue to participate (X holes get 0 stableford points)
+        // Status is only set from explicit status fields (NS, NR, DQ, etc.) - not inferred
+        
+        return {
+          player,
+          playerId,
+          roundScores: playerScores,
+          roundScoresDetailed: playerScoresDetailed,
+          total: hasAnyScore ? (isStableford ? totalStableford : total) : null,
+          isStableford,
+          hasAnyScore,
+          hasValidScore,
+          status: playerStatus
+        };
+      }).filter(r => r.hasAnyScore);
+      
+      // Sort by total score (Stableford: highest wins, Stroke: lowest wins)
+      // Players with NS, NR, DQ, WD status go to the bottom
+      const sortByStableford = results[0]?.isStableford;
+      results.sort((a, b) => {
+        // Players with status go to bottom
+        if (a.status && !b.status) return 1;
+        if (!a.status && b.status) return -1;
+        if (a.status && b.status) return 0; // Both have status, keep original order
+        
+        // Players without valid scores go to bottom (even if no explicit status)
+        if (!a.hasValidScore && b.hasValidScore) return 1;
+        if (a.hasValidScore && !b.hasValidScore) return -1;
+        
+        // For stroke play, players with 0 total go to bottom
+        if (!sortByStableford) {
+          if (a.total === 0 && b.total > 0) return 1;
+          if (a.total > 0 && b.total === 0) return -1;
+        }
+        
+        if (a.total === null) return 1;
+        if (b.total === null) return -1;
+        return sortByStableford ? (b.total - a.total) : (a.total - b.total);
+      });
+      
+      // Assign ranks (no rank for players with status)
+      let rank = 1;
+      results.forEach((r, idx) => {
+        if (r.status) {
+          r.rank = r.status; // Show status instead of rank
+        } else if (idx > 0 && r.total === results[idx - 1].total && !results[idx - 1].status) {
+          r.rank = results[idx - 1].rank;
+        } else {
+          r.rank = rank;
+        }
+        if (!r.status) rank++;
+      });
+      
+      return results;
+    }
+    
+    function playerMatchesCategory(player, category) {
+      if (!category.criteria) return true;
+      
+      const criteria = category.criteria;
+      const playerGender = (player.gender || '').toLowerCase();
+      const playerHcp = parseFloat(player.hcp) || 0;
+      const playerAge = player.birthDate ? calculateAge(player.birthDate) : null;
+      
+      // Gender check
+      if (criteria.gender && criteria.gender !== 'all') {
+        if (playerGender !== criteria.gender.toLowerCase()) return false;
+      }
+      
+      // HCP check
+      if (criteria.hcpMin !== undefined && criteria.hcpMin !== '' && playerHcp < parseFloat(criteria.hcpMin)) return false;
+      if (criteria.hcpMax !== undefined && criteria.hcpMax !== '' && playerHcp > parseFloat(criteria.hcpMax)) return false;
+      
+      // Age check
+      if (playerAge !== null) {
+        if (criteria.ageMin !== undefined && criteria.ageMin !== '' && playerAge < parseInt(criteria.ageMin)) return false;
+        if (criteria.ageMax !== undefined && criteria.ageMax !== '' && playerAge > parseInt(criteria.ageMax)) return false;
+      }
+      
+      return true;
+    }
+    
+    function calculateAge(birthDate) {
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age;
+    }
+    
+    function renderResultsTable(results, isPreCalculated) {
+      const content = document.getElementById('results-content');
+      const roundCount = tournament.meta?.rounds || 1;
+      const cols = displaySettings.columns || ['hcp', 'roundScores'];
+      const playerInfo = displaySettings.playerInfo || 'club';
+      const show9Holes = cols.includes('show9Holes');
+      
+      let html = '<table class="results-table"><thead><tr>';
+      html += '<th class="text-center">Rank</th>';
+      html += '<th>Player</th>';
+      
+      // Player info column (club/nationality/team)
+      if (playerInfo && playerInfo !== 'none') {
+        const infoHeader = playerInfo === 'club' ? 'Club' : playerInfo === 'nationality' ? 'Nationality' : playerInfo === 'team' ? 'Team' : playerInfo;
+        html += `<th>${infoHeader}</th>`;
+      }
+      
+      // Conditional columns based on settings
+      if (cols.includes('hcp')) {
+        html += '<th class="text-center">HCP</th>';
+      }
+      if (cols.includes('phcp')) {
+        html += '<th class="text-center">PHCP</th>';
+      }
+      if (cols.includes('gender')) {
+        html += '<th class="text-center">Gender</th>';
+      }
+      
+      if (cols.includes('roundScores')) {
+        for (let i = 1; i <= roundCount; i++) {
+          html += `<th class="text-center">R${i}</th>`;
+        }
+      }
+      
+      if (cols.includes('toPar')) {
+        html += '<th class="text-center">To Par</th>';
+      }
+      
+      html += '<th class="text-center">Total</th>';
+      html += '</tr></thead><tbody>';
+      
+      results.forEach(r => {
+        // Handle both pre-calculated format (flat) and calculated format (nested player object)
+        let player, playerId, firstName, lastName, club, nationality, team, hcp, phcp, gender;
+        let roundScores, total, rank, status;
+        
+        if (isPreCalculated) {
+          // Pre-calculated results from results_display.html have flat structure
+          player = r;
+          playerId = r.reg || r.playerId || `${r.firstName}_${r.lastName}`;
+          firstName = r.firstName || '';
+          lastName = r.lastName || '';
+          club = r.club || '-';
+          nationality = r.nationality || '-';
+          team = r.team || '-';
+          hcp = r.hcp;
+          phcp = r.phcp;
+          gender = r.gender;
+          roundScores = r.roundScores || [];
+          total = r.total;
+          rank = r.rank;
+          status = r.status;
+        } else {
+          // Calculated results have nested player object
+          player = r.player || r;
+          playerId = r.playerId || player.id || player.reg || player.odaNo || `${player.firstName}_${player.lastName}`;
+          firstName = player.firstName || '';
+          lastName = player.lastName || '';
+          club = player.club || player.homeClub || '-';
+          nationality = player.nationality || player.country || '-';
+          team = player.team || player.teamName || '-';
+          hcp = player.hcp;
+          phcp = player.phcp;
+          gender = player.gender;
+          roundScores = r.roundScores || [];
+          total = r.total;
+          rank = r.rank;
+          status = r.status;
+        }
+        
+        const isStatusRow = status && ['NS', 'NR', 'DQ', 'WD', 'DNF', 'RTD'].includes(status);
+        const rankClass = !isStatusRow && rank && rank <= 3 ? `rank-${rank}` : '';
+        const statusClass = isStatusRow ? 'status-row' : '';
+        
+        html += `<tr onclick="showScorecard('${playerId}')" class="${statusClass}">`;
+        
+        // Show status or rank
+        if (isStatusRow) {
+          html += `<td class="rank-cell status-indicator">${status}</td>`;
+        } else {
+          html += `<td class="rank-cell ${rankClass}">${rank || '-'}</td>`;
+        }
+        
+        html += `<td><div class="player-name">${firstName} ${lastName}</div></td>`;
+        
+        // Player info column
+        if (playerInfo && playerInfo !== 'none') {
+          let infoValue = '-';
+          if (playerInfo === 'club') {
+            infoValue = club;
+          } else if (playerInfo === 'nationality') {
+            infoValue = nationality;
+          } else if (playerInfo === 'team') {
+            infoValue = team;
+          }
+          html += `<td>${infoValue}</td>`;
+        }
+        
+        // Conditional columns
+        if (cols.includes('hcp')) {
+          html += `<td class="text-center">${hcp !== undefined && hcp !== null ? hcp : '-'}</td>`;
+        }
+        if (cols.includes('phcp')) {
+          html += `<td class="text-center">${phcp !== undefined && phcp !== null ? phcp : '-'}</td>`;
+        }
+        if (cols.includes('gender')) {
+          const genderDisplay = gender ? (gender.toLowerCase() === 'male' ? 'M' : gender.toLowerCase() === 'female' ? 'F' : gender) : '-';
+          html += `<td class="text-center">${genderDisplay}</td>`;
+        }
+        
+        if (cols.includes('roundScores')) {
+          const roundScoresDetailed = r.roundScoresDetailed || [];
+          for (let i = 0; i < roundCount; i++) {
+            if (show9Holes && roundScoresDetailed[i] && roundScoresDetailed[i].total !== '-') {
+              const rd = roundScoresDetailed[i];
+              html += `<td class="round-score">${rd.total} <span style="font-size:11px;color:#64748b;">(${rd.front9}/${rd.back9})</span></td>`;
+            } else {
+              const score = roundScores[i];
+              html += `<td class="round-score">${score !== undefined && score !== null ? score : '-'}</td>`;
+            }
+          }
+        }
+        
+        if (cols.includes('toPar')) {
+          const toPar = r.toPar !== undefined ? r.toPar : '-';
+          const toParDisplay = typeof toPar === 'number' ? (toPar > 0 ? `+${toPar}` : toPar === 0 ? 'E' : toPar) : toPar;
+          html += `<td class="text-center">${toParDisplay}</td>`;
+        }
+        
+        html += `<td class="score-cell">${total !== null && total !== undefined ? total : '-'}</td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      content.innerHTML = html;
+    }
+    
+    function showScorecard(playerId) {
+      const modal = document.getElementById('scorecard-modal');
+      const modalBody = document.getElementById('modal-body');
+      const modalTitle = document.getElementById('modal-player-name');
+      
+      // Find player
+      let player = null;
+      const roundIds = tournament.meta?.roundIds || [];
+      
+      for (const roundId of roundIds) {
+        const roundPlayers = allAdmittedPlayers[roundId] || [];
+        player = roundPlayers.find(p => p.id === playerId || p.reg === playerId || p.odaNo === playerId || `${p.firstName}_${p.lastName}` === playerId);
+        if (player) break;
+      }
+      
+      if (!player) {
+        modalTitle.textContent = 'Player Not Found';
+        modalBody.innerHTML = '<p>Could not find player details.</p>';
+        modal.classList.add('active');
+        return;
+      }
+      
+      modalTitle.textContent = `${player.firstName} ${player.lastName}`;
+      
+      // Build scorecard content
+      let html = '<div class="scorecard-info">';
+      html += `<div class="scorecard-info-item"><label>Club</label><span>${player.club || player.homeClub || '-'}</span></div>`;
+      html += `<div class="scorecard-info-item"><label>HCP</label><span>${player.hcp !== undefined ? player.hcp : '-'}</span></div>`;
+      if (player.phcp !== undefined) {
+        html += `<div class="scorecard-info-item"><label>Playing HCP</label><span>${player.phcp}</span></div>`;
+      }
+      html += '</div>';
+      
+      // Get hole-by-hole scores for each round from the scores data
+      roundIds.forEach((roundId, roundIdx) => {
+        const roundScores = allScores[roundId] || {};
+        // Scores are keyed by player ID
+        const playerScore = roundScores[playerId];
+        
+        // Get course par info
+        const roundData = tournament.meta?.roundsData?.[roundIdx];
+        const courseId = roundData?.course || '';
+        const course = allCourses.find(c => c.id === courseId || c.courseId === courseId || c.name === courseId);
+        
+        html += `<h4 style="margin: 24px 0 12px 0;">Round ${roundIdx + 1}${course?.name ? ': ' + course.name : ''}</h4>`;
+        
+        if (playerScore && playerScore.holes && Array.isArray(playerScore.holes)) {
+          html += renderHoleByHoleTable(playerScore, course);
+        } else {
+          html += '<p>No scorecard available for this round</p>';
+        }
+      });
+      
+      modalBody.innerHTML = html;
+      modal.classList.add('active');
+    }
+    
+    function renderHoleByHoleTable(playerScore, course) {
+      const holes = playerScore.holes;
+      if (!Array.isArray(holes) || holes.length === 0) {
+        return '<p>No hole-by-hole scores available</p>';
+      }
+      
+      // Get stableford points if available
+      const stbPoints = playerScore.stablefordPoints || [];
+      const hasStableford = stbPoints.length > 0;
+      
+      // Get par values from course or default
+      let pars = [];
+      if (course && course.holes) {
+        pars = course.holes.map(h => h.par || 4);
+      } else {
+        pars = Array(18).fill(4);
+      }
+      
+      let html = '<table class="scorecard-table">';
+      
+      // Front 9
+      html += '<tr class="hole-row"><th>Hole</th>';
+      for (let i = 1; i <= 9; i++) html += `<th>${i}</th>`;
+      html += '<th>Out</th></tr>';
+      
+      html += '<tr class="par-row"><td>Par</td>';
+      let frontPar = 0;
+      for (let i = 0; i < 9; i++) {
+        const par = pars[i] || 4;
+        frontPar += par;
+        html += `<td>${par}</td>`;
+      }
+      html += `<td class="total-cell">${frontPar}</td></tr>`;
+      
+      html += '<tr class="score-row"><td>Gross</td>';
+      let frontScore = 0;
+      for (let i = 0; i < 9; i++) {
+        const score = holes[i];
+        const par = pars[i] || 4;
+        const scoreClass = getScoreClass(score, par);
+        frontScore += score || 0;
+        html += `<td class="${scoreClass}">${score || '-'}</td>`;
+      }
+      html += `<td class="total-cell">${frontScore || '-'}</td></tr>`;
+      
+      // Stableford points row for front 9
+      if (hasStableford) {
+        html += '<tr class="score-row"><td>Points</td>';
+        let frontStb = 0;
+        for (let i = 0; i < 9; i++) {
+          const pts = stbPoints[i] || 0;
+          frontStb += pts;
+          html += `<td>${pts}</td>`;
+        }
+        html += `<td class="total-cell">${frontStb}</td></tr>`;
+      }
+      
+      // Back 9
+      if (holes.length > 9) {
+        html += '<tr class="hole-row"><th>Hole</th>';
+        for (let i = 10; i <= 18; i++) html += `<th>${i}</th>`;
+        html += '<th>In</th></tr>';
+        
+        html += '<tr class="par-row"><td>Par</td>';
+        let backPar = 0;
+        for (let i = 9; i < 18; i++) {
+          const par = pars[i] || 4;
+          backPar += par;
+          html += `<td>${par}</td>`;
+        }
+        html += `<td class="total-cell">${backPar}</td></tr>`;
+        
+        html += '<tr class="score-row"><td>Gross</td>';
+        let backScore = 0;
+        for (let i = 9; i < 18; i++) {
+          const score = holes[i];
+          const par = pars[i] || 4;
+          const scoreClass = getScoreClass(score, par);
+          backScore += score || 0;
+          html += `<td class="${scoreClass}">${score || '-'}</td>`;
+        }
+        html += `<td class="total-cell">${backScore || '-'}</td></tr>`;
+        
+        // Stableford points row for back 9
+        if (hasStableford) {
+          html += '<tr class="score-row"><td>Points</td>';
+          let backStb = 0;
+          for (let i = 9; i < 18; i++) {
+            const pts = stbPoints[i] || 0;
+            backStb += pts;
+            html += `<td>${pts}</td>`;
+          }
+          html += `<td class="total-cell">${backStb}</td></tr>`;
+        }
+        
+        // Total row
+        html += '<tr style="height: 8px;"><td colspan="11"></td></tr>';
+        html += '<tr class="score-row"><td><strong>Total</strong></td>';
+        html += `<td colspan="9" style="text-align: right;"><strong>Gross: ${frontScore + backScore}</strong></td>`;
+        if (hasStableford) {
+          const totalStb = stbPoints.reduce((sum, p) => sum + (p || 0), 0);
+          html += `<td class="total-cell"><strong>${totalStb} pts</strong></td></tr>`;
+        } else {
+          html += `<td class="total-cell"><strong>${frontScore + backScore}</strong></td></tr>`;
+        }
+      }
+      
+      html += '</table>';
+      return html;
+    }
+    
+    function getScoreClass(score, par) {
+      if (!score || !par) return '';
+      const diff = score - par;
+      if (diff <= -2) return 'score-eagle';
+      if (diff === -1) return 'score-birdie';
+      if (diff === 1) return 'score-bogey';
+      if (diff === 2) return 'score-double';
+      if (diff > 2) return 'score-worse';
+      return '';
+    }
+    
+    function closeModal() {
+      document.getElementById('scorecard-modal').classList.remove('active');
+    }
+    
+    // Close modal on overlay click
+    document.getElementById('scorecard-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'scorecard-modal') closeModal();
+    });
+    
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+    
+    // Render Match Play Results
+    function renderMatchPlayResults() {
+      const content = document.getElementById('results-content');
+      const matchPlayData = tournament.calculatedResults?.MATCHPLAY;
+      
+      console.log('Match Play data:', matchPlayData);
+      
+      if (!matchPlayData) {
+        content.innerHTML = '<div class="no-results">Match Play results not available yet.<br><small style="color:#94a3b8;">Results will appear after the tournament admin generates and saves them.</small></div>';
+        return;
+      }
+      
+      // Store for filtering
+      window.matchPlayData = matchPlayData;
+      window.selectedTeam = null;
+      
+      let html = '';
+      
+      // Team Standings Table
+      if (matchPlayData.standings && matchPlayData.standings.length > 0) {
+        html += `
+          <div class="results-card" style="margin-bottom: 24px;">
+            <div class="results-card-header">
+              <h2>🏆 Team Standings</h2>
+              <small style="color: #64748b;">Click a team to see their matches</small>
+            </div>
+            <div class="results-table-wrapper">
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
+                    <th>Team</th>
+                    <th style="text-align: center;">Played</th>
+                    <th style="text-align: center;">Won</th>
+                    <th style="text-align: center;">Lost</th>
+                    <th style="text-align: center;">Tied</th>
+                    <th style="text-align: center;">Points</th>
+                    <th style="text-align: center;" title="Score Differential">+/-</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        matchPlayData.standings.forEach((team, idx) => {
+          const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+          const diffDisplay = team.scoreDiff > 0 ? `+${team.scoreDiff}` : team.scoreDiff;
+          const diffColor = team.scoreDiff > 0 ? '#16a34a' : team.scoreDiff < 0 ? '#dc2626' : '#64748b';
+          
+          html += `
+            <tr class="team-row" data-team="${team.team}" onclick="filterMatchesByTeam('${team.team}')" style="cursor: pointer; transition: background 0.2s;">
+              <td class="rank-cell ${rankClass}" style="text-align: center; font-weight: 700;">${team.rank}</td>
+              <td style="font-weight: 600;">${team.team}</td>
+              <td style="text-align: center;">${team.matchesPlayed}</td>
+              <td style="text-align: center; color: #16a34a; font-weight: 600;">${team.wins}</td>
+              <td style="text-align: center; color: #dc2626;">${team.losses}</td>
+              <td style="text-align: center; color: #d97706;">${team.ties}</td>
+              <td style="text-align: center; font-weight: 700; font-size: 16px;">${team.points}</td>
+              <td style="text-align: center; font-weight: 600; color: ${diffColor};">${diffDisplay}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+                </tbody>
+              </table>
+            </div>
+            <p style="padding: 12px 20px; font-size: 12px; color: #64748b; margin: 0;">* +/- = Score Differential (sum of winning margins). Used as tiebreaker when points are equal.</p>
+          </div>
+        `;
+      }
+      
+      // Match Results Container (hidden by default)
+      html += `<div id="match-results-section"></div>`;
+      
+      // Show calculated timestamp
+      if (matchPlayData.calculatedAt) {
+        const calcDate = new Date(matchPlayData.calculatedAt);
+        html += `<p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 16px;">Results generated: ${calcDate.toLocaleString()}</p>`;
+      }
+      
+      content.innerHTML = html || '<div class="no-results">No match play data available.</div>';
+      
+      // Don't render matches initially - wait for team click
+    }
+    
+    // Filter matches by team
+    function filterMatchesByTeam(teamName) {
+      // Toggle selection
+      if (window.selectedTeam === teamName) {
+        window.selectedTeam = null;
+      } else {
+        window.selectedTeam = teamName;
+      }
+      
+      // Update row highlighting
+      document.querySelectorAll('.team-row').forEach(row => {
+        if (window.selectedTeam && row.dataset.team === window.selectedTeam) {
+          row.style.background = '#dbeafe';
+        } else {
+          row.style.background = '';
+        }
+      });
+      
+      // Show or hide match results
+      if (window.selectedTeam) {
+        renderMatchResults(window.selectedTeam);
+      } else {
+        document.getElementById('match-results-section').innerHTML = '';
+      }
+    }
+    
+    // Render match results (filtered by team)
+    function renderMatchResults(filterTeam) {
+      const container = document.getElementById('match-results-section');
+      const matchPlayData = window.matchPlayData;
+      
+      if (!matchPlayData?.matches || matchPlayData.matches.length === 0 || !filterTeam) {
+        container.innerHTML = '';
+        return;
+      }
+      
+      // Filter matches for selected team
+      const matches = matchPlayData.matches.filter(m => m.leftTeam === filterTeam || m.rightTeam === filterTeam);
+      
+      // Group matches by round
+      const matchesByRound = {};
+      matches.forEach(match => {
+        const roundIdx = match.roundIndex !== null ? match.roundIndex : 0;
+        if (!matchesByRound[roundIdx]) matchesByRound[roundIdx] = [];
+        matchesByRound[roundIdx].push(match);
+      });
+      
+      let html = `
+        <div class="results-card">
+          <div class="results-card-header">
+            <h2>📋 ${filterTeam} - Match Results</h2>
+            <button onclick="filterMatchesByTeam('${filterTeam}')" style="background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;">✕ Close</button>
+          </div>
+          <div style="padding: 16px 20px;">
+      `;
+      
+      if (Object.keys(matchesByRound).length === 0) {
+        html += '<div style="text-align: center; color: #94a3b8; padding: 20px;">No matches found</div>';
+      } else {
+        Object.keys(matchesByRound).sort((a, b) => a - b).forEach(roundIdx => {
+          const roundMatches = matchesByRound[roundIdx];
+          html += `<h4 style="margin: 0 0 12px 0; font-size: 14px; color: #475569; padding: 8px 12px; background: #f1f5f9; border-radius: 6px;">📅 Round ${parseInt(roundIdx) + 1}</h4>`;
+          
+          roundMatches.forEach(match => {
+            // Get player names - handle both singles (leftPlayer/rightPlayer) and fourball/foursomes (leftPlayers/rightPlayers)
+            let leftNames, rightNames;
+            
+            console.log('Match data:', match);
+            console.log('leftPlayers:', match.leftPlayers);
+            console.log('rightPlayers:', match.rightPlayers);
+            
+            if (match.leftPlayers && match.leftPlayers.length > 0) {
+              // Fourball/Foursomes - show all players
+              leftNames = match.leftPlayers.map(p => `${p.firstName} ${p.lastName}`).join('<br>');
+              rightNames = match.rightPlayers ? match.rightPlayers.map(p => `${p.firstName} ${p.lastName}`).join('<br>') : (match.rightTeam || 'TBD');
+            } else if (match.leftPlayer) {
+              // Singles - single player
+              leftNames = `${match.leftPlayer.firstName} ${match.leftPlayer.lastName}`;
+              rightNames = match.rightPlayer ? `${match.rightPlayer.firstName} ${match.rightPlayer.lastName}` : (match.rightTeam || 'TBD');
+            } else {
+              // Fallback to team names
+              leftNames = match.leftTeam || 'TBD';
+              rightNames = match.rightTeam || 'TBD';
+            }
+            
+            // Determine winner styling
+            let leftClass = '', rightClass = '';
+            if (match.leftScore !== null && match.rightScore !== null) {
+              if (match.leftScore > match.rightScore) {
+                leftClass = 'color: #16a34a; font-weight: 600;';
+                rightClass = 'color: #dc2626;';
+              } else if (match.rightScore > match.leftScore) {
+                leftClass = 'color: #dc2626;';
+                rightClass = 'color: #16a34a; font-weight: 600;';
+              } else {
+                leftClass = rightClass = 'color: #d97706;';
+              }
+            }
+            
+            html += `
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px;">
+                <div style="flex: 1; ${leftClass}">${leftNames}</div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 0 16px;">
+                  <span style="font-weight: 700; min-width: 24px; text-align: center;">${match.leftScore !== null ? match.leftScore : '-'}</span>
+                  <span style="color: #94a3b8;">vs</span>
+                  <span style="font-weight: 700; min-width: 24px; text-align: center;">${match.rightScore !== null ? match.rightScore : '-'}</span>
+                </div>
+                <div style="flex: 1; text-align: right; ${rightClass}">${rightNames}</div>
+              </div>
+            `;
+          });
+        });
+      }
+      
+      html += '</div></div>';
+      container.innerHTML = html;
+      
+      // Scroll to match results
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>

@@ -3,45 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match Play Bracket</title>
+  <title>Bracket Match Play Management</title>
+  
+  <!-- Immediately hide content in view mode to prevent flash -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mode') === 'view') {
+      document.write('<style>body { visibility: hidden; } body.view-ready { visibility: visible; }</style>');
+    }
+  </script>
   
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="../firebase-config.js"></script>
+  <script src="../components/auth.js"></script>
   
   <link rel="stylesheet" href="../styles.css">
   <style>
-    body { padding-top: 70px; background: #f8fafc; }
-    
-    .bracket-container { max-width: 1600px; margin: 16px auto; padding: 16px; }
-    
-    .bracket-header {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    body { 
+      padding: 0; 
+      margin: 0;
+      background: #f0f4f8; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
-    .bracket-header h2 { margin: 0 0 8px 0; font-size: 24px; color: #1e293b; }
-    .bracket-info { display: flex; gap: 24px; font-size: 14px; color: #64748b; }
-    .bracket-info-item { display: flex; align-items: center; gap: 8px; }
-    .bracket-info-item strong { color: #1e293b; }
+    /* Top Navigation Bar */
+    .top-nav {
+      background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .top-nav h1 { margin: 0; color: white; font-size: 24px; font-weight: 700; }
+    .btn-back-top {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-back-top:hover { background: rgba(255,255,255,0.3); }
     
-    /* Action Buttons */
-    .action-buttons {
+    .bracket-container { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+    
+    /* Header Card */
+    .header-card {
       background: white;
-      padding: 16px;
+      padding: 24px;
       border-radius: 12px;
       margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .header-card h2 { margin: 0 0 12px 0; font-size: 24px; color: #1e293b; }
+    
+    .tournament-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      font-size: 14px;
+      color: #64748b;
+    }
+    
+    .info-item { display: flex; align-items: center; gap: 8px; }
+    .info-item strong { color: #1e293b; }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    
+    .stat-card {
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value { font-size: 28px; font-weight: 700; color: #0b6efd; }
+    .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    
+    /* Action Buttons */
+    .action-bar {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+      align-items: center;
     }
     
-    .btn { 
+    .btn {
       padding: 10px 20px;
       border-radius: 8px;
       font-size: 14px;
@@ -49,25 +119,27 @@
       cursor: pointer;
       border: 0;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
     
     .btn-primary { background: linear-gradient(180deg, #0b6efd, #0a58d1); color: white; }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(11,110,253,0.3); }
-    
     .btn-success { background: linear-gradient(180deg, #28a745, #218838); color: white; }
-    .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(40,167,69,0.3); }
+    .btn-warning { background: linear-gradient(180deg, #f59e0b, #d97706); color: white; }
+    .btn-secondary { background: white; border: 1px solid #e2e8f0; color: #475569; }
+    .btn-danger { background: linear-gradient(180deg, #dc3545, #c82333); color: white; }
     
-    .btn-secondary { background: white; border: 1px solid #e6e9ef; color: #333; }
-    .btn-secondary:hover { background: #f8fafc; }
+    .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     
-    /* Tab Navigation */
-    .tab-nav {
-      background: white;
-      padding: 0;
-      border-radius: 12px 12px 0 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    /* Tabs */
+    .tabs {
       display: flex;
+      background: white;
+      border-radius: 12px 12px 0 0;
       overflow-x: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     
     .tab-btn {
@@ -80,74 +152,35 @@
       color: #64748b;
       border-bottom: 3px solid transparent;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     
     .tab-btn:hover { background: #f8fafc; color: #1e293b; }
-    .tab-btn.active { color: #0b6efd; border-bottom-color: #0b6efd; background: #f8fafc; }
+    .tab-btn.active { color: #0b6efd; border-bottom-color: #0b6efd; background: white; }
     
-    /* Tab Content */
     .tab-content {
       background: white;
       padding: 24px;
       border-radius: 0 0 12px 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      min-height: 400px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      min-height: 500px;
     }
     
     .tab-pane { display: none; }
     .tab-pane.active { display: block; }
     
-    /* Setup Phase */
-    .setup-section {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .setup-info {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 24px;
-    }
-    
-    .setup-info h3 { margin: 0 0 8px 0; color: #1e40af; font-size: 16px; }
-    .setup-info p { margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6; }
-    
-    .setup-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    
-    .stat-card {
-      background: #f8fafc;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    
-    .stat-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: #0b6efd;
-      margin-bottom: 4px;
-    }
-    
-    .stat-label {
-      font-size: 13px;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
     /* Player List */
+    .player-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
     .player-list {
-      max-height: 500px;
-      overflow-y: auto;
-      border: 1px solid #e6e9ef;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
+      overflow: hidden;
     }
     
     .player-item {
@@ -156,120 +189,254 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: grab;
+      transition: background 0.2s;
     }
     
     .player-item:hover { background: #f8fafc; }
     .player-item:last-child { border-bottom: 0; }
+    .player-item.dragging { opacity: 0.5; background: #e0f2fe; }
+    .player-item.drag-over { border-top: 2px solid #0b6efd; }
     
-    .player-name { font-weight: 600; color: #1e293b; }
-    .player-info { font-size: 13px; color: #64748b; }
-    
-    /* Bracket Visualization */
-    .bracket-rounds {
-      display: flex;
-      gap: 40px;
-      overflow-x: auto;
-      padding: 20px 0;
-    }
-    
-    .bracket-round {
-      flex-shrink: 0;
-      min-width: 250px;
-    }
-    
-    .round-title {
-      text-align: center;
-      font-weight: 700;
-      font-size: 14px;
-      color: #1e293b;
-      margin-bottom: 16px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .bracket-match {
-      background: white;
-      border: 2px solid #e6e9ef;
-      border-radius: 8px;
-      margin-bottom: 24px;
-      overflow: hidden;
-      transition: all 0.2s;
-    }
-    
-    .bracket-match:hover {
-      border-color: #0b6efd;
-      box-shadow: 0 2px 8px rgba(11,110,253,0.2);
-    }
-    
-    .bracket-match.completed {
-      border-color: #10b981;
-    }
-    
-    .bracket-match.in-progress {
-      border-color: #f59e0b;
-    }
-    
-    .match-player {
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .match-player:first-child {
-      border-bottom: 1px solid #e6e9ef;
-    }
-    
-    .match-player:hover {
-      background: #f8fafc;
-    }
-    
-    .match-player.winner {
-      background: #d1fae5;
-      font-weight: 700;
-    }
-    
-    .match-player.loser {
-      color: #94a3b8;
-      text-decoration: line-through;
-    }
+    .player-left { display: flex; align-items: center; gap: 12px; }
     
     .player-seed {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       background: #e2e8f0;
       color: #475569;
-      border-radius: 4px;
-      text-align: center;
-      line-height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 12px;
-      font-weight: 600;
-      margin-right: 8px;
+      font-weight: 700;
     }
     
-    .match-score {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1e293b;
-      min-width: 40px;
-      text-align: right;
+    .player-seed.protected { background: #fef3c7; color: #92400e; }
+    .player-seed.pre-qual { background: #fee2e2; color: #991b1b; }
+    
+    .player-details { flex: 1; }
+    .player-name { font-weight: 600; color: #1e293b; }
+    .player-meta { font-size: 13px; color: #64748b; }
+    
+    .player-actions { display: flex; gap: 8px; align-items: center; }
+    
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-icon.btn-protected {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
     }
     
-    .match-date {
-      text-align: center;
-      padding: 8px;
+    /* Round Deadlines */
+    .deadlines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    
+    .deadline-card {
       background: #f8fafc;
-      font-size: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .deadline-card h4 { margin: 0 0 12px 0; color: #1e293b; font-size: 14px; }
+    .deadline-card input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    /* Bracket Visualization - Tree Style (Grid based for perfect alignment) */
+    .bracket-visual {
+      overflow-x: auto;
+      overflow-y: auto;
+      padding: 30px 20px;
+      background: #fff;
+    }
+
+    .bracket-grid {
+      --bracket-slot-h: 14px;
+      --bracket-match-w: 160px;
+      --bracket-connector-w: 30px;
+      display: grid;
+      align-items: start;
+      grid-template-rows: 44px repeat(var(--bracket-rows), var(--bracket-slot-h));
+      gap: 0;
+    }
+
+    .round-header {
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #1e293b;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      width: var(--bracket-match-w);
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .match-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .connector-cell {
+      position: relative;
+      height: 100%;
+      width: var(--bracket-connector-w);
+    }
+
+    .connector-cell svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .bracket-match {
+      background: #e8f4fd;
+      border: 1px solid #c5dff8;
+      border-radius: 6px;
+      width: 160px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .bracket-match:hover { 
+      border-color: #0b6efd; 
+      box-shadow: 0 2px 8px rgba(11,110,253,0.2); 
+    }
+    .bracket-match.completed { border-color: #86efac; background: #f0fdf4; }
+    
+    /* Pre-qualifying match styling */
+    .bracket-match.prequal-match {
+      background: #fef3c7;
+      border-color: #fcd34d;
+    }
+    .bracket-match.prequal-match .match-slot {
+      background: #fef3c7;
+      border-color: #fcd34d;
+    }
+    .bracket-match.prequal-match.completed {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+    .bracket-match.prequal-match.completed .match-slot {
+      background: #f0fdf4;
+    }
+    
+    .match-slot {
+      height: 38px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      border-bottom: 1px solid #c5dff8;
+      background: #e8f4fd;
+      box-sizing: border-box;
+    }
+    
+    .match-slot:last-child { border-bottom: 0; }
+    .match-slot.winner { background: #d1fae5; font-weight: 600; }
+    .match-slot.loser { color: #94a3b8; }
+    
+    .slot-seed {
+      min-width: 22px;
+      height: 22px;
+      background: #64b5f6;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    
+    .slot-seed.empty-seed {
+      background: #cbd5e1;
       color: #64748b;
     }
     
-    .empty-slot {
-      color: #cbd5e1;
-      font-style: italic;
+    .slot-name { 
+      flex: 1; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+    .slot-name.empty { color: #94a3b8; font-style: italic; }
+    
+    /* Connector Lines */
+    .connector-stroke {
+      stroke: #94a3b8;
+      stroke-width: 2;
+      fill: none;
+    }
+    
+    /* Champion Box */
+    .champion-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    
+    .champion-box {
+      background: #fef08a;
+      border: 2px solid #facc15;
+      border-radius: 8px;
+      padding: 20px 24px;
+      text-align: center;
+      min-width: 150px;
+    }
+    
+    .champion-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #b45309;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .champion-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    /* Match spacers no longer used (grid layout) */
+    .match-spacer { height: 0; }
     
     /* Modal */
     .modal-overlay {
@@ -287,170 +454,286 @@
     
     .modal-overlay.active { display: flex; }
     
-    .modal-content {
+    .modal {
       background: white;
       border-radius: 12px;
       padding: 24px;
       max-width: 500px;
       width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
     
-    .modal-content h3 {
-      margin: 0 0 16px 0;
-      font-size: 20px;
-      color: #1e293b;
+    .modal h3 { margin: 0 0 20px 0; font-size: 20px; color: #1e293b; }
+    
+    .modal-field { margin-bottom: 16px; }
+    .modal-field label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; font-size: 14px; }
+    .modal-field select, .modal-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
     }
     
-    .modal-buttons {
+    .modal-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+    
+    /* Status Messages */
+    .status-message {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .status-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .status-warning { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
+    .status-success { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+    
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { color: #1e293b; margin-bottom: 8px; }
+    
+    /* Seeding Selector */
+    .seeding-selector {
       display: flex;
-      gap: 12px;
-      margin-top: 20px;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
     }
-    
-    .modal-buttons button {
-      flex: 1;
+    .seeding-selector label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .seeding-selector select {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      background: white;
+      cursor: pointer;
+    }
+    .seeding-selector select:focus {
+      outline: none;
+      border-color: #0b6efd;
     }
   </style>
 </head>
 <body>
   <div class="top-nav">
-    <h1>🏆 Match Play Bracket</h1>
-    <a href="index.html" class="btn-back-top">← Back</a>
+    <h1>🏆 Bracket Match Play</h1>
+    <a href="index.html" class="btn-back-top">← Back to Tournaments</a>
   </div>
   
   <div class="bracket-container">
-    <!-- Header -->
-    <div class="bracket-header">
-      <h2 id="tournament-name">-</h2>
-      <div class="bracket-info">
-        <div class="bracket-info-item">
-          <strong>Format:</strong>
-          <span id="tournament-format">-</span>
+    <!-- Header Card -->
+    <div class="header-card" id="header-card">
+      <h2 id="tournament-name">Loading...</h2>
+      <div class="tournament-info">
+        <div class="info-item"><strong>Type:</strong> <span id="info-type">-</span></div>
+        <div class="info-item"><strong>Course:</strong> <span id="info-course">-</span></div>
+        <div class="info-item"><strong>Seeding:</strong> <span id="info-seeding">-</span></div>
+        <div class="info-item"><strong>HCP Allowance:</strong> <span id="info-hcp">-</span></div>
+        <div class="info-item"><strong>Status:</strong> <span id="info-status">Setup</span></div>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-players">0</div>
+          <div class="stat-label">Players</div>
         </div>
-        <div class="bracket-info-item">
-          <strong>Bracket Size:</strong>
-          <span id="bracket-size">-</span>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-protected">0</div>
+          <div class="stat-label">Protected</div>
         </div>
-        <div class="bracket-info-item">
-          <strong>Status:</strong>
-          <span id="tournament-status">-</span>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-bracket-size">-</div>
+          <div class="stat-label">Bracket Size</div>
         </div>
-        <div class="bracket-info-item">
-          <strong>Duration:</strong>
-          <span id="tournament-duration">-</span>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-prequal">0</div>
+          <div class="stat-label">Pre-Qual Matches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-auto-qual">0</div>
+          <div class="stat-label">Auto Qualified</div>
         </div>
       </div>
     </div>
     
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <button class="btn btn-primary" id="btn-add-players" onclick="goToAdmissions()">
-        👥 Add Players
-      </button>
-      <button class="btn btn-success" id="btn-generate-bracket" onclick="generateBracket()" style="display:none;">
-        ⚡ Generate Bracket
-      </button>
-      <button class="btn btn-secondary" id="btn-seed-players" onclick="openSeedingModal()" style="display:none;">
-        🔢 Seed Players
-      </button>
-      <button class="btn btn-success" id="btn-save-bracket" onclick="saveBracket()" style="display:none;">
-        💾 Save Changes
-      </button>
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="goToAdmissions()">👥 Add Players</button>
+      
+      <!-- Seeding Method Selector -->
+      <div class="seeding-selector" id="seeding-selector">
+        <label for="seeding-method">Seeding:</label>
+        <select id="seeding-method" onchange="updateSeedingMethod()">
+          <option value="hcp">HCP Seeding</option>
+          <option value="random">Random Draw</option>
+          <option value="manual">Manual (Drag & Drop)</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-warning" id="btn-draw" onclick="performDraw()" style="display:none;">🎲 Draw</button>
+      <button class="btn btn-success" id="btn-lock" onclick="lockBracket()" style="display:none;">🔒 Lock & Save Bracket</button>
+      <button class="btn btn-secondary" id="btn-reset" onclick="resetBracket()" style="display:none;">↺ Reset</button>
+      <button class="btn btn-warning" id="btn-unlock" onclick="unlockBracket()" style="display:none;">🔓 Unlock Bracket</button>
+      <div style="flex:1;"></div>
+      <span id="draw-status" style="color:#64748b; font-size:13px;"></span>
     </div>
     
     <!-- Tabs -->
-    <div class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab('setup')">Setup</button>
-      <button class="tab-btn" onclick="switchTab('qualifying')" id="tab-qualifying" style="display:none;">Qualifying</button>
-      <button class="tab-btn" onclick="switchTab('bracket')" id="tab-bracket">Bracket</button>
-      <button class="tab-btn" onclick="switchTab('results')">Results</button>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('players')">👥 Players</button>
+      <button class="tab-btn" onclick="switchTab('deadlines')">📅 Deadlines</button>
+      <button class="tab-btn" onclick="switchTab('bracket')">🏆 Bracket</button>
+      <button class="tab-btn" onclick="switchTab('results')">📊 Results</button>
     </div>
     
     <div class="tab-content">
-      <!-- Setup Tab -->
-      <div class="tab-pane active" id="pane-setup">
-        <div class="setup-section">
-          <div class="setup-info">
-            <h3>📋 Tournament Setup</h3>
-            <p>Add players to this tournament from the admissions page. Once you have all participants, the system will automatically determine if qualifying matches are needed and generate the bracket structure.</p>
+      <!-- Players Tab -->
+      <div class="tab-pane active" id="pane-players">
+        <div class="status-message status-info" id="players-info">
+          <strong>📋 Setup Phase:</strong> Add players via Admissions, mark protected players, select seeding method, then click Draw to generate the bracket.
+        </div>
+        
+        <div class="player-list-header">
+          <h3>Registered Players</h3>
+          <div>
+            <span id="seeding-hint" style="font-size:13px; color:#64748b; margin-right:12px;">Sorted by HCP (lowest first)</span>
           </div>
-          
-          <div class="setup-stats">
-            <div class="stat-card">
-              <div class="stat-value" id="stat-players">0</div>
-              <div class="stat-label">Registered Players</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="stat-qualifying">0</div>
-              <div class="stat-label">Qualifying Matches</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="stat-bracket-slots">64</div>
-              <div class="stat-label">Main Bracket Slots</div>
-            </div>
-          </div>
-          
-          <h3 style="margin-bottom: 12px;">Registered Players</h3>
-          <div class="player-list" id="setup-player-list">
-            <div style="padding: 40px; text-align: center; color: #94a3b8;">
-              No players registered yet. Click "Add Players" above.
-            </div>
+        </div>
+        
+        <div class="player-list" id="player-list">
+          <div class="empty-state">
+            <div class="empty-state-icon">👥</div>
+            <h3>No Players Yet</h3>
+            <p>Click "Add Players" to register players for this tournament.</p>
           </div>
         </div>
       </div>
       
-      <!-- Qualifying Tab -->
-      <div class="tab-pane" id="pane-qualifying">
-        <h3 style="margin-bottom: 16px;">Qualifying Matches</h3>
-        <p style="color: #64748b; margin-bottom: 24px;">
-          These matches will determine the final players entering the main bracket.
-        </p>
-        <div id="qualifying-matches">
-          <!-- Qualifying matches will be rendered here -->
+      <!-- Deadlines Tab -->
+      <div class="tab-pane" id="pane-deadlines">
+        <div class="status-message status-info">
+          <strong>📅 Round Deadlines:</strong> Set completion deadlines for each bracket level. Players must complete their matches before these dates.
+        </div>
+        
+        <!-- Strict Deadlines Option -->
+        <div class="deadline-option" style="background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <strong style="color:#1e293b;">⚡ Strict Deadlines</strong>
+            <p style="margin:4px 0 0; font-size:13px; color:#64748b;">
+              When enabled, if players don't complete their match by 23:59 on the deadline, a random winner will be automatically selected and advanced.
+            </p>
+          </div>
+          <label class="toggle-switch" style="position:relative; display:inline-block; width:50px; height:26px; margin-left:20px;">
+            <input type="checkbox" id="strict-deadlines" onchange="updateStrictDeadlines()" style="opacity:0; width:0; height:0;">
+            <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:26px;"></span>
+          </label>
+        </div>
+        <style>
+          .toggle-switch input:checked + .toggle-slider { background-color: #22c55e; }
+          .toggle-slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+          }
+          .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+        </style>
+        
+        <div class="deadlines-grid" id="deadlines-grid">
+          <!-- Will be populated dynamically -->
+        </div>
+        
+        <div style="margin-top:20px;">
+          <button class="btn btn-success" onclick="saveDeadlines()">💾 Save Deadlines</button>
         </div>
       </div>
       
       <!-- Bracket Tab -->
       <div class="tab-pane" id="pane-bracket">
-        <div class="bracket-rounds" id="bracket-rounds">
-          <!-- Bracket rounds will be rendered here -->
+        <div class="bracket-visual">
+          <div class="bracket-rounds" id="bracket-rounds">
+            <div class="empty-state">
+              <div class="empty-state-icon">🏆</div>
+              <h3>Bracket Not Generated</h3>
+              <p>Add players and click "Draw" to generate the bracket.</p>
+            </div>
+          </div>
         </div>
       </div>
       
       <!-- Results Tab -->
       <div class="tab-pane" id="pane-results">
-        <h3>Tournament Results</h3>
         <div id="results-content">
-          <!-- Results will be shown here -->
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <h3>No Results Yet</h3>
+            <p>Match results will appear here once matches are completed.</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
   
   <!-- Match Result Modal -->
-  <div id="match-modal" class="modal-overlay">
-    <div class="modal-content">
+  <div class="modal-overlay" id="match-modal">
+    <div class="modal">
       <h3>Enter Match Result</h3>
       <div id="match-modal-content">
-        <!-- Match details will be populated here -->
+        <!-- Populated dynamically -->
       </div>
       <div class="modal-buttons">
-        <button class="btn btn-secondary" onclick="closeMatchModal()">Cancel</button>
+        <button class="btn btn-secondary" onclick="closeModal('match-modal')">Cancel</button>
         <button class="btn btn-success" onclick="saveMatchResult()">Save Result</button>
       </div>
     </div>
   </div>
   
   <script>
-    let currentTournament = null;
+    // State
+    let tournament = null;
     let tournamentIndex = null;
-    let bracket = null;
+    let players = [];
+    let bracketData = null;
+    let isLocked = false;
+    let viewMode = false; // Read-only mode for embed
     
     // Initialize
-    function init() {
+    async function init() {
       const params = new URLSearchParams(window.location.search);
       const tournamentId = params.get('tournamentId');
+      viewMode = params.get('mode') === 'view';
+      
+      // If view mode, skip auth and load from Firebase directly
+      if (viewMode) {
+        document.querySelector('.action-bar').style.display = 'none';
+        document.querySelector('.top-nav a').href = 'javascript:window.close()';
+        document.querySelector('.top-nav a').textContent = '✕ Close';
+        await loadTournamentFromFirebase(tournamentId);
+        return;
+      }
+      
+      // Wait for auth (only for admin mode)
+      try {
+        const { user } = await window.Auth.requireAuth();
+        window.currentUserId = user.uid;
+      } catch(e) {
+        console.error('Auth error:', e);
+      }
       
       if (!tournamentId) {
         alert('No tournament specified');
@@ -458,131 +741,333 @@
         return;
       }
       
-      loadTournament(tournamentId);
+      await loadTournament(tournamentId);
     }
     
-    function loadTournament(tournamentId) {
-      const tournaments = getTournaments();
-      const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+    // Load tournament from Firebase for public view
+    async function loadTournamentFromFirebase(tournamentId) {
+      try {
+        const db = firebase.database();
+        const snapshot = await db.ref('tournaments/' + tournamentId).once('value');
+        tournament = snapshot.val();
+        
+        if (!tournament) {
+          document.getElementById('tournament-name').textContent = 'Tournament not found';
+          return;
+        }
+        
+        tournament.tournamentId = tournamentId;
+        
+        // Initialize bracket data
+        bracketData = tournament.bracketData || {
+          status: 'setup',
+          protectedPlayers: [],
+          preQualMatches: [],
+          mainBracket: [],
+          roundDeadlines: {},
+          strictDeadlines: false,
+          isLocked: false
+        };
+        
+        // Ensure strictDeadlines property exists for older tournaments
+        if (bracketData.strictDeadlines === undefined) {
+          bracketData.strictDeadlines = false;
+        }
+        
+        isLocked = true; // Always locked in view mode
+        
+        // Load admitted players from Firebase
+        // Try multiple possible keys for bracket tournaments
+        const admittedSnapshot = await db.ref('admittedPlayers').once('value');
+        const admittedData = admittedSnapshot.val() || {};
+        
+        const bracketKey = `${tournamentId}_BRACKET`;
+        const round1Key = `${tournamentId}_R1`;
+        
+        let playersData = admittedData[bracketKey] || admittedData[round1Key] || admittedData[tournamentId] || [];
+        
+        if (!Array.isArray(playersData)) {
+          playersData = Object.values(playersData);
+        }
+        players = playersData;
+        
+        // Check for auto-advance due to passed deadlines (only if strict deadlines enabled)
+        // This will update Firebase if any matches need auto-advancing
+        await checkDeadlineAutoAdvanceFirebase(tournamentId);
+        
+        // Render UI
+        renderTournamentInfo();
+        renderPlayers();
+        renderDeadlines();
+        updateStats();
+        
+        // Hide action buttons, header card, and unnecessary tabs in view mode
+        document.getElementById('btn-draw').style.display = 'none';
+        document.getElementById('btn-lock').style.display = 'none';
+        document.getElementById('btn-reset').style.display = 'none';
+        document.getElementById('header-card').style.display = 'none';
+        document.querySelector('.action-bar').style.display = 'none';
+        
+        // Hide Players and Deadlines tabs in view mode - only show Bracket and Results
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach((tab, idx) => {
+          if (idx === 0 || idx === 1) { // Players and Deadlines tabs
+            tab.style.display = 'none';
+          }
+          // Mark Bracket tab as active
+          if (idx === 2) {
+            tab.classList.add('active');
+          }
+        });
+        
+        // Always render bracket and switch to it in view mode
+        renderBracket();
+        switchTab('bracket');
+        
+        // Show bracket container now that it's ready
+        document.body.classList.add('view-ready');
+      } catch(e) {
+        console.error('Error loading tournament from Firebase:', e);
+        document.getElementById('tournament-name').textContent = 'Error loading tournament';
+        // Show page even on error
+        document.body.classList.add('view-ready');
+      }
+    }
+    
+    // Check and auto-advance matches when deadlines have passed (Firebase version)
+    async function checkDeadlineAutoAdvanceFirebase(tournamentId) {
+      // Only run if strict deadlines is enabled
+      if (!bracketData.strictDeadlines) return;
+      if (!bracketData.isLocked || bracketData.status === 'setup') return;
       
-      if (index === -1) {
-        alert('Tournament not found');
-        window.location.href = 'index.html';
-        return;
+      const now = new Date();
+      let hasChanges = false;
+      
+      // Check pre-qual matches
+      const preQualDeadline = bracketData.roundDeadlines?.['prequal'];
+      if (preQualDeadline && bracketData.preQualMatches) {
+        const deadlineDate = new Date(preQualDeadline + 'T23:59:59');
+        if (now > deadlineDate) {
+          bracketData.preQualMatches.forEach((match, idx) => {
+            if (!match.winner && match.player1 && match.player2) {
+              // Randomly pick winner
+              const randomWinner = Math.random() < 0.5 ? match.player1 : match.player2;
+              match.winner = getPlayerId(randomWinner);
+              match.score = 'Auto (Deadline)';
+              match.datePlayed = preQualDeadline;
+              advancePreQualWinner(idx);
+              hasChanges = true;
+              console.log(`Auto-advanced pre-qual match ${idx + 1}: ${getPlayerName(randomWinner)} wins by deadline`);
+            }
+          });
+        }
       }
       
-      currentTournament = tournaments[index];
-      tournamentIndex = index;
-      bracket = currentTournament.meta.bracket || {
-        targetSize: currentTournament.bracketSize || 64,
+      // Check main bracket rounds
+      if (bracketData.mainBracket) {
+        bracketData.mainBracket.forEach((round, roundIdx) => {
+          const roundDeadline = bracketData.roundDeadlines?.[`round-${roundIdx + 1}`];
+          if (roundDeadline) {
+            const deadlineDate = new Date(roundDeadline + 'T23:59:59');
+            if (now > deadlineDate) {
+              round.matches.forEach((match, matchIdx) => {
+                if (!match.winner && match.player1 && match.player2) {
+                  // Randomly pick winner
+                  const randomWinner = Math.random() < 0.5 ? match.player1 : match.player2;
+                  match.winner = getPlayerId(randomWinner);
+                  match.score = 'Auto (Deadline)';
+                  match.datePlayed = roundDeadline;
+                  advanceMainBracketWinner(roundIdx, matchIdx);
+                  hasChanges = true;
+                  console.log(`Auto-advanced round ${roundIdx + 1} match ${matchIdx + 1}: ${getPlayerName(randomWinner)} wins by deadline`);
+                }
+              });
+            }
+          }
+        });
+      }
+      
+      // Save to Firebase if there were changes
+      if (hasChanges) {
+        try {
+          const db = firebase.database();
+          tournament.bracketData = bracketData;
+          await db.ref('tournaments/' + tournamentId).set(tournament);
+          console.log('Auto-advance changes saved to Firebase');
+        } catch(e) {
+          console.error('Error saving auto-advance to Firebase:', e);
+        }
+      }
+    }
+    
+    async function loadTournament(tournamentId) {
+      // Try to load from Firebase first for most up-to-date data
+      try {
+        if (typeof firebase !== 'undefined' && firebase.database) {
+          const snapshot = await firebase.database().ref('tournaments/' + tournamentId).once('value');
+          const firebaseTournament = snapshot.val();
+          
+          if (firebaseTournament) {
+            tournament = firebaseTournament;
+            tournament.tournamentId = tournamentId;
+            
+            // Also update localStorage to stay in sync
+            const tournaments = getTournaments();
+            const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+            if (index !== -1) {
+              tournaments[index] = tournament;
+              tournamentIndex = index;
+            } else {
+              tournaments.push(tournament);
+              tournamentIndex = tournaments.length - 1;
+            }
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+            
+            console.log('✓ Loaded bracket from Firebase');
+          } else {
+            // Fallback to localStorage
+            const tournaments = getTournaments();
+            const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+            
+            if (index === -1) {
+              alert('Tournament not found');
+              window.location.href = 'index.html';
+              return;
+            }
+            
+            tournament = tournaments[index];
+            tournamentIndex = index;
+          }
+        } else {
+          // Firebase not available, use localStorage
+          const tournaments = getTournaments();
+          const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          
+          if (index === -1) {
+            alert('Tournament not found');
+            window.location.href = 'index.html';
+            return;
+          }
+          
+          tournament = tournaments[index];
+          tournamentIndex = index;
+        }
+      } catch(e) {
+        console.error('Error loading from Firebase, falling back to localStorage:', e);
+        // Fallback to localStorage
+        const tournaments = getTournaments();
+        const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+        
+        if (index === -1) {
+          alert('Tournament not found');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        tournament = tournaments[index];
+        tournamentIndex = index;
+      }
+      
+      // Initialize bracket data if not exists
+      bracketData = tournament.bracketData || {
         status: 'setup',
-        rounds: [],
-        qualifyingMatches: []
+        protectedPlayers: [],
+        positions: {},
+        preQualMatches: [],
+        mainBracket: [],
+        roundDeadlines: {},
+        strictDeadlines: false,
+        isLocked: false
       };
       
+      // Ensure strictDeadlines property exists for older tournaments
+      if (bracketData.strictDeadlines === undefined) {
+        bracketData.strictDeadlines = false;
+      }
+      
+      isLocked = bracketData.isLocked || false;
+      
+      // Load players
+      await loadPlayers();
+      
+      // Initialize strict deadlines toggle
+      initStrictDeadlinesToggle();
+      
+      // Initialize seeding method dropdown
+      initSeedingMethod();
+      
+      // Render UI
       renderTournamentInfo();
-      loadPlayers();
-    }
-    
-    function renderTournamentInfo() {
-      document.getElementById('tournament-name').textContent = currentTournament.name;
-      document.getElementById('tournament-format').textContent = 
-        `${currentTournament.gameFormat} (${currentTournament.matchFormat || '18'} holes)`;
-      document.getElementById('bracket-size').textContent = currentTournament.bracketSize;
-      document.getElementById('tournament-status').textContent = bracket.status;
-      document.getElementById('tournament-duration').textContent = currentTournament.duration || 'Not set';
-      document.getElementById('stat-bracket-slots').textContent = currentTournament.bracketSize;
-    }
-    
-    function loadPlayers() {
-      // Load admitted players for this tournament
-      const admittedPlayers = getAdmittedPlayers();
-      const tournamentPlayers = admittedPlayers[currentTournament.tournamentId] || [];
+      renderPlayers();
+      renderDeadlines();
+      updateStats();
+      updateButtonStates();
       
-      document.getElementById('stat-players').textContent = tournamentPlayers.length;
-      
-      // Calculate qualifying matches needed
-      const targetSize = bracket.targetSize;
-      const qualifyingCount = Math.max(0, tournamentPlayers.length - targetSize);
-      document.getElementById('stat-qualifying').textContent = qualifyingCount;
-      
-      // Show qualifying tab if needed
-      if (qualifyingCount > 0) {
-        document.getElementById('tab-qualifying').style.display = 'block';
-      }
-      
-      // Render player list
-      renderPlayerList(tournamentPlayers);
-      
-      // Show generate button if we have players
-      if (tournamentPlayers.length > 0 && bracket.status === 'setup') {
-        document.getElementById('btn-generate-bracket').style.display = 'block';
+      if (bracketData.status !== 'setup') {
+        renderBracket();
+        // Check for auto-advance after deadline
+        checkDeadlineAutoAdvance();
       }
     }
     
-    function renderPlayerList(players) {
-      const container = document.getElementById('setup-player-list');
+    // Check if any matches need auto-advancing due to passed deadlines
+    function checkDeadlineAutoAdvance() {
+      // Only run if strict deadlines is enabled
+      if (!bracketData.strictDeadlines) return;
+      if (!bracketData.isLocked || bracketData.status === 'setup') return;
       
-      if (players.length === 0) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">No players registered yet. Click "Add Players" above.</div>';
-        return;
+      const now = new Date();
+      let hasChanges = false;
+      
+      // Check pre-qual matches
+      const preQualDeadline = bracketData.roundDeadlines?.['prequal'];
+      if (preQualDeadline && bracketData.preQualMatches) {
+        const deadlineDate = new Date(preQualDeadline + 'T23:59:59');
+        if (now > deadlineDate) {
+          bracketData.preQualMatches.forEach((match, idx) => {
+            if (!match.winner && match.player1 && match.player2) {
+              // Randomly pick winner
+              const randomWinner = Math.random() < 0.5 ? match.player1 : match.player2;
+              match.winner = getPlayerId(randomWinner);
+              match.score = 'Auto (Deadline)';
+              match.datePlayed = preQualDeadline;
+              advancePreQualWinner(idx);
+              hasChanges = true;
+              console.log(`Auto-advanced pre-qual match ${idx + 1}: ${getPlayerName(randomWinner)} wins by deadline`);
+            }
+          });
+        }
       }
       
-      container.innerHTML = players.map((p, i) => `
-        <div class="player-item">
-          <div>
-            <div class="player-name">${i + 1}. ${p.firstName} ${p.lastName}</div>
-            <div class="player-info">HCP: ${p.hcp} | PHCP: ${p.phcp || p.hcp}</div>
-          </div>
-          <div class="player-info">Reg: ${p.reg}</div>
-        </div>
-      `).join('');
-    }
-    
-    function generateBracket() {
-      if (!confirm('Generate bracket structure? This will create all matches based on current registrations.')) {
-        return;
+      // Check main bracket rounds
+      if (bracketData.mainBracket) {
+        bracketData.mainBracket.forEach((round, roundIdx) => {
+          const roundDeadline = bracketData.roundDeadlines?.[`round-${roundIdx + 1}`];
+          if (roundDeadline) {
+            const deadlineDate = new Date(roundDeadline + 'T23:59:59');
+            if (now > deadlineDate) {
+              round.matches.forEach((match, matchIdx) => {
+                if (!match.winner && match.player1 && match.player2) {
+                  // Randomly pick winner
+                  const randomWinner = Math.random() < 0.5 ? match.player1 : match.player2;
+                  match.winner = getPlayerId(randomWinner);
+                  match.score = 'Auto (Deadline)';
+                  match.datePlayed = roundDeadline;
+                  advanceMainBracketWinner(roundIdx, matchIdx);
+                  hasChanges = true;
+                  console.log(`Auto-advanced round ${roundIdx + 1} match ${matchIdx + 1}: ${getPlayerName(randomWinner)} wins by deadline`);
+                }
+              });
+            }
+          }
+        });
       }
       
-      const admittedPlayers = getAdmittedPlayers();
-      const players = admittedPlayers[currentTournament.tournamentId] || [];
-      
-      if (players.length < 2) {
-        alert('Need at least 2 players to generate bracket');
-        return;
+      if (hasChanges) {
+        saveTournament();
+        renderBracket();
+        alert('Some matches were auto-decided because their deadline has passed. Winners were randomly selected.');
       }
-      
-      const targetSize = bracket.targetSize;
-      const needsQualifying = players.length > targetSize;
-      
-      // TODO: Implement bracket generation logic
-      alert(`Bracket generation started!\n\nPlayers: ${players.length}\nTarget: ${targetSize}\nQualifying matches: ${needsQualifying ? (players.length - targetSize) : 0}`);
-      
-      bracket.status = needsQualifying ? 'qualifying' : 'in-progress';
-      saveBracket();
-    }
-    
-    function saveBracket() {
-      currentTournament.meta.bracket = bracket;
-      const tournaments = getTournaments();
-      tournaments[tournamentIndex] = currentTournament;
-      saveTournaments(tournaments);
-      
-      alert('Bracket saved!');
-    }
-    
-    function goToAdmissions() {
-      window.location.href = `admissions.html?tournamentId=${currentTournament.tournamentId}`;
-    }
-    
-    function switchTab(tabName) {
-      // Update tab buttons
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      
-      // Update tab panes
-      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-      document.getElementById('pane-' + tabName).classList.add('active');
     }
     
     function getTournaments() {
@@ -593,20 +1078,1225 @@
       }
     }
     
-    function saveTournaments(tournaments) {
-      localStorage.setItem('tournaments', JSON.stringify(tournaments));
-      
-      if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
-        syncToFirebase('tournaments', tournaments);
+    // Initialize and handle strict deadlines toggle
+    function initStrictDeadlinesToggle() {
+      const toggle = document.getElementById('strict-deadlines');
+      if (toggle) {
+        toggle.checked = bracketData.strictDeadlines || false;
+        // Disable toggle if bracket is locked
+        if (isLocked) {
+          toggle.disabled = true;
+        }
       }
     }
     
-    function getAdmittedPlayers() {
-      try {
-        return JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
-      } catch(e) {
-        return {};
+    // Strip unnecessary player data to reduce Firebase storage
+    function minimalPlayer(player) {
+      if (!player) return null;
+      if (player.isEmptySlot) return player; // Keep empty slot markers as-is
+      return {
+        id: player.id || player.playerId || null,
+        reg: player.reg || player.regNo || null,
+        firstName: player.firstName || null,
+        lastName: player.lastName || null,
+        name: player.name || null,
+        hcp: player.hcp || null,
+        club: player.club || null,
+        originalSeed: player.originalSeed || null
+      };
+    }
+    
+    // Strip player data from bracket matches before saving
+    function stripBracketPlayerData(data) {
+      const stripped = JSON.parse(JSON.stringify(data));
+      
+      // Strip pre-qual matches
+      if (stripped.preQualMatches) {
+        stripped.preQualMatches = stripped.preQualMatches.map(m => ({
+          ...m,
+          player1: minimalPlayer(m.player1),
+          player2: minimalPlayer(m.player2),
+          winner: minimalPlayer(m.winner)
+        }));
       }
+      
+      // Strip main bracket - each round has { roundNumber, roundName, matches: [] }
+      if (stripped.mainBracket) {
+        stripped.mainBracket = stripped.mainBracket.map(round => ({
+          ...round,
+          matches: round.matches ? round.matches.map(match => ({
+            ...match,
+            player1: minimalPlayer(match.player1),
+            player2: minimalPlayer(match.player2),
+            winner: minimalPlayer(match.winner)
+          })) : []
+        }));
+      }
+      
+      return stripped;
+    }
+
+    function updateStrictDeadlines() {
+      const toggle = document.getElementById('strict-deadlines');
+      if (toggle) {
+        bracketData.strictDeadlines = toggle.checked;
+        saveTournament();
+      }
+    }
+    
+    async function loadPlayers() {
+      try {
+        const admittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        
+        // Try multiple possible keys for bracket tournaments
+        // Admissions saves with roundId like "tournamentId_BRACKET" or "tournamentId_R1"
+        const bracketKey = `${tournament.tournamentId}_BRACKET`;
+        const round1Key = `${tournament.tournamentId}_R1`;
+        
+        // First try bracket key, then round 1 key, then tournament ID directly
+        players = admittedPlayers[bracketKey] || admittedPlayers[round1Key] || admittedPlayers[tournament.tournamentId] || [];
+        
+        console.log('Loading players with keys:', { bracketKey, round1Key, tournamentId: tournament.tournamentId });
+        console.log('Found players:', players.length);
+        
+        // Sort by HCP if seeding method is 'hcp'
+        if (tournament.meta && tournament.meta.seedingMethod === 'hcp') {
+          players.sort((a, b) => (parseFloat(a.hcp) || 54) - (parseFloat(b.hcp) || 54));
+        }
+      } catch(e) {
+        console.error('Error loading players:', e);
+        players = [];
+      }
+    }
+    
+    function renderTournamentInfo() {
+      document.getElementById('tournament-name').textContent = tournament.name || 'Bracket Tournament';
+      document.getElementById('info-type').textContent = tournament.type || 'Bracket Match Play';
+      document.getElementById('info-course').textContent = tournament.course || '-';
+      document.getElementById('info-seeding').textContent = getSeedingMethodLabel(tournament.meta?.seedingMethod);
+      document.getElementById('info-hcp').textContent = (tournament.meta?.hcpAllow || '100') + '%';
+      document.getElementById('info-status').textContent = getStatusLabel(bracketData.status);
+    }
+    
+    function getSeedingMethodLabel(method) {
+      const labels = { 'hcp': 'HCP Seeding', 'random': 'Random Draw', 'manual': 'Manual' };
+      return labels[method] || 'HCP Seeding';
+    }
+    
+    function getStatusLabel(status) {
+      const labels = { 
+        'setup': 'Setup', 
+        'drawn': 'Drawn (Not Locked)', 
+        'locked': 'In Progress',
+        'completed': 'Completed'
+      };
+      return labels[status] || 'Setup';
+    }
+    
+    function updateStats() {
+      const playerCount = players.length;
+      const protectedCount = bracketData.protectedPlayers ? bracketData.protectedPlayers.length : 0;
+      const bracketSize = calculateBracketSize(playerCount);
+      const { preQualCount, autoQualCount } = calculateQualificationSplit(playerCount, bracketSize, protectedCount);
+      
+      document.getElementById('stat-players').textContent = playerCount;
+      document.getElementById('stat-protected').textContent = protectedCount;
+      document.getElementById('stat-bracket-size').textContent = bracketSize > 0 ? bracketSize : '-';
+      document.getElementById('stat-prequal').textContent = preQualCount;
+      document.getElementById('stat-auto-qual').textContent = autoQualCount;
+    }
+    
+    function calculateBracketSize(playerCount) {
+      if (playerCount < 2) return 0;
+      // Find largest power of 2 that is <= playerCount
+      let size = 2;
+      while (size * 2 <= playerCount) {
+        size *= 2;
+      }
+      return size;
+    }
+    
+    function calculateQualificationSplit(playerCount, bracketSize, protectedCount) {
+      if (playerCount <= bracketSize) {
+        return { preQualCount: 0, autoQualCount: playerCount, preQualPlayers: 0 };
+      }
+      
+      const excess = playerCount - bracketSize;
+      const preQualPlayers = excess * 2;
+      const autoQualCount = playerCount - preQualPlayers;
+      
+      return {
+        preQualCount: excess,
+        autoQualCount: autoQualCount,
+        preQualPlayers: preQualPlayers
+      };
+    }
+    
+    function updateButtonStates() {
+      const hasPlayers = players.length >= 2;
+      const canDraw = hasPlayers && !isLocked;
+      const hasDrawn = bracketData.status === 'drawn' || bracketData.status === 'locked';
+      
+      document.getElementById('btn-draw').style.display = canDraw ? 'inline-flex' : 'none';
+      document.getElementById('btn-lock').style.display = (hasDrawn && !isLocked) ? 'inline-flex' : 'none';
+      document.getElementById('btn-reset').style.display = (hasDrawn && !isLocked) ? 'inline-flex' : 'none';
+      document.getElementById('btn-unlock').style.display = isLocked ? 'inline-flex' : 'none';
+      
+      // Hide seeding selector when locked or already drawn
+      const seedingSelector = document.getElementById('seeding-selector');
+      if (seedingSelector) {
+        seedingSelector.style.display = isLocked ? 'none' : 'flex';
+      }
+      
+      if (isLocked) {
+        document.getElementById('draw-status').textContent = '🔒 Bracket is locked';
+      } else if (hasDrawn) {
+        document.getElementById('draw-status').textContent = '⚠️ Not saved - Click "Lock & Save" to finalize';
+      } else {
+        document.getElementById('draw-status').textContent = '';
+      }
+    }
+    
+    // Get current seeding method from dropdown
+    function getCurrentSeedingMethod() {
+      const select = document.getElementById('seeding-method');
+      return select ? select.value : 'hcp';
+    }
+    
+    // Update seeding method and re-sort players
+    function updateSeedingMethod() {
+      const method = getCurrentSeedingMethod();
+      
+      // Update tournament info display
+      document.getElementById('info-seeding').textContent = getSeedingMethodLabel(method);
+      
+      // Update hint text
+      const hintEl = document.getElementById('seeding-hint');
+      if (hintEl) {
+        if (method === 'hcp') {
+          hintEl.textContent = 'Sorted by HCP (lowest first)';
+        } else if (method === 'random') {
+          hintEl.textContent = 'Will be shuffled randomly on Draw';
+        } else if (method === 'manual') {
+          hintEl.textContent = '↕️ Drag players to set seed order';
+        }
+      }
+      
+      // Re-sort players based on new method
+      if (method === 'hcp') {
+        players.sort((a, b) => (parseFloat(a.hcp) || 54) - (parseFloat(b.hcp) || 54));
+      } else if (method === 'random') {
+        // Don't shuffle yet - will shuffle on draw
+      }
+      // Manual method keeps current order
+      
+      // Update drag-and-drop availability
+      renderPlayers();
+    }
+    
+    // Initialize seeding method dropdown
+    function initSeedingMethod() {
+      const select = document.getElementById('seeding-method');
+      if (select && tournament.meta?.seedingMethod) {
+        select.value = tournament.meta.seedingMethod;
+      }
+      // Update hint text based on initial value
+      updateSeedingMethod();
+    }
+    
+    function renderPlayers() {
+      const container = document.getElementById('player-list');
+      
+      if (players.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">👥</div>
+            <h3>No Players Yet</h3>
+            <p>Click "Add Players" to register players for this tournament.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      const currentMethod = getCurrentSeedingMethod();
+      
+      container.innerHTML = players.map((player, index) => {
+        const playerId = player.id || player.playerId || `player-${index}`;
+        const isProtected = bracketData.protectedPlayers && bracketData.protectedPlayers.includes(playerId);
+        const seed = index + 1;
+        
+        const canDrag = !isLocked && currentMethod === 'manual';
+        
+        return `
+          <div class="player-item" draggable="${canDrag}" 
+               data-player-id="${playerId}" data-index="${index}">
+            <div class="player-left">
+              <div class="player-seed">${seed}</div>
+              <div class="player-details">
+                <div class="player-name">${player.firstName} ${player.lastName}</div>
+                <div class="player-meta">HCP: ${player.hcp || '-'} | ${player.club || '-'}</div>
+              </div>
+            </div>
+            <div class="player-actions">
+              ${!isLocked ? `
+                <button class="btn btn-icon ${isProtected ? 'btn-protected' : 'btn-secondary'}" onclick="toggleProtected('${playerId}')" title="${isProtected ? 'Remove Protection' : 'Mark as Protected'}">
+                  ${isProtected ? '⭐' : '☆'}
+                </button>
+              ` : (isProtected ? '<span style="font-size:18px;">⭐</span>' : '')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Setup drag and drop for manual seeding
+      if (!isLocked && currentMethod === 'manual') {
+        setupDragAndDrop();
+      }
+    }
+    
+    function setupDragAndDrop() {
+      const items = document.querySelectorAll('.player-item[draggable="true"]');
+      let draggedItem = null;
+      
+      items.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+          draggedItem = item;
+          item.classList.add('dragging');
+        });
+        
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+          document.querySelectorAll('.player-item').forEach(i => i.classList.remove('drag-over'));
+        });
+        
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (item !== draggedItem) {
+            item.classList.add('drag-over');
+          }
+        });
+        
+        item.addEventListener('dragleave', () => {
+          item.classList.remove('drag-over');
+        });
+        
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (draggedItem && item !== draggedItem) {
+            const fromIndex = parseInt(draggedItem.dataset.index);
+            const toIndex = parseInt(item.dataset.index);
+            
+            // Swap players
+            const temp = players[fromIndex];
+            players.splice(fromIndex, 1);
+            players.splice(toIndex, 0, temp);
+            
+            renderPlayers();
+            updateStats();
+          }
+        });
+      });
+    }
+    
+    function toggleProtected(playerId) {
+      if (isLocked) return;
+      
+      if (!bracketData.protectedPlayers) {
+        bracketData.protectedPlayers = [];
+      }
+      
+      const index = bracketData.protectedPlayers.indexOf(playerId);
+      if (index > -1) {
+        bracketData.protectedPlayers.splice(index, 1);
+      } else {
+        // Check if we can add more protected players
+        const bracketSize = calculateBracketSize(players.length);
+        const { autoQualCount } = calculateQualificationSplit(players.length, bracketSize, bracketData.protectedPlayers.length);
+        
+        if (bracketData.protectedPlayers.length >= autoQualCount) {
+          alert(`Cannot add more protected players. Maximum is ${autoQualCount} (auto-qualified slots).`);
+          return;
+        }
+        
+        bracketData.protectedPlayers.push(playerId);
+      }
+      
+      renderPlayers();
+      updateStats();
+    }
+    
+    function performDraw() {
+      if (players.length < 2) {
+        alert('Need at least 2 players to generate a bracket.');
+        return;
+      }
+      
+      // Get seeding method from dropdown (not from saved tournament)
+      const seedingMethod = getCurrentSeedingMethod();
+      
+      // Save the selected seeding method to tournament
+      if (!tournament.meta) tournament.meta = {};
+      tournament.meta.seedingMethod = seedingMethod;
+      
+      // For HCP seeding, sort players by HCP first
+      if (seedingMethod === 'hcp') {
+        players.sort((a, b) => (parseFloat(a.hcp) || 54) - (parseFloat(b.hcp) || 54));
+      }
+      // Random and Manual seeding will be handled in generateBracketStructure
+      
+      // Generate bracket structure
+      generateBracketStructure(seedingMethod);
+      
+      bracketData.status = 'drawn';
+      renderPlayers();
+      renderBracket();
+      updateStats();
+      updateButtonStates();
+      
+      document.getElementById('info-status').textContent = getStatusLabel('drawn');
+    }
+    
+    function generateBracketStructure(seedingMethod) {
+      const playerCount = players.length;
+      const bracketSize = calculateBracketSize(playerCount);
+      const numRounds = Math.log2(bracketSize);
+      const firstRoundMatches = bracketSize / 2;
+      
+      // Calculate how many players need to play pre-qualifiers
+      // If we have more players than bracket size, excess players play pre-quals
+      // Each pre-qual match has 2 players competing for 1 spot in first round
+      // So if we have 4 excess players, we need 4 pre-qual matches (8 players total)
+      const excessPlayers = Math.max(0, playerCount - bracketSize);
+      const numPreQualMatches = excessPlayers; // Each excess player = 1 pre-qual match
+      const preQualSlots = numPreQualMatches * 2; // 2 players per pre-qual match
+      
+      bracketData.bracketSize = bracketSize;
+      bracketData.preQualMatches = [];
+      bracketData.mainBracket = [];
+      
+      // Helper function to pick random item from array and remove it
+      function pickRandom(arr) {
+        if (arr.length === 0) return null;
+        const idx = Math.floor(Math.random() * arr.length);
+        return arr.splice(idx, 1)[0];
+      }
+      
+      if (seedingMethod === 'random') {
+        // RANDOM DRAW - SLOT BY SLOT ALLOCATION
+        // Create pool of all players
+        let playerPool = [...players].map((p, idx) => ({ ...p, originalSeed: idx + 1 }));
+        
+        // Step 1: Fill pre-qualifier slots one by one
+        const preQualPlayers = [];
+        for (let i = 0; i < preQualSlots; i++) {
+          const player = pickRandom(playerPool);
+          preQualPlayers.push(player);
+        }
+        
+        // Create pre-qual matches from the assigned players
+        for (let i = 0; i < numPreQualMatches; i++) {
+          bracketData.preQualMatches.push({
+            matchId: `prequal-${i + 1}`,
+            player1: preQualPlayers[i * 2] || null,
+            player2: preQualPlayers[i * 2 + 1] || null,
+            winner: null,
+            score: null,
+            targetSlot: null // Will be set when we find empty slots in first round
+          });
+        }
+        
+        // Step 2: Create pool for first round = remaining players + empty slots (for pre-qual winners)
+        // Empty slots represent where pre-qual winners will go
+        let firstRoundPool = [...playerPool]; // Remaining players after pre-qual assignment
+        for (let i = 0; i < numPreQualMatches; i++) {
+          firstRoundPool.push({ isEmptySlot: true, preQualMatchIdx: i }); // Empty slot marker
+        }
+        
+        // Step 3: Fill first round slots one by one
+        // RULES to avoid pre-qual match overlapping:
+        // 1. First match (slots 0 & 1) should have NO empty slots
+        // 2. Two empty slots should not be adjacent (same match or consecutive slots across matches)
+        const firstRoundSlots = [];
+        const totalFirstRoundSlots = bracketSize;
+        
+        for (let i = 0; i < totalFirstRoundSlots; i++) {
+          const isFirstMatch = (i < 2); // Slots 0 and 1 are the first match
+          const previousSlotWasEmpty = (i > 0) && firstRoundSlots[i - 1] && firstRoundSlots[i - 1].isEmptySlot;
+          
+          // Check if we must avoid empty slot for this position
+          const mustAvoidEmpty = isFirstMatch || previousSlotWasEmpty;
+          
+          let item;
+          if (mustAvoidEmpty) {
+            // This slot MUST be a player (not empty)
+            // Filter out empty slots from the pool for this pick
+            const playersOnly = firstRoundPool.filter(x => x && !x.isEmptySlot);
+            if (playersOnly.length > 0) {
+              const idx = Math.floor(Math.random() * playersOnly.length);
+              item = playersOnly[idx];
+              // Remove from the main pool
+              const mainIdx = firstRoundPool.indexOf(item);
+              if (mainIdx > -1) firstRoundPool.splice(mainIdx, 1);
+            } else {
+              // No players left, have to use empty slot (shouldn't happen if math is correct)
+              item = pickRandom(firstRoundPool);
+            }
+          } else {
+            // Normal random pick from entire pool
+            item = pickRandom(firstRoundPool);
+          }
+          firstRoundSlots.push(item);
+        }
+        
+        // Step 4: Build main bracket structure
+        for (let round = 0; round < numRounds; round++) {
+          const matchesInRound = bracketSize / Math.pow(2, round + 1);
+          const roundMatches = [];
+          
+          for (let m = 0; m < matchesInRound; m++) {
+            const match = {
+              matchId: `round-${round + 1}-match-${m + 1}`,
+              round: round + 1,
+              matchNumber: m + 1,
+              player1: null,
+              player2: null,
+              winner: null,
+              score: null
+            };
+            
+            // First round: assign from our slot-by-slot filled array
+            if (round === 0) {
+              const slot1Item = firstRoundSlots[m * 2];
+              const slot2Item = firstRoundSlots[m * 2 + 1];
+              
+              // Check if slot is a player or empty (pre-qual winner slot)
+              if (slot1Item && !slot1Item.isEmptySlot) {
+                match.player1 = slot1Item;
+              } else if (slot1Item && slot1Item.isEmptySlot) {
+                // This slot will be filled by pre-qual winner
+                bracketData.preQualMatches[slot1Item.preQualMatchIdx].targetSlot = m * 2 + 1; // 1-based
+              }
+              
+              if (slot2Item && !slot2Item.isEmptySlot) {
+                match.player2 = slot2Item;
+              } else if (slot2Item && slot2Item.isEmptySlot) {
+                // This slot will be filled by pre-qual winner
+                bracketData.preQualMatches[slot2Item.preQualMatchIdx].targetSlot = m * 2 + 2; // 1-based
+              }
+            }
+            
+            roundMatches.push(match);
+          }
+          
+          bracketData.mainBracket.push({
+            roundNumber: round + 1,
+            roundName: getRoundName(round + 1, numRounds),
+            matches: roundMatches
+          });
+        }
+        
+      } else {
+        // HCP SEEDING or MANUAL:
+        // Protected players auto-qualify, lowest HCP auto-qualifies, highest HCP plays pre-quals
+        
+        const protectedList = [];
+        const regularList = [];
+        
+        players.forEach((player, index) => {
+          const playerId = player.id || player.playerId || `player-${index}`;
+          if (bracketData.protectedPlayers && bracketData.protectedPlayers.includes(playerId)) {
+            protectedList.push({ ...player, originalSeed: index + 1 });
+          } else {
+            regularList.push({ ...player, originalSeed: index + 1 });
+          }
+        });
+        
+        // Calculate auto-qualified count (bracketSize minus pre-qual winner slots)
+        const autoQualCount = bracketSize - numPreQualMatches;
+        
+        // Auto-qualified: protected players + top regular players (by HCP order)
+        const autoQualified = [...protectedList];
+        const remainingAutoQual = autoQualCount - protectedList.length;
+        
+        for (let i = 0; i < remainingAutoQual && i < regularList.length; i++) {
+          autoQualified.push(regularList[i]);
+        }
+        
+        // Pre-qualification players (remaining players after auto-qualified)
+        const preQualPlayerList = regularList.slice(Math.max(0, remainingAutoQual));
+        
+        // Generate pre-qual matches
+        for (let i = 0; i < numPreQualMatches; i++) {
+          bracketData.preQualMatches.push({
+            matchId: `prequal-${i + 1}`,
+            player1: preQualPlayerList[i * 2] || null,
+            player2: preQualPlayerList[i * 2 + 1] || null,
+            winner: null,
+            score: null,
+            targetSlot: bracketSize - numPreQualMatches + i + 1 // Last slots for HCP seeding
+          });
+        }
+        
+        // Main bracket pool is auto-qualified players + empty slots at the end
+        const mainBracketPool = [...autoQualified];
+        for (let i = 0; i < numPreQualMatches; i++) {
+          mainBracketPool.push(null); // Empty slots for pre-qual winners
+        }
+        
+        // Generate main bracket structure
+        for (let round = 0; round < numRounds; round++) {
+          const matchesInRound = bracketSize / Math.pow(2, round + 1);
+          const roundMatches = [];
+          
+          for (let m = 0; m < matchesInRound; m++) {
+            const match = {
+              matchId: `round-${round + 1}-match-${m + 1}`,
+              round: round + 1,
+              matchNumber: m + 1,
+              player1: null,
+              player2: null,
+              winner: null,
+              score: null
+            };
+            
+            if (round === 0) {
+              const slot1 = m * 2;
+              const slot2 = m * 2 + 1;
+              
+              if (slot1 < mainBracketPool.length) {
+                match.player1 = mainBracketPool[slot1];
+              }
+              if (slot2 < mainBracketPool.length) {
+                match.player2 = mainBracketPool[slot2];
+              }
+            }
+            
+            roundMatches.push(match);
+          }
+          
+          bracketData.mainBracket.push({
+            roundNumber: round + 1,
+            roundName: getRoundName(round + 1, numRounds),
+            matches: roundMatches
+          });
+        }
+      }
+    }
+    
+    function getRoundName(roundNum, totalRounds) {
+      const remaining = totalRounds - roundNum + 1;
+      if (remaining === 1) return 'Final';
+      if (remaining === 2) return 'Semi-Finals';
+      if (remaining === 3) return 'Quarter-Finals';
+      return `Round of ${Math.pow(2, remaining)}`;
+    }
+    
+    function renderDeadlines() {
+      const container = document.getElementById('deadlines-grid');
+      const bracketSize = calculateBracketSize(players.length);
+      
+      if (bracketSize < 2) {
+        container.innerHTML = '<p style="color:#64748b;">Add players to see round deadlines.</p>';
+        return;
+      }
+      
+      const numRounds = Math.log2(bracketSize);
+      let html = '';
+      
+      // Pre-qualification deadline
+      const { preQualCount } = calculateQualificationSplit(players.length, bracketSize, 0);
+      if (preQualCount > 0) {
+        const preQualDeadline = bracketData.roundDeadlines?.['prequal'] || '';
+        html += `
+          <div class="deadline-card">
+            <h4>⚔️ Pre-Qualification</h4>
+            <input type="date" id="deadline-prequal" value="${preQualDeadline}" ${isLocked ? 'disabled' : ''}>
+          </div>
+        `;
+      }
+      
+      // Main bracket rounds
+      for (let round = 1; round <= numRounds; round++) {
+        const roundName = getRoundName(round, numRounds);
+        const deadline = bracketData.roundDeadlines?.[`round-${round}`] || '';
+        html += `
+          <div class="deadline-card">
+            <h4>🏆 ${roundName}</h4>
+            <input type="date" id="deadline-round-${round}" value="${deadline}" ${isLocked ? 'disabled' : ''}>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
+    }
+    
+    function saveDeadlines() {
+      const bracketSize = calculateBracketSize(players.length);
+      const numRounds = Math.log2(bracketSize);
+      
+      bracketData.roundDeadlines = {};
+      
+      // Pre-qual deadline
+      const preQualInput = document.getElementById('deadline-prequal');
+      if (preQualInput) {
+        bracketData.roundDeadlines['prequal'] = preQualInput.value;
+      }
+      
+      // Round deadlines
+      for (let round = 1; round <= numRounds; round++) {
+        const input = document.getElementById(`deadline-round-${round}`);
+        if (input) {
+          bracketData.roundDeadlines[`round-${round}`] = input.value;
+        }
+      }
+      
+      saveTournament();
+      alert('Deadlines saved!');
+    }
+    
+    function renderBracket() {
+      const container = document.getElementById('bracket-rounds');
+      
+      if (!bracketData.mainBracket || bracketData.mainBracket.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🏆</div>
+            <h3>Bracket Not Generated</h3>
+            <p>Add players and click "Draw" to generate the bracket.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const numRounds = bracketData.mainBracket.length;
+      const firstRoundMatches = bracketData.mainBracket[0]?.matches?.length || 0;
+      const unit = 14; // must match --bracket-slot-h
+      const firstRoundGapRows = 0; // uniform spacing between all matches
+      const hasPreQual = bracketData.preQualMatches && bracketData.preQualMatches.length > 0;
+
+      // Precompute grid row starts/spans for every match in every round
+      const positions = [];
+      let maxRow = 1; // header occupies row 1
+
+      // Round 0 positioning
+      positions[0] = [];
+      let cursor = 2; // first match starts at row 2 (row 1 is header)
+      for (let i = 0; i < firstRoundMatches; i++) {
+        const rowStart = cursor;
+        const spanRows = 6; // each match consumes 6 slot rows (6*14=84px)
+        positions[0].push({ rowStart, spanRows });
+        const endRow = rowStart + spanRows - 1;
+        if (endRow > maxRow) maxRow = endRow;
+        cursor += spanRows;
+        if (i % 2 === 1 && i < firstRoundMatches - 1) {
+          cursor += firstRoundGapRows;
+        }
+      }
+
+      // Higher rounds center on their two child matches
+      for (let roundIndex = 1; roundIndex < numRounds; roundIndex++) {
+        positions[roundIndex] = [];
+        const prev = positions[roundIndex - 1];
+        const matchCount = bracketData.mainBracket[roundIndex].matches.length;
+        for (let m = 0; m < matchCount; m++) {
+          const top = prev[m * 2];
+          const bottom = prev[m * 2 + 1];
+          const topCenter = top.rowStart + top.spanRows / 2;
+          const bottomCenter = bottom.rowStart + bottom.spanRows / 2;
+          const center = (topCenter + bottomCenter) / 2;
+          const spanRows = 6;
+          const rowStart = Math.round(center - spanRows / 2);
+          positions[roundIndex].push({ rowStart, spanRows, top, bottom });
+          const endRow = rowStart + spanRows - 1;
+          if (endRow > maxRow) maxRow = endRow;
+        }
+      }
+
+      // Pre-qual positions: align with the main bracket match they feed into
+      const preQualPositions = [];
+      if (hasPreQual) {
+        bracketData.preQualMatches.forEach((pqMatch, idx) => {
+          // Find which first-round match slot this pre-qual feeds
+          const targetSlot = pqMatch.targetSlot || 0;
+          // targetSlot is 1-based index into the bracket (e.g., slot 7 means 7th position)
+          // We need to find which first-round match and which player slot
+          const matchIndex = Math.floor((targetSlot - 1) / 2);
+          const isPlayer2 = (targetSlot - 1) % 2 === 1;
+          
+          // Position the pre-qual match to align with where it feeds
+          const targetPos = positions[0][matchIndex];
+          if (targetPos) {
+            // Center the pre-qual match on the slot it feeds
+            const slotCenter = targetPos.rowStart + (isPlayer2 ? targetPos.spanRows * 0.75 : targetPos.spanRows * 0.25);
+            const spanRows = 6;
+            const rowStart = Math.max(2, Math.round(slotCenter - spanRows / 2));
+            preQualPositions.push({ rowStart, spanRows, targetSlot, matchIndex, isPlayer2 });
+            const endRow = rowStart + spanRows - 1;
+            if (endRow > maxRow) maxRow = endRow;
+          }
+        });
+      }
+
+      // Total grid rows (excluding header row)
+      const gridRows = maxRow - 1;
+
+      // Columns: [PreQual, Connector]? + [Round, Connector] * numRounds + [Champion]
+      const colWidths = [];
+      const colOffset = hasPreQual ? 2 : 0; // pre-qual column + connector
+      
+      if (hasPreQual) {
+        colWidths.push('var(--bracket-match-w)'); // Pre-qual matches column
+        colWidths.push('var(--bracket-connector-w)'); // Pre-qual connector
+      }
+      for (let r = 0; r < numRounds; r++) {
+        colWidths.push('var(--bracket-match-w)');
+        colWidths.push('var(--bracket-connector-w)');
+      }
+      colWidths.push('180px');
+
+      let html = `<div class="bracket-grid" style="--bracket-rows:${gridRows}; grid-template-columns:${colWidths.join(' ')};">`;
+
+      // Helper function to format date as DD.MM.YYYY
+      function formatDateForHeader(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+      }
+
+      // Headers
+      if (hasPreQual) {
+        const preQualDeadline = bracketData.roundDeadlines?.['prequal'] || '';
+        const preQualDateStr = formatDateForHeader(preQualDeadline);
+        const preQualHeaderText = preQualDateStr ? `Pre-Qualifying (${preQualDateStr})` : 'Pre-Qualifying';
+        html += `<div class="round-header" style="grid-column:1; grid-row:1;">${preQualHeaderText}</div>`;
+      }
+      for (let r = 0; r < numRounds; r++) {
+        const gridCol = colOffset + r * 2 + 1;
+        const roundNum = r + 1;
+        const roundDeadline = bracketData.roundDeadlines?.[`round-${roundNum}`] || '';
+        const roundDateStr = formatDateForHeader(roundDeadline);
+        const roundName = bracketData.mainBracket[r].roundName;
+        const headerText = roundDateStr ? `${roundName} (${roundDateStr})` : roundName;
+        html += `<div class="round-header" style="grid-column:${gridCol}; grid-row:1;">${headerText}</div>`;
+      }
+      html += `<div class="round-header" style="grid-column:${colOffset + numRounds * 2 + 1}; grid-row:1;">Champion</div>`;
+
+      // Pre-qual matches and connectors
+      if (hasPreQual) {
+        bracketData.preQualMatches.forEach((match, idx) => {
+          const pos = preQualPositions[idx];
+          if (!pos) return;
+          
+          const isCompleted = match.winner ? 'completed' : '';
+
+          html += `
+            <div class="match-cell" style="grid-column:1; grid-row:${pos.rowStart} / span ${pos.spanRows};">
+              <div class="bracket-match prequal-match ${isCompleted}" onclick="openMatchModal('prequal', ${idx})">
+                <div class="match-slot ${match.winner === getPlayerId(match.player1) ? 'winner' : (match.winner ? 'loser' : '')}">
+                  <span class="slot-seed ${!match.player1 ? 'empty-seed' : ''}">${match.player1?.originalSeed || '?'}</span>
+                  <span class="slot-name ${!match.player1 ? 'empty' : ''}">${getPlayerDisplayName(match.player1)}</span>
+                </div>
+                <div class="match-slot ${match.winner === getPlayerId(match.player2) ? 'winner' : (match.winner ? 'loser' : '')}">
+                  <span class="slot-seed ${!match.player2 ? 'empty-seed' : ''}">${match.player2?.originalSeed || '?'}</span>
+                  <span class="slot-name ${!match.player2 ? 'empty' : ''}">${getPlayerDisplayName(match.player2)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Connector from pre-qual to first round
+          const targetPos = positions[0][pos.matchIndex];
+          if (targetPos) {
+            const connectorRowStart = Math.min(pos.rowStart, targetPos.rowStart);
+            const connectorRowEnd = Math.max(pos.rowStart + pos.spanRows, targetPos.rowStart + targetPos.spanRows);
+            const connectorSpan = connectorRowEnd - connectorRowStart;
+            const connectorHeight = connectorSpan * unit;
+            
+            // Calculate Y positions relative to connector cell
+            const preQualCenter = (pos.rowStart - connectorRowStart) * unit + (pos.spanRows * unit) / 2;
+            const targetY = (targetPos.rowStart - connectorRowStart) * unit + (pos.isPlayer2 ? targetPos.spanRows * 0.75 : targetPos.spanRows * 0.25) * unit;
+
+            html += `
+              <div class="connector-cell" style="grid-column:2; grid-row:${connectorRowStart} / span ${connectorSpan};">
+                <svg viewBox="0 0 30 ${connectorHeight}" preserveAspectRatio="none">
+                  <path class="connector-stroke" d="M 0 ${preQualCenter} L 15 ${preQualCenter} L 15 ${targetY} L 30 ${targetY}" />
+                </svg>
+              </div>
+            `;
+          }
+        });
+      }
+
+      // Main bracket matches + connectors
+      for (let roundIndex = 0; roundIndex < numRounds; roundIndex++) {
+        const round = bracketData.mainBracket[roundIndex];
+        const matchCol = colOffset + roundIndex * 2 + 1;
+        const connectorCol = colOffset + roundIndex * 2 + 2;
+
+        // Match cells
+        round.matches.forEach((match, matchIndex) => {
+          const pos = positions[roundIndex][matchIndex];
+          const isCompleted = match.winner ? 'completed' : '';
+
+          html += `
+            <div class="match-cell" style="grid-column:${matchCol}; grid-row:${pos.rowStart} / span ${pos.spanRows};">
+              <div class="bracket-match ${isCompleted}" onclick="openMatchModal('main', ${roundIndex}, ${matchIndex})">
+                <div class="match-slot ${match.winner === getPlayerId(match.player1) ? 'winner' : (match.winner ? 'loser' : '')}">
+                  <span class="slot-seed ${!match.player1 ? 'empty-seed' : ''}">${match.player1?.originalSeed || '?'}</span>
+                  <span class="slot-name ${!match.player1 ? 'empty' : ''}">${getPlayerDisplayName(match.player1)}</span>
+                </div>
+                <div class="match-slot ${match.winner === getPlayerId(match.player2) ? 'winner' : (match.winner ? 'loser' : '')}">
+                  <span class="slot-seed ${!match.player2 ? 'empty-seed' : ''}">${match.player2?.originalSeed || '?'}</span>
+                  <span class="slot-name ${!match.player2 ? 'empty' : ''}">${getPlayerDisplayName(match.player2)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        // Connector cells (between this round and next)
+        if (roundIndex < numRounds - 1) {
+          const nextMatches = bracketData.mainBracket[roundIndex + 1].matches.length;
+          for (let pairIndex = 0; pairIndex < nextMatches; pairIndex++) {
+            const top = positions[roundIndex][pairIndex * 2];
+            const bottom = positions[roundIndex][pairIndex * 2 + 1];
+            const pairRowStart = top.rowStart;
+            const pairSpan = (bottom.rowStart + bottom.spanRows) - top.rowStart;
+            const pairHeight = pairSpan * unit;
+            const yTop = (top.spanRows * unit) / 2;
+            const yBottom = (bottom.rowStart - top.rowStart) * unit + (bottom.spanRows * unit) / 2;
+            const yMid = (yTop + yBottom) / 2;
+
+            html += `
+              <div class="connector-cell" style="grid-column:${connectorCol}; grid-row:${pairRowStart} / span ${pairSpan};">
+                <svg viewBox="0 0 30 ${pairHeight}" preserveAspectRatio="none">
+                  <path class="connector-stroke" d="M 0 ${yTop} L 15 ${yTop}" />
+                  <path class="connector-stroke" d="M 0 ${yBottom} L 15 ${yBottom}" />
+                  <path class="connector-stroke" d="M 15 ${yTop} L 15 ${yBottom}" />
+                  <path class="connector-stroke" d="M 15 ${yMid} L 30 ${yMid}" />
+                </svg>
+              </div>
+            `;
+          }
+        } else {
+          // Final connector to champion
+          const finalMatchPos = positions[numRounds - 1][0];
+          const pairRowStart = finalMatchPos.rowStart;
+          const pairSpan = finalMatchPos.spanRows;
+          const pairHeight = pairSpan * unit;
+          const yMid = pairHeight / 2;
+          html += `
+            <div class="connector-cell" style="grid-column:${connectorCol}; grid-row:${pairRowStart} / span ${pairSpan};">
+              <svg viewBox="0 0 30 ${pairHeight}" preserveAspectRatio="none">
+                <path class="connector-stroke" d="M 0 ${yMid} L 30 ${yMid}" />
+              </svg>
+            </div>
+          `;
+        }
+      }
+
+      // Champion
+      const finalMatch = bracketData.mainBracket[numRounds - 1]?.matches?.[0];
+      const champion = finalMatch?.winner ?
+        (finalMatch.winner === getPlayerId(finalMatch.player1) ? finalMatch.player1 : finalMatch.player2) : null;
+      const championSpan = positions[numRounds - 1][0]?.spanRows || 2;
+      const championRow = positions[numRounds - 1][0]?.rowStart || 2;
+
+      html += `
+        <div class="champion-cell" style="grid-column:${colOffset + numRounds * 2 + 1}; grid-row:${championRow} / span ${championSpan};">
+          <div class="champion-box">
+            <div class="champion-label">Champion</div>
+            <div class="champion-name">${champion ? `${champion.firstName} ${champion.lastName}` : 'TBD'}</div>
+          </div>
+        </div>
+      `;
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    function getPlayerId(player) {
+      return player?.reg || player?.regNo || player?.id || player?.playerId || null;
+    }
+    
+    function getPlayerName(player) {
+      if (!player) return 'TBD';
+      if (typeof player === 'string') {
+        // If it's just a reg no, try to find the player
+        const found = players.find(p => (p.reg || p.regNo || p.id || p.playerId) === player);
+        if (found) return getPlayerName(found);
+        return player;
+      }
+      // Try firstName + lastName first
+      const fullName = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+      if (fullName) return fullName;
+      // Fall back to name field
+      if (player.name) return player.name;
+      // Try to find player in loaded players array by ID/reg
+      const playerId = player.reg || player.regNo || player.id || player.playerId;
+      if (playerId && players.length > 0) {
+        const found = players.find(p => 
+          (p.reg || p.regNo || p.id || p.playerId) === playerId
+        );
+        if (found) {
+          const foundName = `${found.firstName || ''} ${found.lastName || ''}`.trim();
+          return foundName || found.name || 'Unknown';
+        }
+      }
+      return 'Unknown';
+    }
+    
+    // Helper to get display name for bracket rendering
+    function getPlayerDisplayName(player) {
+      if (!player) return 'TBD';
+      return getPlayerName(player);
+    }
+    
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    
+    let currentMatch = null;
+    
+    function openMatchModal(type, ...args) {
+      // Don't open modal in view mode
+      if (viewMode) return;
+      
+      if (type === 'prequal') {
+        const [index] = args;
+        currentMatch = { type: 'prequal', index };
+        const match = bracketData.preQualMatches[index];
+        renderMatchModal(match);
+      } else if (type === 'main') {
+        const [roundIndex, matchIndex] = args;
+        currentMatch = { type: 'main', roundIndex, matchIndex };
+        const match = bracketData.mainBracket[roundIndex].matches[matchIndex];
+        renderMatchModal(match);
+      }
+      
+      document.getElementById('match-modal').classList.add('active');
+    }
+    
+    function renderMatchModal(match) {
+      const p1 = match.player1;
+      const p2 = match.player2;
+      
+      const p1Name = p1 ? `${p1.firstName} ${p1.lastName}` : 'TBD';
+      const p2Name = p2 ? `${p2.firstName} ${p2.lastName}` : 'TBD';
+      const p1Id = getPlayerId(p1) || 'p1';
+      const p2Id = getPlayerId(p2) || 'p2';
+      
+      document.getElementById('match-modal-content').innerHTML = `
+        <div class="modal-field">
+          <label>Winner</label>
+          <select id="modal-winner" ${!p1 || !p2 ? 'disabled' : ''}>
+            <option value="">-- Select Winner --</option>
+            <option value="${p1Id}" ${match.winner === p1Id ? 'selected' : ''}>${p1Name}</option>
+            <option value="${p2Id}" ${match.winner === p2Id ? 'selected' : ''}>${p2Name}</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Score (e.g., "3&2", "1 UP", "19th")</label>
+          <input type="text" id="modal-score" value="${match.score || ''}" placeholder="3&2">
+        </div>
+        <div class="modal-field">
+          <label>Date Played</label>
+          <input type="date" id="modal-date" value="${match.datePlayed || ''}">
+        </div>
+        <div class="modal-field">
+          <label>Course Played</label>
+          <input type="text" id="modal-course" value="${match.course || ''}" placeholder="Course name">
+        </div>
+      `;
+    }
+    
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      currentMatch = null;
+    }
+    
+    function saveMatchResult() {
+      if (!currentMatch) return;
+      
+      const winner = document.getElementById('modal-winner').value;
+      const score = document.getElementById('modal-score').value;
+      const datePlayed = document.getElementById('modal-date').value;
+      const course = document.getElementById('modal-course').value;
+      
+      if (!winner) {
+        alert('Please select a winner');
+        return;
+      }
+      
+      let match;
+      if (currentMatch.type === 'prequal') {
+        match = bracketData.preQualMatches[currentMatch.index];
+      } else {
+        match = bracketData.mainBracket[currentMatch.roundIndex].matches[currentMatch.matchIndex];
+      }
+      
+      match.winner = winner;
+      match.score = score;
+      match.datePlayed = datePlayed;
+      match.course = course;
+      
+      // If pre-qual match, advance winner to main bracket
+      if (currentMatch.type === 'prequal') {
+        advancePreQualWinner(currentMatch.index);
+      } else {
+        // Advance winner in main bracket
+        advanceMainBracketWinner(currentMatch.roundIndex, currentMatch.matchIndex);
+      }
+      
+      closeModal('match-modal');
+      renderBracket();
+      saveTournament();
+    }
+    
+    function advancePreQualWinner(matchIndex) {
+      const match = bracketData.preQualMatches[matchIndex];
+      const winner = match.winner === getPlayerId(match.player1) ? match.player1 : match.player2;
+      
+      // Find the target slot in the first round of main bracket
+      const targetSlot = match.targetSlot;
+      const firstRound = bracketData.mainBracket[0];
+      
+      // Calculate which match and which slot (player1 or player2)
+      const matchNum = Math.floor((targetSlot - 1) / 2);
+      const slotNum = (targetSlot - 1) % 2;
+      
+      if (firstRound.matches[matchNum]) {
+        if (slotNum === 0) {
+          firstRound.matches[matchNum].player1 = winner;
+        } else {
+          firstRound.matches[matchNum].player2 = winner;
+        }
+      }
+    }
+    
+    function advanceMainBracketWinner(roundIndex, matchIndex) {
+      if (roundIndex >= bracketData.mainBracket.length - 1) return; // Final match
+      
+      const match = bracketData.mainBracket[roundIndex].matches[matchIndex];
+      const winner = match.winner === getPlayerId(match.player1) ? match.player1 : match.player2;
+      
+      // Next round match number
+      const nextMatchNum = Math.floor(matchIndex / 2);
+      const nextSlot = matchIndex % 2;
+      
+      const nextRound = bracketData.mainBracket[roundIndex + 1];
+      if (nextRound.matches[nextMatchNum]) {
+        if (nextSlot === 0) {
+          nextRound.matches[nextMatchNum].player1 = winner;
+        } else {
+          nextRound.matches[nextMatchNum].player2 = winner;
+        }
+      }
+    }
+    
+    function lockBracket() {
+      if (!confirm('Lock the bracket? This will finalize the draw and save to the database. You cannot re-draw after locking.')) {
+        return;
+      }
+      
+      bracketData.isLocked = true;
+      bracketData.status = 'locked';
+      isLocked = true;
+      
+      saveTournament();
+      
+      renderPlayers();
+      renderDeadlines();
+      updateButtonStates();
+      initStrictDeadlinesToggle(); // Disable the toggle when locked
+      document.getElementById('info-status').textContent = getStatusLabel('locked');
+      
+      alert('Bracket locked and saved successfully!');
+    }
+    
+    function unlockBracket() {
+      if (!confirm('Unlock the bracket? This will allow you to reset and re-draw the bracket. Existing match results will be preserved until you reset.')) {
+        return;
+      }
+      
+      bracketData.isLocked = false;
+      bracketData.status = 'drawn';
+      isLocked = false;
+      
+      saveTournament();
+      
+      renderPlayers();
+      renderDeadlines();
+      updateButtonStates();
+      initStrictDeadlinesToggle(); // Re-enable the toggle
+      document.getElementById('info-status').textContent = getStatusLabel('drawn');
+      
+      alert('Bracket unlocked! You can now reset and re-draw if needed.');
+    }
+
+    function resetBracket() {
+      if (!confirm('Reset the bracket? This will clear the current draw. You can then re-draw.')) {
+        return;
+      }
+      
+      bracketData.status = 'setup';
+      bracketData.preQualMatches = [];
+      bracketData.mainBracket = [];
+      // Keep protected players and deadlines
+      
+      renderPlayers();
+      renderBracket();
+      updateStats();
+      updateButtonStates();
+      
+      document.getElementById('info-status').textContent = getStatusLabel('setup');
+    }
+    
+    async function saveTournament() {
+      // Strip unnecessary player data before saving
+      const strippedBracketData = stripBracketPlayerData(bracketData);
+      tournament.bracketData = strippedBracketData;
+      
+      const tournaments = getTournaments();
+      tournaments[tournamentIndex] = tournament;
+      localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      
+      // Direct sync to Firebase - update only this tournament
+      try {
+        if (typeof firebase !== 'undefined' && firebase.database) {
+          // Clean up any undefined values before sending to Firebase
+          const cleanTournament = JSON.parse(JSON.stringify(tournament));
+          await firebase.database().ref('tournaments/' + tournament.tournamentId).set(cleanTournament);
+          console.log('✓ Bracket saved to Firebase');
+        }
+      } catch(e) {
+        console.error('Firebase sync failed:', e);
+      }
+    }
+    
+    function goToAdmissions() {
+      window.location.href = `admissions.html?tournamentId=${tournament.tournamentId}`;
+    }
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      // Only use event.target if called from click event
+      try {
+        if (event && event.target) {
+          event.target.classList.add('active');
+        }
+      } catch(e) {
+        // Called programmatically, not from click
+      }
+      
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      document.getElementById('pane-' + tabName).classList.add('active');
     }
     
     // Initialize on load

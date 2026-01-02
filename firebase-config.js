@@ -4,7 +4,7 @@ if (typeof window.firebaseConfig === 'undefined') {
   window.firebaseConfig = {
     apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
     authDomain: "gtm-management-6350e.firebaseapp.com",
-    databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com/",
+    databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com",
     projectId: "gtm-management-6350e",
     storageBucket: "gtm-management-6350e.firebasestorage.app",
     messagingSenderId: "461806742170",

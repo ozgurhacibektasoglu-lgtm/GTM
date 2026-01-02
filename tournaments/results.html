@@ -244,9 +244,11 @@
       <div class="card" id="stroke-play-section">
         <h2>Category Results Configuration</h2>
         <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn" style="background: linear-gradient(180deg, #10b981, #059669);" onclick="generateAllResults()">📊 Generate All Results</button>
           <button class="btn" style="background: linear-gradient(180deg, #f59e0b, #d97706);" onclick="openWinnersList()">🏆 Winners List</button>
           <button class="btn" style="background: linear-gradient(180deg, #ec4899, #db2777);" onclick="openPlayOff()">🏌️ Play Off Results</button>
         </div>
+        <p id="generate-status" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 500;"></p>
         <div id="categories-list">
           <div class="empty-state">Loading categories...</div>
         </div>
@@ -254,8 +256,12 @@
 
       <!-- Match Play Results Section -->
       <div class="card" id="match-play-section" style="display: none;">
-        <h2>🎯 Match Play Results</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 style="margin: 0;">🎯 Match Play Results</h2>
+          <button class="btn" style="background: linear-gradient(180deg, #10b981, #059669);" onclick="saveMatchPlayResults()">💾 Save Results to Firebase</button>
+        </div>
         <p style="color: #64748b; margin-bottom: 20px;">Team standings and match results aggregated across all rounds played.</p>
+        <div id="match-play-save-status" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 500;"></div>
         
         <!-- Team Standings at the top -->
         <div style="margin-bottom: 24px;">
@@ -283,6 +289,9 @@
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const tournamentId = urlParams.get('tournamentId');
+      
+      // Global variable to store match play results for saving
+      let currentMatchPlayResults = null;
 
       if (!tournamentId) {
         alert('No tournament selected. Redirecting to tournaments page.');
@@ -356,6 +365,102 @@
       function getCategories() {
         const tournament = getTournament();
         return tournament?.categories || [];
+      }
+      
+      // Get stored category assignments (single source of truth)
+      function getCategoryAssignments(categoryCode) {
+        const tournament = getTournament();
+        if (!tournament || !tournament.categoryAssignments) return null;
+        return tournament.categoryAssignments[categoryCode] || null;
+      }
+      
+      // Calculate which categories a player belongs to
+      // PRIORITY: Uses stored categoryAssignments if available, otherwise calculates on-the-fly
+      function getPlayerCategories(player, tournament) {
+        if (!tournament || !tournament.categories || tournament.categories.length === 0) {
+          return [];
+        }
+        
+        const playerId = player.reg || player.id;
+        
+        // PRIORITY 1: Check stored categoryAssignments (single source of truth)
+        if (tournament.categoryAssignments && playerId) {
+          const matchingFromStored = [];
+          for (const catCode in tournament.categoryAssignments) {
+            // Firebase may return arrays as objects with numeric keys - convert back to array
+            let playerIds = tournament.categoryAssignments[catCode];
+            if (playerIds && !Array.isArray(playerIds)) {
+              playerIds = Object.values(playerIds);
+            }
+            if (playerIds && playerIds.includes(playerId)) {
+              matchingFromStored.push(catCode);
+            }
+          }
+          if (matchingFromStored.length > 0) {
+            console.log(`Player ${playerId}: Using stored category assignments:`, matchingFromStored);
+            return matchingFromStored;
+          }
+        }
+        
+        // FALLBACK: Calculate on-the-fly (backward compatibility)
+        const matchingCategories = [];
+        const playerGender = (player.gender || '').toLowerCase();
+        const playerHcp = parseFloat(player.hcp);
+        const playerAge = player.age ? parseInt(player.age) : null;
+        
+        for (const cat of tournament.categories) {
+          // Skip result-only categories
+          if (cat.isResultOnly) continue;
+          
+          // Check if this is a manual category with explicit player list
+          if (cat.isManual === true) {
+            const manualPlayerIds = cat.players || cat.manualPlayers || [];
+            if (manualPlayerIds.includes(player.reg) || manualPlayerIds.includes(player.id)) {
+              matchingCategories.push(cat.code);
+            }
+            continue;
+          }
+          
+          // Check categoryTag first - if specified, player must have this tag
+          if (cat.categoryTag && cat.categoryTag !== '') {
+            const playerTag = player.categoryTag || player.tag || '';
+            if (playerTag !== cat.categoryTag) continue;
+          }
+          
+          // Check gender match
+          const catGender = (cat.gender || '').toLowerCase();
+          let genderMatch = false;
+          if (!catGender || catGender === 'any' || catGender === '' || catGender === 'manual') {
+            genderMatch = true;
+          } else if (catGender === 'male' && (playerGender === 'm' || playerGender === 'male' || playerGender === 'e')) {
+            genderMatch = true;
+          } else if (catGender === 'female' && (playerGender === 'f' || playerGender === 'female' || playerGender === 'k')) {
+            genderMatch = true;
+          }
+          
+          if (!genderMatch) continue;
+          
+          // Check handicap range (skip if 'Manual')
+          if (cat.handicapMin !== undefined && cat.handicapMin !== null && cat.handicapMin !== '' && cat.handicapMin !== 'Manual') {
+            if (isNaN(playerHcp) || playerHcp < parseFloat(cat.handicapMin)) continue;
+          }
+          if (cat.handicapMax !== undefined && cat.handicapMax !== null && cat.handicapMax !== '' && cat.handicapMax !== 'Manual') {
+            if (isNaN(playerHcp) || playerHcp > parseFloat(cat.handicapMax)) continue;
+          }
+          
+          // Check age range (skip if 'Manual')
+          if (cat.ageMin !== undefined && cat.ageMin !== null && cat.ageMin !== '' && cat.ageMin !== 'Manual') {
+            if (playerAge === null || playerAge < parseInt(cat.ageMin)) continue;
+          }
+          if (cat.ageMax !== undefined && cat.ageMax !== null && cat.ageMax !== '' && cat.ageMax !== 'Manual') {
+            if (playerAge === null || playerAge > parseInt(cat.ageMax)) continue;
+          }
+          
+          // Player matches this category
+          matchingCategories.push(cat.code);
+        }
+        
+        return matchingCategories;
       }
       
       // Ensure a default category exists for team/match play tournaments
@@ -863,6 +968,8 @@
                 matchType: matchType,
                 leftTeam: leftTeamName,
                 rightTeam: rightTeamName,
+                leftPlayers: leftPlayers,
+                rightPlayers: rightPlayers,
                 leftScore: leftScore,
                 rightScore: rightScore,
                 status: matchStatus
@@ -1049,6 +1156,122 @@
         html += '</tbody></table>';
         html += '<p style="margin-top: 12px; font-size: 12px; color: #64748b;">* +/- = Score Differential (sum of winning margins). Used as untie criteria when points are equal.</p>';
         container.innerHTML = html;
+        
+        // Store results for saving to Firebase
+        currentMatchPlayResults = {
+          standings: standings.map((team, idx) => ({
+            rank: idx + 1,
+            team: team.team || null,
+            matchesPlayed: team.matchesPlayed || 0,
+            wins: team.wins || 0,
+            losses: team.losses || 0,
+            ties: team.ties || 0,
+            points: team.points || 0,
+            scoreDiff: team.scoreDiff || 0
+          })),
+          matches: matchResults.map(m => ({
+            roundIndex: m.roundIndex !== undefined ? m.roundIndex : null,
+            matchType: m.matchType || null,
+            leftTeam: m.leftTeam || null,
+            rightTeam: m.rightTeam || null,
+            leftPlayer: m.leftPlayer ? {
+              reg: m.leftPlayer.reg || null,
+              firstName: m.leftPlayer.firstName || '',
+              lastName: m.leftPlayer.lastName || ''
+            } : null,
+            rightPlayer: m.rightPlayer ? {
+              reg: m.rightPlayer.reg || null,
+              firstName: m.rightPlayer.firstName || '',
+              lastName: m.rightPlayer.lastName || ''
+            } : null,
+            leftPlayers: m.leftPlayers ? m.leftPlayers.map(p => ({
+              reg: p.reg || null,
+              firstName: p.firstName || '',
+              lastName: p.lastName || ''
+            })) : null,
+            rightPlayers: m.rightPlayers ? m.rightPlayers.map(p => ({
+              reg: p.reg || null,
+              firstName: p.firstName || '',
+              lastName: p.lastName || ''
+            })) : null,
+            leftScore: m.leftScore !== undefined ? m.leftScore : null,
+            rightScore: m.rightScore !== undefined ? m.rightScore : null,
+            status: m.status || 'pending'
+          })),
+          calculatedAt: new Date().toISOString()
+        };
+        console.log('✓ Match play results stored for saving:', currentMatchPlayResults.standings.length, 'teams,', currentMatchPlayResults.matches.length, 'matches');
+        console.log('Sample match with players:', currentMatchPlayResults.matches[0]);
+        console.log('All matches leftPlayers check:', currentMatchPlayResults.matches.map(m => ({ matchType: m.matchType, leftPlayers: m.leftPlayers, rightPlayers: m.rightPlayers })));
+      }
+      
+      // Save match play results to Firebase
+      async function saveMatchPlayResults() {
+        const statusEl = document.getElementById('match-play-save-status');
+        
+        if (!currentMatchPlayResults) {
+          statusEl.style.display = 'block';
+          statusEl.style.background = '#fee2e2';
+          statusEl.style.color = '#991b1b';
+          statusEl.textContent = '❌ No match play results to save. Please wait for results to load.';
+          setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+          return;
+        }
+        
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#dbeafe';
+        statusEl.style.color = '#1e40af';
+        statusEl.textContent = '⏳ Saving match play results to Firebase...';
+        
+        try {
+          const db = firebase.database();
+          
+          // Find the Firebase key for this tournament
+          const tournamentsSnap = await db.ref('tournaments').once('value');
+          const tournamentsData = tournamentsSnap.val();
+          
+          let firebaseKey = null;
+          if (tournamentsData) {
+            for (const key in tournamentsData) {
+              if (tournamentsData[key] && tournamentsData[key].tournamentId === tournamentId) {
+                firebaseKey = key;
+                break;
+              }
+            }
+          }
+          
+          if (!firebaseKey) {
+            throw new Error('Tournament not found in Firebase');
+          }
+          
+          // Save match play results to Firebase
+          await db.ref(`tournaments/${firebaseKey}/calculatedResults/MATCHPLAY`).set(currentMatchPlayResults);
+          
+          // Also save to localStorage
+          const tournaments = getTournaments();
+          const index = tournaments.findIndex(t => t.tournamentId === tournamentId);
+          if (index !== -1) {
+            if (!tournaments[index].calculatedResults) {
+              tournaments[index].calculatedResults = {};
+            }
+            tournaments[index].calculatedResults.MATCHPLAY = currentMatchPlayResults;
+            localStorage.setItem('tournaments', JSON.stringify(tournaments));
+          }
+          
+          statusEl.style.background = '#d1fae5';
+          statusEl.style.color = '#065f46';
+          statusEl.textContent = '✅ Match play results saved to Firebase!';
+          console.log('✓ Match play results saved to Firebase');
+          
+          setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+        } catch (err) {
+          console.error('Error saving match play results:', err);
+          statusEl.style.background = '#fee2e2';
+          statusEl.style.color = '#991b1b';
+          statusEl.textContent = `❌ Failed to save: ${err.message}`;
+          
+          setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
+        }
       }
 
       function loadCategories() {
@@ -1180,6 +1403,240 @@
         window.open(`results_display.html?${params.toString()}`, '_blank');
       }
 
+      // Generate results for all categories and save to Firebase
+      async function generateAllResults() {
+        const categories = getCategories();
+        const statusEl = document.getElementById('generate-status');
+        const tournament = getTournament();
+        
+        if (categories.length === 0) {
+          alert('No categories found');
+          return;
+        }
+        
+        if (!tournament) {
+          alert('Tournament not found');
+          return;
+        }
+        
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#dbeafe';
+        statusEl.style.color = '#1e40af';
+        statusEl.textContent = `Generating results for ${categories.length} categories...`;
+        
+        const roundIds = tournament.meta?.roundIds || [];
+        const scores = JSON.parse(localStorage.getItem('scores') || '{}');
+        const admittedPlayers = JSON.parse(localStorage.getItem('admittedPlayers') || '{}');
+        const courses = JSON.parse(localStorage.getItem('courses') || '[]');
+        
+        // Get all players from first round
+        const allPlayers = admittedPlayers[roundIds[0]] || [];
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        // Initialize Firebase database reference
+        const db = firebase.database();
+        
+        // Find the Firebase key for this tournament
+        let firebaseKey = null;
+        try {
+          const tournamentsSnap = await db.ref('tournaments').once('value');
+          const tournamentsData = tournamentsSnap.val();
+          if (tournamentsData) {
+            for (const key in tournamentsData) {
+              if (tournamentsData[key] && tournamentsData[key].tournamentId === tournamentId) {
+                firebaseKey = key;
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error finding tournament in Firebase:', e);
+        }
+        
+        if (!firebaseKey) {
+          statusEl.style.background = '#fee2e2';
+          statusEl.style.color = '#991b1b';
+          statusEl.textContent = 'Error: Could not find tournament in Firebase';
+          return;
+        }
+        
+        for (let i = 0; i < categories.length; i++) {
+          const category = categories[i];
+          statusEl.textContent = `Processing ${i + 1}/${categories.length}: ${category.name}...`;
+          
+          try {
+            // Get players in this category
+            // PRIORITY: Use stored categoryAssignments from tournament (single source of truth)
+            let storedPlayerIds = tournament.categoryAssignments?.[category.code];
+            
+            // Firebase may return arrays as objects with numeric keys - convert back to array
+            if (storedPlayerIds && !Array.isArray(storedPlayerIds)) {
+              storedPlayerIds = Object.values(storedPlayerIds);
+            }
+            
+            let categoryPlayers;
+            if (storedPlayerIds && storedPlayerIds.length > 0) {
+              // Use stored category assignments
+              categoryPlayers = allPlayers.filter(player => {
+                const playerId = player.reg || player.id;
+                return storedPlayerIds.includes(playerId);
+              });
+              console.log(`Category ${category.code}: Using stored assignments (${categoryPlayers.length} players)`);
+            } else {
+              // FALLBACK: Check player-level categories or calculate on-the-fly
+              categoryPlayers = allPlayers.filter(player => {
+                // Check if player has stored categories
+                if (player.categories && Array.isArray(player.categories) && player.categories.length > 0) {
+                  return player.categories.includes(category.code);
+                }
+                if (player.category) {
+                  return player.category === category.code;
+                }
+                // Fallback: calculate categories on-the-fly
+                const calculatedCats = getPlayerCategories(player, tournament);
+                return calculatedCats.includes(category.code);
+              });
+              console.log(`Category ${category.code}: Calculated on-the-fly (${categoryPlayers.length} players)`);
+            }
+            
+            if (categoryPlayers.length === 0) {
+              console.log(`No players in category ${category.name}, skipping...`);
+              successCount++;
+              continue;
+            }
+            
+            // Determine tournament type
+            const tournamentType = (category.tournamentType || 'Stroke Play').toUpperCase();
+            const isStableford = tournamentType.includes('STABLEFORD');
+            const isStrokePlay = !isStableford;
+            
+            // Helper function to check for incomplete holes
+            function playerHasIncompleteHoles(playerId) {
+              for (const roundId of roundIds) {
+                const playerScore = scores[roundId]?.[playerId];
+                if (!playerScore) continue;
+                if (playerScore.incompleteHoles && playerScore.incompleteHoles.length > 0) return true;
+                if (playerScore.isIncompleteHole) {
+                  if (Object.values(playerScore.isIncompleteHole).some(v => v === true)) return true;
+                }
+              }
+              return false;
+            }
+            
+            // Filter players for Stroke Play
+            let eligiblePlayers = categoryPlayers;
+            if (isStrokePlay) {
+              eligiblePlayers = categoryPlayers.filter(p => !playerHasIncompleteHoles(p.reg || p.id));
+            }
+            
+            // Calculate scores
+            const results = eligiblePlayers.map(player => {
+              const playerId = player.reg || player.id || player.odaNo;
+              const roundScores = [];
+              let total = 0;
+              let hasAnyScore = false;
+              let playerStatus = null;
+              
+              roundIds.forEach(roundId => {
+                const playerScore = scores[roundId]?.[playerId];
+                if (playerScore) {
+                  hasAnyScore = true;
+                  
+                  // Check for status
+                  const status = playerScore.status || playerScore.playerStatus;
+                  if (status && status !== 'OK' && ['NS', 'NR', 'DQ', 'WD', 'DNF', 'RTD'].includes(status.toUpperCase())) {
+                    playerStatus = status.toUpperCase();
+                  }
+                  
+                  if (isStableford) {
+                    const stbPoints = playerScore.stablefordPoints || [];
+                    const roundTotal = stbPoints.reduce((sum, p) => sum + (parseInt(p) || 0), 0);
+                    roundScores.push(roundTotal);
+                    total += roundTotal;
+                  } else {
+                    const holes = playerScore.holes || [];
+                    const roundTotal = holes.reduce((sum, h) => sum + (parseInt(h) || 0), 0);
+                    roundScores.push(roundTotal);
+                    total += roundTotal;
+                  }
+                } else {
+                  roundScores.push('-');
+                }
+              });
+              
+              return {
+                type: 'individual',
+                reg: playerId,
+                firstName: player.firstName,
+                lastName: player.lastName,
+                club: player.club || player.homeClub,
+                nationality: player.nationality || player.country,
+                hcp: player.hcp,
+                phcp: player.phcp,
+                roundScores,
+                total: hasAnyScore ? total : null,
+                status: playerStatus,
+                hasStatus: !!playerStatus
+              };
+            }).filter(r => r.total !== null || r.hasStatus);
+            
+            // Sort results
+            results.sort((a, b) => {
+              if (a.hasStatus && !b.hasStatus) return 1;
+              if (!a.hasStatus && b.hasStatus) return -1;
+              if (a.hasStatus && b.hasStatus) return 0;
+              if (a.total === null) return 1;
+              if (b.total === null) return -1;
+              return isStableford ? (b.total - a.total) : (a.total - b.total);
+            });
+            
+            // Assign ranks
+            let rank = 1;
+            results.forEach((r, idx) => {
+              if (r.hasStatus) {
+                r.rank = r.status;
+              } else if (idx > 0 && r.total === results[idx - 1].total && !results[idx - 1].hasStatus) {
+                r.rank = results[idx - 1].rank;
+              } else {
+                r.rank = rank;
+              }
+              if (!r.hasStatus) rank++;
+            });
+            
+            // Save to Firebase
+            await db.ref(`tournaments/${firebaseKey}/calculatedResults/${category.code}`).set({
+              results: results,
+              calculatedAt: new Date().toISOString()
+            });
+            
+            console.log(`✓ Results saved for category ${category.name}`);
+            successCount++;
+            
+          } catch (err) {
+            console.error(`Error generating results for ${category.name}:`, err);
+            errorCount++;
+          }
+        }
+        
+        // Show final status
+        if (errorCount === 0) {
+          statusEl.style.background = '#dcfce7';
+          statusEl.style.color = '#166534';
+          statusEl.textContent = `✓ Successfully generated results for all ${successCount} categories! Public results page will now show correct rankings.`;
+        } else {
+          statusEl.style.background = '#fef3c7';
+          statusEl.style.color = '#92400e';
+          statusEl.textContent = `Generated ${successCount} categories, ${errorCount} failed. Check console for errors.`;
+        }
+        
+        // Hide status after 10 seconds
+        setTimeout(() => {
+          statusEl.style.display = 'none';
+        }, 10000);
+      }
+
       function checkAllScoresComplete() {
         const tournament = getTournament();
         const roundIds = tournament?.meta?.roundIds || [];
@@ -1193,16 +1650,46 @@
           const isTeamTournament = tournament?.meta?.teamsTournament === 'yes';
           const isTeamCategory = category.code === 'TEAM';
           
-          const players = getAdmittedPlayers().filter(player => {
-            // In team tournaments, all players belong to TEAM category
-            if (isTeamTournament && isTeamCategory) {
-              return true;
-            }
-            if (player.categories && Array.isArray(player.categories)) {
-              return player.categories.includes(category.code);
-            }
-            return player.category === category.code;
-          });
+          // PRIORITY: Use stored categoryAssignments (single source of truth)
+          let storedPlayerIds = tournament?.categoryAssignments?.[category.code];
+          
+          // Firebase may return arrays as objects with numeric keys - convert back to array
+          if (storedPlayerIds && !Array.isArray(storedPlayerIds)) {
+            storedPlayerIds = Object.values(storedPlayerIds);
+          }
+          
+          const allAdmittedPlayers = getAdmittedPlayers();
+          
+          let players;
+          if (storedPlayerIds && storedPlayerIds.length > 0) {
+            // Use stored assignments
+            players = allAdmittedPlayers.filter(player => {
+              const playerId = player.reg || player.id;
+              // In team tournaments, all players belong to TEAM category
+              if (isTeamTournament && isTeamCategory) {
+                return true;
+              }
+              return storedPlayerIds.includes(playerId);
+            });
+          } else {
+            // FALLBACK: Check player-level categories or calculate
+            players = allAdmittedPlayers.filter(player => {
+              // In team tournaments, all players belong to TEAM category
+              if (isTeamTournament && isTeamCategory) {
+                return true;
+              }
+              // First check if player has stored categories
+              if (player.categories && Array.isArray(player.categories) && player.categories.length > 0) {
+                return player.categories.includes(category.code);
+              }
+              if (player.category) {
+                return player.category === category.code;
+              }
+              // Fallback: calculate categories on-the-fly
+              const calculatedCats = getPlayerCategories(player, tournament);
+              return calculatedCats.includes(category.code);
+            });
+          }
           
           players.forEach(player => {
             roundIds.forEach(roundId => {

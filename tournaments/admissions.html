@@ -1122,17 +1122,27 @@
             window.location.href = 'index.html';
             return;
           }
-          const roundsData = currentTournament.meta?.roundsData || [];
-          const rIds = currentTournament.meta?.roundIds || [];
-          // Choose default round: latest on/after first, and up to today
-          let defaultIdx = 0;
-          const today = new Date(); today.setHours(0,0,0,0);
-          for (let i=0;i<roundsData.length;i++){
-            const d = roundsData[i]?.date ? new Date(roundsData[i].date) : null;
-            if (d){ d.setHours(0,0,0,0); if (today >= d) defaultIdx = i; else break; }
+          
+          // Check if this is a bracket tournament (no rounds)
+          const isBracket = currentTournament.type && currentTournament.type.toLowerCase().includes('bracket');
+          
+          if (isBracket) {
+            // Bracket tournaments don't have rounds
+            currentRoundIndex = 0;
+            currentRoundId = `${currentTournament.tournamentId}_BRACKET`;
+          } else {
+            const roundsData = currentTournament.meta?.roundsData || [];
+            const rIds = currentTournament.meta?.roundIds || [];
+            // Choose default round: latest on/after first, and up to today
+            let defaultIdx = 0;
+            const today = new Date(); today.setHours(0,0,0,0);
+            for (let i=0;i<roundsData.length;i++){
+              const d = roundsData[i]?.date ? new Date(roundsData[i].date) : null;
+              if (d){ d.setHours(0,0,0,0); if (today >= d) defaultIdx = i; else break; }
+            }
+            currentRoundIndex = defaultIdx;
+            currentRoundId = rIds[defaultIdx] || `${currentTournament.tournamentId}_R${defaultIdx+1}`;
           }
-          currentRoundIndex = defaultIdx;
-          currentRoundId = rIds[defaultIdx] || `${currentTournament.tournamentId}_R${defaultIdx+1}`;
         } else {
           alert('No round or tournament specified.');
           window.location.href = 'index.html';
@@ -1142,20 +1152,28 @@
         allPlayers = getPlayers();
         console.log('Loaded players:', allPlayers.length);
         
-        // Check if multi-round tournament
+        // Check if bracket tournament or multi-round tournament
+        const isBracket = currentTournament.type && currentTournament.type.toLowerCase().includes('bracket');
         const roundsData = currentTournament.meta?.roundsData || [];
         const numRounds = currentTournament.meta?.rounds || 1;
         
         // Update round info badge
         const roundInfoBadge = document.getElementById('round-info-badge');
         if (roundInfoBadge) {
-          const roundData = roundsData[currentRoundIndex];
-          const roundDate = roundData?.date ? formatDateDDMMYYYY(roundData.date) : '';
-          roundInfoBadge.textContent = `${currentTournament.name || 'Tournament'} • Round ${currentRoundIndex + 1}${roundDate ? ' • ' + roundDate : ''}`;
+          if (isBracket) {
+            // For bracket tournaments, show tournament name and type
+            const startDate = currentTournament.date ? formatDateDDMMYYYY(currentTournament.date) : '';
+            roundInfoBadge.textContent = `${currentTournament.name || 'Tournament'} • Bracket${startDate ? ' • ' + startDate : ''}`;
+          } else {
+            const roundData = roundsData[currentRoundIndex];
+            const roundDate = roundData?.date ? formatDateDDMMYYYY(roundData.date) : '';
+            roundInfoBadge.textContent = `${currentTournament.name || 'Tournament'} • Round ${currentRoundIndex + 1}${roundDate ? ' • ' + roundDate : ''}`;
+          }
           roundInfoBadge.style.display = 'inline-block';
         }
         
-        if (numRounds > 1 && roundsData.length > 1) {
+        // Only show round selector for non-bracket multi-round tournaments
+        if (!isBracket && numRounds > 1 && roundsData.length > 1) {
           document.getElementById('round-selector').style.display = 'block';
           const select = document.getElementById('round-select');
           const roundIds = currentTournament.meta?.roundIds || [];

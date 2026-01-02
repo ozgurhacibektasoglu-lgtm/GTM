@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ranking Results - GTM</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .top-nav {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .top-nav h1 {
+      margin: 0;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .btn-back-top {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    .ranking-header {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+    }
+
+    .ranking-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 8px 0;
+    }
+
+    .ranking-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      color: #64748b;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    .ranking-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ranking-meta-item strong {
+      color: #334155;
+    }
+
+    .action-bar {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .leaderboard {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .leaderboard-header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: white;
+      padding: 20px 24px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leaderboard-table thead {
+      background: #f8fafc;
+      position: sticky;
+      top: 60px;
+      z-index: 50;
+    }
+
+    .leaderboard-table th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .leaderboard-table th.center,
+    .leaderboard-table td.center {
+      text-align: center;
+    }
+
+    .leaderboard-table td {
+      padding: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    .leaderboard-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .leaderboard-table tbody tr:nth-child(even) {
+      background: #fafbfc;
+    }
+
+    .rank-cell {
+      font-weight: 700;
+      font-size: 18px;
+      color: #1e293b;
+      text-align: center;
+      width: 60px;
+    }
+
+    .rank-cell.gold {
+      color: #d97706;
+    }
+
+    .rank-cell.silver {
+      color: #6b7280;
+    }
+
+    .rank-cell.bronze {
+      color: #92400e;
+    }
+
+    .rank-cell.unqualified {
+      color: #9ca3af;
+      font-style: italic;
+    }
+
+    .unqualified-row {
+      opacity: 0.7;
+      background: #f9fafb !important;
+    }
+
+    .unqualified-row:hover {
+      opacity: 0.85;
+    }
+
+    .player-cell {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .player-club {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .points-cell {
+      font-weight: 700;
+      font-size: 16px;
+      color: #10b981;
+      text-align: center;
+    }
+
+    .tournaments-played {
+      text-align: center;
+      color: #64748b;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .tournament-breakdown {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tournament-tag {
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .loading-spinner {
+      border: 4px solid #f3f4f6;
+      border-top: 4px solid #10b981;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .medal {
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 20px;
+    }
+
+    .best-result {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Player Details Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 80vh;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-header .player-info {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .modal-close {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .modal-body {
+      padding: 0;
+      overflow-y: auto;
+      max-height: calc(80vh - 80px);
+    }
+
+    .modal-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .modal-table th {
+      background: #f8fafc;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+    }
+
+    .modal-table th.center {
+      text-align: center;
+    }
+
+    .modal-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    .modal-table td.center {
+      text-align: center;
+    }
+
+    .modal-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .modal-table .finish-badge {
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .modal-table .points-value {
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    .modal-summary {
+      background: #f8fafc;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .modal-summary-item {
+      text-align: center;
+    }
+
+    .modal-summary-label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .modal-summary-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 4px;
+    }
+
+    .player-name-link {
+      cursor: pointer;
+      color: #1e293b;
+      transition: color 0.2s;
+    }
+
+    .player-name-link:hover {
+      color: #10b981;
+      text-decoration: underline;
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+      .top-nav {
+        padding: 12px 16px;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .top-nav h1 {
+        font-size: 18px;
+      }
+
+      .container {
+        padding: 0 12px;
+        margin: 12px auto;
+      }
+
+      .ranking-header {
+        padding: 16px;
+      }
+
+      .ranking-title {
+        font-size: 20px;
+      }
+
+      .ranking-meta {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 12px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .action-bar {
+        padding: 12px;
+        flex-direction: column;
+      }
+
+      .action-bar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Card-style table for mobile */
+      .leaderboard-table thead {
+        display: none;
+      }
+
+      .leaderboard-table,
+      .leaderboard-table tbody,
+      .leaderboard-table tr,
+      .leaderboard-table td {
+        display: block;
+        width: 100%;
+      }
+
+      .leaderboard-table tr {
+        background: white;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 12px;
+        position: relative;
+      }
+
+      .leaderboard-table tbody tr:nth-child(even) {
+        background: white;
+      }
+
+      .leaderboard-table td {
+        padding: 6px 12px;
+        border-bottom: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .leaderboard-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .leaderboard-table td.rank-cell {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: auto;
+        padding: 4px 10px;
+        background: #f1f5f9;
+        border-radius: 20px;
+        font-size: 14px;
+      }
+
+      .leaderboard-table td.rank-cell::before {
+        display: none;
+      }
+
+      .leaderboard-table td.player-cell {
+        padding-top: 8px;
+        padding-right: 60px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .leaderboard-table td.player-cell::before {
+        display: none;
+      }
+
+      .leaderboard-table td.points-cell {
+        font-size: 18px;
+      }
+
+      .leaderboard-table td.center {
+        text-align: right;
+      }
+
+      /* Modal mobile styles */
+      .modal-content {
+        max-height: 90vh;
+        border-radius: 12px;
+      }
+
+      .modal-header {
+        padding: 16px;
+      }
+
+      .modal-header h3 {
+        font-size: 16px;
+      }
+
+      .modal-table th,
+      .modal-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+
+      .modal-summary {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .modal-summary-value {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-table th,
+      .modal-table td {
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <h1 id="pageTitle">📊 Ranking Results</h1>
+    <a href="rankings.html" class="btn-back-top">← Back to Rankings</a>
+  </div>
+
+  <div class="container">
+    <div id="loadingState" class="loading">
+      <div class="loading-spinner"></div>
+      <p>Calculating rankings...</p>
+    </div>
+
+    <div id="resultsContainer" style="display: none;">
+      <div class="ranking-header">
+        <h1 class="ranking-title" id="rankingName"></h1>
+        <p id="rankingDescription" style="color: #64748b; margin: 8px 0;"></p>
+        <div class="ranking-meta" id="rankingMeta"></div>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary" onclick="recalculate()">
+          🔄 Recalculate
+        </button>
+        <button class="btn btn-secondary" onclick="exportResults()">
+          📥 Export to CSV
+        </button>
+        <button class="btn btn-secondary" onclick="printResults()">
+          🖨️ Print
+        </button>
+      </div>
+
+      <div class="leaderboard">
+        <div class="leaderboard-header">
+          🏆 Leaderboard
+        </div>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th class="center">Rank</th>
+              <th>Player</th>
+              <th class="center">Points</th>
+              <th class="center"># of Tournaments</th>
+              <th class="center">Best Finish</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Details Modal -->
+  <div id="playerModal" class="modal-overlay" onclick="closePlayerModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalPlayerName">Player Name</h3>
+          <div class="player-info" id="modalPlayerInfo">Club Name</div>
+        </div>
+        <button class="modal-close" onclick="closePlayerModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <table class="modal-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Tournament</th>
+              <th class="center">Finish</th>
+              <th class="center">Points</th>
+              <th class="center">PHCP</th>
+            </tr>
+          </thead>
+          <tbody id="modalTournamentsBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-summary" id="modalSummary"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="../firebase-config.js"></script>
+  
+  <script>
+    // Initialize Firebase with compat API
+    if (!firebase.apps.length) {
+      firebase.initializeApp(window.firebaseConfig);
+    }
+    console.log('Firebase initialized for ranking results');
+  </script>
+
+  <script>
+    let ranking = null;
+    let results = [];
+    const urlParams = new URLSearchParams(window.location.search);
+    const rankingId = urlParams.get('id');
+
+    // Initialize
+    loadAndCalculate();
+
+    async function loadAndCalculate() {
+      if (!rankingId) {
+        alert('No ranking ID provided');
+        window.location.href = 'rankings.html';
+        return;
+      }
+
+      try {
+        // Load ranking from Firebase
+        const rankingSnapshot = await firebase.database().ref(`rankings/${rankingId}`).once('value');
+        if (rankingSnapshot.exists()) {
+          ranking = rankingSnapshot.val();
+        } else {
+          // Fallback to localStorage
+          const rankings = JSON.parse(localStorage.getItem('rankings') || '[]');
+          ranking = rankings.find(r => r.id === rankingId);
+        }
+
+        if (!ranking) {
+          alert('Ranking not found');
+          window.location.href = 'rankings.html';
+          return;
+        }
+
+        await calculateRankings();
+      } catch (error) {
+        console.error('Error in loadAndCalculate:', error);
+        alert('Error loading ranking: ' + error.message);
+        // Don't redirect, let user see the error
+      }
+    }
+
+    async function calculateRankings() {
+      try {
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+
+        // Simulate calculation delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Load data from Firebase
+      const tournamentsSnapshot = await firebase.database().ref('tournaments').once('value');
+      const tournamentsData = tournamentsSnapshot.exists() ? tournamentsSnapshot.val() : {};
+      const tournaments = Object.values(tournamentsData);
+      
+      // Build a map from tournamentId to Firebase key
+      const tournamentIdToKey = {};
+      for (const key in tournamentsData) {
+        const t = tournamentsData[key];
+        if (t && t.tournamentId) {
+          tournamentIdToKey[t.tournamentId] = key;
+        }
+      }
+      
+      // Also load players from Firebase first, then fallback to localStorage
+      let players = [];
+      try {
+        const playersSnapshot = await firebase.database().ref('players').once('value');
+        if (playersSnapshot.exists()) {
+          const playersData = playersSnapshot.val();
+          players = Object.values(playersData);
+        }
+      } catch (e) {
+        console.warn('Could not load players from Firebase, using localStorage');
+      }
+      if (players.length === 0) {
+        players = JSON.parse(localStorage.getItem('players') || '[]');
+      }
+      
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+
+      // Get selected categories (new structure)
+      const selectedCategories = ranking.categories || [];
+      
+      console.log('Ranking data:', ranking);
+      console.log('Selected categories:', selectedCategories);
+      
+      if (selectedCategories.length === 0) {
+        throw new Error('No categories selected for this ranking. Please go back to Rankings and use "Add Tournament" to select tournament categories.');
+      }
+
+      // Calculate points for each player
+      const playerPoints = {};
+      const scoringBasis = ranking.scoringBasis || 'tournament'; // Default to tournament aggregate
+
+      // Process each selected category
+      for (const selectedCat of selectedCategories) {
+        const tournamentId = selectedCat.tournamentId;
+        const categoryIndex = selectedCat.categoryIndex;
+        
+        // Find the tournament
+        const tournament = tournaments.find(t => (t.tournamentId || t.id) === tournamentId);
+        if (!tournament) {
+          console.warn('Tournament not found:', tournamentId);
+          continue;
+        }
+        
+        // Get the Firebase key for this tournament
+        const firebaseKey = tournamentIdToKey[tournamentId];
+        if (!firebaseKey) {
+          console.warn('Firebase key not found for tournament:', tournamentId);
+          continue;
+        }
+        
+        // Get the category
+        const category = tournament.categories?.[categoryIndex];
+        if (!category) {
+          console.warn('Category not found at index', categoryIndex, 'in tournament', tournamentId);
+          continue;
+        }
+        
+        // Load calculated results for this category from Firebase
+        const categoryCode = category.code || category.categoryCode;
+        if (!categoryCode) {
+          console.warn('Category has no code:', category);
+          continue;
+        }
+        
+        // Use the Firebase key, not the tournamentId
+        const resultsSnapshot = await firebase.database()
+          .ref(`tournaments/${firebaseKey}/calculatedResults/${categoryCode}`)
+          .once('value');
+        
+        if (!resultsSnapshot.exists()) {
+          console.warn('No results found for category', categoryCode, 'in tournament', tournamentId, '(Firebase key:', firebaseKey, ')');
+          continue;
+        }
+        
+        const categoryResults = resultsSnapshot.val();
+        const results = categoryResults.results || [];
+        
+        console.log(`Processing ${results.length} results for ${tournament.name} - ${category.name}`);
+        console.log('First result sample:', results[0]);
+        
+        // Process each player result in this category
+        results.forEach((result, index) => {
+          const playerId = result.reg || result.regNo || result.playerId;
+          
+          if (!playerId) {
+            console.warn('Result missing player ID:', result);
+            return;
+          }
+          
+          // Skip players with DQ, NS, NR status - they don't count for ranking
+          const status = (result.status || '').toUpperCase();
+          if (status === 'DQ' || status === 'NS' || status === 'NR' || status === 'WD') {
+            console.log(`Skipping player ${playerId} - status: ${status}`);
+            return;
+          }
+          
+          if (!playerPoints[playerId]) {
+            // Try to find player in players array
+            let foundPlayer = players.find(p => p.reg === playerId || p.regNo === playerId);
+            
+            // If not found, create player object from result data
+            if (!foundPlayer) {
+              foundPlayer = {
+                reg: playerId,
+                firstName: result.firstName || 'Unknown',
+                lastName: result.lastName || 'Player',
+                club: result.club || result.homeClub || 'N/A',
+                hcp: result.hcp,
+                gender: result.gender
+              };
+            }
+            
+            playerPoints[playerId] = {
+              playerId: playerId,
+              player: foundPlayer,
+              totalPoints: 0,
+              tournaments: [],
+              bestFinish: 999,
+              wins: 0
+            };
+          }
+
+          const points = calculatePoints(index + 1, result, ranking);
+          
+          console.log(`Player ${playerId} at position ${index + 1}: ${points} points (pointType: ${ranking.pointType})`);
+          
+          playerPoints[playerId].totalPoints += points;
+          
+          // Get tournament date from various possible locations
+          let tournamentDate = '';
+          if (tournament.date) {
+            tournamentDate = tournament.date;
+          } else if (tournament.meta?.roundsData?.[0]?.date) {
+            tournamentDate = tournament.meta.roundsData[0].date;
+          } else if (tournament.meta?.startDate) {
+            tournamentDate = tournament.meta.startDate;
+          } else if (tournament.startDate) {
+            tournamentDate = tournament.startDate;
+          }
+          
+          // Debug: log tournament date sources
+          console.log(`Tournament ${tournament.name} date sources:`, {
+            'tournament.date': tournament.date,
+            'meta.roundsData[0].date': tournament.meta?.roundsData?.[0]?.date,
+            'meta.startDate': tournament.meta?.startDate,
+            'startDate': tournament.startDate,
+            'resolved': tournamentDate
+          });
+          
+          playerPoints[playerId].tournaments.push({
+            tournament: `${tournament.name} - ${category.name}`,
+            tournamentName: tournament.name,
+            categoryName: category.name,
+            position: index + 1,
+            points: points,
+            score: result.totalScore || result.score,
+            date: tournamentDate,
+            phcp: result.playingHcp || result.phcp || result.hcp || '-'
+          });
+
+          if (index + 1 < playerPoints[playerId].bestFinish) {
+            playerPoints[playerId].bestFinish = index + 1;
+          }
+
+          if (index + 1 === 1) {
+            playerPoints[playerId].wins++;
+          }
+        });
+      }
+
+      // Apply admission criteria
+      let filteredPlayers = Object.values(playerPoints);
+      console.log(`After processing categories: ${filteredPlayers.length} players`);
+      
+      // Filter out players with no valid tournaments (all DQ/NS/NR)
+      const beforeValidFilter = filteredPlayers.length;
+      filteredPlayers = filteredPlayers.filter(p => p.tournaments.length > 0);
+      console.log(`After valid tournaments filter: ${filteredPlayers.length} players (was ${beforeValidFilter})`);
+      
+      // Gender filter
+      if (ranking.gender && ranking.gender !== 'all') {
+        const beforeCount = filteredPlayers.length;
+        filteredPlayers = filteredPlayers.filter(p => 
+          p.player && p.player.gender && p.player.gender.toLowerCase() === ranking.gender.toLowerCase()
+        );
+        console.log(`After gender filter (${ranking.gender}): ${filteredPlayers.length} players (was ${beforeCount})`);
+      }
+
+      // Members only filter
+      if (ranking.membersOnly) {
+        const beforeCount = filteredPlayers.length;
+        filteredPlayers = filteredPlayers.filter(p => 
+          members.some(m => m.playerRegNo === p.playerId)
+        );
+        console.log(`After members-only filter: ${filteredPlayers.length} players (was ${beforeCount})`);
+      }
+
+      // Age filter
+      if (ranking.minAge || ranking.maxAge) {
+        const beforeCount = filteredPlayers.length;
+        filteredPlayers = filteredPlayers.filter(p => {
+          if (!p.player || !p.player.dob) return false;
+          const birthDate = new Date(p.player.dob);
+          const age = Math.floor((new Date() - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+          
+          if (ranking.minAge && age < ranking.minAge) return false;
+          if (ranking.maxAge && age > ranking.maxAge) return false;
+          return true;
+        });
+        console.log(`After age filter (${ranking.minAge}-${ranking.maxAge}): ${filteredPlayers.length} players (was ${beforeCount})`);
+      }
+      
+      if (ranking.admissionCriteria === 'members-only') {
+        const beforeCount = filteredPlayers.length;
+        console.log('Members list:', members.map(m => m.playerRegNo));
+        console.log('Player IDs:', filteredPlayers.map(p => p.playerId));
+        filteredPlayers = filteredPlayers.filter(p => 
+          members.some(m => m.playerRegNo === p.playerId)
+        );
+        console.log(`After admission criteria (members-only): ${filteredPlayers.length} players (was ${beforeCount})`);
+      } else if (ranking.admissionCriteria === 'specific-club') {
+        const beforeCount = filteredPlayers.length;
+        filteredPlayers = filteredPlayers.filter(p => 
+          p.player && p.player.club === ranking.admissionClub
+        );
+        console.log(`After admission criteria (specific-club ${ranking.admissionClub}): ${filteredPlayers.length} players (was ${beforeCount})`);
+      } else if (ranking.admissionCriteria === 'handicap-range') {
+        const beforeCount = filteredPlayers.length;
+        filteredPlayers = filteredPlayers.filter(p => {
+          if (!p.player) return false;
+          const hcp = parseFloat(p.player.hcp);
+          return hcp >= ranking.admissionHcpMin && hcp <= ranking.admissionHcpMax;
+        });
+        console.log(`After admission criteria (hcp ${ranking.admissionHcpMin}-${ranking.admissionHcpMax}): ${filteredPlayers.length} players (was ${beforeCount})`);
+      }
+
+      // Apply valid results / count best N tournaments with ratio-based calculation
+      const validResultsCount = ranking.validResults || ranking.countBest;
+      
+      // Calculate minimum tournaments required to be qualified
+      // If 5 out of 8 required and 2 tournaments added: 2 * (5/8) = 2 * 0.625 = 1.25 → round to 1
+      // If 8 out of 8 required and 2 tournaments added: 2 * (8/8) = 2 * 1 = 2 → round to 2
+      let minTournamentsRequired = 1;
+      const currentTournamentsAdded = selectedCategories.length;
+      
+      if (validResultsCount && validResultsCount > 0 && ranking.totalRounds && ranking.totalRounds > 0) {
+        const ratioForMin = validResultsCount / ranking.totalRounds;
+        // Calculate how many tournaments are required based on current progress (use Math.round)
+        minTournamentsRequired = Math.round(currentTournamentsAdded * ratioForMin);
+        // Ensure at least 1
+        minTournamentsRequired = Math.max(1, minTournamentsRequired);
+      }
+      
+      console.log(`Minimum tournaments required to qualify: ${minTournamentsRequired} (${currentTournamentsAdded} tournaments added, ratio: ${validResultsCount}/${ranking.totalRounds} = ${validResultsCount/ranking.totalRounds})`);
+      
+      if (validResultsCount && validResultsCount > 0) {
+        // Get total expected entries from ranking settings (totalRounds = total tournaments planned)
+        // This is the number entered in "Total No. of Rounds" in ranking settings
+        let totalExpectedEntries;
+        
+        if (ranking.totalRounds && ranking.totalRounds > 0) {
+          // Use the total rounds defined in ranking settings (e.g., 8 tournaments planned)
+          totalExpectedEntries = ranking.totalRounds;
+        } else if (scoringBasis === 'round') {
+          // Fallback for round-based: sum all rounds from all selected categories/tournaments
+          totalExpectedEntries = selectedCategories.reduce((sum, cat) => {
+            const tournament = tournaments.find(t => (t.tournamentId || t.id) === cat.tournamentId);
+            return sum + (tournament?.meta?.rounds || tournament?.rounds || 1);
+          }, 0);
+        } else {
+          // Fallback: count number of selected categories (current progress)
+          totalExpectedEntries = selectedCategories.length;
+        }
+        
+        // Calculate the ratio: validResults / totalExpectedEntries
+        // e.g., 5 counting / 8 total = 0.625
+        const ratio = validResultsCount / totalExpectedEntries;
+        
+        console.log(`Ratio calculation: ${validResultsCount} valid / ${totalExpectedEntries} total = ${ratio}`);
+        
+        filteredPlayers.forEach(p => {
+          // Store ALL tournaments played BEFORE slicing (for modal display)
+          const totalTournamentsPlayed = p.tournaments.length;
+          p.allTournaments = [...p.tournaments]; // Keep a copy of all tournaments
+          
+          // Apply ratio to get proportional valid results for current progress
+          // e.g., 2 played * 0.625 = 1.25 → rounds to 1
+          const proportionalValidResults = Math.round(totalTournamentsPlayed * ratio);
+          const effectiveValidResults = Math.max(1, proportionalValidResults); // At least 1
+          
+          console.log(`Player ${p.playerId}: ${totalTournamentsPlayed} played * ${ratio} = ${proportionalValidResults} → effective: ${effectiveValidResults}`);
+          
+          // ALWAYS sort tournaments by points (highest first) to get BEST results
+          // This ensures we take the best N tournaments, not just the first N
+          p.tournaments.sort((a, b) => b.points - a.points);
+          
+          console.log(`Player ${p.playerId} tournaments after sorting:`, p.tournaments.map(t => ({ name: t.tournament, points: t.points })));
+          
+          const bestTournaments = p.tournaments.slice(0, effectiveValidResults);
+          
+          console.log(`Player ${p.playerId} taking best ${effectiveValidResults}:`, bestTournaments.map(t => ({ name: t.tournament, points: t.points })));
+          
+          if (ranking.calculationMethod === 'average-score') {
+            p.totalPoints = bestTournaments.reduce((sum, t) => sum + t.points, 0) / bestTournaments.length;
+          } else {
+            p.totalPoints = bestTournaments.reduce((sum, t) => sum + t.points, 0);
+          }
+          
+          // Store for display
+          p.effectiveValidResults = effectiveValidResults;
+          p.totalTournamentsPlayed = totalTournamentsPlayed; // Store original count
+          p.tournaments = bestTournaments;
+          
+          // Mark if player meets minimum participation requirement
+          p.isQualified = totalTournamentsPlayed >= minTournamentsRequired;
+          console.log(`Player ${p.playerId}: isQualified = ${totalTournamentsPlayed} >= ${minTournamentsRequired} = ${p.isQualified}`);
+        });
+      } else if (ranking.calculationMethod === 'average-score') {
+        filteredPlayers.forEach(p => {
+          p.totalPoints = p.totalPoints / p.tournaments.length;
+          p.isQualified = p.tournaments.length >= minTournamentsRequired;
+        });
+      } else {
+        // For other calculation methods, still mark qualification
+        filteredPlayers.forEach(p => {
+          p.isQualified = p.tournaments.length >= minTournamentsRequired;
+        });
+      }
+
+      // Sort: qualified players first (by points), then unqualified players (by points)
+      filteredPlayers.sort((a, b) => {
+        // Qualified players come first
+        if (a.isQualified && !b.isQualified) return -1;
+        if (!a.isQualified && b.isQualified) return 1;
+        
+        // Within same qualification status, sort by points
+        if (b.totalPoints !== a.totalPoints) {
+          return b.totalPoints - a.totalPoints;
+        }
+
+        // Apply tie-break
+        if (ranking.tieBreakMethod === 'best-finish') {
+          return a.bestFinish - b.bestFinish;
+        } else if (ranking.tieBreakMethod === 'most-wins') {
+          return b.wins - a.wins;
+        } else if (ranking.tieBreakMethod === 'latest-tournament') {
+          return b.tournaments[0].points - a.tournaments[0].points;
+        }
+
+        return 0;
+      });
+
+      results = filteredPlayers;
+      
+      // Save calculated results to Firebase
+      await saveRankingResults(filteredPlayers);
+      
+      displayResults();
+      
+      } catch (error) {
+        console.error('Error in calculateRankings:', error);
+        document.getElementById('loadingState').style.display = 'none';
+        alert('Error calculating rankings: ' + error.message + '\\n\\nCheck console for details.');
+      }
+    }
+    
+    // Save ranking results to Firebase
+    async function saveRankingResults(playerResults) {
+      try {
+        // Prepare data to save - Firebase doesn't accept undefined values
+        const rankingResults = {
+          rankingId: rankingId,
+          rankingName: ranking.name || '',
+          calculatedAt: new Date().toISOString(),
+          totalPlayers: playerResults.length,
+          leaderPoints: playerResults[0]?.totalPoints || 0,
+          players: playerResults.map((p, index) => ({
+            rank: index + 1,
+            playerId: p.playerId || '',
+            firstName: p.player?.firstName || 'Unknown',
+            lastName: p.player?.lastName || 'Player',
+            club: p.player?.club || 'N/A',
+            hcp: p.player?.hcp !== undefined ? p.player.hcp : null,
+            gender: p.player?.gender || '',
+            totalPoints: p.totalPoints || 0,
+            tournamentsPlayed: p.tournaments.length || 0,
+            totalTournamentsPlayed: p.totalTournamentsPlayed || p.tournaments.length || 0,
+            effectiveValidResults: p.effectiveValidResults || p.tournaments.length || 0,
+            bestFinish: p.bestFinish || 0,
+            wins: p.wins || 0,
+            isQualified: p.isQualified === true, // Save qualification status
+            tournamentDetails: p.tournaments.map(t => ({
+              tournament: t.tournament || '',
+              position: t.position || 0,
+              points: t.points || 0,
+              score: t.score !== undefined ? t.score : null
+            }))
+          }))
+        };
+        
+        // Save to Firebase under rankingResults/{rankingId}
+        await firebase.database().ref(`rankingResults/${rankingId}`).set(rankingResults);
+        console.log('✓ Ranking results saved to Firebase:', rankingResults.totalPlayers, 'players');
+        
+        // Also update the ranking metadata with last calculation info
+        await firebase.database().ref(`rankings/${rankingId}/lastCalculation`).set({
+          calculatedAt: rankingResults.calculatedAt,
+          totalPlayers: rankingResults.totalPlayers,
+          leaderPoints: rankingResults.leaderPoints
+        });
+        
+      } catch (error) {
+        console.error('Error saving ranking results to Firebase:', error);
+        // Don't throw - we still want to display results even if save fails
+      }
+    }
+
+    function getTournamentResults(tournamentId) {
+      // This is a placeholder - you would load actual tournament results
+      // from your results storage system
+      const mockResults = [];
+      const players = JSON.parse(localStorage.getItem('players') || '[]');
+      
+      // For now, create mock results
+      const numPlayers = Math.min(players.length, 20);
+      for (let i = 0; i < numPlayers; i++) {
+        if (players[i]) {
+          mockResults.push({
+            playerId: players[i].regNo,
+            score: 72 + Math.floor(Math.random() * 20)
+          });
+        }
+      }
+
+      return mockResults;
+    }
+
+    function getRoundResults(tournamentId, roundNum) {
+      // Get actual round results from scores storage
+      const scores = JSON.parse(localStorage.getItem('scores') || '{}');
+      const roundId = `${tournamentId}-${roundNum}`;
+      const roundScores = scores[roundId] || {};
+      
+      // Convert scores to results array with positions
+      const results = [];
+      for (const playerKey in roundScores) {
+        const playerData = roundScores[playerKey];
+        if (playerData && playerData.totalScore) {
+          results.push({
+            playerId: playerData.reg || playerKey,
+            regNo: playerData.reg || playerKey,
+            reg: playerData.reg || playerKey,
+            name: `${playerData.firstName || ''} ${playerData.lastName || ''}`,
+            score: playerData.totalScore,
+            status: playerData.status || 'OK'
+          });
+        }
+      }
+      
+      // Filter out DQ/NS/NR players
+      const validResults = results.filter(r => 
+        !r.status || r.status === 'OK' || r.status === 'ok'
+      );
+      
+      // Sort by score (ascending - lower is better)
+      validResults.sort((a, b) => a.score - b.score);
+      
+      return validResults;
+    }
+
+    function calculatePoints(position, result, ranking) {
+      console.log('calculatePoints called:', { position, result, pointType: ranking.pointType });
+      
+      if (ranking.pointType === 'position') {
+        const pointValues = ranking.pointValues || {};
+        switch(position) {
+          case 1: return pointValues.first || 100;
+          case 2: return pointValues.second || 80;
+          case 3: return pointValues.third || 60;
+          case 4: return pointValues.fourth || 50;
+          case 5: return pointValues.fifth || 40;
+          default: return pointValues.participation || 10;
+        }
+      } else if (ranking.pointType === 'score') {
+        // Score-based calculation - use actual score as points
+        const score = result.total || result.totalScore || result.score || 0;
+        console.log(`Score-based points: using score ${score} as points directly`);
+        return score;
+      } else {
+        return 0; // Custom
+      }
+    }
+
+    function displayResults() {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('resultsContainer').style.display = 'block';
+
+      document.getElementById('pageTitle').textContent = `📊 ${ranking.name}`;
+      document.getElementById('rankingName').textContent = ranking.name;
+      const scoringBasisText = ranking.scoringBasis === 'round' ? 
+        'Individual Rounds (each round counts)' : 
+        'Tournament Aggregate (final results only)';
+      document.getElementById('rankingDescription').textContent = 
+        `Basis: ${scoringBasisText} | ` +
+        `Calculation: ${ranking.calculationMethod || 'total-score'} | ` +
+        `Gender: ${ranking.gender || 'all'} | ` +
+        `Members Only: ${ranking.membersOnly ? 'Yes' : 'No'} | ` +
+        `Age: ${ranking.minAge || '0'}-${ranking.maxAge || '∞'}`;
+
+      // Meta information
+      const meta = document.getElementById('rankingMeta');
+      meta.innerHTML = `
+        <div class="ranking-meta-item">
+          <strong>Tournaments:</strong> ${(ranking.categories || []).length}
+        </div>
+        <div class="ranking-meta-item">
+          <strong>Total Players:</strong> ${results.length}
+        </div>
+        <div class="ranking-meta-item">
+          <strong>Calculation:</strong> ${ranking.calculationMethod || 'total-score'}
+        </div>
+      `;
+
+      // Stats
+      const stats = document.getElementById('statsGrid');
+      stats.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Players</div>
+          <div class="stat-value">${results.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tournaments</div>
+          <div class="stat-value">${(ranking.categories || []).length}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);">
+          <div class="stat-label" style="color: #166534;">💾 Saved to Firebase</div>
+          <div class="stat-value" style="color: #15803d; font-size: 14px;">${new Date().toLocaleString()}</div>
+        </div>
+      `;
+
+      // Leaderboard
+      const tbody = document.getElementById('leaderboardBody');
+      let qualifiedRank = 0; // Track rank only for qualified players
+      
+      tbody.innerHTML = results.map((result, index) => {
+        const player = result.player || { firstName: 'Unknown', lastName: 'Player', club: 'N/A' };
+        
+        // Format: tournaments counted (total played)
+        const tournamentsUsed = result.effectiveValidResults || result.tournaments.length;
+        const tournamentsPlayed = result.totalTournamentsPlayed || result.tournaments.length;
+        const tournamentsDisplay = tournamentsUsed === tournamentsPlayed 
+          ? `${tournamentsUsed}` 
+          : `${tournamentsUsed} (${tournamentsPlayed})`;
+
+        // Check qualification - use isQualified directly
+        // If isQualified is undefined (old cached data), treat as qualified for backward compatibility
+        const isPlayerQualified = result.isQualified === undefined ? true : result.isQualified;
+        
+        console.log(`Display: Player ${result.playerId} - raw isQualified=${result.isQualified}, using=${isPlayerQualified}`);
+
+        // Only increment rank for qualified players
+        let rankDisplay, medal, rankClass;
+        if (isPlayerQualified) {
+          qualifiedRank++;
+          rankDisplay = qualifiedRank;
+          medal = qualifiedRank === 1 ? '🥇' : qualifiedRank === 2 ? '🥈' : qualifiedRank === 3 ? '🥉' : '';
+          rankClass = qualifiedRank === 1 ? 'gold' : qualifiedRank === 2 ? 'silver' : qualifiedRank === 3 ? 'bronze' : '';
+        } else {
+          rankDisplay = '-';
+          medal = '';
+          rankClass = 'unqualified';
+        }
+
+        return `
+          <tr class="${isPlayerQualified ? '' : 'unqualified-row'}">
+            <td class="rank-cell ${rankClass}" data-label="Rank">${medal}${rankDisplay}</td>
+            <td class="player-cell" data-label="Player">
+              <span class="player-name-link" onclick="showPlayerDetails('${result.playerId}')">
+                ${player.firstName} ${player.lastName}
+              </span>
+              <div class="player-club">${player.club || 'No Club'}</div>
+            </td>
+            <td class="points-cell" data-label="Points">${result.totalPoints}</td>
+            <td class="center" data-label="# of Tournaments">${tournamentsDisplay}</td>
+            <td class="center" data-label="Best Finish">
+              <span class="best-result">#${result.bestFinish}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function recalculate() {
+      calculateRankings();
+    }
+
+    function exportResults() {
+      let csv = 'Rank,Player Name,Club,Total Points,Tournaments Played,Best Finish\n';
+      
+      results.forEach((result, index) => {
+        const player = result.player || { firstName: 'Unknown', lastName: 'Player', club: 'N/A' };
+        csv += `${index + 1},"${player.firstName} ${player.lastName}","${player.club || 'N/A'}",${result.totalPoints},${result.tournaments.length},${result.bestFinish}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ranking.name.replace(/\s+/g, '_')}_results.csv`;
+      a.click();
+    }
+
+    function printResults() {
+      window.print();
+    }
+
+    // Player Details Modal Functions
+    function showPlayerDetails(playerId) {
+      const playerData = results.find(r => r.playerId === playerId);
+      if (!playerData) {
+        console.warn('Player not found:', playerId);
+        return;
+      }
+
+      const player = playerData.player || { firstName: 'Unknown', lastName: 'Player', club: 'N/A' };
+      
+      // Set modal header
+      document.getElementById('modalPlayerName').textContent = `${player.firstName} ${player.lastName}`;
+      document.getElementById('modalPlayerInfo').textContent = player.club || 'No Club';
+      
+      // Get ALL tournaments played (before filtering to best N)
+      // We need to use the original data, which includes all tournaments
+      const allTournaments = playerData.allTournaments || playerData.tournaments || [];
+      
+      // Sort by date (oldest first)
+      const sortedTournaments = [...allTournaments].sort((a, b) => {
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return new Date(a.date) - new Date(b.date);
+      });
+      
+      // Debug: log tournament data to console
+      console.log('Player tournaments data:', sortedTournaments);
+      
+      // Populate tournament rows
+      const tbody = document.getElementById('modalTournamentsBody');
+      tbody.innerHTML = sortedTournaments.map(t => {
+        const dateStr = t.date ? formatDate(t.date) : '-';
+        const phcpDisplay = t.phcp !== undefined && t.phcp !== null && t.phcp !== '-' ? t.phcp : '-';
+        
+        return `
+          <tr>
+            <td>${dateStr}</td>
+            <td>${t.tournamentName || t.tournament || '-'}</td>
+            <td class="center"><span class="finish-badge">#${t.position}</span></td>
+            <td class="center"><span class="points-value">${t.points}</span></td>
+            <td class="center">${phcpDisplay}</td>
+          </tr>
+        `;
+      }).join('');
+      
+      // Update summary
+      const totalPoints = playerData.totalPoints || 0;
+      const tournamentsUsed = playerData.effectiveValidResults || playerData.tournaments.length;
+      const totalTournamentsPlayed = playerData.totalTournamentsPlayed || allTournaments.length;
+      const bestFinish = playerData.bestFinish || '-';
+      
+      document.getElementById('modalSummary').innerHTML = `
+        <div class="modal-summary-item">
+          <div class="modal-summary-label">Total Points</div>
+          <div class="modal-summary-value" style="color: #10b981;">${totalPoints}</div>
+        </div>
+        <div class="modal-summary-item">
+          <div class="modal-summary-label">Tournaments Counted</div>
+          <div class="modal-summary-value">${tournamentsUsed} / ${totalTournamentsPlayed}</div>
+        </div>
+        <div class="modal-summary-item">
+          <div class="modal-summary-label">Best Finish</div>
+          <div class="modal-summary-value">#${bestFinish}</div>
+        </div>
+      `;
+      
+      // Show modal
+      document.getElementById('playerModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePlayerModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('playerModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-GB', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric' 
+        });
+      } catch (e) {
+        return dateStr;
+      }
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closePlayerModal();
+      }
+    });
+
+    window.recalculate = recalculate;
+    window.exportResults = exportResults;
+    window.printResults = printResults;
+    window.showPlayerDetails = showPlayerDetails;
+    window.closePlayerModal = closePlayerModal;
+  </script>
+</body>
+</html>

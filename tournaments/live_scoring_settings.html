@@ -571,6 +571,56 @@
         color: #64748b;
       }
       
+      .group-players-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      
+      .player-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+      }
+      
+      .player-item:hover {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+      }
+      
+      .player-item.designated-scorer {
+        background: #d1fae5;
+        border-color: #059669;
+      }
+      
+      .player-item.designated-scorer .player-name {
+        color: #065f46;
+        font-weight: 600;
+      }
+      
+      .player-name {
+        font-size: 13px;
+        color: #475569;
+      }
+      
+      .scorer-badge {
+        background: #059669;
+        color: white;
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
       /* Volunteer Link Cards */
       .volunteer-link-card {
         background: #f8fafc;
@@ -1051,8 +1101,13 @@
           <div class="card-header-icon">👥</div>
           <div>
             <h2>Groups Overview</h2>
-            <p>View and manage group scoring status</p>
+            <p id="groups-card-subtitle">View and manage group scoring status</p>
           </div>
+        </div>
+        
+        <div id="groups-instruction" style="display: none; background: #dbeafe; border-left: 3px solid #3b82f6; padding: 12px 16px; margin-bottom: 16px; border-radius: 6px;">
+          <div style="font-weight: 600; color: #1e40af; font-size: 13px; margin-bottom: 4px;">👆 Select Designated Scorer</div>
+          <div style="font-size: 12px; color: #1e40af;">Click on a player's name below to designate them as the scorer for their group. This will help with future SMS/WhatsApp messaging and iOS app integration.</div>
         </div>
         
         <div class="groups-grid" id="groups-grid">
@@ -1097,6 +1152,8 @@
       let liveSettings = null;
       let currentUserId = null;
       let currentUserRole = null;
+      let groupScorers = {}; // { groupIndex: playerKey } - designated scorer for each group
+      let drawData = null; // Store draw data globally for easy access
       // db is declared in firebase-config.js
 
       // Initialize
@@ -1560,6 +1617,7 @@
           selectedScoringType = liveSettings.scoringType || null;
           selectedHoles = liveSettings.scoringHoles || [];
           selectedPlayerMode = liveSettings.playerMode || 'group';
+          groupScorers = liveSettings.groupScorers || {}; // Load designated scorers
           
           // Update UI
           document.querySelectorAll('.scoring-type').forEach(el => {
@@ -1610,6 +1668,7 @@
           scoringType: selectedScoringType,
           scoringHoles: selectedHoles,
           playerMode: selectedPlayerMode,
+          groupScorers: groupScorers, // Save designated scorers
           tournamentId: currentTournament.tournamentId,
           tournamentName: currentTournament.name,
           roundId: currentRoundId,
@@ -1675,6 +1734,11 @@
         // Show/hide player settings
         document.getElementById('player-settings').classList.toggle('active', type === 'players');
         
+        // Re-render groups grid to show/hide scorer selection UI
+        if (drawData && drawData.groups) {
+          renderGroupsGrid();
+        }
+        
         updateStatusDisplay();
         updateLinks();
       }
@@ -1689,6 +1753,11 @@
         document.querySelectorAll('.player-mode-option').forEach(el => {
           el.classList.toggle('selected', el.dataset.mode === mode);
         });
+        
+        // Re-render groups grid to show/hide scorer selection UI
+        if (drawData && drawData.groups) {
+          renderGroupsGrid();
+        }
         
         updateStatusDisplay();
         updateLinks();
@@ -1848,7 +1917,7 @@
 
       // Load groups
       async function loadGroups() {
-        let drawData = null;
+        drawData = null;
         
         // First try Firebase for fresh data
         if (db) {
@@ -1899,19 +1968,7 @@
         // Render groups if available
         if (drawData?.groups && drawData.groups.length > 0) {
           document.getElementById('groups-card').style.display = 'block';
-          
-          const grid = document.getElementById('groups-grid');
-          grid.innerHTML = drawData.groups.map((group, idx) => `
-            <div class="group-card">
-              <div class="group-header">
-                <span class="group-name">Group ${idx + 1}</span>
-                <span class="group-time">${group.teeTime || ''}</span>
-              </div>
-              <div class="group-players">
-                ${group.players?.map(p => `${p.firstName} ${p.lastName}`).join(', ') || 'No players'}
-              </div>
-            </div>
-          `).join('');
+          renderGroupsGrid();
         } else {
           document.getElementById('groups-card').style.display = 'none';
         }
@@ -1919,6 +1976,108 @@
         // Update scored count
         await updateScoredCount();
       }
+      
+      // Render groups grid with selectable players
+      function renderGroupsGrid() {
+        if (!drawData || !drawData.groups) return;
+        
+        const grid = document.getElementById('groups-grid');
+        const isPlayerGroupMode = selectedScoringType === 'players' && selectedPlayerMode === 'group';
+        
+        // Show/hide instruction banner
+        const instructionEl = document.getElementById('groups-instruction');
+        if (instructionEl) {
+          instructionEl.style.display = isPlayerGroupMode ? 'block' : 'none';
+        }
+        
+        // Update subtitle
+        const subtitleEl = document.getElementById('groups-card-subtitle');
+        if (subtitleEl) {
+          subtitleEl.textContent = isPlayerGroupMode 
+            ? 'Assign a designated scorer for each group' 
+            : 'View and manage group scoring status';
+        }
+        
+        grid.innerHTML = drawData.groups.map((group, idx) => {
+          const players = group.players || [];
+          
+          // Build players HTML with click handlers for player-group mode
+          let playersHtml = '';
+          if (isPlayerGroupMode && players.length > 0) {
+            playersHtml = '<div class="group-players-list">';
+            players.forEach((player, pIdx) => {
+              const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+              const isDesignated = groupScorers[idx] === playerKey;
+              const escapedKey = playerKey.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+              playersHtml += `
+                <div class="player-item ${isDesignated ? 'designated-scorer' : ''}" 
+                     data-group-idx="${idx}" 
+                     data-player-key="${escapedKey}"
+                     onclick="window.toggleGroupScorer(${idx}, \`${escapedKey}\`)"
+                     title="${isDesignated ? 'Designated scorer for this group' : 'Click to designate as scorer'}"
+                     style="cursor: pointer;">
+                  <span class="player-name">${player.firstName} ${player.lastName}</span>
+                  ${isDesignated ? '<span class="scorer-badge">Scorer</span>' : ''}
+                </div>
+              `;
+            });
+            playersHtml += '</div>';
+          } else {
+            // Simple comma-separated list for other modes
+            playersHtml = `<div class="group-players">${players.map(p => `${p.firstName} ${p.lastName}`).join(', ') || 'No players'}</div>`;
+          }
+          
+          return `
+            <div class="group-card">
+              <div class="group-header">
+                <span class="group-name">Group ${idx + 1}</span>
+                <span class="group-time">${group.teeTime || ''}</span>
+              </div>
+              ${playersHtml}
+            </div>
+          `;
+        }).join('');
+      }
+      
+      // Toggle designated scorer for a group (make it global)
+      window.toggleGroupScorer = function(groupIndex, playerKey) {
+        // Decode HTML entities
+        const decodedKey = playerKey.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+        
+        if (groupScorers[groupIndex] === decodedKey) {
+          // Deselect if clicking the same player
+          delete groupScorers[groupIndex];
+        } else {
+          // Select new scorer for this group
+          groupScorers[groupIndex] = decodedKey;
+        }
+        
+        console.log('[Group Scorers] Updated:', groupScorers);
+        
+        // Re-render groups to show updated selection
+        renderGroupsGrid();
+      };
+      
+      // Select designated scorer from dropdown (make it global)
+      window.selectGroupScorer = function(groupIndex, escapedPlayerKey) {
+        if (!escapedPlayerKey || escapedPlayerKey === '') {
+          // Empty selection - deselect scorer
+          delete groupScorers[groupIndex];
+        } else {
+          // Decode HTML entities
+          const playerKey = escapedPlayerKey.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          groupScorers[groupIndex] = playerKey;
+        }
+        
+        console.log('[Group Scorers] Updated via dropdown:', groupScorers);
+        
+        // Update the player group links section to reflect the change
+        // No need to re-render groups grid since dropdown is already updated
+        // Just regenerate the links section if it's visible
+        if (document.getElementById('player-group-links-section').style.display !== 'none') {
+          generatePlayerGroupLinks();
+        }
+      };
 
       // Update scored players count
       async function updateScoredCount() {
@@ -1960,6 +2119,7 @@
           scoringType: selectedScoringType,
           scoringHoles: selectedHoles,
           playerMode: selectedPlayerMode,
+          groupScorers: groupScorers, // Save designated scorers
           activatedAt: new Date().toISOString(),
           tournamentId: currentTournament.tournamentId,
           roundId: currentRoundId
@@ -2281,9 +2441,63 @@
           const groupUrl = `${baseUrl}/tournaments/live_scoring.html?tournamentId=${encodeURIComponent(currentTournament.tournamentId)}&roundId=${encodeURIComponent(currentRoundId)}&mode=player-group&group=${groupNumber}`;
           
           // Get player names for display
-          const playerNames = (group.players || []).map(p => `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(n => n);
-          const playersText = playerNames.length > 0 ? playerNames.join(', ') : 'No players';
+          const players = group.players || [];
           const teeTime = group.teeTime || group.time || '-';
+          
+          // Check if a designated scorer has been selected for this group
+          const designatedScorerKey = groupScorers[index];
+          let scorerName = null;
+          
+          if (designatedScorerKey && players.length > 0) {
+            // Find the designated scorer in the group
+            const scorerPlayer = players.find(p => {
+              const playerKey = p.reg || `${p.firstName}-${p.lastName}`;
+              return playerKey === designatedScorerKey;
+            });
+            
+            if (scorerPlayer) {
+              scorerName = `${scorerPlayer.firstName} ${scorerPlayer.lastName}`;
+            }
+          }
+          
+          // Build player names for display (comma-separated)
+          const playerNames = players.map(p => `${p.firstName} ${p.lastName}`).join(', ');
+          
+          // Build dropdown for selecting designated scorer
+          let scorerDropdown = '';
+          if (players.length > 0) {
+            scorerDropdown = `
+              <div style="margin-top: 10px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📱 Designated Scorer
+                </label>
+                <select 
+                  id="scorer-select-${groupNumber}"
+                  onchange="window.selectGroupScorer(${index}, this.value)"
+                  style="
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    color: #1e293b;
+                    background: white;
+                    cursor: pointer;
+                    transition: border-color 0.2s;
+                  "
+                  onfocus="this.style.borderColor='#3b82f6'"
+                  onblur="this.style.borderColor='#e5e7eb'">
+                  <option value="">Select player to receive link...</option>
+                  ${players.map(player => {
+                    const playerKey = player.reg || `${player.firstName}-${player.lastName}`;
+                    const escapedKey = playerKey.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    const selected = groupScorers[index] === playerKey ? 'selected' : '';
+                    return `<option value="${escapedKey}" ${selected}>${player.firstName} ${player.lastName}</option>`;
+                  }).join('')}
+                </select>
+              </div>
+            `;
+          }
           
           html += `
             <div class="volunteer-link-card">
@@ -2295,13 +2509,14 @@
                     <p style="font-size: 12px; color: #64748b;">${teeTime}</p>
                   </div>
                 </div>
-                <div class="volunteer-holes-range" style="font-size: 11px; max-width: 200px; text-align: right;">${playersText}</div>
+                <div class="volunteer-holes-range" style="font-size: 11px; max-width: 200px; text-align: right;">${playerNames || 'No players'}</div>
               </div>
-              <div class="volunteer-link-row">
+              ${scorerDropdown}
+              <div class="volunteer-link-row" style="margin-top: 12px;">
                 <input type="text" class="volunteer-link-input" id="player-group-link-${groupNumber}" value="${groupUrl}" readonly>
                 <div class="volunteer-link-actions">
                   <button class="btn-small" onclick="copyPlayerGroupLink(${groupNumber})">Copy</button>
-                  <button class="btn-small btn-qr" onclick="showPlayerGroupQR(${groupNumber}, '${playersText.replace(/'/g, "\\'")}', '${groupUrl}')">QR</button>
+                  <button class="btn-small btn-qr" onclick="showPlayerGroupQR(${groupNumber}, '${playerNames.replace(/'/g, "\\'")}', '${groupUrl}')">QR</button>
                 </div>
               </div>
             </div>

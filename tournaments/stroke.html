@@ -12,12 +12,77 @@
     
     <link rel="stylesheet" href="../styles.css">
     <style>
-      body{padding-top:70px}
-      .form-card{max-width:1000px;margin:36px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.06)}
+      body { 
+        padding-top: 0; 
+        background: #f0f4f8; 
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      /* Top Navigation Bar */
+      .top-nav {
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        padding: 16px 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .top-nav h1 { 
+        margin: 0; 
+        color: white; 
+        font-size: 24px; 
+        font-weight: 700; 
+      }
+      .btn-back-top {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-back-top:hover { background: rgba(255,255,255,0.3); }
+      
+      /* Action Buttons Container */
+      .action-buttons-container {
+        background: #f8fafc;
+        padding: 12px 24px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+      
+      .btn-save {
+        background: linear-gradient(180deg, #28a745, #218838);
+        color: white;
+        border: 0;
+        padding: 10px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .btn-save:hover { 
+        opacity: 0.9; 
+        transform: translateY(-1px); 
+      }
+      
+      .form-card{max-width:1000px;margin:24px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
       .field{margin-bottom:14px}
-      label{display:block;font-weight:600;margin-bottom:6px}
+      .form-card label{display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:14px}
       .help-text{font-size:13px;color:#64748b;margin-top:4px}
-      input[type="text"], input[type="date"], input[type="number"], select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6e9ef;font-size:15px}
+      input[type="text"], input[type="date"], input[type="number"], select{width:100%;padding:10px 12px;border-radius:8px;border:2px solid #e5e7eb;font-size:15px;transition:border-color 0.2s}
+      input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, select:focus{outline:none;border-color:#0b6efd}
       .row{display:flex;gap:12px}
       .row .field{flex:1}
       /* three-column compact row for small controls */
@@ -25,18 +90,54 @@
       .row.three .field { flex: 0 0 calc(33.333% - 8px); }
       /* rounds grid for 2 columns */
       .rounds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-      .round-card { background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
+      .round-card { background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
       .round-card .field { margin-bottom: 10px; }
       .round-card label { font-size: 13px; margin-bottom: 4px; }
       .round-card input, .round-card select { padding: 8px 10px; font-size: 14px; }
       .round-card .tee-row { display: flex; gap: 10px; }
       .round-card .tee-row .field { flex: 1; margin-bottom: 0; }
-      .actions{display:flex;gap:12px;align-items:center;margin-top:18px}
+      .actions{display:none}
       .btn-primary{background:linear-gradient(180deg,var(--accent),#0a58d1);color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer}
       .btn-secondary{background:white;border:1px solid #e6e9ef;padding:10px 14px;border-radius:10px;cursor:pointer}
+      
+      /* Section headers */
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .section-header-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #0b6efd 0%, #0a58d1 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .section-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #1e293b;
+      }
     </style>
   </head>
   <body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <h1>⛳ Create Stroke Play Tournament</h1>
+      <a href="index.html" class="btn-back-top">← Back to Tournaments</a>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons-container">
+      <button type="button" class="btn-save" onclick="document.getElementById('stroke-form').requestSubmit()">💾 Save Tournament</button>
+    </div>
+    
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -50,20 +151,49 @@
         window.currentUserRole = role;
       })();
     </script>
-    <main class="container">
-      <header>
-        <h1>Create Stroke Play Tournament</h1>
-        <p class="lead">Fill the details below and save the tournament.</p>
-      </header>
+    <main class="container" style="max-width: 1000px; margin: 0 auto; padding: 24px;">
 
       <section class="form-card">
+        <div class="section-header">
+          <div class="section-header-icon">🏆</div>
+          <h2>Tournament Details</h2>
+        </div>
+        
         <form id="stroke-form">
           <div class="field">
             <label for="tournament-name">Tournament name</label>
             <input id="tournament-name" name="name" type="text" required placeholder="e.g. Spring Invitational">
           </div>
 
-          <!-- Moved HCP settings directly below tournament name (compact three-column layout) -->
+          <!-- Tournament Type, Number of Rounds and Teams Tournament -->
+          <div class="row" style="justify-content: flex-start;">
+              <div class="field" style="flex:0 0 220px;">
+                  <label for="tournament-type">Tournament Type</label>
+                  <select id="tournament-type" name="tournamentType" required>
+                    <option value="stroke" selected>Stroke Play</option>
+                    <option value="match">Match Play</option>
+                    <option value="bracket">Bracket Match Play</option>
+                  </select>
+              </div>
+              <div class="field" style="flex:0 0 220px;" id="rounds-field">
+                  <label for="rounds">Number of Rounds</label>
+                  <select id="rounds" name="rounds" required>
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                  </select>
+              </div>
+              <div class="field" style="flex:0 0 220px;">
+                  <label for="teams-tournament">Teams Tournament</label>
+                  <select id="teams-tournament" name="teamsTournament" required>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+              </div>
+          </div>
+
+          <!-- HCP settings row -->
           <div class="row three" id="stroke-play-fields">
               <div class="field">
                 <label for="hcp-qual">HCP qualifying</label>
@@ -96,29 +226,23 @@
               </div>
             </div>
 
-            <!-- Number of rounds and Teams Tournament aligned left -->
-            <div class="row" style="justify-content: flex-start;">
+            <!-- Bracket Match Play specific fields -->
+            <div class="row" style="justify-content: flex-start;" id="bracket-fields">
               <div class="field" style="flex:0 0 220px;">
-                  <label for="tournament-type">Tournament Type</label>
-                  <select id="tournament-type" name="tournamentType" required>
-                    <option value="stroke" selected>Stroke Play</option>
-                    <option value="match">Match Play</option>
+                  <label for="bracket-course">Course</label>
+                  <select id="bracket-course" name="bracketCourse">
+                    <option value="">-- Select course --</option>
                   </select>
               </div>
               <div class="field" style="flex:0 0 220px;">
-                  <label for="rounds">Number of Rounds</label>
-                  <select id="rounds" name="rounds" required>
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                  </select>
+                  <label for="bracket-start-date">Start Date</label>
+                  <input type="date" id="bracket-start-date" name="bracketStartDate">
               </div>
-              <div class="field" style="flex:0 0 220px;">
-                  <label for="teams-tournament">Teams Tournament</label>
-                  <select id="teams-tournament" name="teamsTournament" required>
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
+              <div class="field" style="flex:0 0 220px;" id="team-format-field">
+                  <label for="team-format">Match Format</label>
+                  <select id="team-format" name="teamFormat">
+                    <option value="fourball" selected>Fourball (Best Ball)</option>
+                    <option value="foursomes">Foursomes (Alternate Shot)</option>
                   </select>
               </div>
             </div>
@@ -161,29 +285,74 @@
       }
 
       const params = new URLSearchParams(window.location.search);
-      const editIndexParam = params.get('edit');
-      const isEdit = editIndexParam !== null;
+      const editIndexParam = params.get('edit'); // Legacy support
+      const editIdParam = params.get('editId'); // New: edit by tournamentId
+      const isEdit = editIndexParam !== null || editIdParam !== null;
 
-      // Show/hide stroke play specific fields based on tournament type
-      function updateStrokePlayFieldsVisibility() {
+      // Show/hide fields based on tournament type and teams selection
+      function updateFieldsVisibility() {
         const strokePlayFields = document.getElementById('stroke-play-fields');
-        const isMatchPlay = typeSelect && typeSelect.value === 'match';
+        const hcpQualField = document.getElementById('hcp-qual').closest('.field');
+        const hcpAllowField = document.getElementById('hcp-allow').closest('.field');
+        const maxScoreField = document.getElementById('max-score').closest('.field');
+        const roundsField = document.getElementById('rounds-field');
+        const bracketFields = document.getElementById('bracket-fields');
+        const teamFormatField = document.getElementById('team-format-field');
+        const teamsSelect = document.getElementById('teams-tournament');
+        
+        const selectedType = typeSelect ? typeSelect.value : 'stroke';
+        const isTeams = teamsSelect && teamsSelect.value === 'yes';
         
         if (strokePlayFields) {
-          if (isMatchPlay) {
+          if (selectedType === 'match') {
+            // Match Play: hide all HCP fields, show rounds
             strokePlayFields.style.display = 'none';
-            // Disable required validation for hidden fields
-            const inputs = strokePlayFields.querySelectorAll('select, input');
-            inputs.forEach(input => {
-              input.removeAttribute('required');
-            });
-          } else {
+            roundsField.style.display = 'block';
+            bracketFields.style.display = 'none';
+            document.getElementById('hcp-qual').removeAttribute('required');
+            document.getElementById('hcp-allow').removeAttribute('required');
+            document.getElementById('rounds').setAttribute('required', 'required');
+          } else if (selectedType === 'bracket') {
+            // Bracket Match Play: show only HCP allowance, hide rounds, show bracket fields
             strokePlayFields.style.display = 'flex';
-            // Re-enable required validation
+            hcpQualField.style.display = 'none';
+            hcpAllowField.style.display = 'block';
+            maxScoreField.style.display = 'none';
+            roundsField.style.display = 'none';
+            bracketFields.style.display = 'flex';
+            // Show team format only if teams tournament is selected
+            teamFormatField.style.display = isTeams ? 'block' : 'none';
+            document.getElementById('hcp-qual').removeAttribute('required');
+            document.getElementById('hcp-allow').setAttribute('required', 'required');
+            document.getElementById('rounds').removeAttribute('required');
+          } else {
+            // Stroke Play: show all fields, hide bracket fields
+            strokePlayFields.style.display = 'flex';
+            hcpQualField.style.display = 'block';
+            hcpAllowField.style.display = 'block';
+            maxScoreField.style.display = 'block';
+            roundsField.style.display = 'block';
+            bracketFields.style.display = 'none';
             document.getElementById('hcp-qual').setAttribute('required', 'required');
             document.getElementById('hcp-allow').setAttribute('required', 'required');
+            document.getElementById('rounds').setAttribute('required', 'required');
           }
         }
+        
+        // Also update rounds container visibility and required attributes
+        if (selectedType === 'bracket') {
+          roundsContainer.style.display = 'none';
+          // Remove required from all dynamic round fields
+          const roundInputs = roundsContainer.querySelectorAll('input, select');
+          roundInputs.forEach(input => input.removeAttribute('required'));
+        } else {
+          roundsContainer.style.display = 'block';
+        }
+      }
+      
+      // Backward compatibility alias
+      function updateStrokePlayFieldsVisibility() {
+        updateFieldsVisibility();
       }
 
       // Auto-fill dates: add one day to each subsequent round
@@ -312,6 +481,13 @@
       }
 
       function renderRounds() {
+        // Don't render rounds for bracket tournaments
+        const currentType = typeSelect ? typeSelect.value : 'stroke';
+        if (currentType === 'bracket') {
+          roundsContainer.innerHTML = '';
+          return;
+        }
+        
         const prev = collectCurrentRoundsData();
         const numRounds = parseInt(roundsSelect.value, 10);
         roundsContainer.innerHTML = '';
@@ -346,7 +522,11 @@
           dateInput.type = 'date';
           dateInput.id = `date-${i}`;
           dateInput.name = `date-${i}`;
-          dateInput.required = true;
+          // Only set required if not bracket type
+          const currentType = typeSelect ? typeSelect.value : 'stroke';
+          if (currentType !== 'bracket') {
+            dateInput.required = true;
+          }
           // Re-apply previous date if exists; otherwise auto-fill from Round 1
           if (prev[i-1] && prev[i-1].date) {
             dateInput.value = prev[i-1].date;
@@ -384,7 +564,10 @@
           const courseSelect = document.createElement('select');
           courseSelect.id = `course-${i}`;
           courseSelect.name = `course-${i}`;
-          courseSelect.required = true;
+          // Only set required if not bracket type
+          if (currentType !== 'bracket') {
+            courseSelect.required = true;
+          }
           
           const defaultOption = document.createElement('option');
           defaultOption.value = '';
@@ -398,6 +581,22 @@
             option.textContent = opt.label;
             courseSelect.appendChild(option);
           });
+
+          // Set default course to TGF Silivri Golf Course for round 1 (if not editing)
+          if (i === 1 && !isEdit && !prev[0]?.course) {
+            const defaultCourse = courseOptions.find(opt => 
+              opt.label.toLowerCase().includes('silivri') || 
+              opt.value.toLowerCase().includes('silivri')
+            );
+            if (defaultCourse) {
+              courseSelect.value = defaultCourse.value;
+              // Populate tees for default course
+              setTimeout(() => {
+                populateTeeSelectsForRound(1, defaultCourse.value);
+                autoSelectDefaultTees(1);
+              }, 0);
+            }
+          }
 
           // Listen for course change to populate tee selects and auto-fill
           courseSelect.addEventListener('change', function() {
@@ -448,8 +647,8 @@
           roundCard.appendChild(teeRow);
 
           // Match Type field (only for match play tournaments) - placed after tee selections
-          const isMatchPlay = typeSelect && typeSelect.value === 'match';
-          if (isMatchPlay) {
+          const isMatchPlay = typeSelect && (typeSelect.value === 'match' || typeSelect.value === 'bracket');
+          if (isMatchPlay && currentType !== 'bracket') {
             const matchTypeField = document.createElement('div');
             matchTypeField.className = 'field';
             const matchTypeLabel = document.createElement('label');
@@ -519,15 +718,43 @@
       // Re-render rounds when tournament type changes to show/hide match type field
       if (typeSelect) {
         typeSelect.addEventListener('change', function() {
-          updateStrokePlayFieldsVisibility();
+          updateFieldsVisibility();
           renderRounds();
+        });
+      }
+      
+      // Update visibility when teams tournament selection changes
+      const teamsSelect = document.getElementById('teams-tournament');
+      if (teamsSelect) {
+        teamsSelect.addEventListener('change', function() {
+          updateFieldsVisibility();
+        });
+      }
+
+      // Populate bracket course dropdown
+      function populateBracketCourse() {
+        const bracketCourseSelect = document.getElementById('bracket-course');
+        if (!bracketCourseSelect) return;
+        
+        // Clear existing options except the first one
+        bracketCourseSelect.innerHTML = '<option value="">-- Select course --</option>';
+        
+        const courseOptions = getCourseOptions();
+        courseOptions.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          bracketCourseSelect.appendChild(option);
         });
       }
 
       // Initialize form: if editing, populate from localStorage
       function initForm() {
+        // Populate bracket course dropdown
+        populateBracketCourse();
+        
         if (!isEdit) {
-          updateStrokePlayFieldsVisibility();
+          updateFieldsVisibility();
           renderRounds();
           return;
         }
@@ -535,45 +762,74 @@
         try {
           const raw = localStorage.getItem('tournaments');
           const arr = raw ? JSON.parse(raw) : [];
-          const t = arr[parseInt(editIndexParam, 10)];
-          if (!t) { renderRounds(); return; }
-
-          if (typeSelect && t.type) {
-            const isMatchType = t.type.toLowerCase().includes('match');
-            typeSelect.value = isMatchType ? 'match' : 'stroke';
+          
+          // Find tournament by ID (preferred) or by index (legacy)
+          let t;
+          if (editIdParam) {
+            t = arr.find(tournament => tournament.tournamentId === editIdParam);
+          } else if (editIndexParam !== null) {
+            t = arr[parseInt(editIndexParam, 10)];
+          }
+          
+          if (!t) { 
+            console.error('Tournament not found for editing');
+            updateFieldsVisibility();
+            renderRounds(); 
+            return; 
           }
 
-          document.getElementById('tournament-name').value = t.name || '';
-          const roundsVal = (t.meta && t.meta.rounds) ? String(t.meta.rounds) : '1';
-          roundsSelect.value = roundsVal;
-          renderRounds();
-
-          // Populate round-specific data
-          const roundsData = (t.meta && t.meta.roundsData) ? t.meta.roundsData : [];
-          // Seed persistent state so changes in round count preserve values
-          roundsState = roundsData.slice();
-          const numRounds = parseInt(roundsVal, 10);
+          if (typeSelect && t.type) {
+            const typeLower = t.type.toLowerCase();
+            if (typeLower.includes('bracket')) {
+              typeSelect.value = 'bracket';
+            } else if (typeLower.includes('match')) {
+              typeSelect.value = 'match';
+            } else {
+              typeSelect.value = 'stroke';
+            }
+          }
           
-          for (let i = 0; i < numRounds; i++) {
-            const roundData = roundsData[i] || {};
-            const roundNum = i + 1;
+          // Update visibility based on loaded type
+          updateFieldsVisibility();
+
+          document.getElementById('tournament-name').value = t.name || '';
+          
+          // Only process rounds for non-bracket tournaments
+          const isBracketType = typeSelect && typeSelect.value === 'bracket';
+          if (!isBracketType) {
+            const roundsVal = (t.meta && t.meta.rounds) ? String(t.meta.rounds) : '1';
+            roundsSelect.value = roundsVal;
             
-            // Set date
-            const dateInput = document.getElementById(`date-${roundNum}`);
-            if (dateInput && roundData.date) dateInput.value = roundData.date;
+            // Populate round-specific data BEFORE rendering
+            const roundsData = (t.meta && t.meta.roundsData) ? t.meta.roundsData : [];
+            // Seed persistent state so changes in round count preserve values
+            // This MUST be done before renderRounds() so the loaded data is used
+            roundsState = roundsData.slice();
             
-            // Set course
-            const courseSelect = document.getElementById(`course-${roundNum}`);
-            if (courseSelect && roundData.course) {
-              courseSelect.value = roundData.course;
-              // Populate tee selects for this course
-              populateTeeSelectsForRound(roundNum, roundData.course);
+            renderRounds();
+
+            const numRounds = parseInt(roundsVal, 10);
+            
+            for (let i = 0; i < numRounds; i++) {
+              const roundData = roundsData[i] || {};
+              const roundNum = i + 1;
               
-              // Set tee selections after populating
-              setTimeout(() => {
-                const teeMenSelect = document.getElementById(`tee-men-${roundNum}`);
-                const teeWomenSelect = document.getElementById(`tee-women-${roundNum}`);
-                if (teeMenSelect && roundData.teeMen) teeMenSelect.value = roundData.teeMen;
+              // Set date
+              const dateInput = document.getElementById(`date-${roundNum}`);
+              if (dateInput && roundData.date) dateInput.value = roundData.date;
+              
+              // Set course
+              const courseSelect = document.getElementById(`course-${roundNum}`);
+              if (courseSelect && roundData.course) {
+                courseSelect.value = roundData.course;
+                // Populate tee selects for this course
+                populateTeeSelectsForRound(roundNum, roundData.course);
+                
+                // Set tee selections after populating
+                setTimeout(() => {
+                  const teeMenSelect = document.getElementById(`tee-men-${roundNum}`);
+                  const teeWomenSelect = document.getElementById(`tee-women-${roundNum}`);
+                  if (teeMenSelect && roundData.teeMen) teeMenSelect.value = roundData.teeMen;
                 if (teeWomenSelect && roundData.teeWomen) teeWomenSelect.value = roundData.teeWomen;
                 
                 // Set match type if it exists
@@ -584,11 +840,32 @@
               }, 50);
             }
           }
+          } // end if (!isBracketType)
 
           if (t.meta && t.meta.hcpQual) document.getElementById('hcp-qual').value = t.meta.hcpQual;
           if (t.meta && t.meta.hcpAllow) document.getElementById('hcp-allow').value = t.meta.hcpAllow;
           if (t.meta && t.meta.maxScore) document.getElementById('max-score').value = t.meta.maxScore;
           if (t.meta && t.meta.teamsTournament) document.getElementById('teams-tournament').value = t.meta.teamsTournament;
+          
+          // Bracket Match Play specific fields
+          // Seeding method is now selected in bracket.html, not here
+          if (t.meta && t.meta.teamFormat) {
+            const teamFormatSelect = document.getElementById('team-format');
+            if (teamFormatSelect) teamFormatSelect.value = t.meta.teamFormat;
+          }
+          // Load bracket start date (use main date field for bracket tournaments)
+          if (isBracketType && t.date) {
+            const bracketStartDateInput = document.getElementById('bracket-start-date');
+            if (bracketStartDateInput) bracketStartDateInput.value = t.date;
+          }
+          // Load bracket course
+          if (isBracketType && t.course) {
+            const bracketCourseSelect = document.getElementById('bracket-course');
+            if (bracketCourseSelect) bracketCourseSelect.value = t.course;
+          }
+          
+          // Update field visibility after loading values
+          updateFieldsVisibility();
         } catch (err) {
           console.error('Failed to load tournament for edit', err);
           renderRounds();
@@ -633,11 +910,18 @@
       // Start initialization
       loadDataAndInit();
 
-      async function getNextTournamentId(isMatchPlay) {
+      async function getNextTournamentId(tournamentType) {
         try {
           const raw = localStorage.getItem('tournaments');
           const tournaments = raw ? JSON.parse(raw) : [];
-          const prefix = isMatchPlay ? 'M' : 'T';
+          let prefix;
+          if (tournamentType === 'bracket') {
+            prefix = 'B';
+          } else if (tournamentType === 'match') {
+            prefix = 'M';
+          } else {
+            prefix = 'T';
+          }
           const currentUserId = window.currentUserId;
           
           // Get user profile to extract login name for club users
@@ -701,7 +985,10 @@
           return fullPrefix + String(maxId + 1).padStart(4, '0');
         } catch(e) {
           console.error('Error generating tournament ID:', e);
-          return (isMatchPlay ? 'M' : 'T') + '0001';
+          let fallbackPrefix = 'T';
+          if (tournamentType === 'bracket') fallbackPrefix = 'B';
+          else if (tournamentType === 'match') fallbackPrefix = 'M';
+          return fallbackPrefix + '0001';
         }
       }
 
@@ -715,92 +1002,160 @@
 
       document.getElementById('stroke-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        
+        // Show saving indicator
+        const resultEl = document.getElementById('result');
+        resultEl.textContent = 'Saving...';
+        resultEl.style.color = 'blue';
+        
+        try {
         const data = new FormData(e.target);
         
-        // Collect round-specific data
-        const numRounds = parseInt(data.get('rounds'), 10);
-        const roundsData = [];
-        const isMatchPlay = typeSelect && typeSelect.value === 'match';
+        const selectedType = data.get('tournamentType') || 'stroke';
+        const isTeamsTournament = data.get('teamsTournament') === 'yes';
+        const isBracket = selectedType === 'bracket';
         
-        for (let i = 1; i <= numRounds; i++) {
-          const roundData = {
-            date: data.get(`date-${i}`) || '',
-            course: data.get(`course-${i}`) || '',
-            teeMen: data.get(`tee-men-${i}`) || '',
-            teeWomen: data.get(`tee-women-${i}`) || ''
-          };
+        // Collect round-specific data (only for non-bracket tournaments)
+        let numRounds = 1;
+        let roundsData = [];
+        
+        if (!isBracket) {
+          numRounds = parseInt(data.get('rounds'), 10);
+          const isMatchPlay = selectedType === 'match';
           
-          if (isMatchPlay) {
-            roundData.matchType = data.get(`match-type-${i}`) || '';
+          for (let i = 1; i <= numRounds; i++) {
+            const roundData = {
+              date: data.get(`date-${i}`) || '',
+              course: data.get(`course-${i}`) || '',
+              teeMen: data.get(`tee-men-${i}`) || '',
+              teeWomen: data.get(`tee-women-${i}`) || ''
+            };
+            
+            if (isMatchPlay) {
+              roundData.matchType = data.get(`match-type-${i}`) || '';
+            }
+            
+            roundsData.push(roundData);
           }
-          
-          roundsData.push(roundData);
         }
         
         // Generate or preserve tournament ID
         let tournamentId;
-        let roundIds;
+        let roundIds = null;
         
         try {
           const raw = localStorage.getItem('tournaments');
           const tournaments = raw ? JSON.parse(raw) : [];
           
           if (isEdit) {
-            const editIndex = parseInt(editIndexParam, 10);
-            const existingTournament = tournaments[editIndex];
+            // Find existing tournament by ID (preferred) or index (legacy)
+            let existingTournament;
+            if (editIdParam) {
+              existingTournament = tournaments.find(t => t.tournamentId === editIdParam);
+            } else if (editIndexParam !== null) {
+              existingTournament = tournaments[parseInt(editIndexParam, 10)];
+            }
             // Preserve existing tournament ID
-            tournamentId = (existingTournament && existingTournament.tournamentId) ? existingTournament.tournamentId : await getNextTournamentId(isMatchPlay);
+            tournamentId = (existingTournament && existingTournament.tournamentId) ? existingTournament.tournamentId : await getNextTournamentId(selectedType);
           } else {
             // New tournament - generate new ID based on type
-            tournamentId = await getNextTournamentId(isMatchPlay);
+            tournamentId = await getNextTournamentId(selectedType);
           }
           
-          // Generate round IDs based on number of rounds
-          roundIds = generateRoundIds(tournamentId, numRounds);
+          // Generate round IDs based on number of rounds (only for non-bracket)
+          if (!isBracket) {
+            roundIds = generateRoundIds(tournamentId, numRounds);
+          }
         } catch(e) {
           console.error('Error generating IDs:', e);
-          tournamentId = isMatchPlay ? 'M0001' : 'T0001';
-          roundIds = generateRoundIds(tournamentId, numRounds);
+          let fallbackPrefix = 'T';
+          if (selectedType === 'bracket') fallbackPrefix = 'B';
+          else if (selectedType === 'match') fallbackPrefix = 'M';
+          tournamentId = fallbackPrefix + '0001';
+          if (!isBracket) {
+            roundIds = generateRoundIds(tournamentId, numRounds);
+          }
         }
 
-        // Use the first round's date as the main tournament date
-        const mainDate = roundsData[0]?.date || '';
+        // Use the first round's date as the main tournament date, or bracket start date for bracket tournaments
+        let mainDate;
+        if (isBracket) {
+          mainDate = data.get('bracketStartDate') || '';
+        } else {
+          mainDate = roundsData[0]?.date || '';
+        }
         
-        // Check if it's a teams tournament and determine type
-        const isTeamsTournament = data.get('teamsTournament') === 'yes';
-        const selectedType = data.get('tournamentType') || 'stroke';
+        // Determine tournament type string
         let tournamentType;
         
-        if (selectedType === 'match') {
+        if (selectedType === 'bracket') {
+          tournamentType = isTeamsTournament ? 'Bracket Match Play (Teams)' : 'Bracket Match Play';
+        } else if (selectedType === 'match') {
           tournamentType = isTeamsTournament ? 'Match Play (Teams)' : 'Match Play';
         } else {
           tournamentType = isTeamsTournament ? 'Stroke Play (Teams)' : 'Stroke Play';
         }
 
+        // Declare entry outside try block so it's accessible later
+        let entry = null;
+        
         // Persist to localStorage so the tournaments list shows this entry.
         try {
           const raw = localStorage.getItem('tournaments');
           const arr = raw ? JSON.parse(raw) : [];
-          const entry = { 
+          
+          // Get current user's club ID
+          let userClubId = null;
+          try {
+            if (firebase.auth().currentUser) {
+              const userProfileDoc = await firebase.firestore().collection('users').doc(firebase.auth().currentUser.uid).get();
+              if (userProfileDoc.exists) {
+                const userData = userProfileDoc.data();
+                userClubId = userData.clubId || userData.club || null;
+              }
+            }
+          } catch (e) {
+            console.warn('Could not get user club info:', e);
+          }
+          
+          // Build entry object - Firebase doesn't accept undefined, so use null instead
+          const bracketCourse = data.get('bracketCourse') || null;
+          console.log('Bracket course from form:', bracketCourse);
+          
+          entry = { 
             tournamentId: tournamentId,
-            date: mainDate, 
-            name: data.get('name'), 
-            type: tournamentType, 
+            date: mainDate || '', 
+            name: data.get('name') || '', 
+            type: tournamentType || 'Stroke Play',
+            course: selectedType === 'bracket' ? bracketCourse : null,
             meta: { 
-              rounds: numRounds, 
-              roundIds: roundIds,
-              roundsData: roundsData,
-              hcpQual: data.get('hcpQual'), 
-              hcpAllow: data.get('hcpAllow'), 
-              maxScore: data.get('maxScore'),
-              teamsTournament: data.get('teamsTournament')
+              rounds: selectedType === 'bracket' ? null : numRounds, 
+              roundIds: selectedType === 'bracket' ? null : roundIds,
+              roundsData: selectedType === 'bracket' ? null : roundsData,
+              hcpQual: data.get('hcpQual') || null, 
+              hcpAllow: data.get('hcpAllow') || null, 
+              maxScore: data.get('maxScore') || null,
+              teamsTournament: data.get('teamsTournament') || null,
+              // Bracket Match Play specific fields
+              // seedingMethod is now selected in bracket.html
+              teamFormat: (selectedType === 'bracket' && isTeamsTournament) ? (data.get('teamFormat') || null) : null
             },
-            createdBy: (window.currentUserId || null)
+            createdBy: (window.currentUserId || null),
+            createdByClub: (userClubId || null)
           };
           
+          console.log('Entry course field:', entry.course);
+          
           if (isEdit) {
-            const idx = parseInt(editIndexParam, 10);
-            if (!isNaN(idx) && arr[idx]) {
+            // Find tournament by ID (preferred) or index (legacy)
+            let idx = -1;
+            if (editIdParam) {
+              idx = arr.findIndex(t => t.tournamentId === editIdParam);
+            } else if (editIndexParam !== null) {
+              idx = parseInt(editIndexParam, 10);
+            }
+            
+            if (idx !== -1 && arr[idx]) {
               // Preserve existing categories and result preferences
               if (arr[idx].categories) {
                 entry.categories = arr[idx].categories;
@@ -821,27 +1176,28 @@
           if (typeof syncToFirebase !== 'undefined' && syncEnabled) {
             document.getElementById('result').textContent = 'Saving to cloud...';
             try {
-              // Convert array to object keyed by tournamentId for Firebase storage
-              const tournamentsObj = {};
-              arr.forEach(t => {
-                if (t && t.tournamentId) {
-                  tournamentsObj[t.tournamentId] = t;
-                }
-              });
-              await syncToFirebase('tournaments', tournamentsObj);
-              console.log('✓ Tournament synced to Firebase');
+              // Direct update to Firebase - just update this specific tournament
+              // This is more reliable than re-uploading all tournaments
+              await firebase.database().ref(`tournaments/${tournamentId}`).set(entry);
             } catch(e) {
-              console.log('Firebase sync failed:', e);
+              console.error('Firebase sync failed:', e);
+              alert('Warning: Cloud sync failed: ' + e.message + '\n\nChanges saved locally only.');
             }
           }
         } catch (err) {
           console.error('Failed to save tournament', err);
           document.getElementById('result').textContent = 'Error saving tournament.';
+          alert('Error saving tournament: ' + err.message);
           return;
         }
 
         // Redirect back to tournaments list so the updated/created entry appears
         window.location.href = 'index.html';
+        
+        } catch (outerErr) {
+          console.error('Unexpected error:', outerErr);
+          alert('Error: ' + outerErr.message);
+        }
       });
     </script>
   </body>

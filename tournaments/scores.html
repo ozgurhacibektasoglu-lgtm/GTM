@@ -421,6 +421,16 @@
         }
       }
 
+      function saveTournaments(tournaments) {
+        localStorage.setItem('tournaments', JSON.stringify(tournaments || []));
+        // Sync to Firebase
+        if (typeof syncToFirebase !== 'undefined') {
+          syncToFirebase('tournaments', tournaments || []).then(() => {
+            console.log('✓ Tournaments synced to Firebase');
+          }).catch(e => console.log('Firebase sync failed:', e));
+        }
+      }
+
       function getTournament() {
         const tournaments = getTournaments();
         return tournaments.find(t => t.tournamentId === tournamentIdParam);
@@ -2204,10 +2214,14 @@
 
       // Load digital scorecard availability (which players have signed scorecards)
       async function loadDigitalScorecardAvailability(roundId) {
-        if (!window.db) return;
+        // Check if Firebase is available
+        if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+          return;
+        }
         
         try {
-          const digitalScoresRef = window.db.ref(`digitalScores/${roundId}`);
+          const db = firebase.database();
+          const digitalScoresRef = db.ref(`digitalScores/${roundId}`);
           const snapshot = await digitalScoresRef.once('value');
           const data = snapshot.val() || {};
           
@@ -2234,12 +2248,15 @@
 
       // Load digital scorecard scores from Firebase (only NEW ones not yet imported)
       async function loadDigitalScorecardScores(roundId) {
-        if (!window.db) {
-          console.log('Firebase database not available for digital scorecard scores');
+        // Check if Firebase is available
+        if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+          console.log('Firebase not initialized, skipping digital scorecard scores');
           return 0;
         }
         
         try {
+          const db = firebase.database();
+          
           // Load availability first
           await loadDigitalScorecardAvailability(roundId);
           
@@ -3990,6 +4007,9 @@
       function calculatePoints(holeIndex, score, player) {
         if (!score || !courseData || !courseData.pars) return '';
         
+        // Handle X scores - return empty for display
+        if (score === 'X' || score === 'x' || score === 0) return '';
+        
         const playerKey = player.reg;
         const isMaxScoreApplied = scores[playerKey]?.isMaxScoreApplied?.[holeIndex];
         
@@ -4004,10 +4024,13 @@
         // Calculate strokes received/given on this hole
         const strokesReceived = getStrokesForHole(phcp, si);
         
+        // Convert score to number if it's a string
+        const numScore = typeof score === 'string' ? parseInt(score) : score;
+        
         // Medal Net score = Gross score - strokes received
         // For plus handicaps, strokesReceived is negative, so subtracting adds to the score
         // Example: score=4, strokes=-1 (gives 1), net = 4 - (-1) = 5
-        const netScore = score - strokesReceived;
+        const netScore = numScore - strokesReceived;
         
         return netScore;
       }
@@ -4015,8 +4038,8 @@
       function calculateStablefordPoints(holeIndex, score, player) {
         if (score === '' || score === null || score === undefined || !courseData || !courseData.pars) return '';
         
-        // If score is 0, return 0 Stableford points
-        if (score === 0) return 0;
+        // If score is 0 or 'X', return 0 Stableford points
+        if (score === 0 || score === 'X' || score === 'x') return 0;
         
         const par = courseData.pars[holeIndex];
         const si = courseData.strokeIndexes?.[holeIndex] || 999;
@@ -4025,8 +4048,11 @@
         // Calculate strokes received/given on this hole
         const strokesReceived = getStrokesForHole(phcp, si);
         
+        // Convert score to number if it's a string
+        const numScore = typeof score === 'string' ? parseInt(score) : score;
+        
         // Net score for this hole
-        const netScore = score - strokesReceived;
+        const netScore = numScore - strokesReceived;
         
         // Stableford points calculation
         // Par or better: 2 + (par - netScore)
@@ -4101,7 +4127,23 @@
       async function loadLiveScoresForRound() {
         if (!currentRoundId) return null;
         
+        // Wait for Firebase to be ready (with timeout)
+        let attempts = 0;
+        while (attempts < 10) {
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
+          attempts++;
+        }
+        
         try {
+          // Check if Firebase is available
+          if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+            console.warn('Firebase not initialized after waiting, skipping live scores load');
+            return null;
+          }
+          
           const db = firebase.database();
           const snapshot = await db.ref(`liveScores/${currentRoundId}`).once('value');
           liveScoresCache = snapshot.val() || {};
@@ -4178,32 +4220,20 @@
             return;
           }
           
-          // Confirm import
-          const existingScores = scores[selectedPlayer.reg]?.holes?.filter(h => h !== '' && h !== null).length || 0;
-          let confirmMsg = `Import ${holesWithScores} hole(s) from live scoring?`;
-          if (existingScores > 0) {
-            confirmMsg += `\n\n⚠️ This will overwrite ${existingScores} existing score(s).`;
-          }
-          confirmMsg += '\n\nPlease verify the scores after import.';
-          
-          if (!confirm(confirmMsg)) {
-            return;
-          }
-          
-          // Import the scores
+          // Import the scores (no confirmation needed, success alert will show after)
           const playerScores = scores[selectedPlayer.reg];
           
           for (let i = 0; i < 18; i++) {
             const liveScore = liveData.holes[i];
             if (liveScore !== '' && liveScore !== null && liveScore !== undefined) {
-              // Handle 'X' (incomplete hole)
-              if (liveScore === 'X' || liveScore === 'x') {
-                playerScores.holes[i] = '';
+              // Handle 'X' or '0' (incomplete hole / ball picked up)
+              if (liveScore === 'X' || liveScore === 'x' || liveScore === '0' || liveScore === 0) {
+                playerScores.holes[i] = 0; // Store as 0 (web app format for X)
                 playerScores.isIncompleteHole = playerScores.isIncompleteHole || [];
                 playerScores.isIncompleteHole[i] = true;
               } else {
                 const score = parseInt(liveScore);
-                if (!isNaN(score)) {
+                if (!isNaN(score) && score > 0) {
                   playerScores.holes[i] = score;
                   // Clear any incomplete flag
                   if (playerScores.isIncompleteHole) {
@@ -4248,11 +4278,27 @@
         
         for (let i = 0; i < 18; i++) {
           const score = playerScores.holes[i];
-          if (score && score !== '') {
+          // Check if score exists (including 0 for X)
+          if (score !== '' && score !== null && score !== undefined) {
+            const numScore = parseInt(score);
             const par = pars[i] || 4;
             const si = strokeIndexes[i] || (i + 1);
             const strokes = getStrokesForHole(phcp, si);
-            const netScore = parseInt(score) - strokes;
+            
+            // Check if this is an incomplete hole (X imported as 0)
+            const isIncomplete = playerScores.isIncompleteHole?.[i] === true;
+            
+            let netScore;
+            if (isIncomplete || numScore === 0) {
+              // For incomplete holes (X), calculate as net double bogey
+              // Net double bogey = par + 2 + strokes received (only positive)
+              const netDoubleBogey = par + 2 + Math.max(0, strokes);
+              netScore = netDoubleBogey;
+            } else {
+              // Normal score calculation
+              netScore = numScore - strokes;
+            }
+            
             playerScores.points[i] = netScore;
             
             // Calculate Stableford points

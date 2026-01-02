@@ -121,49 +121,50 @@
 
     /* Row Action Buttons */
     .row-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      position: relative;
     }
 
-    .btn-info {
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
-      border: none;
+    .hamburger-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
       border-radius: 6px;
+      padding: 8px 12px;
       cursor: pointer;
-      background: linear-gradient(180deg, #0ea5e9, #0284c7);
-      color: white;
-      text-decoration: none;
-      display: inline-block;
+      font-size: 18px;
+      line-height: 1;
       transition: all 0.2s;
     }
-    .btn-info:hover {
-      background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    .hamburger-btn:hover { background: #e2e8f0; }
+    
+    .hamburger-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 160px;
+      z-index: 100;
+      overflow: hidden;
     }
-
-    .btn-register {
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
+    .hamburger-menu.active { display: block; }
+    .hamburger-menu a, .hamburger-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      text-align: left;
       border: none;
-      border-radius: 6px;
+      background: none;
+      font-size: 14px;
+      color: #1e293b;
       cursor: pointer;
-      background: linear-gradient(180deg, #22c55e, #16a34a);
-      color: white;
       text-decoration: none;
-      display: inline-block;
-      transition: all 0.2s;
+      transition: background 0.15s;
     }
-    .btn-register:hover {
-      background: linear-gradient(180deg, #16a34a, #15803d);
-    }
-    .btn-register.disabled {
-      background: #94a3b8;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
+    .hamburger-menu a:hover, .hamburger-menu button:hover { background: #f1f5f9; }
+    .hamburger-menu .menu-icon { margin-right: 8px; }
 
     /* Loading spinner */
     .loading {
@@ -211,7 +212,7 @@
           <th>Rounds</th>
           <th>Course</th>
           <th>Type</th>
-          <th>Actions</th>
+          <th style="width: 60px;">Actions</th>
         </tr>
       </thead>
       <tbody id="tournamentsBody">
@@ -228,7 +229,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyBppPEZ0dSEqMQlPDyvaZb5luol51_7qNM",
       authDomain: "gtm-management-6350e.firebaseapp.com",
-      databaseURL: "https://gtm-management-6350e-default-rtdb.europe-west1.firebasedatabase.app/",
+      databaseURL: "https://gtm-management-6350e-default-rtdb.firebaseio.com",
       projectId: "gtm-management-6350e",
       storageBucket: "gtm-management-6350e.firebasestorage.app",
       messagingSenderId: "461806742170",
@@ -332,6 +333,11 @@
     
     // Get courses from tournament
     function getCourses(t) {
+      // For bracket tournaments, check t.course first
+      if (t.course) {
+        return getCourseName(t.course);
+      }
+      
       // Try to get from roundsData
       if (t.meta && Array.isArray(t.meta.roundsData)) {
         const courses = t.meta.roundsData.map(r => r.course).filter(Boolean);
@@ -410,6 +416,18 @@
         // Build base path for links
         const basePath = baseUrl + '/tournaments/';
         
+        // Add bracket button for bracket tournaments
+        const isBracket = t.type && t.type.toLowerCase().includes('bracket');
+        
+        // Build hamburger menu items
+        let menuItems = `<a href="${basePath}info.html?tournamentId=${t.tournamentId || ''}&mode=pdfonly" target="_blank"><span class="menu-icon">ℹ️</span>Info</a>`;
+        menuItems += `<a href="${basePath}draw_list_single.html?tournamentId=${t.tournamentId || ''}" target="_blank"><span class="menu-icon">📋</span>Draw List</a>`;
+        menuItems += `<a href="${basePath}results_public.html?tournamentId=${t.tournamentId || ''}" target="_blank"><span class="menu-icon">📊</span>Results</a>`;
+        if (isBracket) {
+          menuItems += `<a href="${basePath}bracket.html?tournamentId=${t.tournamentId || ''}&mode=view" target="_blank"><span class="menu-icon">🏆</span>Bracket</a>`;
+        }
+        menuItems += getRegisterMenuOption(t);
+        
         return `
           <tr>
             <td>${formatDate(t.date || t.startDate)}</td>
@@ -418,15 +436,102 @@
             <td>${getCourses(t)}</td>
             <td>${getTypeBadge(t.type || t.tournamentType)}</td>
             <td class="row-actions">
-              <a href="${basePath}info.html?tournamentId=${t.tournamentId || ''}&mode=pdfonly" target="_blank" class="btn-info">Info</a>
-              ${registerBtn}
+              <button class="hamburger-btn" onclick="toggleHamburgerMenu(event, this)">☰</button>
+              <div class="hamburger-menu">${menuItems}</div>
             </td>
           </tr>
         `;
       }).join('');
     }
     
-    // Get register button based on admissions config from Firebase
+    // Get register menu option based on admissions config from Firebase
+    function getRegisterMenuOption(t) {
+      const tournamentId = t.tournamentId;
+      
+      // Check onlineAdmissions data loaded from Firebase
+      const admissionsConfig = onlineAdmissionsData[tournamentId];
+      
+      // Find active round config
+      let activeConfig = null;
+      if (admissionsConfig) {
+        for (const key of Object.keys(admissionsConfig)) {
+          const config = admissionsConfig[key]?.config;
+          if (config?.isActive) {
+            activeConfig = config;
+            break;
+          }
+        }
+      }
+      
+      // Also check tournament object itself
+      if (!activeConfig && t.onlineAdmissions) {
+        for (const key of Object.keys(t.onlineAdmissions)) {
+          if (t.onlineAdmissions[key]?.isActive) {
+            activeConfig = t.onlineAdmissions[key];
+            break;
+          }
+        }
+      }
+      
+      if (!activeConfig) {
+        return `<span style="padding:10px 16px; display:block; color:#94a3b8; font-size:14px;"><span class="menu-icon">📝</span>Register (N/A)</span>`;
+      }
+      
+      return getRegisterMenuOptionFromConfig(t, activeConfig);
+    }
+    
+    // Generate menu option from config
+    function getRegisterMenuOptionFromConfig(t, activeConfig) {
+      const now = new Date();
+      let isInPeriod = true;
+      
+      if (activeConfig) {
+        const startDate = activeConfig.startDate ? new Date(activeConfig.startDate) : null;
+        const endDate = activeConfig.endDate ? new Date(activeConfig.endDate) : null;
+        
+        if (startDate && now < startDate) {
+          isInPeriod = false;
+        } else if (endDate) {
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (now > endOfDay) {
+            isInPeriod = false;
+          }
+        }
+      }
+      
+      const basePath = baseUrl + '/tournaments/';
+      
+      if (!isInPeriod) {
+        return `<span style="padding:10px 16px; display:block; color:#94a3b8; font-size:14px;"><span class="menu-icon">📝</span>Register (Closed)</span>`;
+      }
+      
+      return `<a href="${basePath}online_register.html?tournamentId=${t.tournamentId || ''}" target="_blank"><span class="menu-icon">📝</span>Register</a>`;
+    }
+    
+    // Hamburger menu toggle
+    function toggleHamburgerMenu(event, btn) {
+      event.stopPropagation();
+      const menu = btn.nextElementSibling;
+      const isActive = menu.classList.contains('active');
+      
+      // Close all other menus first
+      document.querySelectorAll('.hamburger-menu.active').forEach(m => m.classList.remove('active'));
+      
+      // Toggle this menu
+      if (!isActive) {
+        menu.classList.add('active');
+      }
+    }
+    
+    // Close hamburger menu when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.row-actions')) {
+        document.querySelectorAll('.hamburger-menu.active').forEach(m => m.classList.remove('active'));
+      }
+    });
+    
+    // Get register button based on admissions config from Firebase (kept for compatibility)
     function getRegisterButton(t) {
       const tournamentId = t.tournamentId;
       
